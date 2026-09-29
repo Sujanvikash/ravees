@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
-import FreeShippingNote from '../components/FreeShippingNote.jsx';
 import Button from '../components/Button.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
@@ -12,7 +11,7 @@ export default function Cart() {
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
       <div className="mx-auto max-w-[1100px] px-6">
         <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
-          ✦ YOUR ENQUIRY LIST ✦
+          ✦ YOUR CART ✦
         </span>
         <h1 className={`mb-8 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
           Review Your Selection
@@ -21,7 +20,7 @@ export default function Cart() {
         {cart.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-6 py-20 text-center">
             <ShoppingBag size={44} strokeWidth={1.5} className="text-gold-400/50" />
-            <p className="text-text-secondary">Your enquiry list is empty.</p>
+            <p className="text-text-secondary">Your cart is empty.</p>
             <Button to="/shop">Browse the Collections</Button>
           </div>
         ) : (
@@ -91,7 +90,6 @@ export default function Cart() {
                 <span>Items in list</span>
                 <span className="font-mono text-white">{totalCount}</span>
               </div>
-              <FreeShippingNote className="text-[0.92rem]" />
               <div className="flex justify-between border-t border-white/10 pt-4 text-[1.1rem] font-bold text-white">
                 <span>Total</span>
                 <span className="font-serif text-[1.2rem] text-gold-300">Quote on request</span>

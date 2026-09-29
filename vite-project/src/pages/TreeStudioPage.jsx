@@ -98,7 +98,7 @@ export default function TreeStudioPage() {
         <SectionHeading
           eyebrow="✦ BESPOKE HOLIDAY CURATION ✦"
           title="Raave's Interactive Tree Studio"
-          subtitle="Design your complete custom holiday masterpiece — pick height, foliage, lighting density and heirloom ornaments, then send the whole build to our concierge as one enquiry."
+          subtitle="Design your complete custom holiday masterpiece — pick height, foliage, lighting density and heirloom ornaments, then send the whole build to our concierge as one request."
         />
 
         <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr]">
@@ -171,7 +171,7 @@ export default function TreeStudioPage() {
               </p>
               <Button full onClick={handleAddBundle}>
                 <ShoppingBag size={18} strokeWidth={2} />
-                Add Studio Bundle to Enquiry
+                Add Studio Bundle to Cart
               </Button>
             </div>
           </div>

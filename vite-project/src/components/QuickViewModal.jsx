@@ -82,7 +82,7 @@ export default function QuickViewModal({ product, onClose }) {
                 }}
               >
                 <ShoppingBag size={16} strokeWidth={2} />
-                Add to Enquiry
+                Add to Cart
               </Button>
               <Link
                 to={`/product/${product.id}`}

@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Heart, ShoppingBag, User } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { Heart, ShoppingBag, User } from 'lucide-react';
 import Logo from '../components/Logo.jsx';
+import { useRequireLogin } from '../auth/useRequireLogin.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
-import SearchBar from '../components/SearchBar.jsx';
 
 const NAV_LINKS = [
   { to: '/', label: '3D Tree Experience', end: true },
@@ -22,22 +22,23 @@ const UTIL_BTN =
 const BADGE_COUNT =
   'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ruby-500 px-1 text-[0.68rem] font-bold text-white';
 
+function getInitials(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  const first = parts[0][0];
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+
 export default function Header({ onOpenCart }) {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const { totalCount } = useCart();
+  const requireLogin = useRequireLogin();
   const { wishlistCount } = useWishlist();
   const { session, isAuthenticated } = useCustomerAuth();
-  const navigate = useNavigate();
-
-  const submitSearch = () => {
-    setIsSearchOpen(false);
-    navigate(searchQuery.trim() ? `/shop?q=${encodeURIComponent(searchQuery.trim())}` : '/shop');
-  };
 
   return (
-    <header className="sticky top-0 z-[100] h-[76px] border-b border-gold-400/15 bg-[rgba(5,22,15,0.88)] backdrop-blur-[16px]">
+    <header className="sticky top-0 z-[100] h-[76px] border-b border-gold-400/15 bg-[rgba(5,22,15,0.96)]">
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-3 px-4 sm:gap-5 sm:px-6">
         <button
           className="flex shrink-0 cursor-pointer flex-col gap-[5px] border-none bg-transparent xl:hidden"
@@ -95,15 +96,7 @@ export default function Header({ onOpenCart }) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2.5">
-          {/* On phones, search and saved items live in the menu panel to keep the bar one line */}
-          <button
-            className={`${UTIL_BTN} max-md:hidden ${isSearchOpen ? 'border-gold-400/40 bg-white/10' : ''}`}
-            title="Search products"
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-          >
-            <Search size={18} strokeWidth={2} />
-          </button>
-
+          {/* On phones, saved items live in the menu panel to keep the bar one line */}
           <Link to="/shop?wishlist=1" className={`${UTIL_BTN} max-md:hidden`} title="Saved items">
             <Heart size={18} strokeWidth={2} />
             <span className={BADGE_COUNT}>{wishlistCount}</span>
@@ -114,21 +107,24 @@ export default function Header({ onOpenCart }) {
             className={`${UTIL_BTN} max-md:hidden`}
             title={isAuthenticated ? `Signed in as ${session.name}` : 'Sign in'}
           >
-            <User size={18} strokeWidth={2} />
-            {isAuthenticated && (
-              <span className="max-w-[80px] truncate">{session.name.split(' ')[0]}</span>
+            {isAuthenticated ? (
+              <span className="text-[0.8rem] font-bold leading-none tracking-[0.04em] text-gold-300">
+                {getInitials(session.name)}
+              </span>
+            ) : (
+              <User size={18} strokeWidth={2} />
             )}
           </Link>
 
           <button
             className="inline-flex items-center gap-1.5 rounded-lg border border-gold-400/30 bg-[linear-gradient(135deg,rgba(229,199,139,0.2),rgba(8,28,20,0.8))] px-3.5 py-2 text-[0.8rem] text-gold-300 transition-all duration-300 hover:border-gold-400"
             title="View cart"
-            onClick={onOpenCart}
+            onClick={() => requireLogin('Please sign in to view your cart.') && onOpenCart()}
           >
             <ShoppingBag size={18} strokeWidth={2} />
             <span className={BADGE_COUNT}>{totalCount}</span>
             <span className="hidden font-mono font-bold tracking-[0.1em] text-gold-300 sm:inline">
-              ENQUIRE
+              CART
             </span>
           </button>
         </div>
@@ -136,18 +132,6 @@ export default function Header({ onOpenCart }) {
 
       {mobileMenuOpen && (
         <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)] sm:px-6 xl:hidden">
-          <div className="mb-2 flex items-center gap-2 rounded-lg border border-gold-400/20 bg-white/5 px-3 py-2 md:hidden">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onSubmit={() => {
-                setMobileMenuOpen(false);
-                submitSearch();
-              }}
-              placeholder="Search trees, lights, baubles..."
-              iconSize={16}
-            />
-          </div>
           <Link
             to="/shop?wishlist=1"
             onClick={() => setMobileMenuOpen(false)}
@@ -186,23 +170,6 @@ export default function Header({ onOpenCart }) {
             </NavLink>
           ))}
         </nav>
-      )}
-
-      {isSearchOpen && (
-        <div className="absolute inset-x-0 top-full border-b border-gold-400/30 bg-[rgba(5,20,14,0.96)] px-6 py-4 backdrop-blur-[20px]">
-          <div className="mx-auto flex max-w-[800px] items-center gap-3">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onSubmit={submitSearch}
-              onClose={() => setIsSearchOpen(false)}
-              placeholder="Search Norway Spruce, cluster lights, rose gold garland, crib sets..."
-              autoFocus
-              iconSize={20}
-              inputClassName="text-[1.1rem]"
-            />
-          </div>
-        </div>
       )}
     </header>
   );

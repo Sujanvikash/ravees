@@ -90,7 +90,7 @@ export default function Login() {
 
           <p className="text-center text-[0.85rem] text-text-secondary">
             New to Raave&apos;s?{' '}
-            <Link to="/signup" className="text-gold-300 underline-offset-4 hover:underline">
+            <Link to="/signup" state={location.state} className="text-gold-300 underline-offset-4 hover:underline">
               Create an account
             </Link>
           </p>

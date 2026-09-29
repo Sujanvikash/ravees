@@ -109,7 +109,7 @@ export default function Home() {
               </h2>
               <p className="mb-6 text-[1.02rem] leading-[1.8] text-text-secondary">
                 Pick a tree, layer on cluster lights, baubles and a topper, then send the whole build to our
-                concierge as a single enquiry. Our stylists confirm pricing and reserve your pieces.
+                concierge as a single quote request. Our stylists confirm pricing and reserve your pieces.
               </p>
               <Button to="/tree-studio">
                 <Wand2 size={16} strokeWidth={2} />

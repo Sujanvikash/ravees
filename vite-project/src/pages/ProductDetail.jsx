@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ShoppingBag, Heart, ChevronLeft, Phone, Truck, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Heart, ChevronLeft, Phone, ShieldCheck } from 'lucide-react';
 import WhatsAppLink from '../components/WhatsAppLink.jsx';
-import { FREE_SHIPPING_MIN_LABEL, PHONE_HREF, PHONE_DISPLAY, ORDER_HOURS } from '../data/site.js';
+import { PHONE_HREF, PHONE_DISPLAY, ORDER_HOURS } from '../data/site.js';
 import Badge from '../components/Badge.jsx';
 import Button from '../components/Button.jsx';
 import PriceTag from '../components/PriceTag.jsx';
@@ -133,7 +133,7 @@ export default function ProductDetail() {
             <div className="flex flex-wrap gap-3">
               <Button onClick={() => addToCart(product)}>
                 <ShoppingBag size={16} strokeWidth={2} />
-                Add to Enquiry
+                Add to Cart
               </Button>
               <Button variant="outline" onClick={() => toggleWishlist(product.id)}>
                 <Heart size={16} strokeWidth={2} fill={wishlisted ? 'currentColor' : 'none'} />
@@ -148,10 +148,6 @@ export default function ProductDetail() {
             </div>
 
             <div className="flex flex-col gap-2.5 border-t border-white/10 pt-5 text-[0.85rem] text-text-secondary">
-              <span className="flex items-center gap-2">
-                <Truck size={15} strokeWidth={2} className="text-gold-400" />
-                Free pan-India white-glove delivery on orders over {FREE_SHIPPING_MIN_LABEL}
-              </span>
               <span className="flex items-center gap-2">
                 <ShieldCheck size={15} strokeWidth={2} className="text-gold-400" />
                 European safety certified · 10-year warranty

@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Trash2, Minus, Plus, X, ShieldCheck } from 'lucide-react';
-import FreeShippingNote from '../components/FreeShippingNote.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
 export default function CartDrawer({ isOpen, onClose }) {
@@ -30,7 +29,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         <div className="flex items-center justify-between border-b border-white/10 p-6">
           <div className="flex items-center gap-2.5 text-gold-300">
             <ShoppingBag size={20} strokeWidth={2} />
-            <h2 className="font-serif text-[1.15rem] tracking-[0.06em]">Your Enquiry List</h2>
+            <h2 className="font-serif text-[1.15rem] tracking-[0.06em]">Your Cart</h2>
           </div>
           <button
             className="cursor-pointer border-none bg-transparent text-text-muted transition-colors hover:text-white"
@@ -51,7 +50,7 @@ export default function CartDrawer({ isOpen, onClose }) {
           {cart.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
               <ShoppingBag size={40} strokeWidth={1.5} className="text-gold-400/50" />
-              <p className="text-text-secondary">Your enquiry list is empty.</p>
+              <p className="text-text-secondary">Your cart is empty.</p>
               <Link
                 to="/shop"
                 onClick={onClose}
@@ -120,7 +119,6 @@ export default function CartDrawer({ isOpen, onClose }) {
               <span>Items</span>
               <span className="font-mono text-white">{totalCount}</span>
             </div>
-            <FreeShippingNote className="mb-2.5 text-[0.88rem]" />
             <div className="flex justify-between border-t border-white/10 pt-3 text-[1.1rem] font-bold text-white">
               <span>Total</span>
               <span className="font-serif text-[1.15rem] text-gold-300">Quote on request</span>

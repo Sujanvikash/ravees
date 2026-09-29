@@ -1,14 +1,17 @@
 import { createContext, useContext, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { useToast } from './ToastContext.jsx';
+import { useRequireLogin } from '../auth/useRequireLogin.js';
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useLocalStorage('raave-cart', []);
   const { showToast } = useToast();
+  const requireLogin = useRequireLogin();
 
   const addToCart = (product) => {
+    if (!requireLogin('Please sign in to add items to your cart.')) return;
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {

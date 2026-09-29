@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { UserPlus, Info } from 'lucide-react';
 import Button from '../../components/Button.jsx';
 import FormField from '../../components/FormField.jsx';
@@ -14,6 +14,7 @@ export default function Signup() {
   const { signup } = useCustomerAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [error, setError] = useState('');
@@ -39,7 +40,7 @@ export default function Signup() {
     setSubmitting(false);
     if (result.ok) {
       showToast(`Welcome to Raave's Evergreen, ${form.name.split(' ')[0]}!`);
-      navigate('/account');
+      navigate(location.state?.from ?? '/account');
     } else {
       setError(result.error);
     }
@@ -135,7 +136,7 @@ export default function Signup() {
 
           <p className="text-center text-[0.85rem] text-text-secondary">
             Already have an account?{' '}
-            <Link to="/login" className="text-gold-300 underline-offset-4 hover:underline">
+            <Link to="/login" state={location.state} className="text-gold-300 underline-offset-4 hover:underline">
               Sign in
             </Link>
           </p>

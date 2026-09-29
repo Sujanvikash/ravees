@@ -83,7 +83,7 @@ export default function Checkout() {
           <ShoppingBag size={44} strokeWidth={1.5} className="text-gold-400/50" />
           <h1 className="font-serif text-[1.5rem] text-white">Nothing to quote yet</h1>
           <p className="text-text-secondary">
-            Add a few pieces to your enquiry list and we&apos;ll price them up for you.
+            Add a few pieces to your cart and we&apos;ll price them up for you.
           </p>
           <Button to="/shop">Browse the Collections</Button>
         </div>

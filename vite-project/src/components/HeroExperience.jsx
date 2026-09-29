@@ -5,13 +5,18 @@ import { Renderer4K } from '../engines/renderer-4k.js';
 import { ParticleEngine } from '../engines/particles.js';
 import { PRODUCTS } from '../data/products.js';
 
+// The folder holds 242 stills; the hero plays an evenly spaced subset of them.
+const SOURCE_FRAME_COUNT = 242;
 const TOTAL_FRAMES = 242;
 const SOURCE_WIDTH = 1280;
 const FRAME_RATIO = 16 / 9;
 // Share of the remaining gap to the scroll target closed per 60 Hz frame.
 const SCRUB_FOLLOW = 0.32;
 const NARROW_ORBIT_COUNT = 4;
-const framePath = (i) => `/frames/frame-${String(i + 1).padStart(3, '0')}.jpg`;
+const framePath = (i) => {
+  const source = Math.round((i * (SOURCE_FRAME_COUNT - 1)) / (TOTAL_FRAMES - 1));
+  return `/frames/frame-${String(source + 1).padStart(3, '0')}.jpg`;
+};
 
 /** Orbit positions: angle on the ellipse (deg), pointer-parallax depth, entry tilt. */
 const ORBIT_SLOTS = [
@@ -125,6 +130,7 @@ export default function HeroExperience() {
       renderer.invalidate();
       measureHero();
       drawFrameAt(currentFrame);
+      lastDrawnFrame = currentFrame;
     };
 
     const measureHero = () => {
@@ -292,6 +298,7 @@ export default function HeroExperience() {
     const follow = (perFrame60, dt) => 1 - Math.pow(1 - perFrame60, dt * 60);
 
     let lastTime = performance.now();
+    let lastDrawnFrame = -1;
     let heroVisible = true;
 
     const renderLoop = (now) => {
@@ -305,7 +312,11 @@ export default function HeroExperience() {
         currentFrame = targetFrame;
       }
 
-      drawFrameAt(currentFrame);
+      // Only repaint the canvas when the scrub position actually moved.
+      if (currentFrame !== lastDrawnFrame) {
+        drawFrameAt(currentFrame);
+        lastDrawnFrame = currentFrame;
+      }
 
       smoothProgress += (scrollProgress - smoothProgress) * follow(0.2, dt);
       smoothPointerX += (pointerX - smoothPointerX) * follow(0.06, dt);
@@ -356,8 +367,15 @@ export default function HeroExperience() {
         const img = new Image();
         img.decoding = 'async';
         img.onload = () => {
-          frames[i] = img;
-          resolve();
+          // Decode now, off the scroll path, so the first pass over a frame doesn't
+          // stall the main thread while the JPEG is decompressed inside drawImage.
+          const ready = () => {
+            frames[i] = img;
+            lastDrawnFrame = -1; // a better frame is available: repaint
+            resolve();
+          };
+          if (img.decode) img.decode().then(ready, ready);
+          else ready();
         };
         img.onerror = () => resolve();
         img.src = framePath(i);
@@ -403,7 +421,7 @@ export default function HeroExperience() {
       <div className="sticky top-0 z-[1] flex h-screen w-screen items-center justify-center overflow-hidden bg-bg-darker">
         <canvas
           ref={canvasRef}
-          className="absolute top-1/2 left-1/2 z-[2] block -translate-x-1/2 -translate-y-1/2 [filter:contrast(1.06)_saturate(1.1)] will-change-transform"
+          className="absolute top-1/2 left-1/2 z-[2] block -translate-x-1/2 -translate-y-1/2 will-change-transform"
         />
         {/* Vignette that seats the tree in the frame (formerly done in the WebGL shader) */}
         <div className="pointer-events-none absolute inset-0 z-[2] bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(2,8,5,0.35)_100%)]" />
@@ -488,7 +506,7 @@ export default function HeroExperience() {
 
         {/* Completion pill */}
         <div
-          className={`absolute bottom-9 left-1/2 z-[15] flex items-center gap-3.5 rounded-full border border-gold-400/30 bg-[rgba(6,24,17,0.92)] px-6 py-2.5 text-[0.86rem] text-white shadow-[0_10px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(229,199,139,0.4)] backdrop-blur-[16px] transition-all duration-500 ${
+          className={`absolute bottom-9 left-1/2 z-[15] flex items-center gap-3.5 rounded-full border border-gold-400/30 bg-[rgba(6,24,17,0.92)] px-6 py-2.5 text-[0.86rem] text-white shadow-[0_10px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(229,199,139,0.4)] transition-all duration-500 ${
             isCompleted
               ? 'pointer-events-auto -translate-x-1/2 translate-y-0 opacity-100'
               : 'pointer-events-none -translate-x-1/2 translate-y-5 opacity-0'
@@ -513,7 +531,7 @@ export default function HeroExperience() {
           {/* Story card */}
           <div
             ref={leftCardRef}
-            className="pointer-events-auto w-full min-w-0 max-w-[440px] rounded-[18px] border border-gold-400/30 bg-[rgba(8,28,20,0.85)] px-5 py-6 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_30px_rgba(229,199,139,0.12)] backdrop-blur-[24px] transition-[opacity,transform] duration-[350ms] sm:px-9 sm:py-8"
+            className="pointer-events-auto w-full min-w-0 max-w-[440px] rounded-[18px] border border-gold-400/30 bg-[rgba(8,28,20,0.85)] px-5 py-6 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_30px_rgba(229,199,139,0.12)] transition-[opacity,transform] duration-[350ms] sm:px-9 sm:py-8"
           >
             <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[0.68rem] tracking-[0.22em] text-gold-400">
               <span className="text-gold-400">✦</span> RAAVE&apos;S HERITAGE COLLECTION
@@ -535,7 +553,7 @@ export default function HeroExperience() {
               </button>
               <button
                 onClick={() => navigate('/tree-studio')}
-                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-[rgba(8,28,20,0.6)] px-6.5 py-3 text-[0.88rem] font-semibold tracking-[0.06em] text-gold-300 backdrop-blur-[8px] transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white"
+                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-[rgba(8,28,20,0.6)] px-6.5 py-3 text-[0.88rem] font-semibold tracking-[0.06em] text-gold-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white"
               >
                 Tree Studio
               </button>
@@ -562,7 +580,7 @@ export default function HeroExperience() {
           {/* Specification deck */}
           <div
             ref={rightCardRef}
-            className="pointer-events-auto hidden max-w-[360px] rounded-[18px] border border-gold-400/15 bg-[rgba(6,24,17,0.85)] px-[30px] py-7 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_30px_rgba(229,199,139,0.08)] backdrop-blur-[24px] transition-[opacity,transform] duration-[350ms] lg:block"
+            className="pointer-events-auto hidden max-w-[360px] rounded-[18px] border border-gold-400/15 bg-[rgba(6,24,17,0.85)] px-[30px] py-7 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_30px_rgba(229,199,139,0.08)] transition-[opacity,transform] duration-[350ms] lg:block"
           >
             <div className="mb-4 flex items-center gap-1.5 font-mono text-[0.68rem] tracking-[0.2em] text-gold-400">
               <span>✦</span> CRAFTSMANSHIP STANDARDS

@@ -94,7 +94,7 @@ export default function ProductCard({ product, onQuickView }) {
           <button
             className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-3 py-2.5 text-[0.82rem] font-semibold tracking-[0.04em] text-[#04140b] shadow-[0_0_20px_rgba(229,199,139,0.4)] transition-all duration-300 hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))] hover:shadow-[0_0_30px_rgba(229,199,139,0.65)]"
             onClick={() => addToCart(product)}
-            title="Add to enquiry cart"
+            title="Add to cart"
           >
             <ShoppingBag size={16} strokeWidth={2} />
             <span>Add</span>

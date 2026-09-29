@@ -1,3 +1,4 @@
+import RequireCustomer from './auth/RequireCustomer.jsx';
 import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import RootLayout from './layout/RootLayout.jsx';
@@ -39,8 +40,8 @@ export default function App() {
         <Route path="shop" element={<Shop />} />
         <Route path="product/:slug" element={<ProductDetail />} />
         <Route path="tree-studio" element={<TreeStudioPage />} />
-        <Route path="cart" element={<Cart />} />
-        <Route path="checkout" element={<Checkout />} />
+        <Route path="cart" element={<RequireCustomer><Cart /></RequireCustomer>} />
+        <Route path="checkout" element={<RequireCustomer><Checkout /></RequireCustomer>} />
         <Route path="showrooms" element={<Showrooms />} />
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
