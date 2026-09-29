@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, ShoppingBag } from 'lucide-react';
 import Button from '../components/Button.jsx';
+import FormField from '../components/FormField.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
+import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
 import { SHOWROOMS } from '../data/showrooms.js';
 
 const FIELD =
   'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.88rem] text-white outline-none transition-all focus:border-gold-400 focus:shadow-[0_0_10px_rgba(229,199,139,0.4)] placeholder:text-text-muted';
-const LABEL = 'text-[0.78rem] text-gold-300';
 
 export default function Checkout() {
   const { cart, totalCount, clearCart } = useCart();
@@ -107,16 +107,10 @@ export default function Checkout() {
             className="flex flex-col gap-4 rounded-2xl border border-gold-400/20 bg-[rgba(8,28,20,0.85)] p-6 md:p-8"
           >
             <div className="grid gap-3.5 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <label className={LABEL} htmlFor="co-name">
-                  Full Name
-                </label>
+              <FormField label="Full Name" htmlFor="co-name">
                 <input id="co-name" required value={form.name} onChange={update('name')} className={FIELD} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={LABEL} htmlFor="co-phone">
-                  Phone / WhatsApp
-                </label>
+              </FormField>
+              <FormField label="Phone / WhatsApp" htmlFor="co-phone">
                 <input
                   id="co-phone"
                   type="tel"
@@ -125,14 +119,11 @@ export default function Checkout() {
                   onChange={update('phone')}
                   className={FIELD}
                 />
-              </div>
+              </FormField>
             </div>
 
             <div className="grid gap-3.5 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <label className={LABEL} htmlFor="co-email">
-                  Email
-                </label>
+              <FormField label="Email" htmlFor="co-email">
                 <input
                   id="co-email"
                   type="email"
@@ -141,19 +132,13 @@ export default function Checkout() {
                   onChange={update('email')}
                   className={FIELD}
                 />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={LABEL} htmlFor="co-city">
-                  City
-                </label>
+              </FormField>
+              <FormField label="City" htmlFor="co-city">
                 <input id="co-city" required value={form.city} onChange={update('city')} className={FIELD} />
-              </div>
+              </FormField>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="co-fulfilment">
-                Fulfilment
-              </label>
+            <FormField label="Fulfilment" htmlFor="co-fulfilment">
               <select
                 id="co-fulfilment"
                 value={form.fulfilment}
@@ -167,13 +152,10 @@ export default function Checkout() {
                   Showroom pickup
                 </option>
               </select>
-            </div>
+            </FormField>
 
             {form.fulfilment === 'pickup' ? (
-              <div className="flex flex-col gap-1.5">
-                <label className={LABEL} htmlFor="co-showroom">
-                  Pickup Showroom
-                </label>
+              <FormField label="Pickup Showroom" htmlFor="co-showroom">
                 <select
                   id="co-showroom"
                   value={form.showroom}
@@ -187,12 +169,9 @@ export default function Checkout() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </FormField>
             ) : (
-              <div className="flex flex-col gap-1.5">
-                <label className={LABEL} htmlFor="co-address">
-                  Delivery Address
-                </label>
+              <FormField label="Delivery Address" htmlFor="co-address">
                 <textarea
                   id="co-address"
                   rows="3"
@@ -201,13 +180,10 @@ export default function Checkout() {
                   onChange={update('address')}
                   className={`${FIELD} resize-y`}
                 />
-              </div>
+              </FormField>
             )}
 
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="co-notes">
-                Notes for the concierge
-              </label>
+            <FormField label="Notes for the concierge" htmlFor="co-notes">
               <textarea
                 id="co-notes"
                 rows="3"
@@ -216,7 +192,7 @@ export default function Checkout() {
                 onChange={update('notes')}
                 className={`${FIELD} resize-y`}
               />
-            </div>
+            </FormField>
 
             <Button type="submit" full>
               Submit Quote Request

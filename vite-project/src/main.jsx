@@ -6,7 +6,7 @@ import App from './App.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { CartProvider } from './context/CartContext.jsx'
 import { WishlistProvider } from './context/WishlistContext.jsx'
-import { CustomerAuthProvider } from './context/CustomerAuthContext.jsx'
+import { CustomerAuthProvider } from './auth/context/CustomerAuthContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus, Info } from 'lucide-react';
-import Button from '../components/Button.jsx';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
+import Button from '../../components/Button.jsx';
+import FormField from '../../components/FormField.jsx';
+import { GRADIENT_TITLE } from '../../components/SectionHeading.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 
 const FIELD =
   'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.9rem] text-white outline-none transition-all focus:border-gold-400 placeholder:text-text-muted';
-const LABEL = 'text-[0.78rem] text-gold-300';
 
 export default function Signup() {
   const { signup } = useCustomerAuth();
@@ -61,10 +61,7 @@ export default function Signup() {
           onSubmit={handleSubmit}
           className="flex flex-col gap-4 rounded-2xl border border-gold-400/25 bg-[rgba(8,28,20,0.9)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
         >
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL} htmlFor="signup-name">
-              Full Name
-            </label>
+          <FormField label="Full Name" htmlFor="signup-name">
             <input
               id="signup-name"
               required
@@ -74,13 +71,10 @@ export default function Signup() {
               placeholder="e.g. David Thomas"
               className={FIELD}
             />
-          </div>
+          </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="signup-email">
-                Email
-              </label>
+            <FormField label="Email" htmlFor="signup-email">
               <input
                 id="signup-email"
                 type="email"
@@ -90,11 +84,8 @@ export default function Signup() {
                 placeholder="you@example.com"
                 className={FIELD}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="signup-phone">
-                Phone
-              </label>
+            </FormField>
+            <FormField label="Phone" htmlFor="signup-phone">
               <input
                 id="signup-phone"
                 type="tel"
@@ -104,14 +95,11 @@ export default function Signup() {
                 placeholder="+91 98765 43210"
                 className={FIELD}
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="signup-password">
-                Password
-              </label>
+            <FormField label="Password" htmlFor="signup-password">
               <input
                 id="signup-password"
                 type="password"
@@ -120,11 +108,8 @@ export default function Signup() {
                 onChange={update('password')}
                 className={FIELD}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="signup-confirm">
-                Confirm Password
-              </label>
+            </FormField>
+            <FormField label="Confirm Password" htmlFor="signup-confirm">
               <input
                 id="signup-confirm"
                 type="password"
@@ -133,7 +118,7 @@ export default function Signup() {
                 onChange={update('confirm')}
                 className={FIELD}
               />
-            </div>
+            </FormField>
           </div>
 
           {error && (

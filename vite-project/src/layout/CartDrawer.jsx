@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Trash2, Minus, Plus, X, ShieldCheck } from 'lucide-react';
+import FreeShippingNote from '../components/FreeShippingNote.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
 export default function CartDrawer({ isOpen, onClose }) {
@@ -119,10 +120,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               <span>Items</span>
               <span className="font-mono text-white">{totalCount}</span>
             </div>
-            <div className="mb-2.5 flex justify-between text-[0.88rem] text-text-secondary">
-              <span>Shipping</span>
-              <span className="font-bold text-emerald-400">FREE over ₹3,000</span>
-            </div>
+            <FreeShippingNote className="mb-2.5 text-[0.88rem]" />
             <div className="flex justify-between border-t border-white/10 pt-3 text-[1.1rem] font-bold text-white">
               <span>Total</span>
               <span className="font-serif text-[1.15rem] text-gold-300">Quote on request</span>

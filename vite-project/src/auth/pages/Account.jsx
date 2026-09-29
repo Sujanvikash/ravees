@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { LogOut, Mail, Phone, User, Inbox } from 'lucide-react';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
+import { GRADIENT_TITLE } from '../../components/SectionHeading.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
-import { listEnquiries } from '../lib/enquiries.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import { listEnquiries } from '../../lib/enquiries.js';
 
 const STATUS_STYLE = {
   new: 'bg-emerald-500/15 text-emerald-300',

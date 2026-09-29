@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
+import FreeShippingNote from '../components/FreeShippingNote.jsx';
 import Button from '../components/Button.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
@@ -90,10 +91,7 @@ export default function Cart() {
                 <span>Items in list</span>
                 <span className="font-mono text-white">{totalCount}</span>
               </div>
-              <div className="flex justify-between text-[0.92rem] text-text-secondary">
-                <span>Shipping</span>
-                <span className="font-bold text-emerald-400">FREE over ₹3,000</span>
-              </div>
+              <FreeShippingNote className="text-[0.92rem]" />
               <div className="flex justify-between border-t border-white/10 pt-4 text-[1.1rem] font-bold text-white">
                 <span>Total</span>
                 <span className="font-serif text-[1.2rem] text-gold-300">Quote on request</span>

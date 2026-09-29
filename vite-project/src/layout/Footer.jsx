@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFacebookF, FaInstagram, FaYoutube, FaWhatsapp } from 'react-icons/fa';
+import { PHONE_HREF, PHONE_DISPLAY, whatsappHref } from '../data/site.js';
 import { useToast } from '../context/ToastContext.jsx';
 import { SHOWROOMS } from '../data/showrooms.js';
 
@@ -17,7 +18,7 @@ const SOCIALS = [
   { Icon: FaFacebookF, title: 'Facebook', href: 'https://www.facebook.com/' },
   { Icon: FaInstagram, title: 'Instagram', href: 'https://www.instagram.com/' },
   { Icon: FaYoutube, title: 'YouTube', href: 'https://www.youtube.com/' },
-  { Icon: FaWhatsapp, title: 'WhatsApp', href: 'https://wa.me/919840788950' },
+  { Icon: FaWhatsapp, title: 'WhatsApp', href: whatsappHref() },
 ];
 
 const FOOTER_LINK = 'text-[0.85rem] text-text-secondary no-underline transition-colors hover:text-gold-300';
@@ -120,8 +121,8 @@ export default function Footer() {
             </form>
             <div>
               <span className="block text-[0.75rem] text-text-muted">Direct Orders Hotline:</span>
-              <a href="tel:+919840788950" className="font-mono text-[1.05rem] text-gold-300 no-underline">
-                +91 98407 88950
+              <a href={PHONE_HREF} className="font-mono text-[1.05rem] text-gold-300 no-underline">
+                {PHONE_DISPLAY}
               </a>
             </div>
           </div>

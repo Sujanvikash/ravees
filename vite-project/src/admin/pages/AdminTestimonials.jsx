@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, RotateCcw, Save, X } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import FormField from '../../components/FormField.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 
@@ -80,35 +81,31 @@ export default function AdminTestimonials() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Author</label>
+            <FormField label="Author" labelClassName={LABEL}>
               <input
                 value={editing.author}
                 onChange={(e) => setEditing((prev) => ({ ...prev, author: e.target.value }))}
                 className={FIELD}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Location</label>
+            </FormField>
+            <FormField label="Location" labelClassName={LABEL}>
               <input
                 value={editing.location}
                 onChange={(e) => setEditing((prev) => ({ ...prev, location: e.target.value }))}
                 className={FIELD}
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Product owned</label>
+            <FormField label="Product owned" labelClassName={LABEL}>
               <input
                 value={editing.treeModel}
                 onChange={(e) => setEditing((prev) => ({ ...prev, treeModel: e.target.value }))}
                 className={FIELD}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Rating (1–5)</label>
+            </FormField>
+            <FormField label="Rating (1–5)" labelClassName={LABEL}>
               <input
                 type="number"
                 min="1"
@@ -117,18 +114,17 @@ export default function AdminTestimonials() {
                 onChange={(e) => setEditing((prev) => ({ ...prev, rating: e.target.value }))}
                 className={FIELD}
               />
-            </div>
+            </FormField>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Quote</label>
+          <FormField label="Quote" labelClassName={LABEL}>
             <textarea
               rows="4"
               value={editing.quote}
               onChange={(e) => setEditing((prev) => ({ ...prev, quote: e.target.value }))}
               className={`${FIELD} resize-y`}
             />
-          </div>
+          </FormField>
 
           <button
             onClick={save}

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ShoppingBag, Heart, ChevronLeft, Phone, Truck, ShieldCheck } from 'lucide-react';
-import { FaWhatsapp } from 'react-icons/fa';
+import WhatsAppLink from '../components/WhatsAppLink.jsx';
+import { FREE_SHIPPING_MIN_LABEL, PHONE_HREF, PHONE_DISPLAY, ORDER_HOURS } from '../data/site.js';
 import Badge from '../components/Badge.jsx';
 import Button from '../components/Button.jsx';
 import PriceTag from '../components/PriceTag.jsx';
@@ -138,34 +139,29 @@ export default function ProductDetail() {
                 <Heart size={16} strokeWidth={2} fill={wishlisted ? 'currentColor' : 'none'} />
                 {wishlisted ? 'Saved' : 'Save'}
               </Button>
-              <a
-                href={`https://wa.me/919840788950?text=${encodeURIComponent(
-                  `Hi Raave's Evergreen, I'd like a quote for ${product.name}${selectedSize ? ` (${selectedSize})` : ''}.`
-                )}`}
-                target="_blank"
-                rel="noreferrer"
+              <WhatsAppLink
+                text={`Hi Raave's Evergreen, I'd like a quote for ${product.name}${selectedSize ? ` (${selectedSize})` : ''}.`}
                 className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/12 px-6.5 py-3 text-[0.88rem] font-semibold tracking-[0.06em] text-emerald-300 no-underline transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-500/25"
               >
-                <FaWhatsapp size={16} />
                 WhatsApp Quote
-              </a>
+              </WhatsAppLink>
             </div>
 
             <div className="flex flex-col gap-2.5 border-t border-white/10 pt-5 text-[0.85rem] text-text-secondary">
               <span className="flex items-center gap-2">
                 <Truck size={15} strokeWidth={2} className="text-gold-400" />
-                Free pan-India white-glove delivery on orders over ₹3,000
+                Free pan-India white-glove delivery on orders over {FREE_SHIPPING_MIN_LABEL}
               </span>
               <span className="flex items-center gap-2">
                 <ShieldCheck size={15} strokeWidth={2} className="text-gold-400" />
                 European safety certified · 10-year warranty
               </span>
               <a
-                href="tel:+919840788950"
+                href={PHONE_HREF}
                 className="flex items-center gap-2 text-text-secondary no-underline hover:text-gold-300"
               >
                 <Phone size={15} strokeWidth={2} className="text-gold-400" />
-                Order direct: +91 98407 88950 (8 AM – 10 PM)
+                Order direct: {PHONE_DISPLAY} ({ORDER_HOURS})
               </a>
             </div>
           </div>

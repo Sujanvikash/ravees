@@ -14,9 +14,9 @@ const Showrooms = lazy(() => import('./pages/Showrooms.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
 const Contact = lazy(() => import('./pages/Contact.jsx'));
 const Testimonials = lazy(() => import('./pages/Testimonials.jsx'));
-const Login = lazy(() => import('./pages/Login.jsx'));
-const Signup = lazy(() => import('./pages/Signup.jsx'));
-const Account = lazy(() => import('./pages/Account.jsx'));
+const Login = lazy(() => import('./auth/pages/Login.jsx'));
+const Signup = lazy(() => import('./auth/pages/Signup.jsx'));
+const Account = lazy(() => import('./auth/pages/Account.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 // Admin dashboard — its own chunk, never downloaded by storefront-only visitors

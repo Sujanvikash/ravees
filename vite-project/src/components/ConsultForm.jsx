@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import Button from './Button.jsx';
+import FormField from './FormField.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { SHOWROOMS } from '../data/showrooms.js';
 
 const FIELD =
   'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.88rem] text-white outline-none transition-all focus:border-gold-400 focus:shadow-[0_0_10px_rgba(229,199,139,0.4)] placeholder:text-text-muted';
-const LABEL = 'text-[0.78rem] text-gold-300';
 
 const HEIGHT_OPTIONS = [
   { value: '6-7.5ft', label: '6ft – 7.5ft (Standard Living Room)' },
@@ -37,10 +37,7 @@ export default function ConsultForm({ onSubmitted }) {
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-3.5 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL} htmlFor="consult-name">
-            Your Name
-          </label>
+        <FormField label="Your Name" htmlFor="consult-name">
           <input
             id="consult-name"
             type="text"
@@ -50,11 +47,8 @@ export default function ConsultForm({ onSubmitted }) {
             onChange={update('name')}
             className={FIELD}
           />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL} htmlFor="consult-phone">
-            Phone / WhatsApp Number
-          </label>
+        </FormField>
+        <FormField label="Phone / WhatsApp Number" htmlFor="consult-phone">
           <input
             id="consult-phone"
             type="tel"
@@ -64,14 +58,11 @@ export default function ConsultForm({ onSubmitted }) {
             onChange={update('phone')}
             className={FIELD}
           />
-        </div>
+        </FormField>
       </div>
 
       <div className="grid gap-3.5 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL} htmlFor="consult-showroom">
-            Preferred Showroom
-          </label>
+        <FormField label="Preferred Showroom" htmlFor="consult-showroom">
           <select
             id="consult-showroom"
             value={form.showroom}
@@ -88,11 +79,8 @@ export default function ConsultForm({ onSubmitted }) {
               Online Delivery Only
             </option>
           </select>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className={LABEL} htmlFor="consult-height">
-            Tree Height Interest
-          </label>
+        </FormField>
+        <FormField label="Tree Height Interest" htmlFor="consult-height">
           <select
             id="consult-height"
             value={form.height}
@@ -105,13 +93,10 @@ export default function ConsultForm({ onSubmitted }) {
               </option>
             ))}
           </select>
-        </div>
+        </FormField>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label className={LABEL} htmlFor="consult-notes">
-          Special Requests / Notes
-        </label>
+      <FormField label="Special Requests / Notes" htmlFor="consult-notes">
         <textarea
           id="consult-notes"
           rows="3"
@@ -120,7 +105,7 @@ export default function ConsultForm({ onSubmitted }) {
           onChange={update('notes')}
           className={`${FIELD} resize-y`}
         />
-      </div>
+      </FormField>
 
       <Button type="submit" full>
         <span>Submit Consultation Request</span>

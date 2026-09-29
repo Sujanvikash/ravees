@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Save, Upload, X, ImageOff } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
+import FormField from '../../components/FormField.jsx';
 
 const FIELD =
   'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.88rem] text-white outline-none transition-all focus:border-gold-400 placeholder:text-text-muted';
@@ -117,18 +118,12 @@ export default function AdminProductForm() {
       >
         {/* Left column: fields */}
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL} htmlFor="p-name">
-              Product name
-            </label>
+          <FormField label="Product name" htmlFor="p-name">
             <input id="p-name" required value={form.name} onChange={update('name')} className={FIELD} />
-          </div>
+          </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="p-category">
-                Collection
-              </label>
+            <FormField label="Collection" htmlFor="p-category">
               <select
                 id="p-category"
                 value={form.category}
@@ -141,12 +136,9 @@ export default function AdminProductForm() {
                   </option>
                 ))}
               </select>
-            </div>
+            </FormField>
 
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL} htmlFor="p-sizes">
-                Sizes (comma separated)
-              </label>
+            <FormField label="Sizes (comma separated)" htmlFor="p-sizes">
               <input
                 id="p-sizes"
                 value={form.sizes}
@@ -154,13 +146,10 @@ export default function AdminProductForm() {
                 placeholder="6 Feet, 7 Feet, 8 Feet"
                 className={FIELD}
               />
-            </div>
+            </FormField>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL} htmlFor="p-desc">
-              Description
-            </label>
+          <FormField label="Description" htmlFor="p-desc">
             <textarea
               id="p-desc"
               rows="8"
@@ -168,7 +157,7 @@ export default function AdminProductForm() {
               onChange={update('description')}
               className={`${FIELD} min-h-[160px] flex-1 resize-y`}
             />
-          </div>
+          </FormField>
 
           <label className="flex cursor-pointer items-center gap-2.5 text-[0.88rem] text-text-secondary">
             <input

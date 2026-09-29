@@ -3,6 +3,7 @@ import { Save, RotateCcw, Star, Plus, Trash2, X } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import FormField from '../../components/FormField.jsx';
 
 const FIELD =
   'rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.85rem] text-white outline-none transition-all focus:border-gold-400';
@@ -101,8 +102,7 @@ export default function AdminShowrooms() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>City</label>
+          <FormField label="City" labelClassName={LABEL}>
             <input
               autoFocus
               required
@@ -111,7 +111,7 @@ export default function AdminShowrooms() {
               placeholder="e.g. Hyderabad"
               className={FIELD}
             />
-          </div>
+          </FormField>
 
           <button
             type="submit"
@@ -146,42 +146,38 @@ export default function AdminShowrooms() {
       <div className="grid w-full gap-6 rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-6 md:p-8 lg:grid-cols-2">
         {/* Left column: contact details */}
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Title</label>
+          <FormField label="Title" labelClassName={LABEL}>
             <input
               value={value('title')}
               onChange={(e) => setDraft((prev) => ({ ...prev, title: e.target.value }))}
               className={FIELD}
             />
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL}>Address</label>
+          <FormField label="Address" labelClassName={LABEL}>
             <textarea
               rows="3"
               value={value('address')}
               onChange={(e) => setDraft((prev) => ({ ...prev, address: e.target.value }))}
               className={`${FIELD} resize-y`}
             />
-          </div>
+          </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Phone</label>
+            <FormField label="Phone" labelClassName={LABEL}>
               <input
                 value={value('phone')}
                 onChange={(e) => setDraft((prev) => ({ ...prev, phone: e.target.value }))}
                 className={FIELD}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Timing</label>
+            </FormField>
+            <FormField label="Timing" labelClassName={LABEL}>
               <input
                 value={value('timing')}
                 onChange={(e) => setDraft((prev) => ({ ...prev, timing: e.target.value }))}
                 className={FIELD}
               />
-            </div>
+            </FormField>
           </div>
 
           <label className="flex cursor-pointer items-center gap-2.5 text-[0.85rem] text-text-secondary">
@@ -197,8 +193,7 @@ export default function AdminShowrooms() {
 
         {/* Right column: highlights + actions */}
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-1 flex-col gap-1.5">
-            <label className={LABEL}>Store highlights (one per line)</label>
+          <FormField label="Store highlights (one per line)" labelClassName={LABEL} className="flex-1">
             <textarea
               rows="8"
               value={(draft.features ?? showroom.features).join('\n')}
@@ -207,7 +202,7 @@ export default function AdminShowrooms() {
               }
               className={`${FIELD} min-h-[160px] flex-1 resize-y`}
             />
-          </div>
+          </FormField>
 
           <div className="flex gap-3">
             <button

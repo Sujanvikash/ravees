@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { LogIn, Info } from 'lucide-react';
-import { TbChristmasTreeFilled } from 'react-icons/tb';
+import Logo from '../../components/Logo.jsx';
+import FormField from '../../components/FormField.jsx';
 import {
   AdminAuthProvider,
   DEMO_CREDENTIALS,
@@ -31,10 +32,7 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_center,#071f15_0%,#020704_100%)] px-6 py-16">
       <div className="w-full max-w-[420px]">
         <div className="mb-7 flex flex-col items-center gap-2 text-center">
-          <TbChristmasTreeFilled
-            size={44}
-            className="text-gold-400 drop-shadow-[0_0_16px_rgba(229,199,139,0.4)]"
-          />
+          <Logo size={44} glow={16} />
           <h1 className="font-serif text-[1.3rem] font-bold tracking-[0.14em] text-white">
             RAAVE&apos;S ADMIN
           </h1>
@@ -47,10 +45,7 @@ function LoginForm() {
           onSubmit={handleSubmit}
           className="flex flex-col gap-4 rounded-2xl border border-gold-400/25 bg-[rgba(8,28,20,0.9)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
         >
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[0.78rem] text-gold-300" htmlFor="admin-user">
-              Username
-            </label>
+          <FormField label="Username" htmlFor="admin-user">
             <input
               id="admin-user"
               required
@@ -59,12 +54,9 @@ function LoginForm() {
               onChange={(e) => setUsername(e.target.value)}
               className={FIELD}
             />
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[0.78rem] text-gold-300" htmlFor="admin-pass">
-              Password
-            </label>
+          <FormField label="Password" htmlFor="admin-pass">
             <input
               id="admin-pass"
               type="password"
@@ -73,7 +65,7 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               className={FIELD}
             />
-          </div>
+          </FormField>
 
           {error && (
             <p className="rounded-lg border border-ruby-500/40 bg-ruby-500/10 px-3.5 py-2.5 text-[0.82rem] text-ruby-500">

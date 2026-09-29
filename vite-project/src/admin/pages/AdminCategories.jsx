@@ -3,6 +3,7 @@ import { Save, RotateCcw, Plus, Trash2, X } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import FormField from '../../components/FormField.jsx';
 
 const slugify = (value) =>
   value
@@ -105,8 +106,7 @@ export default function AdminCategories() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-[1fr_80px]">
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Display name</label>
+            <FormField label="Display name" labelClassName={LABEL}>
               <input
                 autoFocus
                 required
@@ -115,15 +115,14 @@ export default function AdminCategories() {
                 placeholder="e.g. Gift Hampers"
                 className={FIELD}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={LABEL}>Icon</label>
+            </FormField>
+            <FormField label="Icon" labelClassName={LABEL}>
               <input
                 value={newCat.icon}
                 onChange={(e) => setNewCat((prev) => ({ ...prev, icon: e.target.value }))}
                 className={FIELD}
               />
-            </div>
+            </FormField>
           </div>
 
           <button
@@ -159,27 +158,25 @@ export default function AdminCategories() {
               </div>
 
               <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.75rem] text-gold-300">Display name</label>
+                <FormField label="Display name" labelClassName={LABEL}>
                   <input
                     value={draft.name ?? cat.name}
                     onChange={(e) =>
                       setDrafts((prev) => ({ ...prev, [cat.id]: { ...draft, name: e.target.value } }))
                     }
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.88rem] text-white outline-none focus:border-gold-400"
+                    className={FIELD}
                   />
-                </div>
+                </FormField>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[0.75rem] text-gold-300">Icon</label>
+                <FormField label="Icon" labelClassName={LABEL}>
                   <input
                     value={draft.icon ?? cat.icon}
                     onChange={(e) =>
                       setDrafts((prev) => ({ ...prev, [cat.id]: { ...draft, icon: e.target.value } }))
                     }
-                    className="w-20 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.88rem] text-white outline-none focus:border-gold-400"
+                    className={`w-20 ${FIELD}`}
                   />
-                </div>
+                </FormField>
 
                 <p className="text-[0.78rem] text-text-muted">
                   {liveCount} product{liveCount === 1 ? '' : 's'} currently in this collection

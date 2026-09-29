@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn, Info } from 'lucide-react';
-import Button from '../components/Button.jsx';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
+import Button from '../../components/Button.jsx';
+import FormField from '../../components/FormField.jsx';
+import { GRADIENT_TITLE } from '../../components/SectionHeading.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
-import { useToast } from '../context/ToastContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 
 const FIELD =
   'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.9rem] text-white outline-none transition-all focus:border-gold-400 placeholder:text-text-muted';
-const LABEL = 'text-[0.78rem] text-gold-300';
 
 export default function Login() {
   const { login } = useCustomerAuth();
@@ -52,10 +52,7 @@ export default function Login() {
           onSubmit={handleSubmit}
           className="flex flex-col gap-4 rounded-2xl border border-gold-400/25 bg-[rgba(8,28,20,0.9)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
         >
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL} htmlFor="login-email">
-              Email
-            </label>
+          <FormField label="Email" htmlFor="login-email">
             <input
               id="login-email"
               type="email"
@@ -66,12 +63,9 @@ export default function Login() {
               placeholder="you@example.com"
               className={FIELD}
             />
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-1.5">
-            <label className={LABEL} htmlFor="login-password">
-              Password
-            </label>
+          <FormField label="Password" htmlFor="login-password">
             <input
               id="login-password"
               type="password"
@@ -80,7 +74,7 @@ export default function Login() {
               onChange={update('password')}
               className={FIELD}
             />
-          </div>
+          </FormField>
 
           {error && (
             <p className="flex items-start gap-2 rounded-lg border border-ruby-500/40 bg-ruby-500/10 px-3.5 py-2.5 text-[0.82rem] text-ruby-500">

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Heart, ShoppingBag, User, X } from 'lucide-react';
-import { TbChristmasTreeFilled } from 'react-icons/tb';
+import { Search, Heart, ShoppingBag, User } from 'lucide-react';
+import Logo from '../components/Logo.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
-import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
+import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
+import SearchBar from '../components/SearchBar.jsx';
 
 const NAV_LINKS = [
   { to: '/', label: '3D Tree Experience', end: true },
@@ -54,9 +55,9 @@ export default function Header({ onOpenCart }) {
           onClick={() => setMobileMenuOpen(false)}
         >
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <TbChristmasTreeFilled
+            <Logo
               size="1em"
-              className="shrink-0 text-[30px] text-gold-400 drop-shadow-[0_0_8px_rgba(229,199,139,0.4)] sm:text-[40px]"
+              className="shrink-0 text-[30px] drop-shadow-[0_0_8px_rgba(229,199,139,0.4)] sm:text-[40px]"
             />
             <div className="flex min-w-0 flex-col">
               <span className="whitespace-nowrap font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-bold leading-[1.1] tracking-[0.14em] text-white sm:text-[1.15rem] sm:tracking-[0.22em]">
@@ -136,19 +137,15 @@ export default function Header({ onOpenCart }) {
       {mobileMenuOpen && (
         <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)] sm:px-6 xl:hidden">
           <div className="mb-2 flex items-center gap-2 rounded-lg border border-gold-400/20 bg-white/5 px-3 py-2 md:hidden">
-            <Search size={16} strokeWidth={2} className="shrink-0 text-gold-400" />
-            <input
-              type="text"
+            <SearchBar
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setMobileMenuOpen(false);
-                  submitSearch();
-                }
+              onChange={setSearchQuery}
+              onSubmit={() => {
+                setMobileMenuOpen(false);
+                submitSearch();
               }}
               placeholder="Search trees, lights, baubles..."
-              className="min-w-0 flex-1 border-none bg-transparent font-sans text-[0.9rem] text-white outline-none placeholder:text-text-muted"
+              iconSize={16}
             />
           </div>
           <Link
@@ -194,23 +191,16 @@ export default function Header({ onOpenCart }) {
       {isSearchOpen && (
         <div className="absolute inset-x-0 top-full border-b border-gold-400/30 bg-[rgba(5,20,14,0.96)] px-6 py-4 backdrop-blur-[20px]">
           <div className="mx-auto flex max-w-[800px] items-center gap-3">
-            <Search size={20} strokeWidth={2} className="text-gold-400" />
-            <input
-              type="text"
-              autoFocus
+            <SearchBar
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
+              onChange={setSearchQuery}
+              onSubmit={submitSearch}
+              onClose={() => setIsSearchOpen(false)}
               placeholder="Search Norway Spruce, cluster lights, rose gold garland, crib sets..."
-              className="flex-1 border-none bg-transparent font-sans text-[1.1rem] text-white outline-none placeholder:text-text-muted"
+              autoFocus
+              iconSize={20}
+              inputClassName="text-[1.1rem]"
             />
-            <button
-              className="cursor-pointer border-none bg-transparent text-text-muted transition-colors hover:text-white"
-              onClick={() => setIsSearchOpen(false)}
-              aria-label="Close search"
-            >
-              <X size={24} />
-            </button>
           </div>
         </div>
       )}

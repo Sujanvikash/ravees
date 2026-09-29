@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage.js';
+import { useLocalStorage } from '../../hooks/useLocalStorage.js';
 
 /**
  * There is no backend, so "accounts" are just a list in localStorage — shared with

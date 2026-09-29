@@ -1,8 +1,9 @@
 import { Phone, Clock, MapPin } from 'lucide-react';
-import { FaWhatsapp } from 'react-icons/fa';
+import WhatsAppLink from '../components/WhatsAppLink.jsx';
+import { PHONE_HREF } from '../data/site.js';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import ConsultForm from '../components/ConsultForm.jsx';
-import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
+import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
 
 const METHOD_ROW =
@@ -28,7 +29,7 @@ export default function Contact() {
             </p>
 
             <div className="mt-7 flex flex-col gap-4">
-              <a href="tel:+919840788950" className={METHOD_ROW}>
+              <a href={PHONE_HREF} className={METHOD_ROW}>
                 <Phone size={20} strokeWidth={2} className="shrink-0 text-gold-400" />
                 <div>
                   <strong className="block text-white">Hotline / Orders</strong>
@@ -36,18 +37,12 @@ export default function Contact() {
                 </div>
               </a>
 
-              <a
-                href="https://wa.me/919840788950"
-                target="_blank"
-                rel="noreferrer"
-                className={METHOD_ROW}
-              >
-                <FaWhatsapp size={20} className="shrink-0 text-emerald-400" />
+              <WhatsAppLink className={METHOD_ROW} iconSize={20} iconClassName="shrink-0 text-emerald-400">
                 <div>
                   <strong className="block text-white">WhatsApp Concierge</strong>
                   <span className="text-[0.88rem]">Chat live with our tree designers</span>
                 </div>
-              </a>
+              </WhatsAppLink>
 
               <div className={METHOD_ROW}>
                 <Clock size={20} strokeWidth={2} className="shrink-0 text-gold-400" />

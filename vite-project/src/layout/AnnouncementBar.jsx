@@ -1,12 +1,18 @@
+import {
+  FREE_SHIPPING_MIN_LABEL,
+  PHONE_DISPLAY,
+  ORDER_HOURS,
+} from '../data/site.js';
+
 const MESSAGES = [
   <span key="years">
     ✨ <strong className="font-bold">CELEBRATING 27 YEARS IN INDIA</strong> &bull; India&apos;s #1 European
     Standard Christmas Trees
   </span>,
-  <span key="shipping">🚚 FREE PAN-INDIA EXPRESS SHIPPING ON ORDERS OVER ₹3,000</span>,
+  <span key="shipping">🚚 FREE PAN-INDIA EXPRESS SHIPPING ON ORDERS OVER {FREE_SHIPPING_MIN_LABEL}</span>,
   <span key="showrooms">📍 FLAGSHIP SHOWROOMS: CHENNAI &bull; BENGALURU &bull; MUMBAI &bull; PUNE &bull; GOA</span>,
   <span key="phone">
-    📞 ORDER DIRECT: <strong className="font-bold">+91 98407 88950</strong> (8 AM – 10 PM)
+    📞 ORDER DIRECT: <strong className="font-bold">{PHONE_DISPLAY}</strong> ({ORDER_HOURS})
   </span>,
 ];
 
