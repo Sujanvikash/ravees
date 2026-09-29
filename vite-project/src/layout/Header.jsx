@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Heart, ShoppingBag, X } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, X } from 'lucide-react';
 import { TbChristmasTreeFilled } from 'react-icons/tb';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 
 const NAV_LINKS = [
   { to: '/', label: '3D Tree Experience', end: true },
@@ -26,6 +27,7 @@ export default function Header({ onOpenCart }) {
   const [searchQuery, setSearchQuery] = useState('');
   const { totalCount } = useCart();
   const { wishlistCount } = useWishlist();
+  const { session, isAuthenticated } = useCustomerAuth();
   const navigate = useNavigate();
 
   const submitSearch = () => {
@@ -37,7 +39,7 @@ export default function Header({ onOpenCart }) {
     <header className="sticky top-0 z-[100] h-[76px] border-b border-gold-400/15 bg-[rgba(5,22,15,0.88)] backdrop-blur-[16px]">
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-3 px-4 sm:gap-5 sm:px-6">
         <button
-          className="flex shrink-0 cursor-pointer flex-col gap-[5px] border-none bg-transparent lg:hidden"
+          className="flex shrink-0 cursor-pointer flex-col gap-[5px] border-none bg-transparent xl:hidden"
           aria-label="Toggle navigation menu"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
@@ -48,7 +50,7 @@ export default function Header({ onOpenCart }) {
 
         <Link
           to="/"
-          className="flex min-w-0 items-center no-underline max-lg:mr-auto"
+          className="flex min-w-0 items-center no-underline max-xl:mr-auto xl:min-w-fit xl:shrink-0"
           onClick={() => setMobileMenuOpen(false)}
         >
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -67,7 +69,7 @@ export default function Header({ onOpenCart }) {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-7 lg:flex">
+        <nav className="hidden items-center gap-7 xl:flex">
           {NAV_LINKS.map(({ to, label, tag, end }) => (
             <NavLink
               key={to}
@@ -94,16 +96,27 @@ export default function Header({ onOpenCart }) {
         <div className="flex shrink-0 items-center gap-2.5">
           {/* On phones, search and saved items live in the menu panel to keep the bar one line */}
           <button
-            className={`${UTIL_BTN} max-sm:hidden ${isSearchOpen ? 'border-gold-400/40 bg-white/10' : ''}`}
+            className={`${UTIL_BTN} max-md:hidden ${isSearchOpen ? 'border-gold-400/40 bg-white/10' : ''}`}
             title="Search products"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
           >
             <Search size={18} strokeWidth={2} />
           </button>
 
-          <Link to="/shop?wishlist=1" className={`${UTIL_BTN} max-sm:hidden`} title="Saved items">
+          <Link to="/shop?wishlist=1" className={`${UTIL_BTN} max-md:hidden`} title="Saved items">
             <Heart size={18} strokeWidth={2} />
             <span className={BADGE_COUNT}>{wishlistCount}</span>
+          </Link>
+
+          <Link
+            to={isAuthenticated ? '/account' : '/login'}
+            className={`${UTIL_BTN} max-md:hidden`}
+            title={isAuthenticated ? `Signed in as ${session.name}` : 'Sign in'}
+          >
+            <User size={18} strokeWidth={2} />
+            {isAuthenticated && (
+              <span className="max-w-[80px] truncate">{session.name.split(' ')[0]}</span>
+            )}
           </Link>
 
           <button
@@ -121,8 +134,8 @@ export default function Header({ onOpenCart }) {
       </div>
 
       {mobileMenuOpen && (
-        <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)] sm:px-6 lg:hidden">
-          <div className="mb-2 flex items-center gap-2 rounded-lg border border-gold-400/20 bg-white/5 px-3 py-2 sm:hidden">
+        <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)] sm:px-6 xl:hidden">
+          <div className="mb-2 flex items-center gap-2 rounded-lg border border-gold-400/20 bg-white/5 px-3 py-2 md:hidden">
             <Search size={16} strokeWidth={2} className="shrink-0 text-gold-400" />
             <input
               type="text"
@@ -141,11 +154,19 @@ export default function Header({ onOpenCart }) {
           <Link
             to="/shop?wishlist=1"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 py-2 text-[0.95rem] font-medium tracking-[0.04em] text-text-secondary no-underline sm:hidden"
+            className="flex items-center gap-2 py-2 text-[0.95rem] font-medium tracking-[0.04em] text-text-secondary no-underline md:hidden"
           >
             <Heart size={16} strokeWidth={2} className="text-gold-400" />
             Saved items
             <span className={BADGE_COUNT}>{wishlistCount}</span>
+          </Link>
+          <Link
+            to={isAuthenticated ? '/account' : '/login'}
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 py-2 text-[0.95rem] font-medium tracking-[0.04em] text-text-secondary no-underline md:hidden"
+          >
+            <User size={16} strokeWidth={2} className="text-gold-400" />
+            {isAuthenticated ? `My Account (${session.name.split(' ')[0]})` : 'Sign In'}
           </Link>
           {NAV_LINKS.map(({ to, label, tag, end }) => (
             <NavLink

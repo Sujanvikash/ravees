@@ -2,12 +2,15 @@ import { Phone, Clock, MapPin } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import ConsultForm from '../components/ConsultForm.jsx';
+import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
 
 const METHOD_ROW =
   'flex items-center gap-4 rounded-xl border border-gold-400/15 bg-white/4 p-4 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/30 hover:bg-gold-400/15 hover:text-white';
 
 export default function Contact() {
+  const { session } = useCustomerAuth();
+
   return (
     <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
       <div className="mx-auto max-w-[1360px] px-6">
@@ -68,7 +71,9 @@ export default function Contact() {
             <h2 className="mb-5 font-serif text-[1.25rem] text-white">
               Request Personal Styling Consultation
             </h2>
-            <ConsultForm onSubmitted={addEnquiry} />
+            <ConsultForm
+              onSubmitted={(data) => addEnquiry({ ...data, customerEmail: session?.email ?? null })}
+            />
           </div>
         </div>
       </div>

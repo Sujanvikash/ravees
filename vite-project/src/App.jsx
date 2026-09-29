@@ -14,6 +14,9 @@ const Showrooms = lazy(() => import('./pages/Showrooms.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
 const Contact = lazy(() => import('./pages/Contact.jsx'));
 const Testimonials = lazy(() => import('./pages/Testimonials.jsx'));
+const Login = lazy(() => import('./pages/Login.jsx'));
+const Signup = lazy(() => import('./pages/Signup.jsx'));
+const Account = lazy(() => import('./pages/Account.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 // Admin dashboard — its own chunk, never downloaded by storefront-only visitors
@@ -42,6 +45,9 @@ export default function App() {
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
         <Route path="testimonials" element={<Testimonials />} />
+        <Route path="login" element={<Login />} />
+        <Route path="signup" element={<Signup />} />
+        <Route path="account" element={<Account />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 

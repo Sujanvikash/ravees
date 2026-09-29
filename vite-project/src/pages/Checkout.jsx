@@ -5,6 +5,7 @@ import Button from '../components/Button.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
 import { SHOWROOMS } from '../data/showrooms.js';
 
@@ -15,11 +16,12 @@ const LABEL = 'text-[0.78rem] text-gold-300';
 export default function Checkout() {
   const { cart, totalCount, clearCart } = useCart();
   const { showToast } = useToast();
+  const { session } = useCustomerAuth();
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    email: '',
+    name: session?.name ?? '',
+    phone: session?.phone ?? '',
+    email: session?.email ?? '',
     city: '',
     address: '',
     fulfilment: 'delivery',
@@ -33,6 +35,7 @@ export default function Checkout() {
     e.preventDefault();
     addEnquiry({
       type: 'quote-request',
+      customerEmail: session?.email ?? null,
       ...form,
       items: cart.map(({ product, quantity }) => ({
         id: product.id,

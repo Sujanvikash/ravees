@@ -513,7 +513,7 @@ export default function HeroExperience() {
           {/* Story card */}
           <div
             ref={leftCardRef}
-            className="pointer-events-auto max-w-[440px] rounded-[18px] border border-gold-400/30 bg-[rgba(8,28,20,0.85)] px-9 py-8 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_30px_rgba(229,199,139,0.12)] backdrop-blur-[24px] transition-[opacity,transform] duration-[350ms]"
+            className="pointer-events-auto w-full min-w-0 max-w-[440px] rounded-[18px] border border-gold-400/30 bg-[rgba(8,28,20,0.85)] px-5 py-6 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_30px_rgba(229,199,139,0.12)] backdrop-blur-[24px] transition-[opacity,transform] duration-[350ms] sm:px-9 sm:py-8"
           >
             <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[0.68rem] tracking-[0.22em] text-gold-400">
               <span className="text-gold-400">✦</span> RAAVE&apos;S HERITAGE COLLECTION
@@ -525,7 +525,7 @@ export default function HeroExperience() {
               For 27 years, Raave&apos;s has brought the grandeur of European winter forests into Indian homes.
               Scroll to bring our signature tree to life — scroll back up to rewind it.
             </p>
-            <div className="mb-4 flex gap-3">
+            <div className="mb-4 flex flex-wrap gap-3">
               <button
                 onClick={() => navigate('/shop')}
                 className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-6.5 py-3 text-[0.88rem] font-semibold tracking-[0.06em] text-[#04140b] shadow-[0_0_20px_rgba(229,199,139,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"

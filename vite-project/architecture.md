@@ -103,11 +103,15 @@ src/
     About.jsx
     Contact.jsx
     Testimonials.jsx
+    Login.jsx
+    Signup.jsx
+    Account.jsx               # protected: redirects to /login if not signed in
     NotFound.jsx
   context/
     CartContext.jsx          # localStorage-persisted cart
     WishlistContext.jsx      # localStorage-persisted wishlist Set
     ToastContext.jsx
+    CustomerAuthContext.jsx  # localStorage customer accounts + session (see State management)
   hooks/
     useLocalStorage.js
   lib/
@@ -231,6 +235,9 @@ ToastContainer persist:
 | `/about` | About |
 | `/contact` | Contact |
 | `/testimonials` | Testimonials |
+| `/login` | Login |
+| `/signup` | Signup |
+| `/account` | Account (redirects to `/login` if not signed in) |
 | `*` | NotFound |
 
 **Admin dashboard** — `AdminLayout` (sidebar + topbar), every path except `/admin/login`
@@ -257,6 +264,20 @@ old project but without prop drilling:
   `removeFromCart`/`clearCart`, persisted. No price total (enquiry-only pricing).
 - **WishlistContext** — persisted `Set` of product ids, `toggleWishlist`/`isWishlisted`.
 - **ToastContext** — `showToast(message)` + auto-dismissing toast list.
+- **CustomerAuthContext** — customer accounts, entirely client-side (no backend to call).
+  `localStorage['raave-customers']` holds the account list (`name, email, phone,
+  passwordHash, createdAt`); `localStorage['raave-customer-session']` holds the signed-in
+  user (`name, email, phone`, no password). Passwords are never stored in the clear —
+  `signup`/`login` hash them with the Web Crypto API (`SHA-256`, salted with the email)
+  before writing or comparing. This is **still not real security**: anyone with devtools
+  access to this browser profile can read the hash list and brute-force weak passwords
+  offline, and there's no password reset, email verification, or rate limiting. It exists so
+  a look at localStorage doesn't hand over a plaintext password, not to guarantee account
+  safety. Do not reuse this pattern for anything handling real customer data — that needs a
+  real backend with server-side hashing (bcrypt/argon2) and cannot live entirely in the
+  browser. `Checkout` and `Contact` tag submitted enquiries with `customerEmail` from the
+  session (if signed in) so `Account.jsx` can list "my enquiries" by matching against
+  `src/lib/enquiries.js`.
 
 Admin-only state (not used by the public storefront):
 
@@ -313,6 +334,22 @@ shared `<Suspense fallback={<PageLoader/>}>` per route tree, so the admin dashbo
 `/admin`. The 250-frame canvas `HeroExperience` inside `Home.jsx` is additionally split with
 its own nested `lazy()`/`Suspense` so the rest of the homepage can paint without waiting on
 the frame sequence and `renderer-4k.js`/`particles.js`.
+
+## Header responsive breakpoint
+
+`layout/Header.jsx`'s desktop nav (the 6 text links) switches on at Tailwind's `xl`
+(1280px), not `lg` (1024px). This was moved up after adding the account icon: with the
+brand name, 6 nav links, and 4 utility icons (search, wishlist, account, cart) all visible
+at once, the row's minimum content width is ~1260px — below that, something has to give.
+The two options tried and rejected: letting the brand name shrink below its own text
+(the text overflowed onto the nav) and forcing the row to keep its natural width (the whole
+page gained a horizontal scrollbar at 1024–1279px). Moving the nav's breakpoint to `xl` means
+1024–1279px shows the mobile hamburger menu instead — a deliberate trade-off, not an
+oversight. If you add another header icon in the future, re-check this: search/wishlist/
+account icons also had to move from `sm` (640px) to `md` (768px) for the same reason
+(4 icons + hamburger + logo don't fit in 640px). Verify with a width sweep (320 through 1920)
+checking `document.documentElement.scrollWidth` against the viewport width, not just a couple
+of screenshots — the failure only shows up at specific narrow ranges.
 
 ## Known bug fixed in this rebuild
 
