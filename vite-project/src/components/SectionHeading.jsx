@@ -1,0 +1,26 @@
+export const GRADIENT_TITLE =
+  'bg-[linear-gradient(135deg,#ffffff_0%,var(--color-gold-200)_50%,var(--color-gold-500)_100%)] bg-clip-text text-transparent';
+
+export default function SectionHeading({ eyebrow, title, subtitle, centered = true, className = '' }) {
+  return (
+    <div
+      className={`${centered ? 'mx-auto mb-12 max-w-[780px] text-center' : 'mb-8'} ${className}`}
+    >
+      {eyebrow && (
+        <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+          {eyebrow}
+        </span>
+      )}
+      {title && (
+        <h2
+          className={`mb-3.5 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.5rem] ${GRADIENT_TITLE}`}
+        >
+          {title}
+        </h2>
+      )}
+      {subtitle && (
+        <p className="text-[1.05rem] leading-[1.7] text-text-secondary">{subtitle}</p>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 420" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff0c4" />
+      <stop offset="35%" stop-color="#e5c78b" />
+      <stop offset="70%" stop-color="#c99e52" />
+      <stop offset="100%" stop-color="#f5e1a4" />
+    </linearGradient>
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <g transform="translate(0, 10)">
+    <!-- Star Topper -->
+    <!-- 5 pointed star centered at X=250, Y=65 -->
+    <polygon points="250,42 256,60 275,60 260,72 265,90 250,79 235,90 240,72 225,60 244,60" 
+             fill="url(#goldGradient)" filter="url(#goldGlow)" />
+
+    <!-- Tree Chevron Arches (3 Nested Tiers) -->
+    <!-- Top / Outer Tier Arch -->
+    <path d="M 250,98
+             Q 285,170 330,225
+             C 310,215 285,200 250,212
+             C 215,200 190,215 170,225
+             Q 215,170 250,98 Z" 
+          fill="url(#goldGradient)" />
+
+    <!-- Middle Tier Arch Cutout & Layer -->
+    <path d="M 250,140
+             Q 278,185 305,225
+             C 285,218 268,212 250,220
+             C 232,212 215,218 195,225
+             Q 222,185 250,140 Z" 
+          fill="#061c14" />
+          
+    <path d="M 250,145
+             Q 275,188 300,224
+             C 282,216 266,210 250,218
+             C 234,210 218,216 200,224
+             Q 225,188 250,145 Z" 
+          fill="url(#goldGradient)" />
+
+    <!-- Inner Bottom Tier Arch Cutout & Layer -->
+    <path d="M 250,175
+             Q 268,205 285,224
+             C 272,220 260,216 250,221
+             C 240,216 228,220 215,224
+             Q 232,205 250,175 Z" 
+          fill="#061c14" />
+
+    <path d="M 250,180
+             Q 266,206 280,224
+             C 270,219 260,216 250,220
+             C 240,216 230,219 220,224
+             Q 234,206 250,180 Z" 
+          fill="url(#goldGradient)" />
+
+    <!-- Subtle Central Spine Line -->
+    <line x1="250" y1="98" x2="250" y2="218" stroke="url(#goldGradient)" stroke-width="1.5" opacity="0.6" />
+  </g>
+
+  <!-- Typography: RAAVE'S EVERGREEN -->
+  <text x="250" y="325" 
+        font-family="'Cinzel', 'Outfit', 'Montserrat', sans-serif" 
+        font-size="31" 
+        font-weight="600" 
+        letter-spacing="9" 
+        fill="url(#goldGradient)" 
+        text-anchor="middle"
+        filter="url(#goldGlow)">
+    RAAVE&apos;S EVERGREEN
+  </text>
+
+  <!-- Subtitle Tagline -->
+  <text x="250" y="362" 
+        font-family="'Outfit', sans-serif" 
+        font-size="13" 
+        font-weight="400" 
+        letter-spacing="6" 
+        fill="#a7c2b5" 
+        text-anchor="middle"
+        opacity="0.9">
+    EUROPEAN STANDARD SINCE 1998
+  </text>
+</svg>
