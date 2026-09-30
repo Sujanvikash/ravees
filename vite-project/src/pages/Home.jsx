@@ -11,9 +11,8 @@ import { PRODUCTS } from '../data/products.js';
 import { CATEGORIES } from '../data/categories.js';
 import { TESTIMONIALS } from '../data/testimonials.js';
 
-// The 242-frame scroll sequence and its WebGL/particle engines load separately so the
-// rest of the homepage can paint and become interactive first.
-const HeroExperience = lazy(() => import('../components/HeroExperience.jsx'));
+// Hero loads separately so the rest of the homepage can paint first.
+const ScrollTreeHero = lazy(() => import('../components/ScrollTreeHero'));
 
 const TRUST_ITEMS = [
   {
@@ -57,8 +56,8 @@ export default function Home() {
 
   return (
     <>
-      <Suspense fallback={<div className="h-screen w-full bg-bg-darker" />}>
-        <HeroExperience />
+      <Suspense fallback={<div className="h-[calc(100svh-76px)] w-full bg-[#0B1A14]" />}>
+        <ScrollTreeHero />
       </Suspense>
 
       {/* Trust bar */}

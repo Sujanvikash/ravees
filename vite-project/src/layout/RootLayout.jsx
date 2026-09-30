@@ -6,6 +6,7 @@ import Footer from './Footer.jsx';
 import CartDrawer from './CartDrawer.jsx';
 import ToastContainer from './ToastContainer.jsx';
 import PageLoader from '../components/PageLoader.jsx';
+import SmoothScroll from '../components/SmoothScroll';
 
 export default function RootLayout() {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -15,8 +16,9 @@ export default function RootLayout() {
     window.scrollTo({ top: 0 });
   }, [pathname]);
 
+  // SmoothScroll (Lenis) wraps the storefront only; the admin tree stays on native scrolling.
   return (
-    <>
+    <SmoothScroll>
       <AnnouncementBar />
       <Header onOpenCart={() => setIsCartOpen(true)} />
 
@@ -29,6 +31,6 @@ export default function RootLayout() {
       <Footer />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <ToastContainer />
-    </>
+    </SmoothScroll>
   );
 }

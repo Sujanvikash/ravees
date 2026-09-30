@@ -17,6 +17,7 @@ export default function Modal({ open, onClose, eyebrow, title, size = 'md', chil
 
   return (
     <div
+      data-lenis-prevent
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-[rgba(2,8,5,0.85)] p-4 backdrop-blur-[16px]"
       onClick={onClose}
     >
