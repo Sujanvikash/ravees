@@ -5,18 +5,14 @@ import { Renderer4K } from '../engines/renderer-4k.js';
 import { ParticleEngine } from '../engines/particles.js';
 import { PRODUCTS } from '../data/products.js';
 
-// The folder holds 242 stills; the hero plays an evenly spaced subset of them.
-const SOURCE_FRAME_COUNT = 242;
-const TOTAL_FRAMES = 242;
+// 240 stills at 1280x720 (the video's native size), extracted at high JPEG quality.
+const TOTAL_FRAMES = 240;
 const SOURCE_WIDTH = 1280;
 const FRAME_RATIO = 16 / 9;
 // Share of the remaining gap to the scroll target closed per 60 Hz frame.
-const SCRUB_FOLLOW = 0.32;
+const SCRUB_FOLLOW = 0.2;
 const NARROW_ORBIT_COUNT = 4;
-const framePath = (i) => {
-  const source = Math.round((i * (SOURCE_FRAME_COUNT - 1)) / (TOTAL_FRAMES - 1));
-  return `/frames/frame-${String(source + 1).padStart(3, '0')}.jpg`;
-};
+const framePath = (i) => `/frames-hd/frame-${String(i + 1).padStart(3, '0')}.jpg`;
 
 /** Orbit positions: angle on the ellipse (deg), pointer-parallax depth, entry tilt. */
 const ORBIT_SLOTS = [
@@ -130,7 +126,7 @@ export default function HeroExperience() {
       renderer.invalidate();
       measureHero();
       drawFrameAt(currentFrame);
-      lastDrawnFrame = currentFrame;
+      lastDrawnFrame = Math.round(currentFrame);
     };
 
     const measureHero = () => {
@@ -148,18 +144,16 @@ export default function HeroExperience() {
       return null;
     };
 
-    /** Fractional scrub: neighbouring stills are cross-faded on the GPU. */
+    /**
+     * Whole-frame scrub: snap to the nearest still and draw it once. With this many
+     * frames a cross-fade is invisible, and skipping it halves the per-frame draw cost.
+     */
     const drawFrameAt = (position) => {
-      const pos = Math.max(0, Math.min(TOTAL_FRAMES - 1, position));
-      const base = Math.floor(pos);
-      const frac = pos - base;
-
-      const frameA = nearestLoaded(base);
-      if (!frameA) return;
-
-      const frameB = frames[base] ? frames[Math.min(TOTAL_FRAMES - 1, base + 1)] : null;
-      renderer.frameSeed = base;
-      renderer.render(frameA, frameB || frameA, frameB ? frac : 0, 'contain');
+      const index = Math.round(Math.max(0, Math.min(TOTAL_FRAMES - 1, position)));
+      const frame = nearestLoaded(index);
+      if (!frame) return;
+      renderer.frameSeed = index;
+      renderer.render(frame, frame, 0, 'contain');
     };
 
     const updateCardFade = (card, p) => {
@@ -312,10 +306,11 @@ export default function HeroExperience() {
         currentFrame = targetFrame;
       }
 
-      // Only repaint the canvas when the scrub position actually moved.
-      if (currentFrame !== lastDrawnFrame) {
-        drawFrameAt(currentFrame);
-        lastDrawnFrame = currentFrame;
+      // Only repaint when the displayed still actually changes.
+      const shownFrame = Math.round(currentFrame);
+      if (shownFrame !== lastDrawnFrame) {
+        drawFrameAt(shownFrame);
+        lastDrawnFrame = shownFrame;
       }
 
       smoothProgress += (scrollProgress - smoothProgress) * follow(0.2, dt);
@@ -371,7 +366,7 @@ export default function HeroExperience() {
           // stall the main thread while the JPEG is decompressed inside drawImage.
           const ready = () => {
             frames[i] = img;
-            lastDrawnFrame = -1; // a better frame is available: repaint
+            if (i === Math.round(currentFrame)) lastDrawnFrame = -1; // the frame on screen just arrived: repaint
             resolve();
           };
           if (img.decode) img.decode().then(ready, ready);
@@ -383,7 +378,7 @@ export default function HeroExperience() {
     let nextFrame = 1;
     loadFrame(0).then(() =>
       Promise.all(
-        Array.from({ length: 12 }, async () => {
+        Array.from({ length: 6 }, async () => {
           while (nextFrame < TOTAL_FRAMES) await loadFrame(nextFrame++);
         })
       )
@@ -525,8 +520,8 @@ export default function HeroExperience() {
         </div>
       </div>
 
-      {/* Scroll track: one viewport of travel scrubs the whole sequence */}
-      <div ref={scrollTrackRef} className="pointer-events-none relative z-10 -mt-[100vh] h-[200vh] w-full">
+      {/* Scroll track: three viewports of travel scrub the whole sequence */}
+      <div ref={scrollTrackRef} className="pointer-events-none relative z-10 -mt-[100vh] h-[400vh] w-full">
         <div className="pointer-events-none sticky top-0 flex h-screen items-center justify-between px-[4vw]">
           {/* Story card */}
           <div
