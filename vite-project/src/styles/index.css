@@ -108,6 +108,8 @@
     font-family: var(--font-sans);
     scroll-behavior: smooth;
     overflow-x: hidden;
+    /* Height of the sticky header: also read by Home's hero placeholder and ScrollTreeHero. */
+    --header-h: 76px;
   }
 
   body {

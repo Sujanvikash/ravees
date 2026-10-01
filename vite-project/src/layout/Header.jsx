@@ -38,7 +38,7 @@ export default function Header({ onOpenCart }) {
   const { session, isAuthenticated } = useCustomerAuth();
 
   return (
-    <header className="sticky top-0 z-[100] h-[76px] border-b border-gold-400/15 bg-[rgba(5,22,15,0.96)]">
+    <header className="sticky top-0 z-[100] h-[var(--header-h)] border-b border-gold-400/15 bg-[rgba(5,22,15,0.96)]">
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-3 px-4 sm:gap-5 sm:px-6">
         <button
           className="flex shrink-0 cursor-pointer flex-col gap-[5px] border-none bg-transparent xl:hidden"

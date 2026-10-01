@@ -56,7 +56,7 @@ export default function Home() {
 
   return (
     <>
-      <Suspense fallback={<div className="h-[calc(100svh-76px)] w-full bg-[#0B1A14]" />}>
+      <Suspense fallback={<div className="h-[calc(100svh-var(--header-h))] w-full bg-[#0B1A14]" />}>
         <ScrollTreeHero />
       </Suspense>
 

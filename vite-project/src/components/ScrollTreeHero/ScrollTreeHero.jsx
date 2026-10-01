@@ -9,8 +9,13 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const FRAME_COUNT = 242;
 const MAX_DPR = 2; // above 2x the extra pixels cost fill-rate without visible gain
-// layout/Header.jsx is sticky (not fixed) and 76px tall, so the stage pins just below it.
-const HEADER_OFFSET = 76;
+// Pixel size of each frame set: the canvas never needs more pixels than the frames have.
+const NATIVE = { desktop: [1920, 1080], mobile: [1280, 720] };
+// Desktop parallax: how far each card drifts either side of its resting place (px).
+const PARALLAX = { hero: 32, craft: 12 };
+// Last frames kept decoded for good: almost every fast scroll lands at the end of the hero.
+// Mobile keeps fewer: decoded frames are what a phone has least room for.
+const TAIL_FRAMES = { desktop: 24, mobile: 10 };
 
 /** HD frames for large or dense screens, lighter frames for phones and data-saver. */
 function pickFrameSet() {
@@ -119,7 +124,10 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
     getSrc,
     onFrameLoad: () => draw(),
     // Decoded window either side of the playhead: ~8 MB per desktop frame, ~3.7 MB per mobile one.
-    keepDecoded: frameSet === "desktop" ? 12 : 10,
+    keepDecoded: frameSet === "desktop" ? 12 : 8,
+    // Reduced motion only ever shows the last frame, so it skips the other 241 and the tail.
+    lastFrameOnly: reduced,
+    keepTail: reduced ? 0 : TAIL_FRAMES[frameSet],
   });
   // Layout effect: runs before the loader's first onFrameLoad → draw() can reach getFrame.
   useLayoutEffect(() => {
@@ -132,9 +140,14 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
+    const [frameW, frameH] = NATIVE[frameSet];
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
       const { clientWidth, clientHeight } = canvas;
+      // With cover-fit, one canvas pixel per frame pixel is all the detail there is to show.
+      const dpr = Math.max(
+        1,
+        Math.min(window.devicePixelRatio || 1, MAX_DPR, frameW / clientWidth, frameH / clientHeight)
+      );
       const w = Math.round(clientWidth * dpr);
       const h = Math.round(clientHeight * dpr);
       if (canvas.width === w && canvas.height === h && ctxRef.current) return;
@@ -152,7 +165,7 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     return () => ro.disconnect();
-  }, [draw]);
+  }, [draw, frameSet]);
 
   // Scroll choreography: one timeline drives both the frames and the cards.
   useGSAP(
@@ -166,6 +179,10 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
       ScrollTrigger.config({ ignoreMobileResize: true });
       renderState.current.frame = 0;
 
+      // The stage sticks at --header-h; reading its resolved `top` gives px whatever unit the variable uses.
+      const stage = canvasRef.current.parentElement;
+      const headerH = () => parseFloat(getComputedStyle(stage).top) || 0;
+
       const mm = gsap.matchMedia();
       // Both conditions are listed on purpose: matchMedia only runs the callback when one of them matches.
       mm.add({ wide: "(min-width: 1024px)", narrow: "(max-width: 1023.98px)" }, (ctx) => {
@@ -175,7 +192,7 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
           defaults: { ease: "none" },
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: `top ${HEADER_OFFSET}px`,
+            start: () => `top ${headerH()}px`,
             end: "bottom bottom",
             // Lenis already smooths wheel input on desktop. Native touch scrolling
             // gets a short catch-up so frame changes don't look stepped.
@@ -197,6 +214,26 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
             "[data-beat='craft']",
             { autoAlpha: 0, x: 40 },
             { autoAlpha: 1, x: 0, duration: 0.12, ease: "power1.out" },
+            0.5
+          );
+
+          // Parallax: the cards drift upward at different speeds while the tree holds still,
+          // so they read as layers in front of it. The drift is capped by the free space
+          // above and below each card (re-measured on resize), so short screens never clip it.
+          const drift = (selector, max) => {
+            const card = sectionRef.current.querySelector(selector);
+            const stage = canvasRef.current.parentElement;
+            return Math.min(max, Math.max(0, (stage.clientHeight - card.offsetHeight) / 2 - 8));
+          };
+          tl.fromTo(
+            "[data-beat='hero']",
+            { y: () => drift("[data-beat='hero']", PARALLAX.hero) },
+            { y: () => -drift("[data-beat='hero']", PARALLAX.hero), duration: 1 },
+            0
+          ).fromTo(
+            "[data-beat='craft']",
+            { y: () => drift("[data-beat='craft']", PARALLAX.craft) },
+            { y: () => -drift("[data-beat='craft']", PARALLAX.craft), duration: 0.5 },
             0.5
           );
         } else {
@@ -238,8 +275,8 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
       <div
         className={
           reduced
-            ? "relative min-h-[calc(100svh-76px)] w-full overflow-hidden"
-            : "sticky top-[76px] h-[calc(100svh-76px)] w-full overflow-hidden [contain:layout_paint]"
+            ? "relative min-h-[calc(100svh-var(--header-h))] w-full overflow-hidden"
+            : "sticky top-[var(--header-h)] h-[calc(100svh-var(--header-h))] w-full overflow-hidden [contain:layout_paint]"
         }
       >
         <canvas
@@ -258,7 +295,7 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
 
         <div
           className={`relative mx-auto w-full max-w-[1680px] ${
-            reduced ? "flex min-h-[calc(100svh-76px)] flex-col justify-end gap-4 p-4 pt-8 sm:p-6 lg:block" : "h-full"
+            reduced ? "flex min-h-[calc(100svh-var(--header-h))] flex-col justify-end gap-4 p-4 pt-8 sm:p-6 lg:block" : "h-full"
           }`}
         >
           <div className={pin("hero")}>

@@ -48,7 +48,7 @@ Frames live in `public/` so Vite serves them untouched with stable URLs. They sh
 - **Icons:** the package ships `Icons.jsx` (hand-written SVG). This project's rule is that icons come from npm packages, so `HeroCards.jsx` maps the icon names in `heroContent.js` to `lucide-react` components (`ShieldCheck`, `Zap`, `Truck`, `TreePine`, `Sparkles`, `ArrowRight`, `Star`). `Icons.jsx` is not used.
 - **Links:** CTAs are React Router `<Link>`s pointing at `/shop` and `/tree-studio`, not plain `<a>` tags.
 - **Theme:** cards use the site's Tailwind tokens (`font-serif` = Cinzel, `font-mono` = Space Mono, `gold-*`, `text-secondary`) instead of the package's hex palette. The canvas background stays `#0B1A14` to match the video's edges.
-- **Header offset:** `layout/Header.jsx` is `sticky`, 76px tall, not fixed. The stage is `sticky top-[76px] h-[calc(100svh-76px)]` and the ScrollTrigger starts at `top 76px` (`HEADER_OFFSET` in `ScrollTreeHero.jsx`). If the header height changes, update both.
+- **Header offset:** `layout/Header.jsx` is `sticky`, not fixed. Its height is one CSS variable, `--header-h` (76px, set on `html` in `styles/index.css`), used by the header, by `pages/Home.jsx` (loading placeholder) and by this hero (stage `sticky top-[var(--header-h)] h-[calc(100svh-var(--header-h))]`). The ScrollTrigger `start` is a function that reads the stage's resolved `top`, so it follows the variable, in any unit, and re-reads it on every refresh. To change the header height, change the variable only.
 - **Lenis scope:** `SmoothScroll` wraps `layout/RootLayout.jsx` only, so `/admin` keeps native scrolling. Scrollable overlays (`components/Modal.jsx`, `layout/CartDrawer.jsx`) carry `data-lenis-prevent` so wheel scrolling inside them still works.
 - **Lazy loading:** `pages/Home.jsx` loads the hero with `lazy()`, so gsap's ScrollTrigger and the hero code are fetched only on the homepage.
 
@@ -85,6 +85,9 @@ Desktop (1024 px and up), matching your original layout: the tree is centred, ca
 | 0.02 – 0.06 | Scroll hint fades out | Trunk starts to rise |
 | 0.50 – 0.62 | Craftsmanship card slides in on the right | Branches, lights, ornaments |
 | 0.62 – 1.00 | Both cards stay | Fully decorated tree with gifts |
+| 0.00 – 1.00 | Parallax: heritage card drifts up ±32 px, craftsmanship card ±12 px (from 0.5) | Tree holds still, so the cards read as layers in front of it |
+
+The parallax drift is capped by the free space above and below each card (re-measured on resize), so it shrinks to 0 on short screens instead of pushing a card out of the stage. `transform` only; reduced motion and phones have none.
 
 Phones: the tree fills the screen, so cards take turns at the bottom.
 
@@ -103,7 +106,14 @@ Scrolling never causes a React render. Frame state lives in a ref, and the only 
 2. The last frame is next, so a fast scroller still sees the finished tree.
 3. The rest load in a coarse-to-fine order: every 32nd frame, then 16th, 8th, 4th, 2nd, then all. After about 10 requests the whole scroll range is covered, and it gets smoother as gaps fill in.
 4. Six requests run in parallel. Each frame is fetched as a compressed `Blob` and kept (~23 MB desktop, ~12 MB mobile).
-5. Only a window around the playhead is decoded: ±12 frames on desktop, ±10 on mobile (`keepDecoded`), via `createImageBitmap(blob)`, which decodes on a background thread. Frames that leave the window are `close()`d. `draw()` never triggers a decode.
+5. Only a window around the playhead is decoded: 25 frames on desktop, 21 on mobile (`2 × keepDecoded + 1`), weighted ¾ ahead in the scroll direction and ¼ behind, via `createImageBitmap(blob)`, which decodes on a background thread. Frames that leave the window are `close()`d, except the one closest to the playhead. `draw()` never triggers a decode.
+   - At most 4 decodes run at once (`MAX_DECODES_IN_FLIGHT`). Each free slot takes the most useful frame for where the playhead is *now*: the next few frames, then every 4th frame ahead, then every 2nd, then the rest, then behind. Launching the whole window at once (the old behaviour) queued up to 25 1080p decodes, most finished after the playhead had moved on, and a fast wheel spin froze the tree for most of the scroll.
+   - A decode that finishes after a fast scroll has passed it is still kept if it's the closest frame to the playhead, so the picture keeps moving instead of freezing.
+   - Measured (Intel UHD, 1920×969, 144 Hz): fast wheel spin 144 → 13 frames behind at p95, frozen 84% → 31% of moving frames; normal fast scrolling missed frames 15% → 3%; decode time 65–300 ms → ~35 ms. Raising the in-flight limit to 8–25 made frame pacing worse, not better.
+   - The last 24 frames (desktop) / 10 (mobile) stay decoded for good (`keepTail`, `TAIL_FRAMES` in `ScrollTreeHero.jsx`; ~190 MB / ~37 MB), decoded with spare slots after the window, and only once the playhead has left frame 0, so a visitor who never scrolls doesn't pay for them. Mobile uses a smaller tail and window (`keepDecoded` 8) because a phone has the least memory to spare. Almost every fast scroll ends at the bottom of the hero, and the page keeps scrolling into the next section, so the decoder never gets a slow-down to catch up there. Without the tail the tree stepped visibly into its final pose (up to ~45% stand-in frames while slowing); with it, ~95% of those refreshes are exact, blended frames. Just before the tail (~frames 200–217) a fast scroll can still briefly show frame 218 early.
+   - Downloads are retried twice (400 ms, then 800 ms) on network errors, 5xx and 429. A 404 is not retried. A frame that still fails is skipped and the nearest decoded frame stands in. A decode that finishes after the sequence was replaced (React StrictMode in development, or reduced motion switched on or off) is discarded without touching the new sequence's bookkeeping.
+   - With `prefers-reduced-motion` the loader runs in `lastFrameOnly` mode: one request (the finished tree) instead of 242 (~23 MB desktop), and the progress line is complete as soon as it arrives.
+   - Decoding all 242 frames up front was measured too: 0.9 s and perfect playback, but +1.9 GB on desktop and +850 MB with the mobile set, which phones and 8 GB laptops can't afford.
 6. If the exact frame is not decoded yet, the nearest decoded frame is drawn. When a closer frame arrives, the canvas redraws itself.
 6. A 1 px gold line at the bottom of the hero shows load progress, then fades out.
 
@@ -125,7 +135,7 @@ At 120 Hz each frame has about 8 ms of budget. These rules keep the hero well in
 - Draw only on change. `draw()` returns early when the frame pair and blend step are the same as last time.
 - Never decode on the main thread. Drawing an `<img>` whose decoded pixels the browser has evicted (or calling `createImageBitmap(<img>)`) decodes synchronously: measured at ~55 ms per 1080p WebP on Intel UHD, which caused 50–70 ms scroll stalls. Decoding from a `Blob` avoids that (measured after the change: no long tasks, p95 frame time 7.7 ms at 144 Hz).
 - Canvas context uses `{ alpha: false }`, which lets the browser skip compositing transparency.
-- Device pixel ratio is capped at 2. A 3× phone would otherwise push 2.25× more pixels with no visible gain.
+- The canvas is never larger than the frames: pixel ratio is capped at 2 and at the frame size (`NATIVE` in `ScrollTreeHero.jsx`), because with cover-fit one canvas pixel per frame pixel is all the detail there is. Measured canvas size: 1440×900 at 2× drops 4.75 → 2.04 MP, a 3× phone 1.20 → 0.30 MP. At 1× (a plain 1080p monitor) nothing changes.
 - Copy beats animate only `opacity` and `transform` (GPU-composited), and use `will-change`.
 - The sticky wrapper has `contain: layout paint`, which isolates repaints from the rest of the page.
 - No `backdrop-filter` or large `blur()` over the canvas. They re-run every frame and are the most common cause of dropped frames in heroes like this. The legibility scrim is a plain gradient.
@@ -133,7 +143,7 @@ At 120 Hz each frame has about 8 ms of budget. These rules keep the hero well in
 - `ScrollTrigger.config({ ignoreMobileResize: true })` plus `svh` units stop the mobile address bar from triggering recalculations while scrolling.
 - On touch devices `scrub: 0.5` adds a short catch-up so native momentum scrolling does not look stepped. On desktop Lenis already smooths input, so scrub is `true` (no double smoothing).
 
-Memory: a decoded 1080p frame is ~8 MB (720p ~3.7 MB). Do not convert all frames to `ImageBitmap` up front; 242 decoded 1080p bitmaps would need roughly 2 GB. The decoded window costs ~200 MB on desktop and ~80 MB on phones; lower `keepDecoded` if that is too much, at the cost of less look-ahead on fast scrolls.
+Memory: a decoded 1080p frame is ~8 MB (720p ~3.7 MB). Do not convert all frames to `ImageBitmap` up front; 242 decoded 1080p bitmaps would need roughly 2 GB. The decoded window costs ~200 MB on desktop and ~63 MB on phones, plus the tail (~190 MB / ~37 MB); lower `keepDecoded` or `TAIL_FRAMES` if that is too much, at the cost of less look-ahead on fast scrolls.
 
 ## Responsive and accessibility
 
@@ -167,6 +177,10 @@ Needs Tailwind 3.4+ or v4 (`h-svh`, `min-h-svh`). On older versions replace thos
 | Card size and position | `POS` constant in `ScrollTreeHero.jsx` | Width uses `clamp()` so cards stay clear of the tree between 1024 px and ultrawide. |
 | Frame-set cutoff | `pickFrameSet()` | Raise 1300 to send more devices the lighter set. |
 | Parallel requests | `concurrency` in `useFrameSequence` | 4–8. Higher helps on HTTP/2 hosts. |
+| Parallax strength | `PARALLAX` in `ScrollTreeHero.jsx` (`hero: 32, craft: 12` px) | 0 turns it off; above ~48 the cards start to feel detached. |
+| Pre-decoded ending | `TAIL_FRAMES` in `ScrollTreeHero.jsx` (24 desktop, 10 mobile) | ~8 MB per desktop frame, ~3.7 MB per mobile one. 0 turns it off. |
+| Header height | `--header-h` in `styles/index.css` (76px) | Header, Home placeholder and hero all follow it. |
+| Unknown icon name | `iconFor()` in `HeroCards.jsx` | Falls back to the sparkles icon (and warns in development) instead of crashing. |
 
 ## Deployment
 

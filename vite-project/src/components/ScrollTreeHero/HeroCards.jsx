@@ -5,6 +5,13 @@ import { hero, craft } from "./heroContent";
 // Icon names used in heroContent.js → lucide-react components (project rule: icons come from packages).
 const ICONS = { shield: ShieldCheck, zap: Zap, truck: Truck, tree: TreePine, sparkles: Sparkles };
 
+// A typo in heroContent.js falls back to a generic icon instead of crashing the whole page.
+function iconFor(name) {
+  const Icon = ICONS[name];
+  if (!Icon && import.meta.env.DEV) console.warn(`heroContent.js: unknown icon "${name}", using "sparkles"`);
+  return Icon ?? Sparkles;
+}
+
 const HEADING = "font-serif";
 const EYEBROW = "font-mono text-[0.68rem] uppercase tracking-[0.26em] text-gold-400 sm:text-xs";
 const FOCUS =
@@ -50,7 +57,7 @@ export function HeroCard({ shopHref, studioHref, reduced }) {
 
       <ul className="mt-5 flex flex-wrap gap-2">
         {hero.badges.map((b) => {
-          const BadgeIcon = ICONS[b.icon];
+          const BadgeIcon = iconFor(b.icon);
           return (
             <li
               key={b.label}
@@ -86,7 +93,7 @@ export function CraftCard() {
 
       <ul className="mt-5 space-y-4">
         {craft.items.map((item) => {
-          const ItemIcon = ICONS[item.icon];
+          const ItemIcon = iconFor(item.icon);
           return (
             <li key={item.title} className="flex items-start gap-3.5">
               <ItemIcon className="mt-0.5 h-6 w-6 shrink-0 text-gold-400" strokeWidth={1.6} aria-hidden="true" />
