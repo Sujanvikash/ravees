@@ -28,6 +28,8 @@ public/
   frames-v2/
     desktop/frame_0001.webp … frame_0242.webp   1920×1080, ~23 MB total
     mobile/frame_0001.webp  … frame_0242.webp   1280×720,  ~12 MB total
+    desktop-small/…                              480×270,   ~3 MB total  (stand-ins for fast scrolling)
+    mobile-small/…                               320×180,   ~1.8 MB total
 src/
   components/
     SmoothScroll/
@@ -103,19 +105,23 @@ Scrolling never causes a React render. Frame state lives in a ref, and the only 
 ## Loading strategy
 
 1. Frame 1 is requested alone with `fetchPriority="high"` and shown as soon as it decodes (the canvas fades in).
-2. The last frame is next, so a fast scroller still sees the finished tree.
-3. The rest load in a coarse-to-fine order: every 32nd frame, then 16th, 8th, 4th, 2nd, then all. After about 10 requests the whole scroll range is covered, and it gets smoother as gaps fill in.
+2. Then every small frame (`frames-v2/desktop-small` or `mobile-small`, see below): about 3 MB / 1.8 MB for all 242, so the whole scroll can be scrubbed within about a second.
+3. The sharp frames follow: the last frame first (a fast scroller still sees the finished tree), then a coarse-to-fine order: every 32nd frame, then 16th, 8th, 4th, 2nd, then all. After about 10 requests the whole scroll range is covered, and it gets smoother as gaps fill in.
 4. Six requests run in parallel. Each frame is fetched as a compressed `Blob` and kept (~23 MB desktop, ~12 MB mobile).
 5. Only a window around the playhead is decoded: 25 frames on desktop, 21 on mobile (`2 × keepDecoded + 1`), weighted ¾ ahead in the scroll direction and ¼ behind, via `createImageBitmap(blob)`, which decodes on a background thread. Frames that leave the window are `close()`d, except the one closest to the playhead. `draw()` never triggers a decode.
    - At most 4 decodes run at once (`MAX_DECODES_IN_FLIGHT`). Each free slot takes the most useful frame for where the playhead is *now*: the next few frames, then every 4th frame ahead, then every 2nd, then the rest, then behind. Launching the whole window at once (the old behaviour) queued up to 25 1080p decodes, most finished after the playhead had moved on, and a fast wheel spin froze the tree for most of the scroll.
    - A decode that finishes after a fast scroll has passed it is still kept if it's the closest frame to the playhead, so the picture keeps moving instead of freezing.
    - Measured (Intel UHD, 1920×969, 144 Hz): fast wheel spin 144 → 13 frames behind at p95, frozen 84% → 31% of moving frames; normal fast scrolling missed frames 15% → 3%; decode time 65–300 ms → ~35 ms. Raising the in-flight limit to 8–25 made frame pacing worse, not better.
-   - The last 24 frames (desktop) / 10 (mobile) stay decoded for good (`keepTail`, `TAIL_FRAMES` in `ScrollTreeHero.jsx`; ~190 MB / ~37 MB), decoded with spare slots after the window, and only once the playhead has left frame 0, so a visitor who never scrolls doesn't pay for them. Mobile uses a smaller tail and window (`keepDecoded` 8) because a phone has the least memory to spare. Almost every fast scroll ends at the bottom of the hero, and the page keeps scrolling into the next section, so the decoder never gets a slow-down to catch up there. Without the tail the tree stepped visibly into its final pose (up to ~45% stand-in frames while slowing); with it, ~95% of those refreshes are exact, blended frames. Just before the tail (~frames 200–217) a fast scroll can still briefly show frame 218 early.
+   - **Small frames.** Even with that scheduling, a scroll faster than ~100 frames/s (about 25 wheel notches per second; the track is only ~14 px of scroll per frame) outruns what the sharp decoder can deliver, so the picture trailed behind and then jumped (50 notches/s: 30–39% of refreshes more than 3 frames behind). Every frame therefore also has a small twin: `frames-v2/desktop-small/` (480×270, ~12 KB each) and `mobile-small/` (320×180, ~8 KB each). All of them are kept decoded for good (~126 MB desktop / ~62 MB phone) and are drawn when the sharp frame isn't ready; the sharp frame replaces them as soon as it is. Measured: picture more than 3 frames behind 30% → 0% at every speed, fling 12 frames behind / 29% frozen → 0.1 / 0%, end-of-scroll landing 0% stand-in frames.
+     - They are separate small files on purpose. Making them by resizing the sharp frames in the browser was tried first: every one is a full 1080p decode, so it took 4–10 s, slowed the sharp decodes ~2.5× and dropped 24–30% of refreshes.
+     - They are drawn with `imageSmoothingQuality = "low"` (`smoothingFor` in `ScrollTreeHero.jsx`). A stretched small frame is soft either way, and the "high" filter on it made a fling drop 10% of refreshes (2% with "low").
+     - Regenerate them if the sharp frames change (see "Regenerating the small frames"). Missing or corrupt small files are skipped, not retried forever; the sharp frames still work on their own.
+     - Replaced the earlier "tail" (last N frames kept sharp): the small frames cover the ending too, with less memory.
    - Downloads are retried twice (400 ms, then 800 ms) on network errors, 5xx and 429. A 404 is not retried. A frame that still fails is skipped and the nearest decoded frame stands in. A decode that finishes after the sequence was replaced (React StrictMode in development, or reduced motion switched on or off) is discarded without touching the new sequence's bookkeeping.
    - With `prefers-reduced-motion` the loader runs in `lastFrameOnly` mode: one request (the finished tree) instead of 242 (~23 MB desktop), and the progress line is complete as soon as it arrives.
    - Decoding all 242 frames up front was measured too: 0.9 s and perfect playback, but +1.9 GB on desktop and +850 MB with the mobile set, which phones and 8 GB laptops can't afford.
-6. If the exact frame is not decoded yet, the nearest decoded frame is drawn. When a closer frame arrives, the canvas redraws itself.
-6. A 1 px gold line at the bottom of the hero shows load progress, then fades out.
+6. Drawing picks the sharp frame, else its small twin, else the nearest decoded frame of either kind. When a better one arrives, the canvas redraws itself.
+7. A 1 px gold line at the bottom of the hero shows load progress, then fades out.
 
 The frame set is chosen once on mount: `desktop` when viewport width × device pixel ratio is over 1300 px, otherwise `mobile`. Data-saver mode always gets `mobile`.
 
@@ -143,7 +149,9 @@ At 120 Hz each frame has about 8 ms of budget. These rules keep the hero well in
 - `ScrollTrigger.config({ ignoreMobileResize: true })` plus `svh` units stop the mobile address bar from triggering recalculations while scrolling.
 - On touch devices `scrub: 0.5` adds a short catch-up so native momentum scrolling does not look stepped. On desktop Lenis already smooths input, so scrub is `true` (no double smoothing).
 
-Memory: a decoded 1080p frame is ~8 MB (720p ~3.7 MB). Do not convert all frames to `ImageBitmap` up front; 242 decoded 1080p bitmaps would need roughly 2 GB. The decoded window costs ~200 MB on desktop and ~63 MB on phones, plus the tail (~190 MB / ~37 MB); lower `keepDecoded` or `TAIL_FRAMES` if that is too much, at the cost of less look-ahead on fast scrolls.
+Memory: a decoded 1080p frame is ~8 MB (720p ~3.7 MB). Do not convert all frames to `ImageBitmap` up front; 242 decoded 1080p bitmaps would need roughly 2 GB. The decoded sharp window costs ~200 MB on desktop and ~63 MB on phones, plus the small frames (~126 MB / ~62 MB); lower `keepDecoded` if that is too much, at the cost of less look-ahead on fast scrolls.
+
+Measured browser memory (sum of all Chrome processes, headless Chrome on Intel UHD): the page adds ~420 MB on desktop / ~220 MB on a phone viewport at idle, then grows to about +1.2 GB / +1.0 GB after scrolling the whole hero. That growth is in Chrome's **GPU process** (189 → 1011 MB; the page's renderer only grows ~90 MB), it plateaus rather than climbing, and it is the same without the small frames and with the original committed hero, so it is Chrome caching a texture for every frame drawn on the canvas, not something the decoded windows hold. Not investigated further; if it matters, the next things to try are drawing from fewer distinct bitmaps or measuring on real devices.
 
 ## Responsive and accessibility
 
@@ -178,13 +186,17 @@ Needs Tailwind 3.4+ or v4 (`h-svh`, `min-h-svh`). On older versions replace thos
 | Frame-set cutoff | `pickFrameSet()` | Raise 1300 to send more devices the lighter set. |
 | Parallel requests | `concurrency` in `useFrameSequence` | 4–8. Higher helps on HTTP/2 hosts. |
 | Parallax strength | `PARALLAX` in `ScrollTreeHero.jsx` (`hero: 32, craft: 12` px) | 0 turns it off; above ~48 the cards start to feel detached. |
-| Pre-decoded ending | `TAIL_FRAMES` in `ScrollTreeHero.jsx` (24 desktop, 10 mobile) | ~8 MB per desktop frame, ~3.7 MB per mobile one. 0 turns it off. |
+| Small frames | `previewSrc` / `SMALL_SUFFIX` in `ScrollTreeHero.jsx`, files in `public/frames-v2/*-small/` | Remove `previewSrc` to turn them off (fast scrolls then lag again above ~100 frames/s). Smaller files = less memory, softer fast scrolls. |
 | Header height | `--header-h` in `styles/index.css` (76px) | Header, Home placeholder and hero all follow it. |
 | Unknown icon name | `iconFor()` in `HeroCards.jsx` | Falls back to the sparkles icon (and warns in development) instead of crashing. |
 
+## Regenerating the small frames
+
+`scripts/make-small-frames.mjs` rebuilds `public/frames-v2/desktop-small` (480×270) and `mobile-small` (320×180, WebP quality 0.72) from the sharp frames, using Chrome for the resize and encode (no image library needed). The steps are in the script's header: build and preview the site, `npm i --no-save playwright-core`, then `node scripts/make-small-frames.mjs`. Run it whenever the sharp frames change, and rename the folder (see Deployment) so browsers don't keep old copies.
+
 ## Deployment
 
-- Serve `/frames-v2/*` with long cache headers, e.g. `Cache-Control: public, max-age=31536000, immutable`. If you replace the frames later, rename the folder again (e.g. `frames-v3`, and update `getSrc`) so users do not see stale ones.
+- Serve `/frames-v2/*` with long cache headers, e.g. `Cache-Control: public, max-age=31536000, immutable`. If you replace the frames later, rename the folder again (e.g. `frames-v3`, and update `getSrc` and `previewSrc`) so users do not see stale ones. The new `desktop-small` / `mobile-small` folders are part of this: deploy them with the rest of `public/`, or the site silently falls back to sharp frames only (and fast scrolls lag again).
 - Use a host with HTTP/2 or HTTP/3 (Vercel, Netlify, Cloudflare Pages all do) so parallel requests are cheap.
 - Do not run the frames through an image optimizer that re-encodes them on the fly; they are already tuned WebP.
 

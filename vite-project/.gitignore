@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Static assets (hero frames, product images, logo)
+public
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +25,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
