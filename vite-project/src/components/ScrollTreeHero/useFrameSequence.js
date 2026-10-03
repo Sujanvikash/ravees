@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
  * Progressive load order: first frame, last frame, then a coarse pass
  * (every 32nd frame) that is refined down to every frame. The animation
  * is scrubbable end-to-end within the first ~10 requests and gets smoother
- * as the rest arrive, instead of loading 1 → 242 in a straight line.
+ * as the rest arrive, instead of loading 1 → N in a straight line.
  */
 function buildLoadOrder(count) {
   const seen = new Uint8Array(count);
@@ -69,7 +69,7 @@ const RETRY_DELAY_MS = 400;
 
 /**
  * Loads an image sequence. Every frame is downloaded and kept compressed (a Blob,
- * ~23 MB for the desktop set). Two decoded sets are kept, because 242 decoded 1080p frames
+ * ~23 MB for the desktop set). Two decoded sets are kept, because every frame decoded at 1080p
  * would need ~2 GB:
  *  - sharp frames, only near the playhead (a window that follows the scroll), and
  *  - a small version of every frame (its own tiny file, see `previewSrc`), so that a scroll faster
@@ -82,7 +82,7 @@ const RETRY_DELAY_MS = 400;
  * @param {number}   [opts.concurrency=6]
  * @param {function} [opts.onFrameLoad] called after each frame is downloaded or decoded
  * @param {boolean}  [opts.decodeAll=false] decode every sharp frame and keep them all, so any scroll
- *                   speed shows full-resolution frames. ~8 MB per 1080p frame (~1.9 GB for 242):
+ *                   speed shows full-resolution frames. ~8 MB per 1080p frame (~1.2 GB for 150):
  *                   only for machines with the memory. Frames still decode nearest-first.
  * @param {number}   [opts.keepDecoded=12] decode budget: 2 × keepDecoded + 1 frames, weighted
  *                   ahead of the playhead in the scroll direction (¾ ahead, ¼ behind)

@@ -7,14 +7,16 @@ import { HeroCard, CraftCard } from "./HeroCards";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-const FRAME_COUNT = 242;
+const FRAME_COUNT = 150;
+// Folder under public/ (built by scripts/make-frames.mjs). New video or new frames: use a new name so browsers refetch.
+const FRAMES_DIR = "frames-v3";
 const MAX_DPR = 2; // above 2x the extra pixels cost fill-rate without visible gain
 // Pixel size of each frame set: the canvas never needs more pixels than the frames have.
 const NATIVE = { desktop: [1920, 1080], mobile: [1280, 720] };
 // Desktop parallax: how far each card drifts either side of its resting place (px).
 const PARALLAX = { hero: 32, craft: 12 };
-// Each frame set has a "-small" twin (desktop 480×270, mobile 320×180; ~3 MB / ~1.8 MB for all 242),
-// kept decoded for EVERY frame (~120 MB / ~55 MB). A scroll faster than the sharp decoder can follow
+// Each frame set has a "-small" twin (desktop 480×270, mobile 320×180; ~1.9 MB / ~1.1 MB for all 150),
+// kept decoded for EVERY frame (~78 MB / ~35 MB). A scroll faster than the sharp decoder can follow
 // shows these, softer, until the sharp frame is ready. Phones get the smaller ones on purpose:
 // decoded frames are what a phone has least room for.
 const SMALL_SUFFIX = "-small";
@@ -70,19 +72,19 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
 
   const reduced = usePrefersReducedMotion();
   const [frameSet] = useState(pickFrameSet);
-  // Full 1080p at every scroll speed needs all 242 frames decoded (~1.9 GB), so it is only used
+  // Full 1080p at every scroll speed needs all 150 frames decoded (~1.2 GB), so it is only used
   // where the browser reports 8 GB or more (Chrome/Edge; others report nothing and keep the small frames).
   const [fullQuality] = useState(() => frameSet === "desktop" && (navigator.deviceMemory ?? 0) >= 8);
 
   const getSrc = useMemo(() => {
     const base = import.meta.env.BASE_URL;
-    return (i) => `${base}frames-v2/${frameSet}/frame_${String(i + 1).padStart(4, "0")}.webp`;
+    return (i) => `${base}${FRAMES_DIR}/${frameSet}/frame_${String(i + 1).padStart(4, "0")}.webp`;
   }, [frameSet]);
   // Reduced motion only ever shows the last frame, so it has no use for the small ones.
   const previewSrc = useMemo(() => {
     if (reduced) return undefined;
     const base = import.meta.env.BASE_URL;
-    return (i) => `${base}frames-v2/${frameSet}${SMALL_SUFFIX}/frame_${String(i + 1).padStart(4, "0")}.webp`;
+    return (i) => `${base}${FRAMES_DIR}/${frameSet}${SMALL_SUFFIX}/frame_${String(i + 1).padStart(4, "0")}.webp`;
   }, [frameSet, reduced]);
 
   // Declared before the hook so the loader can request a redraw when a closer frame arrives.
@@ -144,7 +146,7 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
     keepDecoded: frameSet === "desktop" ? 12 : 8,
     decodeAll: fullQuality,
     previewSrc,
-    // Reduced motion only ever shows the last frame, so it skips the other 241.
+    // Reduced motion only ever shows the last frame, so it skips the other 149.
     lastFrameOnly: reduced,
   });
   // Layout effect: runs before the loader's first onFrameLoad → draw() can reach getFrame.

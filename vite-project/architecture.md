@@ -13,8 +13,8 @@ allowed when no package has the icon.
   (`react-icons/tb` `TbChristmasTreeFilled`).
 - The full wordmark logo is the `public/logo.svg` asset, rendered with `<img>`.
 
-**Hero animation:** `components/ScrollTreeHero/` plays a 242-frame WebP sequence (watermark-free
-re-render) from `public/frames-v2/desktop` (1920×1080) or `public/frames-v2/mobile` (1280×720) on a
+**Hero animation:** `components/ScrollTreeHero/` plays a 150-frame WebP sequence (watermark-free
+re-render) from `public/frames-v3/desktop` (1920×1080) or `public/frames-v3/mobile` (1280×720) on a
 2D canvas. One GSAP ScrollTrigger timeline scrubs the frames and choreographs the two hero cards;
 `components/SmoothScroll/` (Lenis) smooths wheel input for the storefront. Full design, tuning
 and performance rules: `src/components/ScrollTreeHero/ARCHITECTURE.md`. This replaced the older
@@ -61,7 +61,7 @@ src/
     CartDrawer.jsx
     ToastContainer.jsx
   components/               # reusable UI primitives (stateless where possible)
-    ScrollTreeHero/          # 242-frame scroll-scrubbed canvas hero (lazy-loaded inside Home), see its ARCHITECTURE.md
+    ScrollTreeHero/          # 150-frame scroll-scrubbed canvas hero (lazy-loaded inside Home), see its ARCHITECTURE.md
     SmoothScroll/            # Lenis + GSAP ticker; wraps RootLayout (storefront only)
     PageLoader.jsx           # Suspense fallback
     Button.jsx
@@ -138,7 +138,7 @@ src/
       AdminAuthContext.jsx        # gated session flag in localStorage (demo-level auth, see note below)
       AdminDataContext.jsx        # merges src/data/*.js with localStorage overrides; exposes CRUD helpers
 public/
-  frames-v2/desktop|mobile/    # 242 WebP hero frames per set (frame_0001.webp … frame_0242.webp)
+  frames-v3/desktop|mobile/    # 150 WebP hero frames per set (frame_0001.webp … frame_0150.webp), plus *-small twins
   images/products/             # scraped product photos
   logo.svg
 scripts/
@@ -333,7 +333,7 @@ same base arrays) and its own context — it does not import `layout/`, `compone
 Every route in the tables above — public and admin — is `React.lazy()`-imported behind a
 shared `<Suspense fallback={<PageLoader/>}>` per route tree, so the admin dashboard's code
 (DataTable, forms, etc.) is never downloaded by a storefront visitor who never visits
-`/admin`. The 242-frame canvas `ScrollTreeHero` inside `Home.jsx` is additionally split with
+`/admin`. The 150-frame canvas `ScrollTreeHero` inside `Home.jsx` is additionally split with
 its own nested `lazy()`/`Suspense` so the rest of the homepage can paint without waiting on
 the hero code and its frame sequence.
 
