@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Trash2, Phone, Mail, MapPin, Inbox } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import IconButton from '../../components/IconButton.jsx';
 import {
   STATUSES,
   deleteEnquiry,
@@ -83,13 +84,9 @@ export default function AdminEnquiries() {
                       </option>
                     ))}
                   </select>
-                  <button
-                    onClick={() => setPendingDelete(enq)}
-                    className="flex cursor-pointer items-center rounded-lg border border-white/10 p-1.5 text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
-                    aria-label="Delete enquiry"
-                  >
+                  <IconButton variant="delete" label="Delete enquiry" onClick={() => setPendingDelete(enq)}>
                     <Trash2 size={14} strokeWidth={2} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 

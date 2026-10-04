@@ -1,17 +1,9 @@
-import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useOverlay } from '../hooks/useOverlay.js';
+import IconButton from './IconButton.jsx';
 
 export default function Modal({ open, onClose, eyebrow, title, size = 'md', children }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [open, onClose]);
+  useOverlay(open, onClose);
 
   if (!open) return null;
 
@@ -34,13 +26,9 @@ export default function Modal({ open, onClose, eyebrow, title, size = 'md', chil
             )}
             {title && <h3 className="font-serif text-[1.25rem] text-white">{title}</h3>}
           </div>
-          <button
-            className="cursor-pointer border-none bg-transparent text-text-muted transition-colors hover:text-white"
-            onClick={onClose}
-            aria-label="Close"
-          >
+          <IconButton label="Close" onClick={onClose}>
             <X size={26} />
-          </button>
+          </IconButton>
         </div>
         {children}
       </div>

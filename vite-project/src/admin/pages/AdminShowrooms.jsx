@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
+import IconButton from '../../components/IconButton.jsx';
 import { Input, Textarea } from '../../components/Input.jsx';
 
 const LABEL = 'text-[0.75rem] text-gold-300';
@@ -93,13 +94,9 @@ export default function AdminShowrooms() {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-[1.1rem] text-white">New location</h2>
-            <button
-              type="button"
-              onClick={() => setIsAdding(false)}
-              className="cursor-pointer border-none bg-transparent text-text-muted hover:text-white"
-            >
+            <IconButton label="Close" onClick={() => setIsAdding(false)}>
               <X size={20} />
-            </button>
+            </IconButton>
           </div>
 
           <FormField label="City" labelClassName={LABEL}>

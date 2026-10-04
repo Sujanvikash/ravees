@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import Button from '../components/Button.jsx';
+import IconButton from '../components/IconButton.jsx';
+import QuantityStepper from '../components/QuantityStepper.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
@@ -55,33 +57,18 @@ export default function Cart() {
                     )}
                   </div>
 
-                  <div className="inline-flex items-center overflow-hidden rounded-lg border border-gold-400/15 bg-white/8">
-                    <button
-                      onClick={() => updateQuantity(product.id, quantity - 1)}
-                      className="flex h-9 w-9 cursor-pointer items-center justify-center border-none bg-transparent text-gold-300 hover:bg-gold-400/20"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus size={14} strokeWidth={2.5} />
-                    </button>
-                    <span className="w-10 text-center font-mono text-[0.9rem] text-white">{quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(product.id, quantity + 1)}
-                      className="flex h-9 w-9 cursor-pointer items-center justify-center border-none bg-transparent text-gold-300 hover:bg-gold-400/20"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus size={14} strokeWidth={2.5} />
-                    </button>
-                  </div>
+                  <QuantityStepper value={quantity} onChange={(next) => updateQuantity(product.id, next)} />
 
                   <span className="font-serif text-[0.95rem] font-bold text-gold-200">On request</span>
 
-                  <button
+                  <IconButton
+                    variant="remove"
+                    label={`Remove ${product.name}`}
                     onClick={() => removeFromCart(product.id)}
-                    className="flex cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-2 text-text-muted transition-all hover:bg-[rgba(255,92,92,0.15)] hover:text-[#ff5c5c]"
-                    aria-label={`Remove ${product.name}`}
+                    className="p-2"
                   >
                     <Trash2 size={17} strokeWidth={2} />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>

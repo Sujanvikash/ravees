@@ -1,18 +1,15 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Trash2, Minus, Plus, X, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Trash2, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../context/CartContext.jsx';
+import { useOverlay } from '../hooks/useOverlay.js';
 import Button from '../components/Button.jsx';
+import IconButton from '../components/IconButton.jsx';
+import QuantityStepper from '../components/QuantityStepper.jsx';
 
 export default function CartDrawer({ isOpen, onClose }) {
   const { cart, updateQuantity, removeFromCart, totalCount } = useCart();
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  useOverlay(isOpen, onClose);
 
   return (
     <div
@@ -33,13 +30,9 @@ export default function CartDrawer({ isOpen, onClose }) {
             <ShoppingBag size={20} strokeWidth={2} />
             <h2 className="font-serif text-[1.15rem] tracking-[0.06em]">Your Cart</h2>
           </div>
-          <button
-            className="cursor-pointer border-none bg-transparent text-text-muted transition-colors hover:text-white"
-            onClick={onClose}
-            aria-label="Close cart"
-          >
+          <IconButton label="Close cart" onClick={onClose}>
             <X size={26} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="border-b border-white/10 bg-emerald-500/8 px-6 py-3.5">
@@ -78,35 +71,24 @@ export default function CartDrawer({ isOpen, onClose }) {
                         {product.name}
                       </Link>
                     </h3>
-                    <button
-                      className="flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-1 text-text-muted transition-all hover:bg-[rgba(255,92,92,0.15)] hover:text-[#ff5c5c]"
+                    <IconButton
+                      variant="remove"
+                      label={`Remove ${product.name}`}
                       onClick={() => removeFromCart(product.id)}
-                      aria-label={`Remove ${product.name}`}
+                      className="p-1"
                     >
                       <Trash2 size={15} strokeWidth={2} />
-                    </button>
+                    </IconButton>
                   </div>
 
                   <p className="text-[0.75rem] text-gold-300">{product.categoryLabel}</p>
 
                   <div className="mt-2 flex items-center justify-between">
-                    <div className="inline-flex items-center overflow-hidden rounded-lg border border-gold-400/15 bg-white/8">
-                      <button
-                        className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center border-none bg-transparent text-gold-300 hover:bg-gold-400/20"
-                        onClick={() => updateQuantity(product.id, quantity - 1)}
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus size={13} strokeWidth={2.5} />
-                      </button>
-                      <span className="w-8 text-center font-mono text-[0.85rem] text-white">{quantity}</span>
-                      <button
-                        className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center border-none bg-transparent text-gold-300 hover:bg-gold-400/20"
-                        onClick={() => updateQuantity(product.id, quantity + 1)}
-                        aria-label="Increase quantity"
-                      >
-                        <Plus size={13} strokeWidth={2.5} />
-                      </button>
-                    </div>
+                    <QuantityStepper
+                      size="sm"
+                      value={quantity}
+                      onChange={(next) => updateQuantity(product.id, next)}
+                    />
                     <span className="font-serif text-[0.9rem] font-bold text-gold-200">On request</span>
                   </div>
                 </div>

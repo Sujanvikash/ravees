@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* short: windows 760px tall or less (1366x768 laptops once the browser bar is taken off). */
+@custom-variant short (@media (max-height: 760px));
+
 @theme {
   /* backgrounds */
   --color-bg-primary: #05160f;
@@ -108,6 +111,8 @@
     font-family: var(--font-sans);
     scroll-behavior: smooth;
     overflow-x: hidden;
+    /* Keeps the scrollbar's space when a modal/drawer locks scrolling, so the page doesn't jump sideways. */
+    scrollbar-gutter: stable;
     /* Height of the sticky header: also read by Home's hero placeholder and ScrollTreeHero. */
     --header-h: 76px;
   }

@@ -23,23 +23,23 @@ const CARD =
 /** Left card: heritage headline, copy, buttons, badges, scroll hint. */
 export function HeroCard({ shopHref, studioHref, reduced }) {
   return (
-    <div data-beat="hero" className={`${CARD} p-4 will-change-[transform,opacity] sm:p-7 lg:p-8`}>
+    <div data-beat="hero" className={`${CARD} p-4 will-change-[transform,opacity] sm:p-7 lg:p-8 lg:short:p-6`}>
       <p className={EYEBROW}>✦ {hero.eyebrow}</p>
 
       <h1
-        className={`${HEADING} mt-4 bg-[linear-gradient(135deg,#ffffff_0%,var(--color-gold-200)_100%)] bg-clip-text text-[clamp(1.85rem,3.1vw,3.3rem)] font-bold leading-[1.1] tracking-[0.03em] text-transparent`}
+        className={`${HEADING} mt-4 bg-[linear-gradient(135deg,#ffffff_0%,var(--color-gold-200)_100%)] bg-clip-text text-[clamp(1.85rem,min(3.1vw,5.4svh),3.3rem)] short:mt-3 font-bold leading-[1.1] tracking-[0.03em] text-transparent`}
       >
         {hero.title}
       </h1>
 
       <p
         data-part="lede"
-        className="mt-4 text-[0.98rem] leading-relaxed text-text-secondary lg:text-[1.05rem]"
+        className="mt-4 text-[0.98rem] leading-relaxed text-text-secondary lg:text-[1.05rem] short:mt-3 lg:short:text-[0.95rem]"
       >
         {hero.text}
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-2.5">
+      <div className="mt-6 flex flex-wrap gap-2.5 short:mt-4">
         <Link
           to={shopHref ?? hero.primary.href}
           className={`inline-flex items-center gap-2 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-4 py-3 text-[0.9rem] font-semibold tracking-[0.04em] text-[#04140b] shadow-[0_0_20px_rgba(229,199,139,0.4)] transition-transform duration-200 hover:-translate-y-0.5 sm:px-5 ${FOCUS}`}
@@ -55,7 +55,7 @@ export function HeroCard({ shopHref, studioHref, reduced }) {
         </Link>
       </div>
 
-      <ul className="mt-5 flex flex-wrap gap-2">
+      <ul className="mt-5 flex flex-wrap gap-2 short:mt-3">
         {hero.badges.map((b) => {
           const BadgeIcon = iconFor(b.icon);
           return (
@@ -71,7 +71,7 @@ export function HeroCard({ shopHref, studioHref, reduced }) {
       </ul>
 
       {!reduced && (
-        <p data-part="hint" className="mt-6 flex items-center gap-3 text-sm text-gold-400">
+        <p data-part="hint" className="mt-6 flex items-center gap-3 text-sm text-gold-400 short:hidden">
           <span
             aria-hidden="true"
             className="relative block h-8 w-5 rounded-full border border-gold-400/70"

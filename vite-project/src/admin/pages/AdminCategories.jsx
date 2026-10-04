@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
+import IconButton from '../../components/IconButton.jsx';
 import { Input } from '../../components/Input.jsx';
 
 const slugify = (value) =>
@@ -93,13 +94,9 @@ export default function AdminCategories() {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-[1.1rem] text-white">New collection</h2>
-            <button
-              type="button"
-              onClick={() => setIsAdding(false)}
-              className="cursor-pointer border-none bg-transparent text-text-muted hover:text-white"
-            >
+            <IconButton label="Close" onClick={() => setIsAdding(false)}>
               <X size={20} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-[1fr_80px]">
@@ -141,13 +138,9 @@ export default function AdminCategories() {
                 <span className="text-[1.4rem]">{cat.icon}</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[0.72rem] text-text-muted">{cat.id}</span>
-                  <button
-                    onClick={() => setPendingDelete(cat)}
-                    className="flex cursor-pointer items-center rounded-lg border border-white/10 p-1.5 text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
-                    title="Delete collection"
-                  >
+                  <IconButton variant="delete" label="Delete collection" onClick={() => setPendingDelete(cat)}>
                     <Trash2 size={13} strokeWidth={2} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 

@@ -3,6 +3,7 @@ import { Plus, Trash2, RotateCcw, Save, X } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
+import IconButton from '../../components/IconButton.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Input, Textarea } from '../../components/Input.jsx';
@@ -69,12 +70,9 @@ export default function AdminTestimonials() {
             <h2 className="font-serif text-[1.1rem] text-white">
               {isNew ? 'New testimonial' : `Editing ${editing.__originalAuthor}`}
             </h2>
-            <button
-              onClick={() => setEditing(null)}
-              className="cursor-pointer border-none bg-transparent text-text-muted hover:text-white"
-            >
+            <IconButton label="Close" onClick={() => setEditing(null)}>
               <X size={20} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

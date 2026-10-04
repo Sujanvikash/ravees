@@ -49,7 +49,8 @@ export default function TreeStudioPage() {
   const [light, setLight] = useState(lights[0]);
   const [ornament, setOrnament] = useState(ornaments[0]);
 
-  const previewImage = tree?.image ?? '/frames/frame-242.jpg';
+  // Every tree in the data has an image; the fallback only guards against one being added without.
+  const previewImage = tree?.image ?? '/images/products/norway-spruce-christmas-tree-1.png';
 
   const handleAddBundle = () => {
     addToCart({
