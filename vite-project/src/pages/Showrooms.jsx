@@ -2,6 +2,7 @@ import { useState } from 'react';
 import SectionHeading from '../components/SectionHeading.jsx';
 import ShowroomCard from '../components/ShowroomCard.jsx';
 import { SHOWROOMS } from '../data/showrooms.js';
+import Container from '../components/Container.jsx';
 
 export default function Showrooms() {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -9,7 +10,7 @@ export default function Showrooms() {
 
   return (
     <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <SectionHeading
           eyebrow="✦ 5 FLAGSHIP DESTINATIONS ✦"
           title="Visit Our Experience Showrooms"
@@ -33,7 +34,7 @@ export default function Showrooms() {
         </div>
 
         <ShowroomCard showroom={showroom} />
-      </div>
+      </Container>
     </section>
   );
 }

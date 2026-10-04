@@ -1,5 +1,6 @@
 import { Navigation, Phone, Clock, Sparkles } from 'lucide-react';
 import Badge from './Badge.jsx';
+import Button from './Button.jsx';
 
 /**
  * Reads the fields the SHOWROOMS data actually has (title/timing/isFlagship) — the
@@ -37,22 +38,18 @@ export default function ShowroomCard({ showroom }) {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <a
+            <Button
               href={`https://maps.google.com/?q=${encodeURIComponent(showroom.mapQuery || showroom.address)}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-6.5 py-3 text-[0.88rem] font-semibold tracking-[0.06em] text-[#04140b] no-underline shadow-[0_0_20px_rgba(229,199,139,0.4)] transition-all duration-300 hover:-translate-y-0.5"
             >
               <Navigation size={16} strokeWidth={2} />
               Get Directions
-            </a>
-            <a
-              href={`tel:${showroom.phone.split('/')[0].replace(/[^0-9+]/g, '')}`}
-              className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-[rgba(8,28,20,0.6)] px-6.5 py-3 text-[0.88rem] font-semibold tracking-[0.06em] text-gold-300 no-underline transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white"
-            >
+            </Button>
+            <Button variant="outline" href={`tel:${showroom.phone.split('/')[0].replace(/[^0-9+]/g, '')}`}>
               <Phone size={16} strokeWidth={2} />
               Call Showroom
-            </a>
+            </Button>
           </div>
         </div>
 

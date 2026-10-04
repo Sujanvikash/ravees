@@ -3,6 +3,7 @@ import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
+import Eyebrow from '../components/Eyebrow.jsx';
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
@@ -10,9 +11,9 @@ export default function Cart() {
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
       <div className="mx-auto max-w-[1100px] px-6">
-        <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+        <Eyebrow>
           ✦ YOUR CART ✦
-        </span>
+        </Eyebrow>
         <h1 className={`mb-8 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
           Review Your Selection
         </h1>

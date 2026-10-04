@@ -1,6 +1,8 @@
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import Button from '../components/Button.jsx';
 import { ArrowRight } from 'lucide-react';
+import Container from '../components/Container.jsx';
+import Eyebrow from '../components/Eyebrow.jsx';
 
 const STATS = [
   { num: '27+', label: 'Years of Holiday Magic' },
@@ -12,12 +14,12 @@ const STATS = [
 export default function About() {
   return (
     <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-16 md:py-25">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <div className="grid items-center gap-12 lg:grid-cols-[1fr_440px]">
           <div>
-            <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+            <Eyebrow>
               ✦ 27 YEARS IN INDIA &bull; EST. 1998 ✦
-            </span>
+            </Eyebrow>
             <h1 className={`mb-3.5 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.5rem] ${GRADIENT_TITLE}`}>
               More Than A Brand &bull; Raave Is An Emotion
             </h1>
@@ -69,7 +71,7 @@ export default function About() {
             </span>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

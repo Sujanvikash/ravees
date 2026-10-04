@@ -4,6 +4,7 @@ import SectionHeading from '../components/SectionHeading.jsx';
 import Button from '../components/Button.jsx';
 import { PRODUCTS } from '../data/products.js';
 import { useCart } from '../context/CartContext.jsx';
+import Container from '../components/Container.jsx';
 
 const HEIGHTS = [
   { value: '6 Feet', sub: '' },
@@ -94,7 +95,7 @@ export default function TreeStudioPage() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <SectionHeading
           eyebrow="✦ BESPOKE HOLIDAY CURATION ✦"
           title="Raave's Interactive Tree Studio"
@@ -176,7 +177,7 @@ export default function TreeStudioPage() {
             </div>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

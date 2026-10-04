@@ -5,6 +5,7 @@ import { GRADIENT_TITLE } from '../../components/SectionHeading.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { listEnquiries } from '../../lib/enquiries.js';
+import Eyebrow from '../../components/Eyebrow.jsx';
 
 const STATUS_STYLE = {
   new: 'bg-emerald-500/15 text-emerald-300',
@@ -33,9 +34,9 @@ export default function Account() {
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
       <div className="mx-auto max-w-[900px] px-6">
-        <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+        <Eyebrow>
           ✦ MY ACCOUNT ✦
-        </span>
+        </Eyebrow>
         <h1 className={`mb-8 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
           Welcome, {session.name.split(' ')[0]}
         </h1>

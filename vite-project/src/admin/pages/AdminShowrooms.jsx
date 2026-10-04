@@ -4,9 +4,9 @@ import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
+import Button from '../../components/Button.jsx';
+import { Input, Textarea } from '../../components/Input.jsx';
 
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.85rem] text-white outline-none transition-all focus:border-gold-400';
 const LABEL = 'text-[0.75rem] text-gold-300';
 
 export default function AdminShowrooms() {
@@ -73,16 +73,16 @@ export default function AdminShowrooms() {
               Reset to original
             </button>
           )}
-          <button
+          <Button
+            size="sm"
             onClick={() => {
               setNewCity('');
               setIsAdding(true);
             }}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-4 py-2.5 text-[0.85rem] font-semibold text-[#04140b] transition-all hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
           >
             <Plus size={15} strokeWidth={2.5} />
             New location
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -103,23 +103,20 @@ export default function AdminShowrooms() {
           </div>
 
           <FormField label="City" labelClassName={LABEL}>
-            <input
+            <Input
+              size="sm"
               autoFocus
               required
               value={newCity}
               onChange={(e) => setNewCity(e.target.value)}
               placeholder="e.g. Hyderabad"
-              className={FIELD}
             />
           </FormField>
 
-          <button
-            type="submit"
-            className="inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-5 py-2.5 text-[0.85rem] font-semibold text-[#04140b]"
-          >
+          <Button size="sm" type="submit" className="self-start">
             <Plus size={15} strokeWidth={2} />
             Add location
-          </button>
+          </Button>
         </form>
       )}
 
@@ -147,35 +144,35 @@ export default function AdminShowrooms() {
         {/* Left column: contact details */}
         <div className="flex min-w-0 flex-col gap-4">
           <FormField label="Title" labelClassName={LABEL}>
-            <input
+            <Input
+              size="sm"
               value={value('title')}
               onChange={(e) => setDraft((prev) => ({ ...prev, title: e.target.value }))}
-              className={FIELD}
             />
           </FormField>
 
           <FormField label="Address" labelClassName={LABEL}>
-            <textarea
+            <Textarea
+              size="sm"
               rows="3"
               value={value('address')}
               onChange={(e) => setDraft((prev) => ({ ...prev, address: e.target.value }))}
-              className={`${FIELD} resize-y`}
             />
           </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Phone" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 value={value('phone')}
                 onChange={(e) => setDraft((prev) => ({ ...prev, phone: e.target.value }))}
-                className={FIELD}
               />
             </FormField>
             <FormField label="Timing" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 value={value('timing')}
                 onChange={(e) => setDraft((prev) => ({ ...prev, timing: e.target.value }))}
-                className={FIELD}
               />
             </FormField>
           </div>
@@ -194,29 +191,22 @@ export default function AdminShowrooms() {
         {/* Right column: highlights + actions */}
         <div className="flex min-w-0 flex-col gap-4">
           <FormField label="Store highlights (one per line)" labelClassName={LABEL} className="flex-1">
-            <textarea
+            <Textarea
+              size="sm"
               rows="8"
               value={(draft.features ?? showroom.features).join('\n')}
               onChange={(e) =>
                 setDraft((prev) => ({ ...prev, features: e.target.value.split('\n') }))
               }
-              className={`${FIELD} min-h-[160px] flex-1 resize-y`}
+              className="min-h-[160px] flex-1"
             />
           </FormField>
 
           <div className="flex gap-3">
-            <button
-              onClick={save}
-              disabled={!dirty}
-              className={`inline-flex items-center justify-center gap-2 self-start rounded-lg px-5 py-2.5 text-[0.85rem] font-semibold transition-all ${
-                dirty
-                  ? 'cursor-pointer border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] text-[#04140b]'
-                  : 'cursor-not-allowed border border-white/10 bg-white/5 text-text-muted'
-              }`}
-            >
+            <Button size="sm" onClick={save} disabled={!dirty} className="self-start">
               <Save size={15} strokeWidth={2} />
               {dirty ? 'Save changes' : 'No changes'}
-            </button>
+            </Button>
             {showrooms.items.length > 1 && (
               <button
                 onClick={() => setPendingDelete(showroom)}

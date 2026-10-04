@@ -4,9 +4,7 @@ import Button from './Button.jsx';
 import FormField from './FormField.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { SHOWROOMS } from '../data/showrooms.js';
-
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.88rem] text-white outline-none transition-all focus:border-gold-400 focus:shadow-[0_0_10px_rgba(229,199,139,0.4)] placeholder:text-text-muted';
+import { Input, Select, Textarea } from './Input.jsx';
 
 const HEIGHT_OPTIONS = [
   { value: '6-7.5ft', label: '6ft – 7.5ft (Standard Living Room)' },
@@ -38,36 +36,33 @@ export default function ConsultForm({ onSubmitted }) {
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-3.5 sm:grid-cols-2">
         <FormField label="Your Name" htmlFor="consult-name">
-          <input
+          <Input
             id="consult-name"
             type="text"
             required
             placeholder="e.g. David Thomas"
             value={form.name}
             onChange={update('name')}
-            className={FIELD}
           />
         </FormField>
         <FormField label="Phone / WhatsApp Number" htmlFor="consult-phone">
-          <input
+          <Input
             id="consult-phone"
             type="tel"
             required
             placeholder="+91 98765 43210"
             value={form.phone}
             onChange={update('phone')}
-            className={FIELD}
           />
         </FormField>
       </div>
 
       <div className="grid gap-3.5 sm:grid-cols-2">
         <FormField label="Preferred Showroom" htmlFor="consult-showroom">
-          <select
+          <Select
             id="consult-showroom"
             value={form.showroom}
             onChange={update('showroom')}
-            className={`${FIELD} cursor-pointer`}
           >
             {SHOWROOMS.map((room) => (
               <option key={room.city} value={room.city} className="bg-bg-dark-emerald">
@@ -78,32 +73,30 @@ export default function ConsultForm({ onSubmitted }) {
             <option value="Online" className="bg-bg-dark-emerald">
               Online Delivery Only
             </option>
-          </select>
+          </Select>
         </FormField>
         <FormField label="Tree Height Interest" htmlFor="consult-height">
-          <select
+          <Select
             id="consult-height"
             value={form.height}
             onChange={update('height')}
-            className={`${FIELD} cursor-pointer`}
           >
             {HEIGHT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value} className="bg-bg-dark-emerald">
                 {opt.label}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
       </div>
 
       <FormField label="Special Requests / Notes" htmlFor="consult-notes">
-        <textarea
+        <Textarea
           id="consult-notes"
           rows="3"
           placeholder="Tell us about your home layout or decor preferences..."
           value={form.notes}
           onChange={update('notes')}
-          className={`${FIELD} resize-y`}
         />
       </FormField>
 

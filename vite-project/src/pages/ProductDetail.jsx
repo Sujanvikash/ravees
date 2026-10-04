@@ -12,6 +12,7 @@ import { PRODUCTS } from '../data/products.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import NotFound from './NotFound.jsx';
+import Container from '../components/Container.jsx';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -33,7 +34,7 @@ export default function ProductDetail() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-12 md:py-20">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <Link
           to={`/shop?category=${product.category}`}
           className="mb-7 inline-flex items-center gap-1.5 text-[0.85rem] text-text-secondary no-underline transition-colors hover:text-gold-300"
@@ -171,7 +172,7 @@ export default function ProductDetail() {
             <ProductGrid products={related} />
           </div>
         )}
-      </div>
+      </Container>
     </section>
   );
 }

@@ -4,6 +4,8 @@ import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
+import Button from '../../components/Button.jsx';
+import { Input } from '../../components/Input.jsx';
 
 const slugify = (value) =>
   value
@@ -12,8 +14,6 @@ const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.88rem] text-white outline-none focus:border-gold-400';
 const LABEL = 'text-[0.75rem] text-gold-300';
 
 export default function AdminCategories() {
@@ -79,13 +79,10 @@ export default function AdminCategories() {
               Reset to scraped data
             </button>
           )}
-          <button
-            onClick={startAdding}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-4 py-2.5 text-[0.85rem] font-semibold text-[#04140b] transition-all hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
-          >
+          <Button size="sm" onClick={startAdding}>
             <Plus size={15} strokeWidth={2.5} />
             New collection
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -107,31 +104,28 @@ export default function AdminCategories() {
 
           <div className="grid gap-4 sm:grid-cols-[1fr_80px]">
             <FormField label="Display name" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 autoFocus
                 required
                 value={newCat.name}
                 onChange={(e) => setNewCat((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g. Gift Hampers"
-                className={FIELD}
               />
             </FormField>
             <FormField label="Icon" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 value={newCat.icon}
                 onChange={(e) => setNewCat((prev) => ({ ...prev, icon: e.target.value }))}
-                className={FIELD}
               />
             </FormField>
           </div>
 
-          <button
-            type="submit"
-            className="inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-5 py-2.5 text-[0.85rem] font-semibold text-[#04140b]"
-          >
+          <Button size="sm" type="submit" className="self-start">
             <Plus size={15} strokeWidth={2} />
             Add collection
-          </button>
+          </Button>
         </form>
       )}
 
@@ -159,22 +153,23 @@ export default function AdminCategories() {
 
               <div className="flex flex-col gap-3">
                 <FormField label="Display name" labelClassName={LABEL}>
-                  <input
+                  <Input
+                    size="sm"
                     value={draft.name ?? cat.name}
                     onChange={(e) =>
                       setDrafts((prev) => ({ ...prev, [cat.id]: { ...draft, name: e.target.value } }))
                     }
-                    className={FIELD}
                   />
                 </FormField>
 
                 <FormField label="Icon" labelClassName={LABEL}>
-                  <input
+                  <Input
+                    size="sm"
                     value={draft.icon ?? cat.icon}
                     onChange={(e) =>
                       setDrafts((prev) => ({ ...prev, [cat.id]: { ...draft, icon: e.target.value } }))
                     }
-                    className={`w-20 ${FIELD}`}
+                    className="w-20"
                   />
                 </FormField>
 
@@ -182,18 +177,10 @@ export default function AdminCategories() {
                   {liveCount} product{liveCount === 1 ? '' : 's'} currently in this collection
                 </p>
 
-                <button
-                  onClick={() => save(cat)}
-                  disabled={!dirty}
-                  className={`mt-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-[0.82rem] font-semibold transition-all ${
-                    dirty
-                      ? 'cursor-pointer border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] text-[#04140b]'
-                      : 'cursor-not-allowed border border-white/10 bg-white/5 text-text-muted'
-                  }`}
-                >
+                <Button size="sm" onClick={() => save(cat)} disabled={!dirty} className="mt-1">
                   <Save size={14} strokeWidth={2} />
                   {dirty ? 'Save changes' : 'No changes'}
-                </button>
+                </Button>
               </div>
             </div>
           );

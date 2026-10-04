@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Plus, Trash2, RotateCcw, Save, X } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
+import Button from '../../components/Button.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
+import { Input, Textarea } from '../../components/Input.jsx';
 
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.85rem] text-white outline-none transition-all focus:border-gold-400 placeholder:text-text-muted';
 const LABEL = 'text-[0.75rem] text-gold-300';
 
 const BLANK = { author: '', location: '', quote: '', rating: 5, treeModel: '' };
@@ -56,13 +56,10 @@ export default function AdminTestimonials() {
               Reset
             </button>
           )}
-          <button
-            onClick={() => setEditing({ ...BLANK, __new: true })}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-4 py-2.5 text-[0.85rem] font-semibold text-[#04140b] transition-all hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
-          >
+          <Button size="sm" onClick={() => setEditing({ ...BLANK, __new: true })}>
             <Plus size={15} strokeWidth={2.5} />
             New testimonial
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -82,57 +79,54 @@ export default function AdminTestimonials() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Author" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 value={editing.author}
                 onChange={(e) => setEditing((prev) => ({ ...prev, author: e.target.value }))}
-                className={FIELD}
               />
             </FormField>
             <FormField label="Location" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 value={editing.location}
                 onChange={(e) => setEditing((prev) => ({ ...prev, location: e.target.value }))}
-                className={FIELD}
               />
             </FormField>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Product owned" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 value={editing.treeModel}
                 onChange={(e) => setEditing((prev) => ({ ...prev, treeModel: e.target.value }))}
-                className={FIELD}
               />
             </FormField>
             <FormField label="Rating (1–5)" labelClassName={LABEL}>
-              <input
+              <Input
+                size="sm"
                 type="number"
                 min="1"
                 max="5"
                 value={editing.rating}
                 onChange={(e) => setEditing((prev) => ({ ...prev, rating: e.target.value }))}
-                className={FIELD}
               />
             </FormField>
           </div>
 
           <FormField label="Quote" labelClassName={LABEL}>
-            <textarea
+            <Textarea
+              size="sm"
               rows="4"
               value={editing.quote}
               onChange={(e) => setEditing((prev) => ({ ...prev, quote: e.target.value }))}
-              className={`${FIELD} resize-y`}
             />
           </FormField>
 
-          <button
-            onClick={save}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 self-start rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-5 py-2.5 text-[0.85rem] font-semibold text-[#04140b]"
-          >
+          <Button size="sm" onClick={save} className="self-start">
             <Save size={15} strokeWidth={2} />
             {isNew ? 'Add testimonial' : 'Save changes'}
-          </button>
+          </Button>
         </div>
       )}
 

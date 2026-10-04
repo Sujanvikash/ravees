@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Trash2, Minus, Plus, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../context/CartContext.jsx';
+import Button from '../components/Button.jsx';
 
 export default function CartDrawer({ isOpen, onClose }) {
   const { cart, updateQuantity, removeFromCart, totalCount } = useCart();
@@ -125,13 +126,9 @@ export default function CartDrawer({ isOpen, onClose }) {
               <span className="font-serif text-[1.15rem] text-gold-300">Quote on request</span>
             </div>
 
-            <Link
-              to="/checkout"
-              onClick={onClose}
-              className="mt-3.5 inline-flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-6.5 py-3.5 font-sans text-[0.95rem] font-semibold tracking-[0.06em] text-[#04140b] no-underline shadow-[0_0_20px_rgba(229,199,139,0.4)] transition-all duration-300 hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
-            >
+            <Button size="lg" full to="/checkout" onClick={onClose} className="mt-3.5">
               Request Final Quote
-            </Link>
+            </Button>
 
             <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[0.72rem] text-text-muted">
               <ShieldCheck size={13} strokeWidth={2} />

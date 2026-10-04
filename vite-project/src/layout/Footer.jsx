@@ -4,6 +4,9 @@ import { FaFacebookF, FaInstagram, FaYoutube, FaWhatsapp } from 'react-icons/fa'
 import { PHONE_HREF, PHONE_DISPLAY, whatsappHref } from '../data/site.js';
 import { useToast } from '../context/ToastContext.jsx';
 import { SHOWROOMS } from '../data/showrooms.js';
+import Container from '../components/Container.jsx';
+import Button from '../components/Button.jsx';
+import { Input } from '../components/Input.jsx';
 
 const COLLECTION_LINKS = [
   { label: 'European Christmas Trees', to: '/shop?category=christmas-trees' },
@@ -35,7 +38,7 @@ export default function Footer() {
 
   return (
     <footer className="relative z-20 border-t border-gold-400/15 bg-[#020704] pt-20 pb-8">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <div className="mb-14 grid gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.5fr]">
           <div>
             <img src="/logo.svg" alt="Raave's Evergreen" className="mb-4 h-20 w-[180px] object-contain" />
@@ -104,20 +107,18 @@ export default function Footer() {
               Join the Raave family for early seasonal preview access and exclusive customer invitations.
             </p>
             <form className="mb-5 flex gap-2" onSubmit={handleNewsletter}>
-              <input
+              <Input
                 type="email"
                 required
                 placeholder="Enter your email..."
+                aria-label="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 rounded-lg border border-white/10 bg-white/6 px-3.5 py-2.5 text-[0.85rem] text-white outline-none focus:border-gold-400 placeholder:text-text-muted"
+                className="min-w-0 flex-1"
               />
-              <button
-                type="submit"
-                className="cursor-pointer rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-5 py-2.5 text-[0.85rem] font-semibold text-[#04140b] transition-all hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
-              >
+              <Button size="sm" type="submit">
                 Join
-              </button>
+              </Button>
             </form>
             <div>
               <span className="block text-[0.75rem] text-text-muted">Direct Orders Hotline:</span>
@@ -144,7 +145,7 @@ export default function Footer() {
             </Link>
           </div>
         </div>
-      </div>
+      </Container>
     </footer>
   );
 }

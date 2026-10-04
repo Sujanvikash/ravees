@@ -1,7 +1,14 @@
 import { Link } from 'react-router-dom';
 
 const BASE =
-  'inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg px-6.5 py-3 font-sans text-[0.88rem] font-semibold tracking-[0.06em] no-underline transition-all duration-300';
+  'inline-flex cursor-pointer items-center justify-center rounded-lg font-sans font-semibold no-underline transition-all duration-300 disabled:pointer-events-none disabled:border-white/10 disabled:bg-none disabled:bg-white/5 disabled:text-text-muted disabled:shadow-none';
+
+// sm: compact admin/toolbar buttons; md: the default; lg: full-width checkout-style calls to action.
+const SIZES = {
+  sm: 'gap-2 px-4 py-2.5 text-[0.85rem]',
+  md: 'gap-2.5 px-6.5 py-3 text-[0.88rem] tracking-[0.06em]',
+  lg: 'gap-2.5 px-6.5 py-3.5 text-[0.95rem] tracking-[0.06em]',
+};
 
 const VARIANTS = {
   gold: 'border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] text-[#04140b] shadow-[0_0_20px_rgba(229,199,139,0.4)] hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))] hover:shadow-[0_0_30px_rgba(229,199,139,0.65)]',
@@ -12,6 +19,7 @@ const VARIANTS = {
 
 export default function Button({
   variant = 'gold',
+  size = 'md',
   to,
   href,
   full = false,
@@ -19,7 +27,7 @@ export default function Button({
   children,
   ...rest
 }) {
-  const classes = `${BASE} ${VARIANTS[variant] ?? VARIANTS.gold} ${full ? 'w-full' : ''} ${className}`;
+  const classes = `${BASE} ${SIZES[size] ?? SIZES.md} ${VARIANTS[variant] ?? VARIANTS.gold} ${full ? 'w-full' : ''} ${className}`;
 
   if (to) {
     return (

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, RotateCcw, ExternalLink } from 'lucide-react';
 import DataTable from '../components/DataTable.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import Button from '../../components/Button.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 
 export default function AdminProducts() {
@@ -96,13 +97,10 @@ export default function AdminProducts() {
               Reset to scraped data
             </button>
           )}
-          <Link
-            to="/admin/products/new"
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-4 py-2.5 text-[0.85rem] font-semibold text-[#04140b] no-underline transition-all hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
-          >
+          <Button size="sm" to="/admin/products/new">
             <Plus size={15} strokeWidth={2.5} />
             New product
-          </Link>
+          </Button>
         </div>
       </div>
 

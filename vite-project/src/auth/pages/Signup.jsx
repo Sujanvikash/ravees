@@ -6,9 +6,8 @@ import FormField from '../../components/FormField.jsx';
 import { GRADIENT_TITLE } from '../../components/SectionHeading.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
-
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.9rem] text-white outline-none transition-all focus:border-gold-400 placeholder:text-text-muted';
+import Eyebrow from '../../components/Eyebrow.jsx';
+import { Input } from '../../components/Input.jsx';
 
 export default function Signup() {
   const { signup } = useCustomerAuth();
@@ -50,9 +49,9 @@ export default function Signup() {
     <section className="relative z-20 flex min-h-[70vh] items-center justify-center bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] px-6 py-16">
       <div className="w-full max-w-[480px]">
         <div className="mb-7 text-center">
-          <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+          <Eyebrow>
             ✦ JOIN THE RAAVE FAMILY ✦
-          </span>
+          </Eyebrow>
           <h1 className={`font-serif text-[1.8rem] font-bold leading-[1.2] tracking-[0.03em] ${GRADIENT_TITLE}`}>
             Create Your Account
           </h1>
@@ -63,61 +62,56 @@ export default function Signup() {
           className="flex flex-col gap-4 rounded-2xl border border-gold-400/25 bg-[rgba(8,28,20,0.9)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
         >
           <FormField label="Full Name" htmlFor="signup-name">
-            <input
+            <Input
               id="signup-name"
               required
               autoFocus
               value={form.name}
               onChange={update('name')}
               placeholder="e.g. David Thomas"
-              className={FIELD}
             />
           </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Email" htmlFor="signup-email">
-              <input
+              <Input
                 id="signup-email"
                 type="email"
                 required
                 value={form.email}
                 onChange={update('email')}
                 placeholder="you@example.com"
-                className={FIELD}
               />
             </FormField>
             <FormField label="Phone" htmlFor="signup-phone">
-              <input
+              <Input
                 id="signup-phone"
                 type="tel"
                 required
                 value={form.phone}
                 onChange={update('phone')}
                 placeholder="+91 98765 43210"
-                className={FIELD}
               />
             </FormField>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Password" htmlFor="signup-password">
-              <input
+              <Input
                 id="signup-password"
                 type="password"
                 required
                 value={form.password}
                 onChange={update('password')}
-                className={FIELD}
               />
             </FormField>
             <FormField label="Confirm Password" htmlFor="signup-confirm">
-              <input
+              <Input
                 id="signup-confirm"
                 type="password"
                 required
                 value={form.confirm}
                 onChange={update('confirm')}
-                className={FIELD}
               />
             </FormField>
           </div>

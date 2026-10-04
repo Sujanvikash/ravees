@@ -3,11 +3,12 @@ import TestimonialCard from '../components/TestimonialCard.jsx';
 import Button from '../components/Button.jsx';
 import { ArrowRight } from 'lucide-react';
 import { TESTIMONIALS } from '../data/testimonials.js';
+import Container from '../components/Container.jsx';
 
 export default function Testimonials() {
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <SectionHeading
           eyebrow="✦ TESTIMONIALS ✦"
           title="Loved Across Generations"
@@ -35,7 +36,7 @@ export default function Testimonials() {
             </Button>
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

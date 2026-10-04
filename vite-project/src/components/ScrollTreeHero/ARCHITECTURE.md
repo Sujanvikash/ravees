@@ -178,7 +178,7 @@ Needs Tailwind 3.4+ or v4 (`h-svh`, `min-h-svh`). On older versions replace thos
 
 | What | Where | Effect |
 |---|---|---|
-| Scroll length | `scrollLength` prop (default `450`) | Higher = slower growth per scroll. 350–600 is the useful range. |
+| Scroll length | `scrollClass` prop (default `h-[450svh]`) | A Tailwind height class, written out in full (e.g. `h-[600svh]`) so Tailwind can see it. Higher = slower growth per scroll; 350–600 is the useful range. |
 | Wheel feel | `lerp` in `SmoothScroll.jsx` (default `0.1`) | 0.07 floatier, 0.15 snappier. |
 | Touch catch-up | `scrub` in `ScrollTreeHero.jsx` | 0.3 tighter, 0.8 smoother. |
 | Card timing | Positions (0.5 on desktop; 0.14 / 0.36 / 0.62 / 0.8 on phones) in the timeline | Move cards to match specific moments in the video. |

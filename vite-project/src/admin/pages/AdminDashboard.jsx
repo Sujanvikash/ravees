@@ -59,7 +59,6 @@ export default function AdminDashboard() {
 
           <div className="flex flex-col gap-3">
             {perCategory.map((cat) => {
-              const pct = products.items.length ? (cat.live / products.items.length) * 100 : 0;
               return (
                 <div key={cat.id} className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-[0.82rem]">
@@ -68,12 +67,12 @@ export default function AdminDashboard() {
                     </span>
                     <span className="font-mono text-gold-300">{cat.live}</span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-gold-600),var(--color-gold-300))]"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+                  <progress
+                    value={cat.live}
+                    max={products.items.length || 1}
+                    aria-label={`${cat.name}: ${cat.live} live products`}
+                    className="h-1.5 w-full appearance-none overflow-hidden rounded-full border-0 bg-white/8 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-[linear-gradient(90deg,var(--color-gold-600),var(--color-gold-300))] [&::-webkit-progress-bar]:bg-white/8 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-[linear-gradient(90deg,var(--color-gold-600),var(--color-gold-300))]"
+                  />
                 </div>
               );
             })}

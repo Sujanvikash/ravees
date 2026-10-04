@@ -59,11 +59,11 @@ const POS = {
  * Scroll-scrubbed image-sequence hero.
  *
  * Props
- *  scrollLength  height of the scroll track in viewport heights (default 450)
+ *  scrollClass   Tailwind height class for the scroll track (default "h-[450svh]": 450 viewport heights)
  *  shopHref      overrides the primary CTA link from heroContent.js
  *  studioHref    overrides the secondary CTA link from heroContent.js
  */
-export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHref }) {
+export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, studioHref }) {
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -289,8 +289,7 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
     <section
       ref={sectionRef}
       aria-label="Raave's Evergreen hero"
-      className="relative bg-[#0B1A14]"
-      style={reduced ? undefined : { height: `${scrollLength}svh` }}
+      className={`relative bg-[#0B1A14] ${reduced ? "" : scrollClass}`}
     >
       <div
         className={
@@ -328,17 +327,14 @@ export default function ScrollTreeHero({ scrollLength = 450, shopHref, studioHre
         </div>
 
         {/* Load progress: a hairline that fills while frames stream in, then fades. */}
-        <div
+        <progress
           aria-hidden="true"
-          className={`absolute inset-x-0 bottom-0 h-px bg-gold-400/15 transition-opacity duration-700 ${
+          value={progress}
+          max={1}
+          className={`absolute inset-x-0 bottom-0 h-px w-full appearance-none border-0 bg-gold-400/15 transition-opacity duration-700 [&::-moz-progress-bar]:bg-gold-400 [&::-webkit-progress-bar]:bg-gold-400/15 [&::-webkit-progress-value]:bg-gold-400 [&::-webkit-progress-value]:transition-[width] [&::-webkit-progress-value]:duration-300 ${
             progress >= 1 ? "opacity-0" : "opacity-100"
           }`}
-        >
-          <div
-            className="h-full origin-left bg-gold-400 transition-transform duration-300"
-            style={{ transform: `scaleX(${progress})` }}
-          />
-        </div>
+        />
       </div>
     </section>
   );

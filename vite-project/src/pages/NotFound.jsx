@@ -1,14 +1,15 @@
 import { Home, Store } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
+import Eyebrow from '../components/Eyebrow.jsx';
 
 export default function NotFound() {
   return (
     <section className="relative z-20 flex min-h-[70vh] items-center justify-center bg-bg-primary px-6 py-25">
       <div className="max-w-[520px] text-center">
-        <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+        <Eyebrow>
           ✦ 404 ✦
-        </span>
+        </Eyebrow>
         <h1 className={`mb-4 font-serif text-[2.2rem] font-bold leading-[1.2] tracking-[0.03em] ${GRADIENT_TITLE}`}>
           This Ornament Wandered Off
         </h1>

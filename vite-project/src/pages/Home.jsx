@@ -10,6 +10,8 @@ import Button from '../components/Button.jsx';
 import { PRODUCTS } from '../data/products.js';
 import { CATEGORIES } from '../data/categories.js';
 import { TESTIMONIALS } from '../data/testimonials.js';
+import Container from '../components/Container.jsx';
+import Eyebrow from '../components/Eyebrow.jsx';
 
 // Hero loads separately so the rest of the homepage can paint first.
 const ScrollTreeHero = lazy(() => import('../components/ScrollTreeHero'));
@@ -62,7 +64,7 @@ export default function Home() {
 
       {/* Trust bar */}
       <section className="relative z-20 border-t border-b border-gold-400/15 bg-[linear-gradient(180deg,var(--color-bg-darker)_0%,var(--color-bg-primary)_100%)] py-15">
-        <div className="mx-auto max-w-[1360px] px-6">
+        <Container>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {TRUST_ITEMS.map(({ Icon, title, body }) => (
               <TrustBadge key={title} Icon={Icon} title={title}>
@@ -70,17 +72,17 @@ export default function Home() {
               </TrustBadge>
             ))}
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* Featured collections */}
       <section className="relative z-20 bg-bg-primary py-25">
-        <div className="mx-auto max-w-[1360px] px-6">
+        <Container>
           <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
             <div>
-              <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+              <Eyebrow>
                 ✦ 2026 SIGNATURE COLLECTION ✦
-              </span>
+              </Eyebrow>
               <h2 className={`font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.5rem] ${GRADIENT_TITLE}`}>
                 European Standard Masterpieces
               </h2>
@@ -92,12 +94,12 @@ export default function Home() {
           </div>
 
           <ProductGrid products={featured} onQuickView={setQuickView} />
-        </div>
+        </Container>
       </section>
 
       {/* Tree Studio teaser */}
       <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-25">
-        <div className="mx-auto max-w-[1360px] px-6">
+        <Container>
           <div className="grid items-center gap-10 rounded-3xl border border-gold-400/30 bg-[radial-gradient(circle_at_center,#0a291c_0%,#041009_100%)] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6)] md:p-14 lg:grid-cols-[1.4fr_1fr]">
             <div>
               <span className="mb-3 inline-block font-mono text-[0.68rem] uppercase tracking-[0.22em] text-gold-400">
@@ -142,12 +144,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* Testimonials teaser */}
       <section className="relative z-20 bg-bg-primary py-25">
-        <div className="mx-auto max-w-[1360px] px-6">
+        <Container>
           <SectionHeading eyebrow="✦ TESTIMONIALS ✦" title="Loved Across Generations" />
           <div className="grid gap-7 md:grid-cols-3">
             {TESTIMONIALS.map((t) => (
@@ -162,7 +164,7 @@ export default function Home() {
               Read every customer story →
             </Link>
           </div>
-        </div>
+        </Container>
       </section>
 
       <QuickViewModal product={quickView} onClose={() => setQuickView(null)} />

@@ -5,6 +5,8 @@ import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import ConsultForm from '../components/ConsultForm.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
+import Container from '../components/Container.jsx';
+import Eyebrow from '../components/Eyebrow.jsx';
 
 const METHOD_ROW =
   'flex items-center gap-4 rounded-xl border border-gold-400/15 bg-white/4 p-4 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/30 hover:bg-gold-400/15 hover:text-white';
@@ -14,12 +16,12 @@ export default function Contact() {
 
   return (
     <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <div className="grid gap-10 rounded-3xl border border-gold-400/30 bg-[rgba(8,28,20,0.85)] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:p-12 lg:grid-cols-2">
           <div>
-            <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+            <Eyebrow>
               ✦ CONCIERGE SUPPORT ✦
-            </span>
+            </Eyebrow>
             <h1 className={`mb-3.5 font-serif text-[1.9rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.3rem] ${GRADIENT_TITLE}`}>
               Speak With A Holiday Specialist
             </h1>
@@ -71,7 +73,7 @@ export default function Contact() {
             />
           </div>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

@@ -8,6 +8,8 @@ import QuickViewModal from '../components/QuickViewModal.jsx';
 import { PRODUCTS } from '../data/products.js';
 import { CATEGORIES } from '../data/categories.js';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import Container from '../components/Container.jsx';
+import Eyebrow from '../components/Eyebrow.jsx';
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
@@ -55,12 +57,12 @@ export default function Shop() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
-      <div className="mx-auto max-w-[1360px] px-6">
+      <Container>
         <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+            <Eyebrow>
               ✦ 2026 SIGNATURE COLLECTION ✦
-            </span>
+            </Eyebrow>
             <h1 className={`font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.5rem] ${GRADIENT_TITLE}`}>
               European Standard Masterpieces
             </h1>
@@ -121,7 +123,7 @@ export default function Shop() {
               : 'No products match your filters.'
           }
         />
-      </div>
+      </Container>
 
       <QuickViewModal product={quickView} onClose={() => setQuickView(null)} />
     </section>

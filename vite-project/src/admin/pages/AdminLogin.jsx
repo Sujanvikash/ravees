@@ -3,14 +3,13 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { LogIn, Info } from 'lucide-react';
 import Logo from '../../components/Logo.jsx';
 import FormField from '../../components/FormField.jsx';
+import Button from '../../components/Button.jsx';
 import {
   AdminAuthProvider,
   DEMO_CREDENTIALS,
   useAdminAuth,
 } from '../context/AdminAuthContext.jsx';
-
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.9rem] text-white outline-none transition-all focus:border-gold-400 placeholder:text-text-muted';
+import { Input } from '../../components/Input.jsx';
 
 function LoginForm() {
   const { isAuthenticated, login } = useAdminAuth();
@@ -46,24 +45,22 @@ function LoginForm() {
           className="flex flex-col gap-4 rounded-2xl border border-gold-400/25 bg-[rgba(8,28,20,0.9)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
         >
           <FormField label="Username" htmlFor="admin-user">
-            <input
+            <Input
               id="admin-user"
               required
               autoFocus
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className={FIELD}
             />
           </FormField>
 
           <FormField label="Password" htmlFor="admin-pass">
-            <input
+            <Input
               id="admin-pass"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={FIELD}
             />
           </FormField>
 
@@ -73,13 +70,10 @@ function LoginForm() {
             </p>
           )}
 
-          <button
-            type="submit"
-            className="mt-1 inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-6 py-3 text-[0.9rem] font-semibold tracking-[0.06em] text-[#04140b] shadow-[0_0_20px_rgba(229,199,139,0.4)] transition-all hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
-          >
+          <Button type="submit" className="mt-1">
             <LogIn size={17} strokeWidth={2} />
             Sign In
-          </button>
+          </Button>
 
           <div className="flex gap-2.5 rounded-lg border border-gold-400/15 bg-gold-400/8 p-3.5">
             <Info size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-gold-300" />

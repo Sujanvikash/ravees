@@ -9,9 +9,8 @@ import { useToast } from '../context/ToastContext.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
 import { SHOWROOMS } from '../data/showrooms.js';
-
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.88rem] text-white outline-none transition-all focus:border-gold-400 focus:shadow-[0_0_10px_rgba(229,199,139,0.4)] placeholder:text-text-muted';
+import Eyebrow from '../components/Eyebrow.jsx';
+import { Input, Select, Textarea } from '../components/Input.jsx';
 
 export default function Checkout() {
   const { cart, totalCount, clearCart } = useCart();
@@ -94,9 +93,9 @@ export default function Checkout() {
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
       <div className="mx-auto max-w-[1100px] px-6">
-        <span className="mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400">
+        <Eyebrow>
           ✦ CONCIERGE QUOTE REQUEST ✦
-        </span>
+        </Eyebrow>
         <h1 className={`mb-8 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
           Request Your Final Quote
         </h1>
@@ -108,42 +107,39 @@ export default function Checkout() {
           >
             <div className="grid gap-3.5 sm:grid-cols-2">
               <FormField label="Full Name" htmlFor="co-name">
-                <input id="co-name" required value={form.name} onChange={update('name')} className={FIELD} />
+                <Input id="co-name" required value={form.name} onChange={update('name')} />
               </FormField>
               <FormField label="Phone / WhatsApp" htmlFor="co-phone">
-                <input
+                <Input
                   id="co-phone"
                   type="tel"
                   required
                   value={form.phone}
                   onChange={update('phone')}
-                  className={FIELD}
                 />
               </FormField>
             </div>
 
             <div className="grid gap-3.5 sm:grid-cols-2">
               <FormField label="Email" htmlFor="co-email">
-                <input
+                <Input
                   id="co-email"
                   type="email"
                   required
                   value={form.email}
                   onChange={update('email')}
-                  className={FIELD}
                 />
               </FormField>
               <FormField label="City" htmlFor="co-city">
-                <input id="co-city" required value={form.city} onChange={update('city')} className={FIELD} />
+                <Input id="co-city" required value={form.city} onChange={update('city')} />
               </FormField>
             </div>
 
             <FormField label="Fulfilment" htmlFor="co-fulfilment">
-              <select
+              <Select
                 id="co-fulfilment"
                 value={form.fulfilment}
                 onChange={update('fulfilment')}
-                className={`${FIELD} cursor-pointer`}
               >
                 <option value="delivery" className="bg-bg-dark-emerald">
                   White-glove home delivery
@@ -151,16 +147,15 @@ export default function Checkout() {
                 <option value="pickup" className="bg-bg-dark-emerald">
                   Showroom pickup
                 </option>
-              </select>
+              </Select>
             </FormField>
 
             {form.fulfilment === 'pickup' ? (
               <FormField label="Pickup Showroom" htmlFor="co-showroom">
-                <select
+                <Select
                   id="co-showroom"
                   value={form.showroom}
                   onChange={update('showroom')}
-                  className={`${FIELD} cursor-pointer`}
                 >
                   {SHOWROOMS.map((room) => (
                     <option key={room.city} value={room.city} className="bg-bg-dark-emerald">
@@ -168,29 +163,27 @@ export default function Checkout() {
                       {room.isFlagship ? ' (Flagship)' : ''}
                     </option>
                   ))}
-                </select>
+                </Select>
               </FormField>
             ) : (
               <FormField label="Delivery Address" htmlFor="co-address">
-                <textarea
+                <Textarea
                   id="co-address"
                   rows="3"
                   required
                   value={form.address}
                   onChange={update('address')}
-                  className={`${FIELD} resize-y`}
                 />
               </FormField>
             )}
 
             <FormField label="Notes for the concierge" htmlFor="co-notes">
-              <textarea
+              <Textarea
                 id="co-notes"
                 rows="3"
                 placeholder="Ceiling height, installation date, colour palette..."
                 value={form.notes}
                 onChange={update('notes')}
-                className={`${FIELD} resize-y`}
               />
             </FormField>
 

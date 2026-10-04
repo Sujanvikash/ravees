@@ -4,9 +4,9 @@ import { ChevronLeft, Save, Upload, X, ImageOff } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import FormField from '../../components/FormField.jsx';
+import Button from '../../components/Button.jsx';
+import { Input, Select, Textarea } from '../../components/Input.jsx';
 
-const FIELD =
-  'rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 font-sans text-[0.88rem] text-white outline-none transition-all focus:border-gold-400 placeholder:text-text-muted';
 const LABEL = 'text-[0.78rem] text-gold-300';
 
 const slugify = (value) =>
@@ -119,43 +119,41 @@ export default function AdminProductForm() {
         {/* Left column: fields */}
         <div className="flex min-w-0 flex-col gap-4">
           <FormField label="Product name" htmlFor="p-name">
-            <input id="p-name" required value={form.name} onChange={update('name')} className={FIELD} />
+            <Input id="p-name" required value={form.name} onChange={update('name')} />
           </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Collection" htmlFor="p-category">
-              <select
+              <Select
                 id="p-category"
                 value={form.category}
                 onChange={update('category')}
-                className={`${FIELD} cursor-pointer`}
               >
                 {categoryOptions.map((cat) => (
                   <option key={cat.id} value={cat.id} className="bg-bg-dark-emerald">
                     {cat.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FormField>
 
             <FormField label="Sizes (comma separated)" htmlFor="p-sizes">
-              <input
+              <Input
                 id="p-sizes"
                 value={form.sizes}
                 onChange={update('sizes')}
                 placeholder="6 Feet, 7 Feet, 8 Feet"
-                className={FIELD}
               />
             </FormField>
           </div>
 
           <FormField label="Description" htmlFor="p-desc">
-            <textarea
+            <Textarea
               id="p-desc"
               rows="8"
               value={form.description}
               onChange={update('description')}
-              className={`${FIELD} min-h-[160px] flex-1 resize-y`}
+              className="min-h-[160px] flex-1"
             />
           </FormField>
 
@@ -170,13 +168,10 @@ export default function AdminProductForm() {
           </label>
 
           <div className="mt-2 flex gap-3">
-            <button
-              type="submit"
-              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] px-5 py-2.5 text-[0.88rem] font-semibold text-[#04140b] transition-all hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))]"
-            >
+            <Button size="sm" type="submit">
               <Save size={16} strokeWidth={2} />
               {existing ? 'Save changes' : 'Create product'}
-            </button>
+            </Button>
             <Link
               to="/admin/products"
               className="inline-flex items-center rounded-lg border border-gold-400/25 px-5 py-2.5 text-[0.88rem] text-text-secondary no-underline transition-all hover:border-gold-400 hover:text-white"
