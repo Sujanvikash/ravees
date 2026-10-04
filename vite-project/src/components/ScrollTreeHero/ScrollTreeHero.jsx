@@ -294,8 +294,8 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
       <div
         className={
           reduced
-            ? "relative min-h-[calc(100svh-var(--header-h))] w-full overflow-hidden"
-            : "sticky top-[var(--header-h)] h-[calc(100svh-var(--header-h))] w-full overflow-hidden [contain:layout_paint]"
+            ? 'relative min-h-[calc(100svh-var(--header-h))] w-full overflow-hidden'
+            : 'sticky top-(--header-h) h-[calc(100svh-var(--header-h))] w-full overflow-hidden contain-[layout_paint]'
         }
       >
         <canvas

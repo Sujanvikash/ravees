@@ -105,12 +105,13 @@ export default function TreeStudioPage() {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr]">
           {/* Live preview */}
-          <div className="flex h-fit flex-col gap-4 lg:sticky lg:top-[100px]">
+          <div className="flex h-fit flex-col gap-4 lg:sticky lg:top-25">
             <div className="relative overflow-hidden rounded-2xl border border-gold-400/30 bg-[radial-gradient(circle_at_center,#0a291c_0%,#041009_100%)] shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
               <img
                 src={previewImage}
                 alt="Custom evergreen tree preview"
-                className="h-[420px] w-full object-cover"
+                className="h-105 w-full object-cover"
+                loading="eager"
               />
             </div>
             <div className="rounded-full border border-gold-400/20 bg-[rgba(6,24,17,0.92)] px-5 py-3 text-center text-[0.82rem] text-gold-200">
@@ -156,7 +157,7 @@ export default function TreeStudioPage() {
               <div className="flex items-start gap-3">
                 <Sparkles size={20} strokeWidth={2} className="mt-0.5 shrink-0 text-gold-300" />
                 <div>
-                  <span className="block text-[0.8rem] uppercase tracking-[0.1em] text-text-muted">
+                  <span className="block font-mono text-[0.8rem] uppercase tracking-widest text-text-muted">
                     Your custom bundle
                   </span>
                   <span className="font-serif text-[1.15rem] text-gold-200">

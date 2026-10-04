@@ -15,7 +15,7 @@ function iconFor(name) {
 const HEADING = "font-serif";
 const EYEBROW = "font-mono text-[0.68rem] uppercase tracking-[0.26em] text-gold-400 sm:text-xs";
 const FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-300";
+  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-300";
 // No backdrop-filter on purpose: blur over a moving canvas is the #1 cause of dropped frames.
 const CARD =
   "rounded-[1.75rem] border border-gold-400/25 bg-[rgba(8,28,20,0.82)] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85),0_0_30px_rgba(229,199,139,0.08),inset_0_1px_0_rgba(255,246,223,0.06)]";
@@ -61,7 +61,7 @@ export function HeroCard({ shopHref, studioHref, reduced }) {
           return (
             <li
               key={b.label}
-              className="inline-flex items-center gap-2 rounded-full border border-gold-400/25 bg-gold-400/[0.08] px-3 py-1.5 text-[0.75rem] text-gold-200 sm:px-3.5 sm:py-2 sm:text-[0.8rem]"
+              className="inline-flex items-center gap-2 rounded-full border border-gold-400/25 bg-gold-400/8 px-3 py-1.5 text-[0.75rem] text-gold-200 sm:px-3.5 sm:py-2 sm:text-[0.8rem]"
             >
               <BadgeIcon className="h-4 w-4 text-gold-400" strokeWidth={1.6} aria-hidden="true" />
               {b.label}

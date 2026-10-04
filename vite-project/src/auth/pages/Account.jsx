@@ -33,7 +33,7 @@ export default function Account() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
-      <div className="mx-auto max-w-[900px] px-6">
+      <div className="mx-auto max-w-225 px-6">
         <Eyebrow>
           ✦ MY ACCOUNT ✦
         </Eyebrow>
@@ -83,7 +83,7 @@ export default function Account() {
             {myEnquiries.map((enq) => (
               <div key={enq.id} className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-gold-400">
+                  <span className="font-mono text-[0.7rem] uppercase tracking-widest text-gold-400">
                     {enq.type === 'quote-request' ? 'Quote Request' : 'Consultation'} &bull;{' '}
                     {new Date(enq.createdAt).toLocaleDateString()}
                   </span>

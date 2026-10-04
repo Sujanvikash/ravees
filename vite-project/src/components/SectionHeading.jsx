@@ -5,7 +5,7 @@ export const GRADIENT_TITLE =
 export default function SectionHeading({ eyebrow, title, subtitle, centered = true, className = '' }) {
   return (
     <div
-      className={`${centered ? 'mx-auto mb-12 max-w-[780px] text-center' : 'mb-8'} ${className}`}
+      className={`${centered ? 'mx-auto mb-12 max-w-195 text-center' : 'mb-8'} ${className}`.trim()}
     >
       {eyebrow && (
         <Eyebrow>

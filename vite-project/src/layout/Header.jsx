@@ -123,7 +123,7 @@ export default function Header({ onOpenCart }) {
           >
             <ShoppingBag size={18} strokeWidth={2} />
             <span className={BADGE_COUNT}>{totalCount}</span>
-            <span className="hidden font-mono font-bold tracking-[0.1em] text-gold-300 sm:inline">
+            <span className="hidden font-mono font-bold tracking-widest text-gold-300 sm:inline">
               CART
             </span>
           </button>

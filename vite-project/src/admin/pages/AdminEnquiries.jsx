@@ -63,8 +63,8 @@ export default function AdminEnquiries() {
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-[1rem] font-semibold text-white">{enq.name || 'Unnamed'}</p>
-                  <span className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-gold-400">
-                    {enq.type === 'quote-request' ? 'Quote request' : 'Consultation'} ·{' '}
+                  <span className="font-mono text-[0.7rem] uppercase tracking-widest text-gold-400">
+                    {enq.type === 'quote-request' ? 'Quote request' : 'Consultation'} &middot;{' '}
                     {new Date(enq.createdAt).toLocaleString()}
                   </span>
                 </div>

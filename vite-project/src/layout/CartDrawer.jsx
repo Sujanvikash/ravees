@@ -14,7 +14,7 @@ export default function CartDrawer({ isOpen, onClose }) {
   return (
     <div
       data-lenis-prevent
-      className={`fixed inset-0 z-[1000] flex justify-end bg-[rgba(2,8,5,0.75)] backdrop-blur-[12px] transition-opacity duration-300 ${
+      className={`fixed inset-0 z-1000 flex justify-end bg-[rgba(2,8,5,0.75)] backdrop-blur-md transition-opacity duration-300 ${
         isOpen ? 'visible opacity-100' : 'invisible opacity-0'
       }`}
       onClick={onClose}

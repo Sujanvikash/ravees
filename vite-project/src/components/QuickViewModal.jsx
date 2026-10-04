@@ -20,7 +20,7 @@ export default function QuickViewModal({ product, onClose }) {
       {product && (
         <div className="grid gap-8 p-8 md:grid-cols-2">
           <div className="overflow-hidden rounded-xl border border-gold-400/20 bg-[#020805]">
-            <img src={product.image} alt={product.name} className="h-full max-h-[420px] w-full object-cover" />
+            <img src={product.image} alt={product.name} className="h-full max-h-105 w-full object-cover" />
           </div>
 
           <div className="flex flex-col gap-4">

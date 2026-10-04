@@ -16,7 +16,7 @@ export default function Contact() {
 
   return (
     <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
-      <Container>
+      <Container className="w-full">
         <div className="grid gap-10 rounded-3xl border border-gold-400/30 bg-[rgba(8,28,20,0.85)] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:p-12 lg:grid-cols-2">
           <div>
             <Eyebrow>

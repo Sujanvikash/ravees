@@ -89,7 +89,7 @@ export default function ProductDetail() {
 
             {product.sizes.length > 0 && (
               <div className="flex flex-col gap-2">
-                <span className="text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-text-muted">
+                <span className="text-[0.72rem] font-semibold uppercase tracking-widest text-text-muted">
                   Select size
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -112,7 +112,7 @@ export default function ProductDetail() {
 
             {product.specs.length > 0 && (
               <div className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
-                <span className="mb-3 block text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-gold-300">
+                <span className="mb-3 block text-[0.72rem] font-semibold uppercase tracking-widest text-gold-300">
                   Specifications
                 </span>
                 <dl className="flex flex-col gap-2">
