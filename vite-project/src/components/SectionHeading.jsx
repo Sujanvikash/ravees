@@ -1,10 +1,12 @@
 import Eyebrow from './Eyebrow.jsx';
+import Reveal from './Reveal.jsx';
+
 export const GRADIENT_TITLE =
   'bg-[linear-gradient(135deg,#ffffff_0%,var(--color-gold-200)_50%,var(--color-gold-500)_100%)] bg-clip-text text-transparent';
 
 export default function SectionHeading({ eyebrow, title, subtitle, centered = true, className = '' }) {
   return (
-    <div
+    <Reveal
       className={`${centered ? 'mx-auto mb-12 max-w-195 text-center' : 'mb-8'} ${className}`.trim()}
     >
       {eyebrow && (
@@ -22,6 +24,6 @@ export default function SectionHeading({ eyebrow, title, subtitle, centered = tr
       {subtitle && (
         <p className="text-[1.05rem] leading-[1.7] text-text-secondary">{subtitle}</p>
       )}
-    </div>
+    </Reveal>
   );
 }

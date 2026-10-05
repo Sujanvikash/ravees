@@ -26,9 +26,13 @@ export default function RootLayout() {
         <Header onOpenCart={() => setIsCartOpen(true)} />
 
         <main className="min-h-[60vh]">
-          <Suspense fallback={<PageLoader />}>
-            <Outlet context={{ openCart: () => setIsCartOpen(true) }} />
-          </Suspense>
+          {/* Each new page fades in. Opacity only: a transform here would break the hero's sticky
+              stage and every position:fixed popup inside the page. */}
+          <div key={pathname} className="animate-page-in">
+            <Suspense fallback={<PageLoader />}>
+              <Outlet context={{ openCart: () => setIsCartOpen(true) }} />
+            </Suspense>
+          </div>
         </main>
 
         <Footer />

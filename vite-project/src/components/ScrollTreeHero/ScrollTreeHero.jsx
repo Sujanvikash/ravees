@@ -228,14 +228,18 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
         tl.to("[data-part='hint']", { autoAlpha: 0, duration: 0.04 }, 0.02);
 
         if (wide) {
-          // Desktop: the heritage card stays on the left the whole way. The craftsmanship
-          // card slides in on the right once the branches and lights are in.
-          tl.fromTo(
-            "[data-beat='craft']",
-            { autoAlpha: 0, x: 40 },
-            { autoAlpha: 1, x: 0, duration: 0.12, ease: "power1.out" },
-            0.5
-          );
+          // Desktop: the heritage card greets the visitor, slides out to the left while the tree
+          // grows (so it has the stage to itself), then returns together with the craftsmanship
+          // card, which slides in on the right once the branches and lights are in. Both stay to
+          // the end. Sideways (x) moves, so they don't fight the up/down parallax drift below.
+          tl.to("[data-beat='hero']", { autoAlpha: 0, x: -40, duration: 0.1, ease: "power1.in" }, 0.14)
+            .to("[data-beat='hero']", { autoAlpha: 1, x: 0, duration: 0.12, ease: "power1.out" }, 0.5)
+            .fromTo(
+              "[data-beat='craft']",
+              { autoAlpha: 0, x: 40 },
+              { autoAlpha: 1, x: 0, duration: 0.12, ease: "power1.out" },
+              0.5
+            );
 
           // Parallax: the cards drift upward at different speeds while the tree holds still,
           // so they read as layers in front of it. The drift is capped by the free space

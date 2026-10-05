@@ -20,7 +20,7 @@ export default function CartDrawer({ isOpen, onClose }) {
       onClick={onClose}
     >
       <aside
-        className={`flex h-full w-full max-w-[440px] flex-col border-l border-gold-400/30 bg-bg-dark-emerald transition-transform duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`flex h-full w-full max-w-[440px] flex-col border-l border-gold-400/30 bg-bg-dark-emerald transition-transform duration-[350ms] ease-premium ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}

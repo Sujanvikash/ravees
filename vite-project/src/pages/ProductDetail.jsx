@@ -13,6 +13,7 @@ import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import NotFound from './NotFound.jsx';
 import Container from '../components/Container.jsx';
+import Aurora from '../components/Aurora.jsx';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -34,6 +35,7 @@ export default function ProductDetail() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-12 md:py-20">
+      <Aurora />
       <Container>
         <Link
           to={`/shop?category=${product.category}`}

@@ -11,6 +11,7 @@ import { addEnquiry } from '../lib/enquiries.js';
 import { SHOWROOMS } from '../data/showrooms.js';
 import Eyebrow from '../components/Eyebrow.jsx';
 import { Input, Select, Textarea } from '../components/Input.jsx';
+import Aurora from '../components/Aurora.jsx';
 
 export default function Checkout() {
   const { cart, totalCount, clearCart } = useCart();
@@ -52,6 +53,7 @@ export default function Checkout() {
   if (submitted) {
     return (
       <section className="relative z-20 flex min-h-[60vh] items-center justify-center bg-bg-primary px-6 py-25">
+        <Aurora />
         <div className="max-w-[560px] text-center">
           <CheckCircle2 size={56} strokeWidth={1.5} className="mx-auto mb-5 text-emerald-400" />
           <h1 className={`mb-4 font-serif text-[2rem] font-bold leading-[1.2] ${GRADIENT_TITLE}`}>
@@ -78,6 +80,7 @@ export default function Checkout() {
   if (cart.length === 0) {
     return (
       <section className="relative z-20 flex min-h-[60vh] items-center justify-center bg-bg-primary px-6 py-25">
+        <Aurora />
         <div className="flex max-w-[480px] flex-col items-center gap-4 text-center">
           <ShoppingBag size={44} strokeWidth={1.5} className="text-gold-400/50" />
           <h1 className="font-serif text-[1.5rem] text-white">Nothing to quote yet</h1>
@@ -92,6 +95,7 @@ export default function Checkout() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+      <Aurora />
       <div className="mx-auto max-w-[1100px] px-6">
         <Eyebrow>
           ✦ CONCIERGE QUOTE REQUEST ✦

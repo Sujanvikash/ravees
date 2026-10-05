@@ -3,6 +3,8 @@ import SectionHeading from '../components/SectionHeading.jsx';
 import ShowroomCard from '../components/ShowroomCard.jsx';
 import { SHOWROOMS } from '../data/showrooms.js';
 import Container from '../components/Container.jsx';
+import Aurora from '../components/Aurora.jsx';
+import Reveal from '../components/Reveal.jsx';
 
 export default function Showrooms() {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -10,6 +12,7 @@ export default function Showrooms() {
 
   return (
     <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
+      <Aurora />
       <Container>
         <SectionHeading
           eyebrow="✦ 5 FLAGSHIP DESTINATIONS ✦"
@@ -33,7 +36,9 @@ export default function Showrooms() {
           ))}
         </div>
 
-        <ShowroomCard showroom={showroom} />
+        <Reveal>
+          <ShowroomCard showroom={showroom} />
+        </Reveal>
       </Container>
     </section>
   );

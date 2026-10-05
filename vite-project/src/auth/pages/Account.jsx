@@ -6,6 +6,7 @@ import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { listEnquiries } from '../../lib/enquiries.js';
 import Eyebrow from '../../components/Eyebrow.jsx';
+import Aurora from '../../components/Aurora.jsx';
 
 const STATUS_STYLE = {
   new: 'bg-emerald-500/15 text-emerald-300',
@@ -33,6 +34,7 @@ export default function Account() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+      <Aurora />
       <div className="mx-auto max-w-225 px-6">
         <Eyebrow>
           ✦ MY ACCOUNT ✦

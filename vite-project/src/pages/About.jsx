@@ -3,17 +3,22 @@ import Button from '../components/Button.jsx';
 import { ArrowRight } from 'lucide-react';
 import Container from '../components/Container.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
+import Aurora from '../components/Aurora.jsx';
+import CountUp from '../components/CountUp.jsx';
+import Reveal from '../components/Reveal.jsx';
 
+// Numbers count up when they scroll into view; the suffix is shown as-is.
 const STATS = [
-  { num: '27+', label: 'Years of Holiday Magic' },
-  { num: '100K+', label: 'Homes & Sanctuaries Blessed' },
-  { num: '5', label: 'Flagship Showrooms' },
-  { num: '100%', label: 'European Certified Safe' },
+  { value: 27, suffix: '+', label: 'Years of Holiday Magic' },
+  { value: 100, suffix: 'K+', label: 'Homes & Sanctuaries Blessed' },
+  { value: 5, suffix: '', label: 'Flagship Showrooms' },
+  { value: 100, suffix: '%', label: 'European Certified Safe' },
 ];
 
 export default function About() {
   return (
     <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-16 md:py-25">
+      <Aurora />
       <Container>
         <div className="grid items-center gap-12 lg:grid-cols-[1fr_440px]">
           <div>
@@ -36,13 +41,15 @@ export default function About() {
             </p>
 
             <div className="mt-9 grid grid-cols-2 gap-5">
-              {STATS.map(({ num, label }) => (
-                <div key={label} className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
-                  <span className="block font-serif text-[2rem] font-bold text-gold-300 sm:text-[2.2rem]">
-                    {num}
-                  </span>
+              {STATS.map(({ value, suffix, label }, i) => (
+                <Reveal key={label} delay={i} className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+                  <CountUp
+                    value={value}
+                    suffix={suffix}
+                    className="block font-serif text-[2rem] font-bold text-gold-300 sm:text-[2.2rem]"
+                  />
                   <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">{label}</span>
-                </div>
+                </Reveal>
               ))}
             </div>
 

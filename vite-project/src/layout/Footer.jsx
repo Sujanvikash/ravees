@@ -24,7 +24,15 @@ const SOCIALS = [
   { Icon: FaWhatsapp, title: 'WhatsApp', href: whatsappHref() },
 ];
 
-const FOOTER_LINK = 'text-[0.85rem] text-text-secondary no-underline transition-colors hover:text-gold-300';
+// The header's gold sparkle, adapted for the footer (Tailwind classes on the link's ::before).
+// Column lists: the ✦ springs in to the left and the link slides right to make room for it
+// (inline-block, because a translate doesn't move an inline element).
+const FOOTER_LINK =
+  "relative inline-block text-[0.85rem] text-text-secondary no-underline transition-[color,translate] duration-300 ease-premium before:pointer-events-none before:absolute before:top-1/2 before:-left-3.5 before:-translate-y-1/2 before:scale-50 before:-rotate-45 before:text-[0.6rem] before:leading-none before:text-gold-400 before:opacity-0 before:drop-shadow-[0_0_6px_rgba(229,199,139,0.85)] before:transition-[opacity,scale,rotate] before:duration-400 before:ease-spring before:content-['✦'] hover:translate-x-3.5 hover:text-gold-300 hover:before:scale-100 hover:before:rotate-0 hover:before:opacity-100 focus-visible:translate-x-3.5 focus-visible:text-gold-300 focus-visible:before:scale-100 focus-visible:before:rotate-0 focus-visible:before:opacity-100";
+
+// Legal links in a row along the bottom: a smaller ✦ springs in above the word, like the header.
+const FOOTER_LEGAL =
+  "relative text-text-muted no-underline transition-colors duration-300 after:pointer-events-none after:absolute after:-top-2.5 after:left-1/2 after:-translate-x-1/2 after:scale-50 after:-rotate-45 after:text-[0.5rem] after:leading-none after:text-gold-400 after:opacity-0 after:drop-shadow-[0_0_6px_rgba(229,199,139,0.85)] after:transition-[opacity,scale,rotate] after:duration-400 after:ease-spring after:content-['✦'] hover:text-gold-400 hover:after:scale-100 hover:after:rotate-0 hover:after:opacity-100 focus-visible:text-gold-400 focus-visible:after:scale-100 focus-visible:after:rotate-0 focus-visible:after:opacity-100";
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -132,15 +140,15 @@ export default function Footer() {
         <div className="flex flex-col items-center justify-between gap-3 border-t border-white/6 pt-6 text-[0.78rem] text-text-muted sm:flex-row">
           <p>&copy; 2026 Raave&apos;s Evergreen. All rights reserved. 27th Anniversary Edition.</p>
           <div className="flex gap-3">
-            <Link to="/about" className="text-text-muted no-underline hover:text-gold-400">
+            <Link to="/about" className={FOOTER_LEGAL}>
               Privacy Policy
             </Link>
             <span>&bull;</span>
-            <Link to="/about" className="text-text-muted no-underline hover:text-gold-400">
+            <Link to="/about" className={FOOTER_LEGAL}>
               Terms &amp; Warranty
             </Link>
             <span>&bull;</span>
-            <Link to="/contact" className="text-text-muted no-underline hover:text-gold-400">
+            <Link to="/contact" className={FOOTER_LEGAL}>
               Shipping Policy
             </Link>
           </div>

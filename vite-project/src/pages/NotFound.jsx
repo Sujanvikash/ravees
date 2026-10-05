@@ -2,10 +2,12 @@ import { Home, Store } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
+import Aurora from '../components/Aurora.jsx';
 
 export default function NotFound() {
   return (
     <section className="relative z-20 flex min-h-[70vh] items-center justify-center bg-bg-primary px-6 py-25">
+      <Aurora />
       <div className="max-w-[520px] text-center">
         <Eyebrow>
           ✦ 404 ✦

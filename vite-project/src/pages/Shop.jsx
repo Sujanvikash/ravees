@@ -10,6 +10,7 @@ import { CATEGORIES } from '../data/categories.js';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import Container from '../components/Container.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
+import Aurora from '../components/Aurora.jsx';
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
@@ -57,6 +58,7 @@ export default function Shop() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+      <Aurora />
       <Container>
         <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
           <div>

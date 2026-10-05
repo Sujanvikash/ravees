@@ -1,4 +1,6 @@
+import Aurora from './Aurora.jsx';
 import Eyebrow from './Eyebrow.jsx';
+import Reveal from './Reveal.jsx';
 import { GRADIENT_TITLE } from './SectionHeading.jsx';
 
 /**
@@ -23,7 +25,8 @@ export default function AuthCard({
     <section
       className={`relative z-20 flex ${fullHeight ? 'min-h-screen' : 'min-h-[70vh]'} items-center justify-center bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] px-6 py-16`}
     >
-      <div className={`w-full ${maxWidth}`}>
+      <Aurora />
+      <Reveal className={`w-full ${maxWidth}`}>
         <div className="mb-7 text-center">
           {header ?? (
             <>
@@ -41,7 +44,7 @@ export default function AuthCard({
         >
           {children}
         </form>
-      </div>
+      </Reveal>
     </section>
   );
 }

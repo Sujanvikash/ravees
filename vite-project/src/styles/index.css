@@ -45,6 +45,67 @@
   --animate-ken-burns: orbitKenBurns 16s ease-in-out infinite alternate;
   --animate-orbit-shine: orbitShine 6.5s ease-in-out infinite;
   --animate-mouse-wheel: mouseWheel 1.6s infinite ease-in-out;
+
+  /* Motion system: one set of curves for the whole site (classes: ease-premium, ease-spring). */
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Site-wide effects. Tailwind v4 defines animations here; everything else is classes in the JSX.
+     Only opacity and transform properties move, so the GPU animates them without repainting. */
+  /* backwards, not both: an animation that keeps filling after it ends still makes the page
+     wrapper a stacking context, which traps popups inside it under the sticky header. */
+  --animate-page-in: page-in 0.5s var(--ease-premium) backwards;
+  --animate-pop: pop 0.45s var(--ease-spring);
+  --animate-toast-progress: toast-progress 3.2s linear forwards;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-gold-sheen: gold-sheen 6s linear infinite;
+  --animate-aurora: aurora 24s ease-in-out infinite alternate;
+  --animate-aurora-reverse: aurora 30s ease-in-out infinite alternate-reverse;
+
+  @keyframes page-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pop {
+    40% {
+      scale: 1.35;
+    }
+  }
+  @keyframes toast-progress {
+    to {
+      scale: 0 1;
+    }
+  }
+  /* Both move a gradient layer with translate (GPU), not background-position (repaints every frame). */
+  @keyframes shimmer {
+    from {
+      translate: -100% 0;
+    }
+    to {
+      translate: 100% 0;
+    }
+  }
+  @keyframes gold-sheen {
+    from {
+      translate: -100% 0;
+    }
+    to {
+      translate: 300% 0;
+    }
+  }
+  @keyframes aurora {
+    from {
+      translate: -8% -6%;
+      scale: 1;
+      rotate: 0deg;
+    }
+    to {
+      translate: 8% 6%;
+      scale: 1.15;
+      rotate: 12deg;
+    }
+  }
 }
 
 @keyframes slideToast {

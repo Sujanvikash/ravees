@@ -6,6 +6,7 @@ import { useRequireLogin } from '../auth/useRequireLogin.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
+import PopBadge from '../components/PopBadge.jsx';
 
 const NAV_LINKS = [
   { to: '/', label: '3D Tree Experience', end: true },
@@ -78,18 +79,31 @@ export default function Header({ onOpenCart }) {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `relative py-1.5 text-[0.88rem] font-medium tracking-[0.04em] no-underline transition-all duration-300 ${
-                  isActive
-                    ? 'text-gold-300 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-sm after:bg-gold-400 after:shadow-[0_0_8px_rgba(229,199,139,0.4)] after:content-[""]'
-                    : 'text-text-secondary hover:text-gold-300'
+                `group py-1.5 text-[0.88rem] font-medium tracking-[0.04em] no-underline transition-colors duration-300 ${
+                  isActive ? 'text-gold-300' : 'text-text-secondary hover:text-gold-300 focus-visible:text-gold-300'
                 }`
               }
             >
-              {label}
-              {tag && (
-                <span className="ml-1 rounded bg-ruby-500 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
-                  {tag}
-                </span>
+              {({ isActive }) => (
+                <>
+                  {/* A small gold sparkle springs in above the word on hover (and keyboard focus) and
+                      stays steady over the active page. It sits on the label, so a tag like NEW
+                      doesn't pull it off-centre. */}
+                  <span
+                    className={`relative after:pointer-events-none after:absolute after:-top-2.5 after:left-1/2 after:-translate-x-1/2 after:text-[0.62rem] after:leading-none after:text-gold-400 after:drop-shadow-[0_0_6px_rgba(229,199,139,0.85)] after:transition-[opacity,scale,rotate] after:duration-400 after:ease-spring after:content-['✦'] ${
+                      isActive
+                        ? 'after:scale-100 after:opacity-100'
+                        : 'after:scale-50 after:-rotate-45 after:opacity-0 group-hover:after:scale-100 group-hover:after:rotate-0 group-hover:after:opacity-100 group-focus-visible:after:scale-100 group-focus-visible:after:rotate-0 group-focus-visible:after:opacity-100'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                  {tag && (
+                    <span className="ml-1 rounded bg-ruby-500 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
+                      {tag}
+                    </span>
+                  )}
+                </>
               )}
             </NavLink>
           ))}
@@ -99,7 +113,7 @@ export default function Header({ onOpenCart }) {
           {/* On phones, saved items live in the menu panel to keep the bar one line */}
           <Link to="/shop?wishlist=1" className={`${UTIL_BTN} max-md:hidden`} title="Saved items">
             <Heart size={18} strokeWidth={2} />
-            <span className={BADGE_COUNT}>{wishlistCount}</span>
+            <PopBadge count={wishlistCount} className={BADGE_COUNT} />
           </Link>
 
           <Link
@@ -122,7 +136,7 @@ export default function Header({ onOpenCart }) {
             onClick={() => requireLogin('Please sign in to view your cart.') && onOpenCart()}
           >
             <ShoppingBag size={18} strokeWidth={2} />
-            <span className={BADGE_COUNT}>{totalCount}</span>
+            <PopBadge count={totalCount} className={BADGE_COUNT} />
             <span className="hidden font-mono font-bold tracking-widest text-gold-300 sm:inline">
               CART
             </span>
@@ -139,7 +153,7 @@ export default function Header({ onOpenCart }) {
           >
             <Heart size={16} strokeWidth={2} className="text-gold-400" />
             Saved items
-            <span className={BADGE_COUNT}>{wishlistCount}</span>
+            <PopBadge count={wishlistCount} className={BADGE_COUNT} />
           </Link>
           <Link
             to={isAuthenticated ? '/account' : '/login'}

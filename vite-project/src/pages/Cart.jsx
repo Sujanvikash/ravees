@@ -6,12 +6,14 @@ import QuantityStepper from '../components/QuantityStepper.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
+import Aurora from '../components/Aurora.jsx';
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+      <Aurora />
       <div className="mx-auto max-w-[1100px] px-6">
         <Eyebrow>
           ✦ YOUR CART ✦

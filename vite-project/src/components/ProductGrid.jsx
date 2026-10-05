@@ -1,5 +1,6 @@
 import { PackageOpen } from 'lucide-react';
 import ProductCard from './ProductCard.jsx';
+import Reveal from './Reveal.jsx';
 
 export default function ProductGrid({ products, onQuickView, emptyMessage = 'No products match your filters.' }) {
   if (!products.length) {
@@ -13,8 +14,11 @@ export default function ProductGrid({ products, onQuickView, emptyMessage = 'No 
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] sm:gap-5">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
+      {products.map((product, i) => (
+        // The first two rows cascade in as they scroll into view; later cards just appear (see Reveal).
+        <Reveal key={product.id} delay={i % 5} disabled={i >= 10}>
+          <ProductCard product={product} onQuickView={onQuickView} />
+        </Reveal>
       ))}
     </div>
   );

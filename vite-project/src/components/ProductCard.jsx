@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Eye, ShoppingBag, Info } from 'lucide-react';
 import Badge from './Badge.jsx';
@@ -7,6 +7,7 @@ import PriceTag from './PriceTag.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
+import { useInView } from '../hooks/useInView.js';
 
 const ACTION_CIRCLE =
   'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-gold-400/30 bg-[rgba(4,18,12,0.85)] text-gold-300 transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-[#04120a]';
@@ -18,6 +19,9 @@ export default function ProductCard({ product, onQuickView }) {
   const addBtnRef = useRef(null);
   const imageRef = useRef(null);
   const wishlisted = isWishlisted(product.id);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  // The shimmer only runs once the card is on screen, not for every card further down the page.
+  const [photoRef, photoInView] = useInView();
 
   const handleAdd = () => {
     if (addToCart(product)) flyToBag(imageRef.current);
@@ -27,14 +31,31 @@ export default function ProductCard({ product, onQuickView }) {
     <div
       onMouseEnter={() => hoverCard(addBtnRef.current)}
       onMouseLeave={leaveCard}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] transition-all duration-300 hover:-translate-y-1.5 hover:border-gold-400/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6),0_0_24px_rgba(229,199,139,0.15)]">
-      <Link to={`/product/${product.id}`} className="relative block h-[110px] w-full overflow-hidden bg-[#020805] sm:h-[150px]">
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] transition-all duration-300 ease-premium hover:-translate-y-1.5 hover:border-gold-400/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6),0_0_24px_rgba(229,199,139,0.15)]">
+      <Link
+        ref={photoRef}
+        to={`/product/${product.id}`}
+        className="relative block h-[110px] w-full overflow-hidden bg-[#020805] sm:h-[150px]"
+      >
+        {/* Shimmer placeholder until the photo has loaded; the photo (above it) then covers it. */}
+        {!imageLoaded && photoInView && (
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_25%,rgba(229,199,139,0.16)_50%,transparent_75%)]"
+          />
+        )}
         <img
-          ref={imageRef}
+          ref={(el) => {
+            imageRef.current = el;
+            // Already in the cache: it may have loaded before React attached onLoad.
+            if (el?.complete && el.naturalWidth) setImageLoaded(true);
+          }}
           src={product.image}
           alt={product.name}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageLoaded(true)}
+          className="relative h-full w-full object-cover transition-[scale] duration-[600ms] ease-premium group-hover:scale-[1.06]"
         />
       </Link>
 
@@ -50,7 +71,12 @@ export default function ProductCard({ product, onQuickView }) {
           title="Save to wishlist"
           onClick={() => toggleWishlist(product.id)}
         >
-          <Heart size={16} strokeWidth={2} fill={wishlisted ? 'currentColor' : 'none'} />
+          <Heart
+            size={16}
+            strokeWidth={2}
+            fill={wishlisted ? 'currentColor' : 'none'}
+            className={wishlisted ? 'animate-pop' : ''}
+          />
         </button>
         {onQuickView && (
           <button className={ACTION_CIRCLE} title="Quick specs & details" onClick={() => onQuickView(product)}>

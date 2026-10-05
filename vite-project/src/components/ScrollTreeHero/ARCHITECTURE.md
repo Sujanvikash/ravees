@@ -79,13 +79,14 @@ Layout is a tall section (`450svh` by default) with a `position: sticky` viewpor
 
 One GSAP timeline, driven by one ScrollTrigger, owns everything: the frame counter tweens from 0 to 149 across the whole timeline (duration 1), and the cards sit at fixed positions inside it. `gsap.matchMedia()` gives phones and desktops different choreography from the same DOM.
 
-Desktop (1024 px and up), matching your original layout: the tree is centred, cards sit on either side.
+Desktop (1024 px and up): the tree is centred, cards sit on either side. The heritage card greets the visitor, steps aside while the tree grows, and returns together with the craftsmanship card.
 
 | Timeline position | What happens | Video content |
 |---|---|---|
 | 0.00 | Heritage card on the left (eyebrow, headline, text, buttons, badges, scroll hint) | Empty stage, snow |
 | 0.02 – 0.06 | Scroll hint fades out | Trunk starts to rise |
-| 0.50 – 0.62 | Craftsmanship card slides in on the right | Branches, lights, ornaments |
+| 0.14 – 0.24 | Heritage card slides out to the left and fades | Trunk and first branches |
+| 0.50 – 0.62 | Heritage card slides back in on the left, Craftsmanship card slides in on the right, together | Branches, lights, ornaments |
 | 0.62 – 1.00 | Both cards stay | Fully decorated tree with gifts |
 | 0.00 – 1.00 | Parallax: heritage card drifts up ±32 px, craftsmanship card ±12 px (from 0.5) | Tree holds still, so the cards read as layers in front of it |
 

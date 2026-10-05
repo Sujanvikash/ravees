@@ -5,6 +5,7 @@ import Button from '../components/Button.jsx';
 import { PRODUCTS } from '../data/products.js';
 import { useCart } from '../context/CartContext.jsx';
 import Container from '../components/Container.jsx';
+import Aurora from '../components/Aurora.jsx';
 
 const HEIGHTS = [
   { value: '6 Feet', sub: '' },
@@ -96,6 +97,7 @@ export default function TreeStudioPage() {
 
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+      <Aurora />
       <Container>
         <SectionHeading
           eyebrow="✦ BESPOKE HOLIDAY CURATION ✦"
