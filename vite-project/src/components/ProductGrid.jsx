@@ -12,7 +12,7 @@ export default function ProductGrid({ products, onQuickView, emptyMessage = 'No 
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-7">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] sm:gap-5">
       {products.map((product) => (
         <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
       ))}

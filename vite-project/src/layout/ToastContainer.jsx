@@ -6,7 +6,7 @@ export default function ToastContainer() {
   return (
     // Phones: pinned under the header so toasts never cover the drawer's action buttons.
     // Desktop: bottom-right, stacked above the Santa that rests in that corner.
-    <div className="pointer-events-none fixed inset-x-4 top-[88px] z-[2000] flex flex-col gap-2.5 sm:inset-x-auto sm:top-auto sm:right-8 sm:bottom-[128px]">
+    <div className="pointer-events-none fixed inset-x-4 top-[88px] z-[2000] flex flex-col gap-2.5 sm:inset-x-auto sm:top-auto sm:right-8 sm:bottom-[96px]">
 
       {toasts.map((toast) => (
         <div
