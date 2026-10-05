@@ -11,7 +11,7 @@ export function CartProvider({ children }) {
   const requireLogin = useRequireLogin();
 
   const addToCart = (product) => {
-    if (!requireLogin('Please sign in to add items to your cart.')) return;
+    if (!requireLogin('Please sign in to add items to your cart.')) return false;
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -22,6 +22,7 @@ export function CartProvider({ children }) {
       return [...prev, { product, quantity: 1 }];
     });
     showToast(`Added "${product.name}" to cart`);
+    return true;
   };
 
   const updateQuantity = (productId, newQty) => {

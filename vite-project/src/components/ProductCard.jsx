@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Eye, ShoppingBag, Info } from 'lucide-react';
 import Badge from './Badge.jsx';
@@ -5,6 +6,7 @@ import Button from './Button.jsx';
 import PriceTag from './PriceTag.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import { useSanta } from '../context/SantaContext.jsx';
 
 const ACTION_CIRCLE =
   'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-gold-400/30 bg-[rgba(4,18,12,0.85)] text-gold-300 transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-[#04120a]';
@@ -12,12 +14,23 @@ const ACTION_CIRCLE =
 export default function ProductCard({ product, onQuickView }) {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { hoverCard, leaveCard, flyToBag } = useSanta();
+  const addBtnRef = useRef(null);
+  const imageRef = useRef(null);
   const wishlisted = isWishlisted(product.id);
 
+  const handleAdd = () => {
+    if (addToCart(product)) flyToBag(imageRef.current);
+  };
+
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] transition-all duration-300 hover:-translate-y-1.5 hover:border-gold-400/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6),0_0_24px_rgba(229,199,139,0.15)]">
+    <div
+      onMouseEnter={() => hoverCard(addBtnRef.current)}
+      onMouseLeave={leaveCard}
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] transition-all duration-300 hover:-translate-y-1.5 hover:border-gold-400/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6),0_0_24px_rgba(229,199,139,0.15)]">
       <Link to={`/product/${product.id}`} className="relative block h-[280px] w-full overflow-hidden bg-[#020805]">
         <img
+          ref={imageRef}
           src={product.image}
           alt={product.name}
           loading="lazy"
@@ -92,7 +105,7 @@ export default function ProductCard({ product, onQuickView }) {
             <span>More</span>
             <Info size={14} strokeWidth={2} />
           </Link>
-          <Button size="sm" onClick={() => addToCart(product)} title="Add to cart">
+          <Button ref={addBtnRef} size="sm" onClick={handleAdd} title="Add to cart">
             <ShoppingBag size={16} strokeWidth={2} />
             <span>Add</span>
           </Button>

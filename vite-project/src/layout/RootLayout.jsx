@@ -7,6 +7,8 @@ import CartDrawer from './CartDrawer.jsx';
 import ToastContainer from './ToastContainer.jsx';
 import PageLoader from '../components/PageLoader.jsx';
 import SmoothScroll from '../components/SmoothScroll';
+import SantaLayer from '../components/SantaLayer/SantaLayer.jsx';
+import { SantaProvider } from '../context/SantaContext.jsx';
 
 export default function RootLayout() {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -19,18 +21,21 @@ export default function RootLayout() {
   // SmoothScroll (Lenis) wraps the storefront only; the admin tree stays on native scrolling.
   return (
     <SmoothScroll>
-      <AnnouncementBar />
-      <Header onOpenCart={() => setIsCartOpen(true)} />
+      <SantaProvider>
+        <AnnouncementBar />
+        <Header onOpenCart={() => setIsCartOpen(true)} />
 
-      <main className="min-h-[60vh]">
-        <Suspense fallback={<PageLoader />}>
-          <Outlet context={{ openCart: () => setIsCartOpen(true) }} />
-        </Suspense>
-      </main>
+        <main className="min-h-[60vh]">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet context={{ openCart: () => setIsCartOpen(true) }} />
+          </Suspense>
+        </main>
 
-      <Footer />
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-      <ToastContainer />
+        <Footer />
+        <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+        <ToastContainer />
+        <SantaLayer onOpenCart={() => setIsCartOpen(true)} />
+      </SantaProvider>
     </SmoothScroll>
   );
 }
