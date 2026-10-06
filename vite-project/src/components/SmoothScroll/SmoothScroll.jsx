@@ -7,6 +7,13 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
+// A refresh must start the page (and the hero's frame 1) from the top. Without this the browser
+// restores the old scroll position after React has already reset it, landing mid-animation.
+if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+  window.history.scrollRestoration = "manual";
+  window.addEventListener("beforeunload", () => window.scrollTo(0, 0));
+}
+
 /**
  * App-wide smooth scrolling. Lenis and ScrollTrigger share GSAP's single
  * requestAnimationFrame loop, so scroll updates match the display's refresh rate.

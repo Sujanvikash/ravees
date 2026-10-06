@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { useToast } from './ToastContext.jsx';
 import { useRequireLogin } from '../auth/useRequireLogin.js';
+import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 
 const CartContext = createContext(null);
 
@@ -9,8 +10,13 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useLocalStorage('raave-cart', []);
   const { showToast } = useToast();
   const requireLogin = useRequireLogin();
+  const { isAuthenticated } = useCustomerAuth();
 
-  const addToCart = (product) => {
+  // Returns true when the item was added.
+  // quiet: skip the "Added" toast (the caller gives its own feedback, e.g. Santa's speech bubble).
+  // onNeedLogin: called instead of the sign-in redirect when signed out; return true if handled.
+  const addToCart = (product, { quiet = false, onNeedLogin } = {}) => {
+    if (!isAuthenticated && onNeedLogin?.()) return false;
     if (!requireLogin('Please sign in to add items to your cart.')) return false;
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
@@ -21,7 +27,7 @@ export function CartProvider({ children }) {
       }
       return [...prev, { product, quantity: 1 }];
     });
-    showToast(`Added "${product.name}" to cart`);
+    if (!quiet) showToast(`Added "${product.name}" to cart`);
     return true;
   };
 

@@ -2,8 +2,12 @@ import { createContext, useContext, useMemo, useRef } from 'react';
 
 const SantaContext = createContext(null);
 
-// Imperative bridge between product cards and the SantaLayer. SantaLayer registers
-// its handlers; cards call them without causing re-renders.
+// Imperative bridge between the page and the SantaLayer. SantaLayer registers its handlers;
+// callers use them without causing re-renders.
+// - hoverCard(addButtonEl) / leaveCard(): Santa walks to a product's Add button and back.
+// - added(product, imageEl): an item went into the cart; returns nothing.
+// - needLogin(): a signed-out add; returns true if Santa handled it (otherwise do the normal redirect).
+// - celebrate(): a quote request was sent.
 export function SantaProvider({ children }) {
   const handlersRef = useRef({});
 
@@ -17,7 +21,9 @@ export function SantaProvider({ children }) {
       },
       hoverCard: (el) => handlersRef.current.hoverCard?.(el),
       leaveCard: () => handlersRef.current.leaveCard?.(),
-      flyToBag: (imgEl) => handlersRef.current.flyToBag?.(imgEl),
+      added: (product, imageEl) => handlersRef.current.added?.(product, imageEl),
+      needLogin: () => handlersRef.current.needLogin?.() ?? false,
+      celebrate: () => handlersRef.current.celebrate?.(),
     }),
     []
   );

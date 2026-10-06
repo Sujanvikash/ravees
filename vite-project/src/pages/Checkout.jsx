@@ -7,6 +7,7 @@ import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
+import { useSanta } from '../context/SantaContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
 import { SHOWROOMS } from '../data/showrooms.js';
 import Eyebrow from '../components/Eyebrow.jsx';
@@ -17,6 +18,7 @@ export default function Checkout() {
   const { cart, totalCount, clearCart } = useCart();
   const { showToast } = useToast();
   const { session } = useCustomerAuth();
+  const { celebrate } = useSanta();
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: session?.name ?? '',
@@ -45,6 +47,7 @@ export default function Checkout() {
       })),
       itemCount: totalCount,
     });
+    celebrate(); // before clearCart, so Santa celebrates instead of reacting to the emptied cart
     clearCart();
     setSubmitted(true);
     showToast('Quote request received — our concierge will be in touch.');

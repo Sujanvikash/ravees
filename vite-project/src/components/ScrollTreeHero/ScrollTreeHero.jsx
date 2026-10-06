@@ -4,12 +4,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { useFrameSequence } from "./useFrameSequence";
 import { HeroCard, CraftCard } from "./HeroCards";
+import heroFrames from "../../data/heroFrames.json";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-const FRAME_COUNT = 150;
-// Folder under public/ (built by scripts/make-frames.mjs). New video or new frames: use a new name so browsers refetch.
-const FRAMES_DIR = "frames-v3";
+// Folder and count come from src/data/heroFrames.json, rewritten by scripts/make-frames.mjs on every run.
+const { dir: FRAMES_DIR, count: FRAME_COUNT } = heroFrames;
 const MAX_DPR = 2; // above 2x the extra pixels cost fill-rate without visible gain
 // Pixel size of each frame set: the canvas never needs more pixels than the frames have.
 const NATIVE = { desktop: [1920, 1080], mobile: [1280, 720] };

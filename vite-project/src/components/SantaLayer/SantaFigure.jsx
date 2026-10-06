@@ -1,6 +1,9 @@
 // Hand-drawn SVG Santa (viewBox 120×120, facing right, gift sack on his back, boots on y=118).
 // Every moving part is its own group (.s-*) so SantaLayer can animate it; pivots are set there.
-export default function SantaFigure({ mouthRef }) {
+// lite: skip the fur filter (cheaper on low-end devices). outfit: "scarf" adds a winter scarf.
+export default function SantaFigure({ mouthRef, lite = false, outfit = null }) {
+  const fuzz = lite ? undefined : "url(#santa-fuzz)";
+
   return (
     <svg
       viewBox="0 0 120 120"
@@ -76,34 +79,53 @@ export default function SantaFigure({ mouthRef }) {
       <ellipse cx="62" cy="117" rx="30" ry="3" fill="#000" opacity="0.3" />
 
       <g className="s-bob">
-        {/* Gift sack (behind Santa) */}
-        <g className="s-sack">
-          <ellipse ref={mouthRef} cx="37" cy="49" rx="19" ry="5" fill="#3a0810" />
-          <g transform="rotate(-12 22 38)">
-            <rect x="14" y="30" width="16" height="15" rx="2" fill="#3d82d8" />
-            <rect x="20.5" y="30" width="3" height="15" fill="#f4c24f" />
-            <rect x="14" y="35.5" width="16" height="3" fill="#f4c24f" />
-            <ellipse cx="19.5" cy="29" rx="3" ry="1.8" fill="#f4c24f" />
-            <ellipse cx="24.5" cy="29" rx="3" ry="1.8" fill="#f4c24f" />
-          </g>
-          <path d="M30 46 Q27 31 40 27 Q53 31 50 46Z" fill="#3aa65a" />
-          <path d="M35 21 Q40 17 45 21 L42.5 26.5 L37.5 26.5Z" fill="#3aa65a" />
-          <rect x="36.5" y="25.5" width="7" height="2.4" rx="1.2" fill="#d23a36" />
-          <g transform="rotate(8 51 40)">
-            <rect x="44" y="33" width="15" height="14" rx="2" fill="#f4a73c" />
-            <rect x="50" y="33" width="3" height="14" fill="#e2582c" />
-            <ellipse cx="51.5" cy="32" rx="3.4" ry="1.8" fill="#e2582c" />
-          </g>
-          <ellipse cx="27" cy="43" rx="8" ry="6" fill="#d3343e" />
-          <path d="M24 37.5 Q27 35 30 37.5 L28.5 39.5 L25.5 39.5Z" fill="#d3343e" />
-          <rect x="35" y="41" width="11" height="8" rx="1.5" fill="#2e9b50" />
-          <rect x="39.3" y="41" width="2.4" height="8" fill="#f08a3c" />
+        {/* Gift sack (behind Santa). .s-sackGrow scales with the cart size; .s-sack does the
+            quick gulp/sway animations. Extra gifts pop up as the cart fills. */}
+        <g className="s-sackGrow">
+          <g className="s-sack">
+            <ellipse ref={mouthRef} cx="37" cy="49" rx="19" ry="5" fill="#3a0810" />
+            <g className="s-extra1" style={{ opacity: 0 }}>
+              <g transform="rotate(-18 22 26)">
+                <rect x="16" y="18" width="12" height="15" rx="1.5" fill="#fff" />
+                <rect x="16" y="20" width="12" height="2.2" fill="#d23a36" />
+                <rect x="16" y="25" width="12" height="2.2" fill="#d23a36" />
+                <rect x="16" y="30" width="12" height="2.2" fill="#d23a36" />
+              </g>
+            </g>
+            <g className="s-extra2" style={{ opacity: 0 }}>
+              <g transform="rotate(12 52 26)">
+                <rect x="46" y="19" width="13" height="13" rx="2" fill="#8a4fd1" />
+                <rect x="51.2" y="19" width="2.6" height="13" fill="#f4c24f" />
+                <ellipse cx="50.5" cy="18.4" rx="2.6" ry="1.6" fill="#f4c24f" />
+                <ellipse cx="54.5" cy="18.4" rx="2.6" ry="1.6" fill="#f4c24f" />
+              </g>
+            </g>
+            <g transform="rotate(-12 22 38)">
+              <rect x="14" y="30" width="16" height="15" rx="2" fill="#3d82d8" />
+              <rect x="20.5" y="30" width="3" height="15" fill="#f4c24f" />
+              <rect x="14" y="35.5" width="16" height="3" fill="#f4c24f" />
+              <ellipse cx="19.5" cy="29" rx="3" ry="1.8" fill="#f4c24f" />
+              <ellipse cx="24.5" cy="29" rx="3" ry="1.8" fill="#f4c24f" />
+            </g>
+            <path d="M30 46 Q27 31 40 27 Q53 31 50 46Z" fill="#3aa65a" />
+            <path d="M35 21 Q40 17 45 21 L42.5 26.5 L37.5 26.5Z" fill="#3aa65a" />
+            <rect x="36.5" y="25.5" width="7" height="2.4" rx="1.2" fill="#d23a36" />
+            <g transform="rotate(8 51 40)">
+              <rect x="44" y="33" width="15" height="14" rx="2" fill="#f4a73c" />
+              <rect x="50" y="33" width="3" height="14" fill="#e2582c" />
+              <ellipse cx="51.5" cy="32" rx="3.4" ry="1.8" fill="#e2582c" />
+            </g>
+            <ellipse cx="27" cy="43" rx="8" ry="6" fill="#d3343e" />
+            <path d="M24 37.5 Q27 35 30 37.5 L28.5 39.5 L25.5 39.5Z" fill="#d3343e" />
+            <rect x="35" y="41" width="11" height="8" rx="1.5" fill="#2e9b50" />
+            <rect x="39.3" y="41" width="2.4" height="8" fill="#f08a3c" />
 
-          <path d="M18 51 Q8 68 11 88 Q15 107 36 108 Q57 108 61 90 Q64 70 56 51 Q37 58 18 51Z" fill="url(#santa-sack)" />
-          <path d="M16 49 Q37 56 58 49 Q60 53 57 56 Q37 63 17 56 Q14 53 16 49Z" fill="#9b2234" />
-          <path d="M18 58 Q37 65 56 58" fill="none" stroke="#c99a5b" strokeWidth="2.6" strokeLinecap="round" />
-          <path d="M18 58 Q37 65 56 58" fill="none" stroke="#8f6634" strokeWidth="2.6" strokeDasharray="1.2 2.2" />
-          <path d="M19 59 Q11 65 14 75" fill="none" stroke="#c99a5b" strokeWidth="2.4" strokeLinecap="round" />
+            <path d="M18 51 Q8 68 11 88 Q15 107 36 108 Q57 108 61 90 Q64 70 56 51 Q37 58 18 51Z" fill="url(#santa-sack)" />
+            <path d="M16 49 Q37 56 58 49 Q60 53 57 56 Q37 63 17 56 Q14 53 16 49Z" fill="#9b2234" />
+            <path d="M18 58 Q37 65 56 58" fill="none" stroke="#c99a5b" strokeWidth="2.6" strokeLinecap="round" />
+            <path d="M18 58 Q37 65 56 58" fill="none" stroke="#8f6634" strokeWidth="2.6" strokeDasharray="1.2 2.2" />
+            <path d="M19 59 Q11 65 14 75" fill="none" stroke="#c99a5b" strokeWidth="2.4" strokeLinecap="round" />
+          </g>
         </g>
 
         {/* Legs */}
@@ -122,7 +144,7 @@ export default function SantaFigure({ mouthRef }) {
           <path d="M36 74 Q37 58 52 55 L78 55 Q93 58 94 75 Q97 88 93 96 L35 96 Q30 88 36 74Z" fill="url(#santa-coat)" />
           <path d="M55 57 Q68 63 76 74 Q83 84 82 92" fill="none" stroke="#c99a5b" strokeWidth="2.4" strokeLinecap="round" />
           <path d="M55 57 Q68 63 76 74 Q83 84 82 92" fill="none" stroke="#8f6634" strokeWidth="2.4" strokeDasharray="1.2 2.2" />
-          <g filter="url(#santa-fuzz)">
+          <g filter={fuzz}>
             <rect x="62.5" y="57" width="7" height="34" rx="3.5" fill="url(#santa-fur)" />
             <rect x="31" y="89" width="66" height="12" rx="6" fill="url(#santa-fur)" />
           </g>
@@ -134,11 +156,14 @@ export default function SantaFigure({ mouthRef }) {
           <circle cx="66" cy="44" r="15.5" fill="url(#santa-skin)" />
           <circle cx="57.5" cy="49" r="3.6" fill="#f59a96" opacity="0.6" />
           <circle cx="76" cy="49" r="3.6" fill="#f59a96" opacity="0.6" />
+          {/* .s-eyes blinks (scaleY); .s-look moves the pupils to follow the cursor. */}
           <g className="s-eyes">
-            <ellipse cx="60.5" cy="43" rx="1.9" ry="2.5" fill="#2b1a12" />
-            <ellipse cx="72" cy="43" rx="1.9" ry="2.5" fill="#2b1a12" />
-            <circle cx="61.1" cy="42.1" r="0.6" fill="#fff" />
-            <circle cx="72.6" cy="42.1" r="0.6" fill="#fff" />
+            <g className="s-look">
+              <ellipse cx="60.5" cy="43" rx="1.9" ry="2.5" fill="#2b1a12" />
+              <ellipse cx="72" cy="43" rx="1.9" ry="2.5" fill="#2b1a12" />
+              <circle cx="61.1" cy="42.1" r="0.6" fill="#fff" />
+              <circle cx="72.6" cy="42.1" r="0.6" fill="#fff" />
+            </g>
           </g>
           <path d="M56.5 39.5 Q60.5 36.5 64 39" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
           <path d="M68.5 39 Q72.5 36.5 76 39.5" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
@@ -149,7 +174,7 @@ export default function SantaFigure({ mouthRef }) {
             d="M50.5 35 C46.5 44 45.5 56 48.5 66 C51.5 78 60 88 70 90 Q76 91 81 88 Q77 86 80 82 C86 74 88.5 58 84.5 44 L82 35 L80.5 35 C80.5 46 79 53 74.5 55.5 Q67 59.5 59.5 55.5 C55 53 53 46 53 35Z"
             fill="url(#santa-beard)"
           />
-          <path d="M63 58 Q67 63.5 71 58 Q67 59.5 63 58Z" fill="#8a2f28" />
+          <path className="s-mouth" d="M63 58 Q67 63.5 71 58 Q67 59.5 63 58Z" fill="#8a2f28" />
           <path
             d="M67 52.5 Q60.5 48.5 54.5 52 Q52.5 57.5 58.5 57.5 Q64 57.5 67 55 Q70 57.5 75.5 57.5 Q81.5 57.5 79.5 52 Q73.5 48.5 67 52.5Z"
             fill="#fff"
@@ -159,9 +184,9 @@ export default function SantaFigure({ mouthRef }) {
           <g className="s-hat">
             <path d="M51 30 Q50 11 70 8 Q89 6 97 25 Q101 35 99 44 Q95 39 93 33 Q90 29 85 30Z" fill="url(#santa-coat)" />
             <g className="s-pom">
-              <circle cx="99" cy="45" r="6.2" fill="url(#santa-fur)" filter="url(#santa-fuzz)" />
+              <circle cx="99" cy="45" r="6.2" fill="url(#santa-fur)" filter={fuzz} />
             </g>
-            <rect x="47" y="26" width="40" height="11" rx="5.5" fill="url(#santa-fur)" filter="url(#santa-fuzz)" />
+            <rect x="47" y="26" width="40" height="11" rx="5.5" fill="url(#santa-fur)" filter={fuzz} />
           </g>
         </g>
 
@@ -174,9 +199,19 @@ export default function SantaFigure({ mouthRef }) {
             strokeOpacity="0.5"
             strokeWidth="0.9"
           />
-          <circle cx="42" cy="84" r="6.5" fill="url(#santa-fur)" filter="url(#santa-fuzz)" />
+          <circle cx="42" cy="84" r="6.5" fill="url(#santa-fur)" filter={fuzz} />
           <ellipse cx="47" cy="87" rx="6" ry="6.5" fill="url(#santa-mitten)" />
         </g>
+
+        {/* Winter scarf (after Christmas): knitted tail flung over the back shoulder. */}
+        {outfit === "scarf" && (
+          <g className="s-scarf">
+            <path d="M54 58 Q42 60 34 68 Q28 75 27 84" fill="none" stroke="#2f8f4e" strokeWidth="7" strokeLinecap="round" />
+            <path d="M54 58 Q42 60 34 68 Q28 75 27 84" fill="none" stroke="#f4f1e8" strokeWidth="7" strokeDasharray="2 4" />
+            <path d="M24 86 l1 4 M27 87 l0 4 M30 86 l-1 4" stroke="#2f8f4e" strokeWidth="1.4" strokeLinecap="round" />
+          </g>
+        )}
+
         {/* Front arm, built from rounded segments so it looks right at any angle:
             .s-armF swings while walking, .s-armUp raises it (shoulder), .s-fore bends at the
             elbow (which points back, like a real elbow), .s-hand sets the wrist.
@@ -189,7 +224,7 @@ export default function SantaFigure({ mouthRef }) {
             <g className="s-fore">
               <path d="M88 75 L94 85" stroke="#7a0e13" strokeOpacity="0.55" strokeWidth="12.6" strokeLinecap="round" />
               <path d="M88 75 L94 85" stroke="url(#santa-sleeve)" strokeWidth="11" strokeLinecap="round" />
-              <circle cx="94" cy="85" r="6.5" fill="url(#santa-fur)" filter="url(#santa-fuzz)" />
+              <circle cx="94" cy="85" r="6.5" fill="url(#santa-fur)" filter={fuzz} />
               <g className="s-hand">
                 <ellipse cx="94" cy="90" rx="6" ry="6.5" fill="url(#santa-mitten)" />
                 <ellipse cx="88.8" cy="88" rx="2.4" ry="3.3" transform="rotate(-30 88.8 88)" fill="url(#santa-mitten)" />

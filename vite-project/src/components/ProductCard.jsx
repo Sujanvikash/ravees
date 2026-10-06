@@ -15,7 +15,7 @@ const ACTION_CIRCLE =
 export default function ProductCard({ product, onQuickView }) {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
-  const { hoverCard, leaveCard, flyToBag } = useSanta();
+  const { hoverCard, leaveCard, added, needLogin } = useSanta();
   const addBtnRef = useRef(null);
   const imageRef = useRef(null);
   const wishlisted = isWishlisted(product.id);
@@ -24,7 +24,8 @@ export default function ProductCard({ product, onQuickView }) {
   const [photoRef, photoInView] = useInView();
 
   const handleAdd = () => {
-    if (addToCart(product)) flyToBag(imageRef.current);
+    // Santa gives the feedback (speech bubble / sign-in nudge) instead of the toast and redirect.
+    if (addToCart(product, { quiet: true, onNeedLogin: needLogin })) added(product, imageRef.current);
   };
 
   return (

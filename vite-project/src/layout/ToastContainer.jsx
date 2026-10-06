@@ -4,12 +4,12 @@ export default function ToastContainer() {
   const { toasts } = useToast();
 
   return (
-    // Phones: pinned under the header so toasts never cover the drawer's action buttons.
-    // Desktop: bottom-right, stacked above the Santa that rests in that corner.
+    // Pinned under the header (top-right on desktop): toasts never cover the drawer's action
+    // buttons, and the bottom-right corner stays free for the Santa companion and his speech bubble.
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-4 top-[88px] z-[2000] flex flex-col gap-2.5 sm:inset-x-auto sm:top-auto sm:right-8 sm:bottom-[96px]"
+      className="pointer-events-none fixed inset-x-4 top-[88px] z-[2000] flex flex-col gap-2.5 sm:inset-x-auto sm:right-8 sm:top-[calc(var(--header-h)+16px)]"
     >
       {toasts.map((toast) => (
         <div

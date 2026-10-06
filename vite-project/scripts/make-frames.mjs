@@ -9,10 +9,11 @@
  *
  * Needs ffmpeg on the PATH (winget install Gyan.FFmpeg). Nothing else.
  *
- * Run: node scripts/make-frames.mjs <video.mp4> [--frames 150] [--out frames-v3]
+ * Run: node scripts/make-frames.mjs <video.mp4> [--frames 150]
  *
- * After changing the video: set FRAME_COUNT in ScrollTreeHero.jsx to the same number, and use a new
- * --out folder name (and the same one in getSrc / previewSrc) so browsers don't keep the old frames.
+ * Each run writes a NEW folder (public/frames-<timestamp>, so browsers never serve stale frames),
+ * then deletes every older public/frames-* folder and rewrites src/data/heroFrames.json, which
+ * ScrollTreeHero.jsx imports. Nothing to edit by hand: the hero always shows the latest frames.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -29,10 +30,12 @@ const flag = (name, fallback) => {
 };
 const video = args.find((a) => !a.startsWith('--') && a !== flag('frames') && a !== flag('out'));
 const FRAMES = Number(flag('frames', 150));
-const OUT = path.join(__dirname, '..', 'public', flag('out', 'frames-v3'));
+const PUBLIC = path.join(__dirname, '..', 'public');
+const OUT_NAME = flag('out', `frames-${Date.now().toString(36)}`);
+const OUT = path.join(PUBLIC, OUT_NAME);
 
 if (!video || !fs.existsSync(video)) {
-  console.error('Usage: node scripts/make-frames.mjs <video.mp4> [--frames 150] [--out frames-v3]');
+  console.error('Usage: node scripts/make-frames.mjs <video.mp4> [--frames 150]');
   process.exit(1);
 }
 
@@ -89,4 +92,17 @@ for (const [name, w, h, quality] of SETS) {
 }
 
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log(`Done: ${path.relative(process.cwd(), OUT)} (${FRAMES} frames from ${total}). Set FRAME_COUNT = ${FRAMES} in ScrollTreeHero.jsx.`);
+
+// Only now that the new set is complete: point the hero at it and delete the old frames.
+fs.writeFileSync(
+  path.join(__dirname, '..', 'src', 'data', 'heroFrames.json'),
+  `${JSON.stringify({ dir: OUT_NAME, count: FRAMES }, null, 2)}
+`,
+);
+for (const entry of fs.readdirSync(PUBLIC)) {
+  if (entry.startsWith('frames-') && entry !== OUT_NAME) {
+    fs.rmSync(path.join(PUBLIC, entry), { recursive: true, force: true });
+    console.log(`Deleted old frames: ${entry}`);
+  }
+}
+console.log(`Done: ${path.relative(process.cwd(), OUT)} (${FRAMES} frames from ${total}). Hero updated via src/data/heroFrames.json.`);
