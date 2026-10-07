@@ -7,7 +7,7 @@ import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
 
-export default function Testimonials() {
+const Testimonials = () => {
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
       <Aurora />
@@ -44,4 +44,6 @@ export default function Testimonials() {
       </Container>
     </section>
   );
-}
+};
+
+export default Testimonials;

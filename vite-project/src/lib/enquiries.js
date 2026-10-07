@@ -6,28 +6,28 @@ const KEY = 'raave-enquiries';
 
 export const STATUSES = ['new', 'contacted', 'closed'];
 
-function read() {
+const read = () => {
   try {
     const raw = window.localStorage.getItem(KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
-}
+};
 
-function write(list) {
+const write = (list) => {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(list));
   } catch {
     // ignore quota/private-mode failures
   }
-}
+};
 
-export function listEnquiries() {
+export const listEnquiries = () => {
   return read().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-}
+};
 
-export function addEnquiry(enquiry) {
+export const addEnquiry = (enquiry) => {
   const record = {
     id: `enq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     createdAt: new Date().toISOString(),
@@ -36,12 +36,12 @@ export function addEnquiry(enquiry) {
   };
   write([...read(), record]);
   return record;
-}
+};
 
-export function updateEnquiryStatus(id, status) {
+export const updateEnquiryStatus = (id, status) => {
   write(read().map((e) => (e.id === id ? { ...e, status } : e)));
-}
+};
 
-export function deleteEnquiry(id) {
+export const deleteEnquiry = (id) => {
   write(read().filter((e) => e.id !== id));
-}
+};

@@ -14,7 +14,7 @@ const DELAYS = ['delay-0', 'delay-75', 'delay-150', 'delay-225', 'delay-300', 'd
  * Once shown it sets `translate: none` (not `0`): any transform left on a wrapper would make
  * it the containing block for position:fixed children (modals, drawers) inside it.
  */
-export default function Reveal({ as: Tag = 'div', delay = 0, disabled = false, className = '', children, ...rest }) {
+const Reveal = ({ as: Tag = 'div', delay = 0, disabled = false, className = '', children, ...rest }) => {
   const [ref, inView] = useInView();
   // Once rendered without animation, stay that way: a grid item that starts past the animated
   // rows and is later filtered/sorted into them was never observed, and would stay invisible.
@@ -37,4 +37,6 @@ export default function Reveal({ as: Tag = 'div', delay = 0, disabled = false, c
       {children}
     </Tag>
   );
-}
+};
+
+export default Reveal;

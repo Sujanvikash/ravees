@@ -3,7 +3,7 @@ import gsap from "gsap";
 const COLORS = ["#e5c78b", "#f4c24f", "#d6282b", "#2e9b50", "#ffffff"];
 
 /** A one-off burst of confetti from (x, y) in viewport px; the pieces remove themselves. */
-export function burstConfetti(x, y, count = 36) {
+export const burstConfetti = (x, y, count = 36) => {
   for (let i = 0; i < count; i += 1) {
     const el = document.createElement("span");
     Object.assign(el.style, {
@@ -33,4 +33,4 @@ export function burstConfetti(x, y, count = 36) {
       .to(el, { rotation: `+=${gsap.utils.random(-540, 540)}`, duration: 1.4 }, 0)
       .to(el, { opacity: 0, duration: 0.4 }, 1);
   }
-}
+};

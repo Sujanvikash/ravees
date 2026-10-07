@@ -14,18 +14,18 @@ const SIZES = {
 
 const fieldClass = (size, className) => `${BASE} ${SIZES[size] ?? SIZES.md} ${className}`;
 
-export function Input({ size = 'md', className = '', ...rest }) {
+export const Input = ({ size = 'md', className = '', ...rest }) => {
   return <input className={fieldClass(size, className)} {...rest} />;
-}
+};
 
-export function Select({ size = 'md', className = '', children, ...rest }) {
+export const Select = ({ size = 'md', className = '', children, ...rest }) => {
   return (
     <select className={fieldClass(size, `cursor-pointer ${className}`)} {...rest}>
       {children}
     </select>
   );
-}
+};
 
-export function Textarea({ size = 'md', className = '', ...rest }) {
+export const Textarea = ({ size = 'md', className = '', ...rest }) => {
   return <textarea className={fieldClass(size, `resize-y ${className}`)} {...rest} />;
-}
+};

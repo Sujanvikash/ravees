@@ -5,7 +5,7 @@ import AdminStatCard from '../components/AdminStatCard.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { listEnquiries } from '../../lib/enquiries.js';
 
-export default function AdminDashboard() {
+const AdminDashboard = () => {
   const { products, categories, showrooms } = useAdminData();
   const [enquiries] = useState(listEnquiries);
   const openEnquiries = enquiries.filter((e) => e.status === 'new').length;
@@ -131,4 +131,6 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
-}
+};
+
+export default AdminDashboard;

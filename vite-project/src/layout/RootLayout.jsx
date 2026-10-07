@@ -10,7 +10,7 @@ import SmoothScroll from '../components/SmoothScroll';
 import SantaLayer from '../components/SantaLayer/SantaLayer.jsx';
 import { SantaProvider } from '../context/SantaContext.jsx';
 
-export default function RootLayout() {
+const RootLayout = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { pathname } = useLocation();
 
@@ -42,4 +42,6 @@ export default function RootLayout() {
       </SantaProvider>
     </SmoothScroll>
   );
-}
+};
+
+export default RootLayout;

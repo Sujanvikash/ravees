@@ -12,8 +12,8 @@ const PAIRS = {
 };
 
 /** { id, label } of a category that pairs with the product, or null. */
-export function suggestFor(product) {
+export const suggestFor = (product) => {
   const id = PAIRS[product?.category];
   const category = id && CATEGORIES.find((c) => c.id === id);
   return category ? { id, label: category.name } : null;
-}
+};

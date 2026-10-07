@@ -6,7 +6,7 @@ import Button from './Button.jsx';
  * Reads the fields the SHOWROOMS data actually has (title/timing/isFlagship) — the
  * old ShowroomsSection read type/name/hours/size, which rendered as undefined.
  */
-export default function ShowroomCard({ showroom }) {
+const ShowroomCard = ({ showroom }) => {
   return (
     <div className="rounded-3xl border border-gold-400/30 bg-[rgba(8,28,20,0.85)] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:p-12">
       <div className="grid items-center gap-9 lg:grid-cols-2">
@@ -74,4 +74,6 @@ export default function ShowroomCard({ showroom }) {
       </div>
     </div>
   );
-}
+};
+
+export default ShowroomCard;

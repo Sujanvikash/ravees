@@ -9,7 +9,7 @@
  * It covers at most one screen at the top of the section: on long pages (Shop is ~11,000px)
  * full-height glows were moving layers thousands of pixels tall, which cost frames.
  */
-export default function Aurora({ className = '' }) {
+const Aurora = ({ className = '' }) => {
   return (
     <div
       aria-hidden="true"
@@ -19,4 +19,6 @@ export default function Aurora({ className = '' }) {
       <div className="absolute -right-1/4 -bottom-1/3 h-[75%] w-[75%] animate-aurora-reverse rounded-full bg-[radial-gradient(closest-side,rgba(16,185,129,0.09),transparent)]" />
     </div>
   );
-}
+};
+
+export default Aurora;

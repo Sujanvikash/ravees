@@ -6,11 +6,11 @@ import { hero, craft } from "./heroContent";
 const ICONS = { shield: ShieldCheck, zap: Zap, truck: Truck, tree: TreePine, sparkles: Sparkles };
 
 // A typo in heroContent.js falls back to a generic icon instead of crashing the whole page.
-function iconFor(name) {
+const iconFor = (name) => {
   const Icon = ICONS[name];
   if (!Icon && import.meta.env.DEV) console.warn(`heroContent.js: unknown icon "${name}", using "sparkles"`);
   return Icon ?? Sparkles;
-}
+};
 
 const HEADING = "font-serif";
 const EYEBROW = "font-mono text-[0.68rem] uppercase tracking-[0.26em] text-gold-400 sm:text-xs";
@@ -26,7 +26,7 @@ const CARD =
 const TEXT_SHADOW = "[text-shadow:0_2px_16px_rgba(0,0,0,0.75),0_0_2px_rgba(0,0,0,0.5)]";
 
 /** Left block: heritage headline, copy, buttons, badges, scroll hint. Plain text, not a card. */
-export function HeroCard({ shopHref, studioHref, reduced }) {
+export const HeroCard = ({ shopHref, studioHref, reduced }) => {
   return (
     <div data-beat="hero" className="will-change-[transform,opacity]">
       <p className={`${EYEBROW_LARGE} ${TEXT_SHADOW}`}>✦ {hero.eyebrow}</p>
@@ -88,10 +88,10 @@ export function HeroCard({ shopHref, studioHref, reduced }) {
       )}
     </div>
   );
-}
+};
 
 /** Right card: craftsmanship standards and rating. */
-export function CraftCard() {
+export const CraftCard = () => {
   return (
     <div data-beat="craft" className={`${CARD} p-5 will-change-[transform,opacity] sm:p-6 lg:p-7`}>
       <p className={EYEBROW}>✦ {craft.eyebrow}</p>
@@ -124,4 +124,4 @@ export function CraftCard() {
       </div>
     </div>
   );
-}
+};

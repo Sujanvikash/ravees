@@ -6,7 +6,7 @@ import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 
 const CartContext = createContext(null);
 
-export function CartProvider({ children }) {
+export const CartProvider = ({ children }) => {
   const [cart, setCart] = useLocalStorage('raave-cart', []);
   const { showToast } = useToast();
   const requireLogin = useRequireLogin();
@@ -53,10 +53,10 @@ export function CartProvider({ children }) {
   const value = { cart, addToCart, updateQuantity, removeFromCart, clearCart, totalCount };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-}
+};
 
-export function useCart() {
+export const useCart = () => {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error('useCart must be used within a CartProvider');
   return ctx;
-}
+};

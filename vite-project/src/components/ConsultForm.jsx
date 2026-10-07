@@ -13,7 +13,7 @@ const HEIGHT_OPTIONS = [
   { value: 'LightsDecor', label: 'Lights & Ornaments Only' },
 ];
 
-export default function ConsultForm({ onSubmitted }) {
+const ConsultForm = ({ onSubmitted }) => {
   const { showToast } = useToast();
   const [form, setForm] = useState({
     name: '',
@@ -106,4 +106,6 @@ export default function ConsultForm({ onSubmitted }) {
       </Button>
     </form>
   );
-}
+};
+
+export default ConsultForm;

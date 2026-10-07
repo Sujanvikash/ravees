@@ -6,7 +6,7 @@ import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import Button from '../../components/Button.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 
-export default function AdminProducts() {
+const AdminProducts = () => {
   const { products } = useAdminData();
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -123,4 +123,6 @@ export default function AdminProducts() {
       />
     </div>
   );
-}
+};
+
+export default AdminProducts;

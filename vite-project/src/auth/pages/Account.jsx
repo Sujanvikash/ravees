@@ -14,7 +14,7 @@ const STATUS_STYLE = {
   closed: 'bg-white/8 text-text-muted',
 };
 
-export default function Account() {
+const Account = () => {
   const { session, isAuthenticated, logout } = useCustomerAuth();
   const { showToast } = useToast();
   const location = useLocation();
@@ -117,4 +117,6 @@ export default function Account() {
       </div>
     </section>
   );
-}
+};
+
+export default Account;

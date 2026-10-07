@@ -5,7 +5,7 @@ import { MessageCircle } from 'lucide-react';
  * fills the price slot with an enquiry prompt instead of a number.
  */
 /** compact: just the "Enquire for Price" line, without the "Quote on request" caption (product cards). */
-export default function PriceTag({ size = 'md', compact = false, className = '' }) {
+const PriceTag = ({ size = 'md', compact = false, className = '' }) => {
   const titleSize = { lg: 'text-[1.6rem]', md: 'text-[1.25rem]', sm: 'text-[0.8rem] tracking-tight sm:text-[1.05rem] sm:tracking-normal' }[size] ?? 'text-[1.25rem]';
 
   return (
@@ -19,4 +19,6 @@ export default function PriceTag({ size = 'md', compact = false, className = '' 
       )}
     </div>
   );
-}
+};
+
+export default PriceTag;

@@ -6,7 +6,7 @@ const SIZES = {
 };
 
 /** − n + control. `onChange` gets the new quantity; what 0 means is up to the caller. */
-export default function QuantityStepper({ value, onChange, size = 'md' }) {
+const QuantityStepper = ({ value, onChange, size = 'md' }) => {
   const s = SIZES[size] ?? SIZES.md;
   const button = `flex ${s.button} cursor-pointer items-center justify-center border-none bg-transparent text-gold-300 hover:bg-gold-400/20`;
   return (
@@ -22,4 +22,6 @@ export default function QuantityStepper({ value, onChange, size = 'md' }) {
       </button>
     </div>
   );
-}
+};
+
+export default QuantityStepper;

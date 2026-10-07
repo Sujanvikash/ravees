@@ -8,7 +8,7 @@ import { useCart } from '../context/CartContext.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
 
-export default function Cart() {
+const Cart = () => {
   const { cart, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
 
   return (
@@ -109,4 +109,6 @@ export default function Cart() {
       </div>
     </section>
   );
-}
+};
+
+export default Cart;

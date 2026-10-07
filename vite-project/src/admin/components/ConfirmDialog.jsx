@@ -1,6 +1,6 @@
 import Modal from '../../components/Modal.jsx';
 
-export default function ConfirmDialog({ open, title, message, confirmLabel = 'Delete', onConfirm, onCancel }) {
+const ConfirmDialog = ({ open, title, message, confirmLabel = 'Delete', onConfirm, onCancel }) => {
   return (
     <Modal open={open} onClose={onCancel} eyebrow="✦ CONFIRM ✦" title={title}>
       <div className="flex flex-col gap-6 p-7">
@@ -22,4 +22,6 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'De
       </div>
     </Modal>
   );
-}
+};
+
+export default ConfirmDialog;

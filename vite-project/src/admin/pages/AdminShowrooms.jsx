@@ -10,7 +10,7 @@ import { Input, Textarea } from '../../components/Input.jsx';
 
 const LABEL = 'text-[0.75rem] text-gold-300';
 
-export default function AdminShowrooms() {
+const AdminShowrooms = () => {
   const { showrooms } = useAdminData();
   const { showToast } = useToast();
   const [activeCity, setActiveCity] = useState(showrooms.items[0]?.city);
@@ -232,4 +232,6 @@ export default function AdminShowrooms() {
       />
     </div>
   );
-}
+};
+
+export default AdminShowrooms;

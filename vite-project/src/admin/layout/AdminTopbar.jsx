@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, ShieldAlert } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext.jsx';
 
-export default function AdminTopbar() {
+const AdminTopbar = () => {
   const { session, logout } = useAdminAuth();
   const navigate = useNavigate();
 
@@ -42,4 +42,6 @@ export default function AdminTopbar() {
       </div>
     </header>
   );
-}
+};
+
+export default AdminTopbar;

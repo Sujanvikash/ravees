@@ -17,7 +17,7 @@ const slugify = (value) =>
 
 const LABEL = 'text-[0.75rem] text-gold-300';
 
-export default function AdminCategories() {
+const AdminCategories = () => {
   const { categories, products } = useAdminData();
   const { showToast } = useToast();
   const [drafts, setDrafts] = useState({});
@@ -192,4 +192,6 @@ export default function AdminCategories() {
       />
     </div>
   );
-}
+};
+
+export default AdminCategories;

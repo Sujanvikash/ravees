@@ -21,7 +21,7 @@ const VARIANTS = {
   ghost: 'border border-transparent text-text-secondary hover:text-gold-300',
 };
 
-export default function Button({
+const Button = ({
   variant = 'gold',
   size = 'md',
   to,
@@ -30,7 +30,7 @@ export default function Button({
   className = '',
   children,
   ...rest
-}) {
+}) => {
   const classes = `${BASE} ${SIZES[size] ?? SIZES.md} ${VARIANTS[variant] ?? VARIANTS.gold} ${full ? 'w-full' : ''} ${className}`;
 
   if (to) {
@@ -54,4 +54,6 @@ export default function Button({
       {children}
     </button>
   );
-}
+};
+
+export default Button;

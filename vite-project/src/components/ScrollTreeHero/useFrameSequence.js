@@ -6,7 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
  * is scrubbable end-to-end within the first ~10 requests and gets smoother
  * as the rest arrive, instead of loading 1 → N in a straight line.
  */
-function buildLoadOrder(count) {
+const buildLoadOrder = (count) => {
   const seen = new Uint8Array(count);
   const order = [];
   const push = (i) => {
@@ -21,14 +21,14 @@ function buildLoadOrder(count) {
     for (let i = 0; i < count; i += stride) push(i);
   }
   return order;
-}
+};
 
 /**
  * Decodes a frame. createImageBitmap(Blob) decodes on a background thread, which is the
  * whole point: decoding a <img> (or createImageBitmap(<img>)) happens on the main thread
  * and cost ~55 ms per 1080p WebP, stalling the scroll. Old browsers fall back to <img>.
  */
-function decodeFrame(blob) {
+const decodeFrame = (blob) => {
   if (typeof createImageBitmap === "function") return createImageBitmap(blob);
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -39,7 +39,7 @@ function decodeFrame(blob) {
       .then(() => resolve(img), reject)
       .finally(() => URL.revokeObjectURL(url));
   });
-}
+};
 
 /**
  * Decode priority around the playhead, `dir` being the scroll direction (+1 / -1).
@@ -47,14 +47,14 @@ function decodeFrame(blob) {
  * (every 4th, every 2nd, the rest), so a fast scroll always finds a frame near where it lands,
  * then a short tail behind.
  */
-function buildDecodeOrder(center, dir, ahead, behind) {
+const buildDecodeOrder = (center, dir, ahead, behind) => {
   const order = [center, center + dir, center - dir, center + 2 * dir, center + 3 * dir];
   for (const [start, step] of [[4, 4], [6, 4], [5, 2]]) {
     for (let k = start; k <= ahead; k += step) order.push(center + dir * k);
   }
   for (let k = 2; k <= behind; k += 1) order.push(center - dir * k);
   return order;
-}
+};
 
 // Decodes in flight at once. More than a few just queue inside the browser, finish after
 // the playhead has moved on and delay the frames that are needed now.
@@ -95,7 +95,7 @@ const RETRY_DELAY_MS = 400;
  * @param {boolean}  [opts.lastFrameOnly=false] download just the final frame (reduced motion shows
  *                   a still of the finished tree, so the other frames would be wasted bandwidth)
  */
-export function useFrameSequence({
+export const useFrameSequence = ({
   count,
   getSrc,
   concurrency = 6,
@@ -104,7 +104,7 @@ export function useFrameSequence({
   decodeAll = false,
   previewSrc,
   lastFrameOnly = false,
-}) {
+}) => {
   const blobsRef = useRef([]);
   const smallBlobsRef = useRef([]);
   const decodedRef = useRef(new Map()); // index → ImageBitmap (or <img> fallback)
@@ -381,4 +381,4 @@ export function useFrameSequence({
   );
 
   return { getFrame, warm, firstFrameReady, progress };
-}
+};

@@ -23,15 +23,15 @@ const UTIL_BTN =
 const BADGE_COUNT =
   'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ruby-500 px-1 text-[0.68rem] font-bold text-white';
 
-function getInitials(name = '') {
+const getInitials = (name = '') => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';
   const first = parts[0][0];
   const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (first + last).toUpperCase();
-}
+};
 
-export default function Header({ onOpenCart }) {
+const Header = ({ onOpenCart }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { totalCount } = useCart();
   const requireLogin = useRequireLogin();
@@ -187,4 +187,6 @@ export default function Header({ onOpenCart }) {
       )}
     </header>
   );
-}
+};
+
+export default Header;

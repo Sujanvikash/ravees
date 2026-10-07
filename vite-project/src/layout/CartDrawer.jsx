@@ -6,7 +6,7 @@ import Button from '../components/Button.jsx';
 import IconButton from '../components/IconButton.jsx';
 import QuantityStepper from '../components/QuantityStepper.jsx';
 
-export default function CartDrawer({ isOpen, onClose }) {
+const CartDrawer = ({ isOpen, onClose }) => {
   const { cart, updateQuantity, removeFromCart, totalCount } = useCart();
 
   useOverlay(isOpen, onClose);
@@ -121,4 +121,6 @@ export default function CartDrawer({ isOpen, onClose }) {
       </aside>
     </div>
   );
-}
+};
+
+export default CartDrawer;

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 const callbacks = new Map();
 let observer = null;
 
-function getObserver() {
+const getObserver = () => {
   if (observer || typeof IntersectionObserver === 'undefined') return observer;
   observer = new IntersectionObserver(
     (entries) => {
@@ -19,7 +19,7 @@ function getObserver() {
     { rootMargin: '0px 0px -8% 0px', threshold: 0.12 }
   );
   return observer;
-}
+};
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,7 +29,7 @@ const prefersReducedMotion = () =>
  * With reduced motion, or without IntersectionObserver, it is true from the start, so nothing
  * stays hidden waiting for an animation.
  */
-export function useInView() {
+export const useInView = () => {
   const ref = useRef(null);
   const [inView, setInView] = useState(() => prefersReducedMotion() || typeof IntersectionObserver === 'undefined');
 
@@ -46,4 +46,4 @@ export function useInView() {
   }, [inView]);
 
   return [ref, inView];
-}
+};

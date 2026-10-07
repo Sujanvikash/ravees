@@ -11,13 +11,13 @@ import { useLocalStorage } from '../../hooks/useLocalStorage.js';
  */
 const CustomerAuthContext = createContext(null);
 
-async function hashPassword(password, email) {
+const hashPassword = async (password, email) => {
   const bytes = new TextEncoder().encode(`${email.trim().toLowerCase()}:${password}`);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+};
 
-export function CustomerAuthProvider({ children }) {
+export const CustomerAuthProvider = ({ children }) => {
   const [customers, setCustomers] = useLocalStorage('raave-customers', []);
   const [session, setSession] = useLocalStorage('raave-customer-session', null);
 
@@ -57,10 +57,10 @@ export function CustomerAuthProvider({ children }) {
   const value = { session, isAuthenticated: Boolean(session), signup, login, logout };
 
   return <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>;
-}
+};
 
-export function useCustomerAuth() {
+export const useCustomerAuth = () => {
   const ctx = useContext(CustomerAuthContext);
   if (!ctx) throw new Error('useCustomerAuth must be used within a CustomerAuthProvider');
   return ctx;
-}
+};

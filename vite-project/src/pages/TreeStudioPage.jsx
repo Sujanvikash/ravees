@@ -17,14 +17,14 @@ const HEIGHTS = [
 const OPT_BTN =
   'cursor-pointer rounded-xl border px-4 py-3 text-left text-[0.85rem] transition-all duration-300';
 
-function optionsFrom(category, limit, extraLabel) {
+const optionsFrom = (category, limit, extraLabel) => {
   const opts = PRODUCTS.filter((p) => p.category === category)
     .slice(0, limit)
     .map((p) => ({ id: p.id, label: p.name, image: p.image }));
   return extraLabel ? [...opts, { id: 'none', label: extraLabel, image: null }] : opts;
-}
+};
 
-function StepBlock({ step, label, children }) {
+const StepBlock = ({ step, label, children }) => {
   return (
     <div className="flex flex-col gap-3">
       <label className="flex items-center gap-2 font-mono text-[0.72rem] uppercase tracking-[0.14em] text-gold-300">
@@ -36,9 +36,9 @@ function StepBlock({ step, label, children }) {
       {children}
     </div>
   );
-}
+};
 
-export default function TreeStudioPage() {
+const TreeStudioPage = () => {
   const { addToCart } = useCart();
 
   const trees = useMemo(() => optionsFrom('christmas-trees', 4), []);
@@ -184,4 +184,6 @@ export default function TreeStudioPage() {
       </Container>
     </section>
   );
-}
+};
+
+export default TreeStudioPage;

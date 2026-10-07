@@ -68,7 +68,7 @@ const isLowEnd = () =>
 const overlayIsOpen = () =>
   typeof document !== "undefined" && document.documentElement.classList.contains("overflow-hidden");
 
-function useMediaQuery(query) {
+const useMediaQuery = (query) => {
   const [match, setMatch] = useState(() => matches(query));
   useEffect(() => {
     const list = window.matchMedia(query);
@@ -77,14 +77,14 @@ function useMediaQuery(query) {
     return () => list.removeEventListener("change", onChange);
   }, [query]);
   return match;
-}
+};
 
 // Santa with his gift sack. Rests in the bottom-right corner (click → open cart). Hovering a product
 // card (for HOVER_DELAY_MS) makes him walk to the top-right of its Add button and wave; added
 // products fly into his sack and he answers in a speech bubble. He reacts to sign-in prompts,
 // removed items and sent requests, follows the cursor with his eyes, has idle moments, can be
 // minimised to a small sack, and steps aside for forms, drawers and modals.
-export default function SantaLayer({ onOpenCart }) {
+const SantaLayer = ({ onOpenCart }) => {
   const { register } = useSanta();
   const { totalCount: cartCount } = useCart();
   const { isAuthenticated } = useCustomerAuth();
@@ -995,4 +995,6 @@ export default function SantaLayer({ onOpenCart }) {
       )}
     </>
   );
-}
+};
+
+export default SantaLayer;

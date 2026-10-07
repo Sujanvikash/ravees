@@ -15,7 +15,7 @@ import NotFound from './NotFound.jsx';
 import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 
-export default function ProductDetail() {
+const ProductDetail = () => {
   const { slug } = useParams();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -177,4 +177,6 @@ export default function ProductDetail() {
       </Container>
     </section>
   );
-}
+};
+
+export default ProductDetail;

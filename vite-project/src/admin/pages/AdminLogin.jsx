@@ -13,7 +13,7 @@ import {
 } from '../context/AdminAuthContext.jsx';
 import { Input } from '../../components/Input.jsx';
 
-function LoginForm() {
+const LoginForm = () => {
   const { isAuthenticated, login } = useAdminAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
@@ -83,12 +83,14 @@ function LoginForm() {
       </div>
     </AuthCard>
   );
-}
+};
 
-export default function AdminLogin() {
+const AdminLogin = () => {
   return (
     <AdminAuthProvider>
       <LoginForm />
     </AdminAuthProvider>
   );
-}
+};
+
+export default AdminLogin;

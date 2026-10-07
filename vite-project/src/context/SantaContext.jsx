@@ -8,7 +8,7 @@ const SantaContext = createContext(null);
 // - added(product, imageEl): an item went into the cart; returns nothing.
 // - needLogin(): a signed-out add; returns true if Santa handled it (otherwise do the normal redirect).
 // - celebrate(): a quote request was sent.
-export function SantaProvider({ children }) {
+export const SantaProvider = ({ children }) => {
   const handlersRef = useRef({});
 
   const value = useMemo(
@@ -29,10 +29,10 @@ export function SantaProvider({ children }) {
   );
 
   return <SantaContext.Provider value={value}>{children}</SantaContext.Provider>;
-}
+};
 
-export function useSanta() {
+export const useSanta = () => {
   const ctx = useContext(SantaContext);
   if (!ctx) throw new Error('useSanta must be used within a SantaProvider');
   return ctx;
-}
+};

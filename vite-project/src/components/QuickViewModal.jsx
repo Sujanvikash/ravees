@@ -6,7 +6,7 @@ import PriceTag from './PriceTag.jsx';
 import Badge from './Badge.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
-export default function QuickViewModal({ product, onClose }) {
+const QuickViewModal = ({ product, onClose }) => {
   const { addToCart } = useCart();
 
   return (
@@ -98,4 +98,6 @@ export default function QuickViewModal({ product, onClose }) {
       )}
     </Modal>
   );
-}
+};
+
+export default QuickViewModal;

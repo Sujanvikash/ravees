@@ -1,4 +1,4 @@
-export default function AdminStatCard({ Icon, label, value, hint, accent = 'gold' }) {
+const AdminStatCard = ({ Icon, label, value, hint, accent = 'gold' }) => {
   const accents = {
     gold: 'text-gold-300 bg-gold-400/10 border-gold-400/20',
     emerald: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
@@ -21,4 +21,6 @@ export default function AdminStatCard({ Icon, label, value, hint, accent = 'gold
       </div>
     </div>
   );
-}
+};
+
+export default AdminStatCard;

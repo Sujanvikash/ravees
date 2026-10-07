@@ -12,7 +12,7 @@ import { useInView } from '../hooks/useInView.js';
 const ACTION_CIRCLE =
   'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-gold-400/30 bg-[rgba(4,18,12,0.85)] text-gold-300 transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-[#04120a]';
 
-export default function ProductCard({ product, onQuickView }) {
+const ProductCard = ({ product, onQuickView }) => {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { hoverCard, leaveCard, added, needLogin } = useSanta();
@@ -137,4 +137,6 @@ export default function ProductCard({ product, onQuickView }) {
       </div>
     </div>
   );
-}
+};
+
+export default ProductCard;

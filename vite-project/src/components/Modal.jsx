@@ -2,7 +2,7 @@ import { X } from 'lucide-react';
 import { useOverlay } from '../hooks/useOverlay.js';
 import IconButton from './IconButton.jsx';
 
-export default function Modal({ open, onClose, eyebrow, title, size = 'md', children }) {
+const Modal = ({ open, onClose, eyebrow, title, size = 'md', children }) => {
   useOverlay(open, onClose);
 
   if (!open) return null;
@@ -35,4 +35,6 @@ export default function Modal({ open, onClose, eyebrow, title, size = 'md', chil
       </div>
     </div>
   );
-}
+};
+
+export default Modal;

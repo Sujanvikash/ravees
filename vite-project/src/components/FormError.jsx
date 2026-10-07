@@ -1,7 +1,7 @@
 import { Info } from 'lucide-react';
 
 /** Red error box under a form's fields. Renders nothing when there is no message. */
-export default function FormError({ children }) {
+const FormError = ({ children }) => {
   if (!children) return null;
   return (
     <p
@@ -12,4 +12,6 @@ export default function FormError({ children }) {
       {children}
     </p>
   );
-}
+};
+
+export default FormError;

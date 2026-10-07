@@ -1,4 +1,4 @@
-export default function CategoryTabs({ categories, selected, onSelect }) {
+const CategoryTabs = ({ categories, selected, onSelect }) => {
   return (
     <div className="mb-9 flex gap-2.5 overflow-x-auto pb-2">
       {categories.map((cat) => {
@@ -19,4 +19,6 @@ export default function CategoryTabs({ categories, selected, onSelect }) {
       })}
     </div>
   );
-}
+};
+
+export default CategoryTabs;

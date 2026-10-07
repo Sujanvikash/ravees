@@ -9,7 +9,7 @@ import { Input } from '../../components/Input.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 
-export default function Signup() {
+const Signup = () => {
   const { signup } = useCustomerAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -122,4 +122,6 @@ export default function Signup() {
       </p>
     </AuthCard>
   );
-}
+};
+
+export default Signup;

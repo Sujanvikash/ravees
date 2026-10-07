@@ -4,7 +4,7 @@ import Reveal from './Reveal.jsx';
 export const GRADIENT_TITLE =
   'bg-[linear-gradient(135deg,#ffffff_0%,var(--color-gold-200)_50%,var(--color-gold-500)_100%)] bg-clip-text text-transparent';
 
-export default function SectionHeading({ eyebrow, title, subtitle, centered = true, className = '' }) {
+const SectionHeading = ({ eyebrow, title, subtitle, centered = true, className = '' }) => {
   return (
     <Reveal
       className={`${centered ? 'mx-auto mb-12 max-w-195 text-center' : 'mb-8'} ${className}`.trim()}
@@ -26,4 +26,6 @@ export default function SectionHeading({ eyebrow, title, subtitle, centered = tr
       )}
     </Reveal>
   );
-}
+};
+
+export default SectionHeading;

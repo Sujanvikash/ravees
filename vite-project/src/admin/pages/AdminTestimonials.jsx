@@ -12,7 +12,7 @@ const LABEL = 'text-[0.75rem] text-gold-300';
 
 const BLANK = { author: '', location: '', quote: '', rating: 5, treeModel: '' };
 
-export default function AdminTestimonials() {
+const AdminTestimonials = () => {
   const { testimonials } = useAdminData();
   const { showToast } = useToast();
   const [editing, setEditing] = useState(null);
@@ -172,4 +172,6 @@ export default function AdminTestimonials() {
       />
     </div>
   );
-}
+};
+
+export default AdminTestimonials;

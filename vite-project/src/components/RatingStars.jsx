@@ -4,7 +4,7 @@ import { Star } from 'lucide-react';
  * The scraped catalog carries no ratings, so this renders nothing unless a rating is
  * actually supplied (testimonials pass one in).
  */
-export default function RatingStars({ rating, reviewsCount, size = 14, className = '' }) {
+const RatingStars = ({ rating, reviewsCount, size = 14, className = '' }) => {
   if (!rating) return null;
 
   return (
@@ -25,4 +25,6 @@ export default function RatingStars({ rating, reviewsCount, size = 14, className
       </span>
     </div>
   );
-}
+};
+
+export default RatingStars;

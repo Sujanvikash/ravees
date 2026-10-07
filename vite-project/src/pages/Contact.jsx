@@ -12,7 +12,7 @@ import Aurora from '../components/Aurora.jsx';
 const METHOD_ROW =
   'flex items-center gap-4 rounded-xl border border-gold-400/15 bg-white/4 p-4 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/30 hover:bg-gold-400/15 hover:text-white';
 
-export default function Contact() {
+const Contact = () => {
   const { session } = useCustomerAuth();
 
   return (
@@ -78,4 +78,6 @@ export default function Contact() {
       </Container>
     </section>
   );
-}
+};
+
+export default Contact;

@@ -31,7 +31,7 @@ const AdminShowrooms = lazy(() => import('./admin/pages/AdminShowrooms.jsx'));
 const AdminTestimonials = lazy(() => import('./admin/pages/AdminTestimonials.jsx'));
 const AdminEnquiries = lazy(() => import('./admin/pages/AdminEnquiries.jsx'));
 
-export default function App() {
+const App = () => {
   return (
     <Routes>
       {/* Storefront */}
@@ -73,4 +73,6 @@ export default function App() {
       </Route>
     </Routes>
   );
-}
+};
+
+export default App;

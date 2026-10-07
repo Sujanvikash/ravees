@@ -14,7 +14,7 @@ import Eyebrow from '../components/Eyebrow.jsx';
 import { Input, Select, Textarea } from '../components/Input.jsx';
 import Aurora from '../components/Aurora.jsx';
 
-export default function Checkout() {
+const Checkout = () => {
   const { cart, totalCount, clearCart } = useCart();
   const { showToast } = useToast();
   const { session } = useCustomerAuth();
@@ -229,4 +229,6 @@ export default function Checkout() {
       </div>
     </section>
   );
-}
+};
+
+export default Checkout;

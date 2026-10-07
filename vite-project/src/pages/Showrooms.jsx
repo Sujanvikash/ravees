@@ -6,7 +6,7 @@ import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
 
-export default function Showrooms() {
+const Showrooms = () => {
   const [activeIdx, setActiveIdx] = useState(0);
   const showroom = SHOWROOMS[activeIdx];
 
@@ -42,4 +42,6 @@ export default function Showrooms() {
       </Container>
     </section>
   );
-}
+};
+
+export default Showrooms;

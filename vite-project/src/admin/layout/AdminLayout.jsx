@@ -7,7 +7,7 @@ import ToastContainer from '../../layout/ToastContainer.jsx';
 import { AdminAuthProvider, useAdminAuth } from '../context/AdminAuthContext.jsx';
 import { AdminDataProvider } from '../context/AdminDataContext.jsx';
 
-function AdminShell() {
+const AdminShell = () => {
   const { isAuthenticated } = useAdminAuth();
 
   if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
@@ -28,12 +28,14 @@ function AdminShell() {
       <ToastContainer />
     </AdminDataProvider>
   );
-}
+};
 
-export default function AdminLayout() {
+const AdminLayout = () => {
   return (
     <AdminAuthProvider>
       <AdminShell />
     </AdminAuthProvider>
   );
-}
+};
+
+export default AdminLayout;

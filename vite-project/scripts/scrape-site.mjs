@@ -55,35 +55,35 @@ const ENTITIES = {
   '#8220': '“', '#8221': '”', '#038': '&', '#039': "'", '#8230': '…',
 };
 
-function decode(str) {
+const decode = (str) => {
   return str
     .replace(/&(#?\w+);/g, (m, code) => ENTITIES[code] ?? m)
     .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(Number(n)));
-}
+};
 
-function stripTags(html) {
+const stripTags = (html) => {
   return decode(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
-}
+};
 
-async function fetchHtml(url) {
+const fetchHtml = async (url) => {
   const res = await fetch(url, { headers: { 'User-Agent': UA } });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.text();
-}
+};
 
 /** Max page number from a WooCommerce `page-numbers` pagination block. */
-function getMaxPage(html) {
+const getMaxPage = (html) => {
   const nums = [...html.matchAll(/\/page\/(\d+)\//g)].map((m) => Number(m[1]));
   return nums.length ? Math.max(...nums) : 1;
-}
+};
 
-function getResultCount(html) {
+const getResultCount = (html) => {
   const m = html.match(/Showing[^<]*?of\s+(\d+)\s+results/i);
   return m ? Number(m[1]) : null;
-}
+};
 
 /** Pull product blocks out of a category/shop archive page. */
-function parseListing(html) {
+const parseListing = (html) => {
   const found = [];
   const blocks = html.split(/<li\s+class="[^"]*\bproduct\b/i).slice(1);
   for (const raw of blocks) {
@@ -103,10 +103,10 @@ function parseListing(html) {
     });
   }
   return found;
-}
+};
 
 /** Crawl one archive (shop or category), following pagination. */
-async function crawlArchive(basePath, label) {
+const crawlArchive = async (basePath, label) => {
   const first = await fetchHtml(`${BASE}${basePath}`);
   const maxPage = getMaxPage(first);
   const total = getResultCount(first);
@@ -122,10 +122,10 @@ async function crawlArchive(basePath, label) {
   }
   console.log(`  ${label}: ${items.length} listed${total ? ` (site reports ${total})` : ''}`);
   return items;
-}
+};
 
 /** Parse a single product detail page. */
-function parseProduct(html, slug) {
+const parseProduct = (html, slug) => {
   const titleMatch = html.match(/<h1[^>]*product_title[^>]*>([\s\S]*?)<\/h1>/i);
   const name = titleMatch ? stripTags(titleMatch[1]) : slug;
 
@@ -181,18 +181,18 @@ function parseProduct(html, slug) {
   const inStock = !/\b(outofstock|onbackorder)\b/.test(mainClass);
 
   return { name, description, specs, sizes, catPairs, images, inStock };
-}
+};
 
-async function downloadImage(url, destPath) {
+const downloadImage = async (url, destPath) => {
   if (fs.existsSync(destPath)) return true;
   const res = await fetch(url, { headers: { 'User-Agent': UA } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   fs.writeFileSync(destPath, Buffer.from(await res.arrayBuffer()));
   return true;
-}
+};
 
 /** Resolve the top-level bucket for a product from its category list. */
-function resolveCategory(catPairs, fallbackCatSlugs) {
+const resolveCategory = (catPairs, fallbackCatSlugs) => {
   const slugs = [...catPairs.map((c) => c.slug), ...fallbackCatSlugs];
   for (const { slug, label } of TOP_LEVEL) {
     if (slugs.includes(slug)) return { category: slug, categoryLabel: label };
@@ -205,9 +205,9 @@ function resolveCategory(catPairs, fallbackCatSlugs) {
     }
   }
   return { category: 'home-decors', categoryLabel: 'Home Decors' };
-}
+};
 
-async function main() {
+const main = async () => {
   fs.mkdirSync(IMAGE_DIR, { recursive: true });
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -317,7 +317,7 @@ async function main() {
   console.log(`\nDone: ${products.length} products, ${imageCount} images, ${failures} failures`);
   console.log('Per category:');
   for (const c of categories) console.log(`  ${c.name}: ${c.count}`);
-}
+};
 
 main().catch((err) => {
   console.error(err);

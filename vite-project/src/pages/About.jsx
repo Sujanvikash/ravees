@@ -15,7 +15,7 @@ const STATS = [
   { value: 100, suffix: '%', label: 'European Certified Safe' },
 ];
 
-export default function About() {
+const About = () => {
   return (
     <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-16 md:py-25">
       <Aurora />
@@ -81,4 +81,6 @@ export default function About() {
       </Container>
     </section>
   );
-}
+};
+
+export default About;

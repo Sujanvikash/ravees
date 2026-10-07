@@ -5,7 +5,7 @@ import { Search, ArrowUpDown } from 'lucide-react';
  * Generic searchable/sortable table for the admin list pages.
  * columns: [{ key, label, render?, sortable? }]
  */
-export default function DataTable({ columns, rows, rowKey = 'id', searchKeys = [], emptyMessage = 'Nothing here yet.' }) {
+const DataTable = ({ columns, rows, rowKey = 'id', searchKeys = [], emptyMessage = 'Nothing here yet.' }) => {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState({ key: null, dir: 'asc' });
 
@@ -100,4 +100,6 @@ export default function DataTable({ columns, rows, rowKey = 'id', searchKeys = [
       </p>
     </div>
   );
-}
+};
+
+export default DataTable;

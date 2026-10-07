@@ -36,7 +36,7 @@ const smoothingFor = (img) => (img.width < 600 ? "low" : "high");
  * to the rest. Returns the sharp folder, its small stand-in folder, the frame size and whether it is the
  * big landscape set (which gets a larger decoded window).
  */
-function pickFrameSet(portraitScreen) {
+const pickFrameSet = (portraitScreen) => {
   if (PORTRAIT && portraitScreen) {
     return { folder: "portrait", preview: "portrait-small", size: PORTRAIT.full, full: false };
   }
@@ -47,10 +47,10 @@ function pickFrameSet(portraitScreen) {
     return { folder: "landscape", preview: "landscape-small", size: LANDSCAPE.full, full: true };
   }
   return { folder: "landscape-lite", preview: "landscape-small", size: LANDSCAPE.lite, full: false };
-}
+};
 
 /** True while the window is taller than it is wide (a phone or tablet held upright). Follows rotation. */
-function usePortraitScreen() {
+const usePortraitScreen = () => {
   const query = "(max-aspect-ratio: 1/1)";
   const [portrait, setPortrait] = useState(
     () => typeof window !== "undefined" && window.matchMedia(query).matches
@@ -62,9 +62,9 @@ function usePortraitScreen() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   return portrait;
-}
+};
 
-function usePrefersReducedMotion() {
+const usePrefersReducedMotion = () => {
   const query = "(prefers-reduced-motion: reduce)";
   const [reduced, setReduced] = useState(
     () => typeof window !== "undefined" && window.matchMedia(query).matches
@@ -76,7 +76,7 @@ function usePrefersReducedMotion() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   return reduced;
-}
+};
 
 // Card placement. Phones: pinned to the bottom, cards take turns. lg+: left and right of the tree.
 const PIN_MOBILE =
@@ -94,7 +94,7 @@ const POS = {
  *  shopHref      overrides the primary CTA link from heroContent.js
  *  studioHref    overrides the secondary CTA link from heroContent.js
  */
-export default function ScrollTreeHero({ scrollClass = "h-[500svh]", shopHref, studioHref }) {
+const ScrollTreeHero = ({ scrollClass = "h-[500svh]", shopHref, studioHref }) => {
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -379,4 +379,6 @@ export default function ScrollTreeHero({ scrollClass = "h-[500svh]", shopHref, s
       </div>
     </section>
   );
-}
+};
+
+export default ScrollTreeHero;

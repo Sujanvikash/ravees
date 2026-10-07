@@ -1,6 +1,6 @@
 import RatingStars from './RatingStars.jsx';
 
-export default function TestimonialCard({ testimonial }) {
+const TestimonialCard = ({ testimonial }) => {
   return (
     <div className="flex h-full flex-col rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-8">
       <RatingStars rating={testimonial.rating} size={16} />
@@ -15,4 +15,6 @@ export default function TestimonialCard({ testimonial }) {
       </div>
     </div>
   );
-}
+};
+
+export default TestimonialCard;

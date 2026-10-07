@@ -1,7 +1,7 @@
 // Hand-drawn SVG Santa (viewBox 120×120, facing right, gift sack on his back, boots on y=118).
 // Every moving part is its own group (.s-*) so SantaLayer can animate it; pivots are set there.
 // lite: skip the fur filter (cheaper on low-end devices). outfit: "scarf" adds a winter scarf.
-export default function SantaFigure({ mouthRef, lite = false, outfit = null }) {
+const SantaFigure = ({ mouthRef, lite = false, outfit = null }) => {
   const fuzz = lite ? undefined : "url(#santa-fuzz)";
 
   return (
@@ -235,4 +235,6 @@ export default function SantaFigure({ mouthRef, lite = false, outfit = null }) {
       </g>
     </svg>
   );
-}
+};
+
+export default SantaFigure;

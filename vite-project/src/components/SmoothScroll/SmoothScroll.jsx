@@ -19,7 +19,7 @@ if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
  * requestAnimationFrame loop, so scroll updates match the display's refresh rate.
  * Must be rendered inside the Router.
  */
-export default function SmoothScroll({ children }) {
+const SmoothScroll = ({ children }) => {
   const lenisRef = useRef(null);
   const { pathname } = useLocation();
 
@@ -51,4 +51,6 @@ export default function SmoothScroll({ children }) {
   }, [pathname]);
 
   return children;
-}
+};
+
+export default SmoothScroll;

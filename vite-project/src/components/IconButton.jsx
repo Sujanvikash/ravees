@@ -15,7 +15,7 @@ const VARIANTS = {
   delete: 'rounded-lg border border-white/10 p-1.5 hover:border-ruby-500 hover:text-ruby-500',
 };
 
-export default function IconButton({ label, variant = 'close', type = 'button', className = '', children, ...rest }) {
+const IconButton = ({ label, variant = 'close', type = 'button', className = '', children, ...rest }) => {
   return (
     <button
       type={type}
@@ -27,4 +27,6 @@ export default function IconButton({ label, variant = 'close', type = 'button', 
       {children}
     </button>
   );
-}
+};
+
+export default IconButton;

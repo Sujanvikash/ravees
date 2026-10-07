@@ -43,7 +43,7 @@ const TRUST_ITEMS = [
   },
 ];
 
-export default function Home() {
+const Home = () => {
   const [quickView, setQuickView] = useState(null);
 
   const featured = useMemo(() => {
@@ -182,4 +182,6 @@ export default function Home() {
       <QuickViewModal product={quickView} onClose={() => setQuickView(null)} />
     </>
   );
-}
+};
+
+export default Home;

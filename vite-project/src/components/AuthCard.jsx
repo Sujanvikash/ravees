@@ -12,7 +12,7 @@ import { GRADIENT_TITLE } from './SectionHeading.jsx';
  * fullHeight       fill the whole screen (the admin page has no site header or footer around it)
  * onSubmit         the form's submit handler; children are the form's contents
  */
-export default function AuthCard({
+const AuthCard = ({
   eyebrow,
   title,
   header,
@@ -20,7 +20,7 @@ export default function AuthCard({
   fullHeight = false,
   onSubmit,
   children,
-}) {
+}) => {
   return (
     <section
       className={`relative z-20 flex ${fullHeight ? 'min-h-screen' : 'min-h-[70vh]'} items-center justify-center bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] px-6 py-16`}
@@ -47,4 +47,6 @@ export default function AuthCard({
       </Reveal>
     </section>
   );
-}
+};
+
+export default AuthCard;

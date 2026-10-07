@@ -19,7 +19,7 @@ const NAV = [
   { to: '/admin/enquiries', label: 'Enquiries', Icon: Inbox },
 ];
 
-export default function AdminSidebar() {
+const AdminSidebar = () => {
   return (
     <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-gold-400/15 bg-[#020704] p-5 lg:flex">
       <div className="mb-8 flex items-center gap-2.5">
@@ -59,4 +59,6 @@ export default function AdminSidebar() {
       </NavLink>
     </aside>
   );
-}
+};
+
+export default AdminSidebar;

@@ -2,7 +2,7 @@ import { PackageOpen } from 'lucide-react';
 import ProductCard from './ProductCard.jsx';
 import Reveal from './Reveal.jsx';
 
-export default function ProductGrid({ products, onQuickView, emptyMessage = 'No products match your filters.' }) {
+const ProductGrid = ({ products, onQuickView, emptyMessage = 'No products match your filters.' }) => {
   if (!products.length) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-6 py-20 text-center">
@@ -22,4 +22,6 @@ export default function ProductGrid({ products, onQuickView, emptyMessage = 'No 
       ))}
     </div>
   );
-}
+};
+
+export default ProductGrid;

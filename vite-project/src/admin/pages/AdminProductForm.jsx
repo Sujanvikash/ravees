@@ -16,7 +16,7 @@ const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-export default function AdminProductForm() {
+const AdminProductForm = () => {
   const { id } = useParams();
   const { products, categories } = useAdminData();
   const { showToast } = useToast();
@@ -235,4 +235,6 @@ export default function AdminProductForm() {
       </form>
     </div>
   );
-}
+};
+
+export default AdminProductForm;

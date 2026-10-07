@@ -11,7 +11,7 @@ const DEMO_PASS = 'raave2026';
 
 const AdminAuthContext = createContext(null);
 
-export function AdminAuthProvider({ children }) {
+export const AdminAuthProvider = ({ children }) => {
   const [session, setSession] = useLocalStorage('raave-admin-session', null);
 
   const login = (username, password) => {
@@ -29,12 +29,12 @@ export function AdminAuthProvider({ children }) {
       {children}
     </AdminAuthContext.Provider>
   );
-}
+};
 
-export function useAdminAuth() {
+export const useAdminAuth = () => {
   const ctx = useContext(AdminAuthContext);
   if (!ctx) throw new Error('useAdminAuth must be used within an AdminAuthProvider');
   return ctx;
-}
+};
 
 export const DEMO_CREDENTIALS = { username: DEMO_USER, password: DEMO_PASS };

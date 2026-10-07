@@ -4,7 +4,7 @@ import { useToast } from './ToastContext.jsx';
 
 const WishlistContext = createContext(null);
 
-export function WishlistProvider({ children }) {
+export const WishlistProvider = ({ children }) => {
   const [ids, setIds] = useLocalStorage('raave-wishlist', []);
   const { showToast } = useToast();
 
@@ -26,10 +26,10 @@ export function WishlistProvider({ children }) {
   const value = { wishlist, wishlistCount: ids.length, toggleWishlist, isWishlisted };
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
-}
+};
 
-export function useWishlist() {
+export const useWishlist = () => {
   const ctx = useContext(WishlistContext);
   if (!ctx) throw new Error('useWishlist must be used within a WishlistProvider');
   return ctx;
-}
+};

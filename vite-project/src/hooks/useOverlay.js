@@ -12,7 +12,7 @@ const LOCK_CLASSES = ['overflow-hidden', 'bg-[#030b07]'];
 let openCount = 0;
 
 /** While an overlay (modal, drawer) is open: Escape closes it, and the page behind it can't scroll. */
-export function useOverlay(open, onClose) {
+export const useOverlay = (open, onClose) => {
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -25,4 +25,4 @@ export function useOverlay(open, onClose) {
       if (openCount === 0) document.documentElement.classList.remove(...LOCK_CLASSES);
     };
   }, [open, onClose]);
-}
+};

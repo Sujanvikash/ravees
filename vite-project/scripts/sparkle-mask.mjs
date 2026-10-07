@@ -24,7 +24,7 @@ const SAME_PLACE = 24; // px a star may move between two neighbouring samples an
 const SAME_SIZE = 14;
 
 /** Box dilation of a 0/1 image by radius r: a pixel becomes 1 if any pixel within r (square window) is 1. */
-function dilate(src, w, h, r) {
+const dilate = (src, w, h, r) => {
   const pass = (input, vertical) => {
     const out = new Uint8Array(w * h);
     const len = vertical ? h : w;
@@ -42,19 +42,19 @@ function dilate(src, w, h, r) {
     return out;
   };
   return pass(pass(src, false), true);
-}
+};
 
 /** Box erosion: the dilation of the background (the image edge is not treated as background). */
-function erode(src, w, h, r) {
+const erode = (src, w, h, r) => {
   const inverted = new Uint8Array(w * h);
   for (let i = 0; i < inverted.length; i += 1) inverted[i] = src[i] ? 0 : 1;
   const grown = dilate(inverted, w, h, r);
   for (let i = 0; i < grown.length; i += 1) grown[i] = grown[i] ? 0 : 1;
   return grown;
-}
+};
 
 /** Connected pieces (4-neighbour) of a 0/1 image: [{ area, x0, y0, x1, y1, pixels }]. */
-function pieces(m, w, h) {
+const pieces = (m, w, h) => {
   const seen = new Uint8Array(w * h);
   const out = [];
   const stack = [];
@@ -81,10 +81,10 @@ function pieces(m, w, h) {
     out.push({ area: pixels.length, x0, y0, x1, y1, pixels });
   }
   return out;
-}
+};
 
 /** Star-shaped light-grey pieces in one RGB frame (w x h, 3 bytes per pixel). */
-function starsIn(rgb, w, h) {
+const starsIn = (rgb, w, h) => {
   const found = [];
   for (const cutoff of THRESHOLDS) {
     let m = new Uint8Array(w * h);
@@ -108,14 +108,14 @@ function starsIn(rgb, w, h) {
     }
   }
   return found;
-}
+};
 
 /**
  * @param {Buffer[]} frames  RGB frames of the corner region, all rw x rh
  * @returns {{ mask: Uint8Array, stars: number, box: object|null }}  mask: 1 where a sparkle was seen
  *          (grown a few px so the soft edge goes too); stars: how many separate star positions were kept
  */
-export function findSparkleMask(frames, rw, rh) {
+export const findSparkleMask = (frames, rw, rh) => {
   const perFrame = frames.map((rgb) => starsIn(rgb, rw, rh));
   const near = (a, b) => Math.abs(a.cx - b.cx) <= SAME_PLACE && Math.abs(a.cy - b.cy) <= SAME_PLACE && Math.abs(a.size - b.size) <= SAME_SIZE;
 
@@ -145,4 +145,4 @@ export function findSparkleMask(frames, rw, rh) {
     if (y > y1) y1 = y;
   }
   return { mask, stars: kept.length, box: { x0, y0, x1, y1 } };
-}
+};

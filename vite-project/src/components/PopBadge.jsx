@@ -7,7 +7,7 @@ import { useState } from 'react';
  * `bumps` counts changes; keying the span on it remounts the span, which replays the animation.
  * (Comparing with the previous value during render is React's documented pattern for this.)
  */
-export default function PopBadge({ count, className = '' }) {
+const PopBadge = ({ count, className = '' }) => {
   const [previous, setPrevious] = useState(count);
   const [bumps, setBumps] = useState(0);
   if (count !== previous) {
@@ -19,4 +19,6 @@ export default function PopBadge({ count, className = '' }) {
       {count}
     </span>
   );
-}
+};
+
+export default PopBadge;

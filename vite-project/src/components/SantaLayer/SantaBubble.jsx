@@ -1,7 +1,7 @@
 // Santa's speech bubble, shown above him. The wrapper is a polite live region, so screen readers
 // announce each new message (e.g. "Added to your sack!"). align: which side of Santa it lines up
 // with, so it opens toward the middle of the screen and never off the edge.
-export default function SantaBubble({ message, onPause, onResume }) {
+const SantaBubble = ({ message, onPause, onResume }) => {
   const align = message?.align ?? "right";
   return (
     <div
@@ -40,4 +40,6 @@ export default function SantaBubble({ message, onPause, onResume }) {
       )}
     </div>
   );
-}
+};
+
+export default SantaBubble;

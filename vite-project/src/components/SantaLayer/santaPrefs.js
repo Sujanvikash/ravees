@@ -3,18 +3,18 @@
 const KEY = "raave-santa";
 const DEFAULTS = { minimised: false, sound: false };
 
-export function loadPrefs() {
+export const loadPrefs = () => {
   try {
     return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
   } catch {
     return { ...DEFAULTS };
   }
-}
+};
 
-export function savePrefs(prefs) {
+export const savePrefs = (prefs) => {
   try {
     localStorage.setItem(KEY, JSON.stringify(prefs));
   } catch {
     // Not persisted; the choice still applies for this visit.
   }
-}
+};

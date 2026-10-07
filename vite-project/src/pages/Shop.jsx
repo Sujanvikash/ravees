@@ -19,7 +19,7 @@ const SORT_OPTIONS = [
   { value: 'stock', label: 'In Stock First' },
 ];
 
-export default function Shop() {
+const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [quickView, setQuickView] = useState(null);
   const [sort, setSort] = useState('featured');
@@ -130,4 +130,6 @@ export default function Shop() {
       <QuickViewModal product={quickView} onClose={() => setQuickView(null)} />
     </section>
   );
-}
+};
+
+export default Shop;

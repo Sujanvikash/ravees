@@ -6,7 +6,7 @@ import { useInView } from '../hooks/useInView.js';
  * Writes the number straight into the element, so counting doesn't re-render React.
  * With reduced motion (useInView reports "in view" at once) it shows the final number.
  */
-export default function CountUp({ value, duration = 1400, suffix = '', className = '' }) {
+const CountUp = ({ value, duration = 1400, suffix = '', className = '' }) => {
   const [ref, inView] = useInView();
   const [reduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const final = `${value.toLocaleString('en-IN')}${suffix}`;
@@ -36,4 +36,6 @@ export default function CountUp({ value, duration = 1400, suffix = '', className
       </span>
     </span>
   );
-}
+};
+
+export default CountUp;

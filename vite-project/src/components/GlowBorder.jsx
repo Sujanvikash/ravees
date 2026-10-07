@@ -8,7 +8,7 @@
  * The streak is its own layer moved with `translate` (GPU), clipped by overflow-hidden; the
  * 1px of padding is all that shows of it around the card.
  */
-export default function GlowBorder({ rounded = 'rounded-3xl', className = '', children }) {
+const GlowBorder = ({ rounded = 'rounded-3xl', className = '', children }) => {
   return (
     <div
       className={`relative overflow-hidden ${rounded} bg-gold-400/20 p-px shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(229,199,139,0.08)] ${className}`}
@@ -20,4 +20,6 @@ export default function GlowBorder({ rounded = 'rounded-3xl', className = '', ch
       <div className="relative">{children}</div>
     </div>
   );
-}
+};
+
+export default GlowBorder;

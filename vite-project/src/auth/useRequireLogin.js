@@ -6,7 +6,7 @@ import { useToast } from '../context/ToastContext.jsx';
  * Returns `requireLogin()`: true when signed in; otherwise sends the visitor to the
  * sign-in page (returning here afterwards) and returns false.
  */
-export function useRequireLogin() {
+export const useRequireLogin = () => {
   const { isAuthenticated } = useCustomerAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -18,4 +18,4 @@ export function useRequireLogin() {
     navigate('/login', { state: { from: location.pathname + location.search } });
     return false;
   };
-}
+};

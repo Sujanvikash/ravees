@@ -15,7 +15,7 @@ const STATUS_STYLE = {
   closed: 'bg-white/8 text-text-muted border-white/10',
 };
 
-export default function AdminEnquiries() {
+const AdminEnquiries = () => {
   const [enquiries, setEnquiries] = useState(listEnquiries);
   const [filter, setFilter] = useState('all');
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -147,4 +147,6 @@ export default function AdminEnquiries() {
       />
     </div>
   );
-}
+};
+
+export default AdminEnquiries;

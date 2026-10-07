@@ -102,7 +102,7 @@ const run = (cmd, argv, cwd) => {
 
 // ---- Per-video facts ----------------------------------------------------------------------------
 /** Width, height and real frame count of a video, so the picks are spread over all of its frames. */
-function probe(video) {
+const probe = (video) => {
   const out = run('ffprobe', [
     '-v', 'error', '-select_streams', 'v:0', '-count_frames',
     '-show_entries', 'stream=width,height,nb_read_frames', '-of', 'csv=p=0', video,
@@ -111,7 +111,7 @@ function probe(video) {
   if (!(width > 0 && height > 0)) throw new Error(`Could not read the size of ${video}.`);
   if (!(total >= FRAMES)) throw new Error(`${video} has ${total} frames, fewer than the ${FRAMES} asked for.`);
   return { video: path.resolve(video), width, height, total };
-}
+};
 
 /** Frame size for a set `w` px wide, keeping the video's shape. Both sides even (webp/ffmpeg like that). */
 const even = (n) => Math.max(2, Math.round(n / 2) * 2);
@@ -133,7 +133,7 @@ const CORNER = [260, 260]; // the part of the frame, from the bottom-right, that
 const DEFAULT_RADIUS = 50;
 
 /** Looks for the sparkle in a video; writes its mask (full frame size) to tmp/<maskFile>. null if none found. */
-function detectSparkles(info, maskFile) {
+const detectSparkles = (info, maskFile) => {
   const every = Math.max(1, Math.floor(info.total / 32));
   const rw = Math.min(CORNER[0], info.width);
   const rh = Math.min(CORNER[1], info.height);
@@ -160,10 +160,10 @@ function detectSparkles(info, maskFile) {
   }
   fs.writeFileSync(path.join(tmp, maskFile), Buffer.concat([Buffer.from(`P5\n${info.width} ${info.height}\n255\n`), full]));
   return { stars, samples: frames.length, box: { x0: x0 + box.x0, y0: y0 + box.y0, x1: x0 + box.x1, y1: y0 + box.y1 } };
-}
+};
 
 /** The spots from --<label>-watermark / --watermark when given as positions ([] for off, null for auto). */
-function manualSpots(label) {
+const manualSpots = (label) => {
   const spec = flag(`${label}-watermark`, flag('watermark', 'auto'));
   if (spec === 'off') return [];
   if (spec === 'auto') return null;
@@ -174,11 +174,11 @@ function manualSpots(label) {
     }
     return { x, y, radius };
   });
-}
+};
 
 const SHAPE = 0.7;
 /** One mask image (white where a sparkle is) for spots given by hand. */
-function writeMask(info, marks, file) {
+const writeMask = (info, marks, file) => {
   const inside = (m) => `lte(pow(abs(X-${m.x}),${SHAPE})+pow(abs(Y-${m.y}),${SHAPE}),pow(${m.radius},${SHAPE}))`;
   const any = marks.map(inside).join('+');
   run('ffmpeg', [
@@ -186,7 +186,7 @@ function writeMask(info, marks, file) {
     '-vf', `geq=lum='if(gt(${any},0),255,0)',dilation,format=gray`,
     '-frames:v', '1', '-update', '1', file,
   ], tmp);
-}
+};
 
 // ---- Black bars -------------------------------------------------------------------------------------
 /**
@@ -194,7 +194,7 @@ function writeMask(info, marks, file) {
  * auto looks at about 20 frames spread over the video, after the sparkle is removed, and keeps the
  * smallest rectangle that holds the picture in all of them (ffmpeg's cropdetect with reset=0).
  */
-function cropFor(info, label, maskFile, masked) {
+const cropFor = (info, label, maskFile, masked) => {
   const spec = flag(`${label}-crop`, flag('crop', 'auto'));
   if (spec === 'off') return null;
   if (spec !== 'auto') {
@@ -225,7 +225,7 @@ function cropFor(info, label, maskFile, masked) {
     return null;
   }
   return { w, h, x, y };
-}
+};
 
 // ---- Build ---------------------------------------------------------------------------------------
 // [folder, width in px, webp quality]. "-small" are the soft stand-ins used while a sharp frame decodes.
@@ -239,7 +239,7 @@ const PORTRAIT_SETS = [
   ['portrait-small', 240, 72],
 ];
 
-function buildFrom(info, sets, label) {
+const buildFrom = (info, sets, label) => {
   console.log(`\n${label}: ${path.basename(info.video)} (${info.width}x${info.height}, ${info.total} frames)`);
   const maskFile = `mask-${label}.pgm`;
   const spots = manualSpots(label);
@@ -299,7 +299,7 @@ function buildFrom(info, sets, label) {
     sizes[name] = [w, h];
   }
   return sizes;
-}
+};
 
 const landscapeInfo = probe(landscapeVideo);
 const portraitInfo = portraitVideo ? probe(portraitVideo) : null;

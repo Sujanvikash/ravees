@@ -12,7 +12,7 @@ import { TESTIMONIALS } from '../../data/testimonials.js';
  */
 const AdminDataContext = createContext(null);
 
-function useCollection(key, base, idField = 'id') {
+const useCollection = (key, base, idField = 'id') => {
   const [override, setOverride] = useLocalStorage(`raave-admin-${key}`, null);
   const items = override ?? base;
 
@@ -26,9 +26,9 @@ function useCollection(key, base, idField = 'id') {
   const reset = () => setOverride(null);
 
   return { items, add, update, remove, reset, isOverridden: override !== null };
-}
+};
 
-export function AdminDataProvider({ children }) {
+export const AdminDataProvider = ({ children }) => {
   const products = useCollection('products', PRODUCTS);
   const categories = useCollection('categories', CATEGORIES);
   const showrooms = useCollection('showrooms', SHOWROOMS, 'city');
@@ -39,10 +39,10 @@ export function AdminDataProvider({ children }) {
       {children}
     </AdminDataContext.Provider>
   );
-}
+};
 
-export function useAdminData() {
+export const useAdminData = () => {
   const ctx = useContext(AdminDataContext);
   if (!ctx) throw new Error('useAdminData must be used within an AdminDataProvider');
   return ctx;
-}
+};

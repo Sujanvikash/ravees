@@ -5,7 +5,7 @@ const VARIANTS = {
   muted: 'bg-white/5 text-text-muted border border-white/10',
 };
 
-export default function Badge({ variant = 'gold', className = '', children }) {
+const Badge = ({ variant = 'gold', className = '', children }) => {
   return (
     <span
       className={`inline-block rounded-md px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.08em] ${VARIANTS[variant] ?? VARIANTS.gold} ${className}`}
@@ -13,4 +13,6 @@ export default function Badge({ variant = 'gold', className = '', children }) {
       {children}
     </span>
   );
-}
+};
+
+export default Badge;

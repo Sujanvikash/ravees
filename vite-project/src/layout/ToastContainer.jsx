@@ -1,6 +1,6 @@
 import { useToast } from '../context/ToastContext.jsx';
 
-export default function ToastContainer() {
+const ToastContainer = () => {
   const { toasts } = useToast();
 
   return (
@@ -26,4 +26,6 @@ export default function ToastContainer() {
       ))}
     </div>
   );
-}
+};
+
+export default ToastContainer;
