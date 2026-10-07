@@ -23,8 +23,8 @@ const ProductGrid = ({ products, onQuickView, oneRow = false, emptyMessage = 'No
       }
     >
       {(oneRow ? products.slice(0, ONE_ROW_HIDE.length) : products).map((product, i) => (
-        // The first two rows cascade in as they scroll into view; later cards just appear (see Reveal).
-        <Reveal key={product.id} delay={i % 5} disabled={i >= 10} className={oneRow ? ONE_ROW_HIDE[i] : ''}>
+        // Every card rises in as its row scrolls into view, cascading along the row (see Reveal).
+        <Reveal key={product.id} delay="auto" className={oneRow ? ONE_ROW_HIDE[i] : ''}>
           <ProductCard product={product} onQuickView={onQuickView} />
         </Reveal>
       ))}

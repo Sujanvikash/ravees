@@ -12,7 +12,7 @@ const ACTION_CIRCLE =
   'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-300 hover:border-gold-500 hover:bg-gold-400 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500';
 
 /**
- * Product card: a cream card with the photo on a white panel, a stock badge, the category in gold,
+ * Product card: a cream card topped by a full-width square photo, a stock badge, the category in gold,
  * the name, sizes, the price slot ("Enquire for Price") and one full-width "Add to Cart".
  * The photo and the name open the product page.
  */
@@ -41,7 +41,8 @@ const ProductCard = ({ product, onQuickView }) => {
       <Link
         ref={photoRef}
         to={`/product/${product.id}`}
-        className="relative m-2 mb-0 block aspect-[5/4] overflow-hidden rounded-xl bg-white"
+        // Full bleed: the photo spans the card's width, its top corners rounded by the card itself.
+        className="relative block aspect-square overflow-hidden bg-white"
       >
         {/* Shimmer placeholder until the photo has loaded; the photo (above it) then covers it. */}
         {!imageLoaded && photoInView && (
@@ -66,14 +67,14 @@ const ProductCard = ({ product, onQuickView }) => {
       </Link>
 
       <span
-        className={`absolute top-4 left-4 rounded-md px-2 py-0.5 text-[0.62rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] sm:text-[0.68rem] ${
+        className={`absolute top-3 left-3 rounded-md px-2 py-0.5 text-[0.62rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] sm:text-[0.68rem] ${
           product.inStock ? 'bg-forest' : 'bg-ruby-500'
         }`}
       >
         {product.inStock ? 'In Stock' : 'Backorder'}
       </span>
 
-      <div className="absolute top-4 right-4 flex flex-col gap-1.5">
+      <div className="absolute top-3 right-3 flex flex-col gap-1.5">
         <button
           type="button"
           className={`${ACTION_CIRCLE} ${wishlisted ? 'border-ruby-500 text-ruby-500' : ''}`}
