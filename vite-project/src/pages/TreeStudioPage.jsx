@@ -117,7 +117,7 @@ const TreeStudioPage = () => {
   const buildKey = `${height}|${tree?.id}|${light?.id}|${ornament?.id}`;
 
   return (
-    <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+    <section className="relative z-20 bg-bg-primary pt-10 pb-16 md:pt-14 md:pb-25">
       <Aurora />
       <Container>
         <SectionHeading

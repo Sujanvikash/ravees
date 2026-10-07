@@ -27,7 +27,7 @@ const Contact = () => {
   const { celebrate } = useSanta();
 
   return (
-    <section className="relative z-20 overflow-x-clip bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
+    <section className="relative z-20 overflow-x-clip bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] pt-10 pb-16 md:pt-14 md:pb-25">
       <Aurora />
       <Container className="relative w-full">
         <Decoration side src={goldenBellsCluster} className={`-top-14 -left-[150px] ${CORNER_ACCENT}`} />

@@ -1,6 +1,5 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import AnnouncementBar from './AnnouncementBar.jsx';
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CartDrawer from './CartDrawer.jsx';
@@ -22,7 +21,6 @@ const RootLayout = () => {
   return (
     <SmoothScroll>
       <SantaProvider>
-        <AnnouncementBar />
         <Header onOpenCart={() => setIsCartOpen(true)} />
 
         <main className="min-h-[60vh]">

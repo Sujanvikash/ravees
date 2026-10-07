@@ -58,8 +58,10 @@ const Footer = () => {
       <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${FOOTER_CORNER}`} imgClassName="-scale-y-100 object-left-top" />
       <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${FOOTER_CORNER}`} imgClassName="-scale-y-100 object-right-top" />
       <Container>
-        <div className="mb-14 grid gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.5fr]">
-          <div>
+        {/* Phones: the brand and the newsletter span the width, with the two link lists side by side
+            between them, so the footer isn't one long column. */}
+        <div className="mb-10 grid grid-cols-2 gap-x-6 gap-y-9 md:mb-14 md:gap-10 lg:grid-cols-[2fr_1fr_1fr_1.5fr]">
+          <div className="col-span-2 md:col-span-1">
             <img src="/logo.svg" alt="Raave's Evergreen" className="mb-4 h-20 w-[180px] object-contain" />
             <p className="mb-5 text-[0.88rem] leading-[1.7] text-text-secondary">
               India&apos;s largest importer of European-standard artificial Christmas trees, cluster lights,
@@ -83,7 +85,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="mb-5 font-serif text-[1.05rem] tracking-[0.05em] text-white">
+            <h4 className="mb-4 font-serif text-[1rem] tracking-[0.05em] text-white sm:mb-5 sm:text-[1.05rem]">
               Showroom Locations
             </h4>
             <ul className="flex list-none flex-col gap-2.5">
@@ -99,7 +101,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="mb-5 font-serif text-[1.05rem] tracking-[0.05em] text-white">
+            <h4 className="mb-4 font-serif text-[1rem] tracking-[0.05em] text-white sm:mb-5 sm:text-[1.05rem]">
               Signature Collections
             </h4>
             <ul className="flex list-none flex-col gap-2.5">
@@ -118,8 +120,8 @@ const Footer = () => {
             </ul>
           </div>
 
-          <div>
-            <h4 className="mb-5 font-serif text-[1.05rem] tracking-[0.05em] text-white">
+          <div className="col-span-2 md:col-span-1">
+            <h4 className="mb-4 font-serif text-[1rem] tracking-[0.05em] text-white sm:mb-5 sm:text-[1.05rem]">
               Holiday Newsletter
             </h4>
             <p className="mb-3.5 text-[0.85rem] text-text-secondary">

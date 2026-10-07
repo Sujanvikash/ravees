@@ -239,9 +239,6 @@
     scrollbar-gutter: stable;
     /* Height of the sticky header: also read by Home's hero placeholder and ScrollTreeHero. */
     --header-h: 76px;
-    /* Height of the announcement bar above the header (set on the bar itself). The hero starts under it,
-       so its picture is the same height at the top of the page as after scrolling. */
-    --announce-h: 2.25rem;
   }
 
   body {

@@ -330,7 +330,7 @@ const ScrollTreeHero = ({ scrollClass = "h-[500svh]", shopHref, studioHref }) =>
     <section
       ref={sectionRef}
       aria-label="Raave's Evergreen hero"
-      className={`relative bg-[#0B1A14] ${reduced ? "" : `${scrollClass} -mt-(--announce-h)`}`}
+      className={`relative bg-[#0B1A14] ${reduced ? "" : scrollClass}`}
     >
       <div
         className={

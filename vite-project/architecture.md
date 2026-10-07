@@ -54,10 +54,9 @@ src/
   main.jsx                  # createRoot + BrowserRouter + Toast/Cart/Wishlist providers
   App.jsx                   # <Routes> tree only — no business logic
   layout/                   # global chrome, mounted once, persists across route changes
-    RootLayout.jsx           # AnnouncementBar + Header + <Outlet/> + Footer + CartDrawer + ToastContainer
+    RootLayout.jsx           # Header + <Outlet/> + Footer + CartDrawer + ToastContainer
     Header.jsx
     Footer.jsx
-    AnnouncementBar.jsx
     CartDrawer.jsx
     ToastContainer.jsx
   components/               # reusable UI primitives (stateless where possible)

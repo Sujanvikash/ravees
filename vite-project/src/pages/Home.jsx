@@ -62,7 +62,7 @@ const Home = () => {
 
   return (
     <>
-      <Suspense fallback={<div className="-mt-(--announce-h) h-[calc(100svh-var(--header-h))] w-full bg-[#0B1A14]" />}>
+      <Suspense fallback={<div className="h-[calc(100svh-var(--header-h))] w-full bg-[#0B1A14]" />}>
         <ScrollTreeHero />
       </Suspense>
 
@@ -95,12 +95,12 @@ const Home = () => {
 
       {/* Shop by category, then the featured collection: one band, so the Aurora and pine branches
           cover both without a seam between them */}
-      <section className="relative z-20 bg-bg-primary pt-20 pb-25">
+      <section className="relative z-20 bg-bg-primary pt-12 pb-16 md:pt-20 md:pb-20">
         <Aurora />
         <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-left-top" />
         <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-right-top" />
         <Container>
-          <ShopByCategory className="mb-22" />
+          <ShopByCategory className="mb-14 md:mb-20" />
 
           <Reveal className="mb-9 flex flex-wrap items-end justify-between gap-5">
             <div>
@@ -125,7 +125,7 @@ const Home = () => {
       </section>
 
       {/* Tree Studio teaser */}
-      <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-25">
+      <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-16 md:py-20">
         <Decoration
           side
           src={pineCrateBaubles}
@@ -186,7 +186,7 @@ const Home = () => {
       <OurPurpose />
 
       {/* Testimonials teaser */}
-      <section className="relative z-20 bg-bg-primary py-25">
+      <section className="relative z-20 bg-bg-primary py-16 md:py-20">
         <Aurora />
         <Decoration side src={goldenReindeerStatue} className={`right-0 ${SIDE_STANDING}`} />
         <Decoration side src={festiveLanternGlow} className={`left-0 ${SIDE_STANDING}`} />
@@ -199,7 +199,7 @@ const Home = () => {
               </Reveal>
             ))}
           </div>
-          <div className="mt-10 text-center">
+          <div className="mt-8 text-center md:mt-10">
             <Link
               to="/testimonials"
               className="text-[0.88rem] text-gold-300 underline-offset-4 transition-colors hover:text-white hover:underline"
