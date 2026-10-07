@@ -10,7 +10,6 @@
   --color-bg-darker: #06160c;
 
   /* gold / champagne accent scale */
-  --color-gold-100: #fff6df;
   --color-gold-200: #faebc3;
   --color-gold-300: #f2d48a;
   --color-gold-400: #e5c78b;
@@ -21,11 +20,9 @@
   --color-emerald-300: #6ee7b7;
   --color-emerald-400: #34d399;
   --color-emerald-500: #10b981;
-  --color-emerald-700: #047857;
 
   /* ruby (wishlist / alerts) */
   --color-ruby-500: #e11d48;
-  --color-ruby-600: #be123c;
 
   /* text */
   --color-text-primary: #f8fafc;
@@ -39,12 +36,7 @@
   --font-mono: 'Space Mono', monospace;
 
   /* animations ported from the old stylesheet */
-  --animate-toast-in: slideToast 0.3s ease forwards;
   --animate-pulse-logo: pulseLogo 2.5s ease-in-out infinite alternate;
-  --animate-pulse-dot: pulseLogo 1.5s infinite alternate;
-  --animate-ken-burns: orbitKenBurns 16s ease-in-out infinite alternate;
-  --animate-orbit-shine: orbitShine 6.5s ease-in-out infinite;
-  --animate-mouse-wheel: mouseWheel 1.6s infinite ease-in-out;
 
   /* Motion system: one set of curves for the whole site (classes: ease-premium, ease-spring). */
   --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
@@ -123,17 +115,6 @@
   }
 }
 
-@keyframes slideToast {
-  from {
-    transform: translateX(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 @keyframes pulseLogo {
   0% {
     transform: scale(0.95);
@@ -142,41 +123,6 @@
   100% {
     transform: scale(1.05);
     opacity: 1;
-  }
-}
-
-@keyframes orbitKenBurns {
-  0% {
-    transform: scale(1.12) translate3d(0, 0, 0);
-  }
-  100% {
-    transform: scale(1.24) translate3d(-2.5%, -3%, 0);
-  }
-}
-
-/*
- * Shine sweep across an orbit card. Moves with transform (GPU-composited) rather
- * than `left`, which re-ran layout on every card every frame. The streak is 40% of
- * the card wide, so -112.5% / 312.5% of its own width equals -45% / 125% of the card.
- */
-@keyframes orbitShine {
-  0%,
-  62% {
-    transform: translateX(-112.5%) rotate(18deg);
-  }
-  100% {
-    transform: translateX(312.5%) rotate(18deg);
-  }
-}
-
-@keyframes mouseWheel {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(8px);
-    opacity: 0;
   }
 }
 
@@ -191,6 +137,9 @@
     scrollbar-gutter: stable;
     /* Height of the sticky header: also read by Home's hero placeholder and ScrollTreeHero. */
     --header-h: 76px;
+    /* Height of the announcement bar above the header (set on the bar itself). The hero starts under it,
+       so its picture is the same height at the top of the page as after scrolling. */
+    --announce-h: 2.25rem;
   }
 
   body {

@@ -1,4 +1,28 @@
 {
-  "dir": "frames-muw71lfh",
-  "count": 150
+  "dir": "frames-muxmybfg",
+  "count": 115,
+  "landscape": {
+    "full": [
+      1920,
+      1080
+    ],
+    "lite": [
+      1280,
+      720
+    ],
+    "small": [
+      480,
+      270
+    ]
+  },
+  "portrait": {
+    "full": [
+      900,
+      1210
+    ],
+    "small": [
+      240,
+      322
+    ]
+  }
 }

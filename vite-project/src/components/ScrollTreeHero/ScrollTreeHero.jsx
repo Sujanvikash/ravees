@@ -8,29 +8,60 @@ import heroFrames from "../../data/heroFrames.json";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-// Folder and count come from src/data/heroFrames.json, rewritten by scripts/make-frames.mjs on every run.
-const { dir: FRAMES_DIR, count: FRAME_COUNT } = heroFrames;
+// Folder, count and frame sizes come from src/data/heroFrames.json, rewritten by scripts/make-frames.mjs
+// on every run. `landscape` always exists; `portrait` only when a portrait video was given.
+const { dir: FRAMES_DIR, count: FRAME_COUNT, landscape: LANDSCAPE, portrait: PORTRAIT } = heroFrames;
 const MAX_DPR = 2; // above 2x the extra pixels cost fill-rate without visible gain
-// Pixel size of each frame set: the canvas never needs more pixels than the frames have.
-const NATIVE = { desktop: [1920, 1080], mobile: [1280, 720] };
+// The star on the finished tree sits only ~4-5% below the top edge of the frames. On a screen wider than
+// the video, the cover fit crops the picture's height; never crop more than this share of it off the TOP,
+// so the star stays in view (the rest of the crop comes off the bottom, which is only floor).
+const MAX_TOP_CROP = 0.025;
+// After the last frame the finished tree (star included) stays pinned for this much more scroll, in
+// timeline units (1 = the whole growth). The track is 50svh taller to match, so the growth keeps its pace.
+const END_HOLD = 0.14;
 // Desktop parallax: how far each card drifts either side of its resting place (px).
 const PARALLAX = { hero: 32, craft: 12 };
-// Each frame set has a "-small" twin (desktop 480×270, mobile 320×180; ~1.9 MB / ~1.1 MB for all 150),
-// kept decoded for EVERY frame (~78 MB / ~35 MB). A scroll faster than the sharp decoder can follow
-// shows these, softer, until the sharp frame is ready. Phones get the smaller ones on purpose:
-// decoded frames are what a phone has least room for.
-const SMALL_SUFFIX = "-small";
+// Every video has a "-small" set of soft stand-ins (landscape 480 px wide, portrait 240 px; about 1-2 MB
+// for all 150 frames), kept decoded for EVERY frame. A scroll faster than the sharp decoder can follow
+// shows these, softer, until the sharp frame is ready. They stay tiny on purpose: decoded frames are
+// what a phone has least room for.
 // A small frame stretched to fill the screen is soft anyway, so the cheap filter looks the same.
 // The expensive "high" filter on those stretched frames made fast scrolls drop frames (measured:
-// fling 10% of screen refreshes missed vs 2% with "low"). Sharp frames keep "high".
-const smoothingFor = (img) => (img.width < 960 ? "low" : "high");
+// fling 10% of screen refreshes missed vs 2% with "low"). Sharp frames (900 px and up) keep "high".
+const smoothingFor = (img) => (img.width < 600 ? "low" : "high");
 
-/** HD frames for large or dense screens, lighter frames for phones and data-saver. */
-function pickFrameSet() {
-  if (typeof window === "undefined") return "desktop";
-  const saveData = navigator.connection?.saveData;
-  const physicalWidth = window.innerWidth * Math.min(window.devicePixelRatio || 1, MAX_DPR);
-  return !saveData && physicalWidth > 1300 ? "desktop" : "mobile";
+/**
+ * Which frames to load: the portrait video on upright screens (when there is one), the landscape video
+ * otherwise. Of the landscape frames, the 1280 px set goes to small screens and data-saver, the full set
+ * to the rest. Returns the sharp folder, its small stand-in folder, the frame size and whether it is the
+ * big landscape set (which gets a larger decoded window).
+ */
+function pickFrameSet(portraitScreen) {
+  if (PORTRAIT && portraitScreen) {
+    return { folder: "portrait", preview: "portrait-small", size: PORTRAIT.full, full: false };
+  }
+  const saveData = typeof navigator !== "undefined" && navigator.connection?.saveData;
+  const physicalWidth =
+    typeof window === "undefined" ? Infinity : window.innerWidth * Math.min(window.devicePixelRatio || 1, MAX_DPR);
+  if (!saveData && physicalWidth > 1300) {
+    return { folder: "landscape", preview: "landscape-small", size: LANDSCAPE.full, full: true };
+  }
+  return { folder: "landscape-lite", preview: "landscape-small", size: LANDSCAPE.lite, full: false };
+}
+
+/** True while the window is taller than it is wide (a phone or tablet held upright). Follows rotation. */
+function usePortraitScreen() {
+  const query = "(max-aspect-ratio: 1/1)";
+  const [portrait, setPortrait] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(query).matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setPortrait(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return portrait;
 }
 
 function usePrefersReducedMotion() {
@@ -51,7 +82,7 @@ function usePrefersReducedMotion() {
 const PIN_MOBILE =
   "absolute inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-6 lg:inset-x-auto lg:bottom-auto";
 const POS = {
-  hero: "lg:left-10 lg:top-1/2 lg:w-[clamp(19rem,26vw,29rem)] lg:-translate-y-1/2",
+  hero: "lg:left-10 lg:top-1/2 lg:w-[clamp(19rem,29vw,32rem)] lg:-translate-y-1/2",
   craft: "lg:right-10 lg:top-1/2 lg:w-[clamp(17rem,23vw,23rem)] lg:-translate-y-[42%]",
 };
 
@@ -59,11 +90,11 @@ const POS = {
  * Scroll-scrubbed image-sequence hero.
  *
  * Props
- *  scrollClass   Tailwind height class for the scroll track (default "h-[450svh]": 450 viewport heights)
+ *  scrollClass   Tailwind height class for the scroll track (default "h-[500svh]": 500 viewport heights)
  *  shopHref      overrides the primary CTA link from heroContent.js
  *  studioHref    overrides the secondary CTA link from heroContent.js
  */
-export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, studioHref }) {
+export default function ScrollTreeHero({ scrollClass = "h-[500svh]", shopHref, studioHref }) {
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -71,20 +102,22 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
   const renderState = useRef({ frame: 0, drawnKey: "", drawnA: null, drawnB: null });
 
   const reduced = usePrefersReducedMotion();
-  const [frameSet] = useState(pickFrameSet);
-  // Full 1080p at every scroll speed needs all 150 frames decoded (~1.2 GB), so it is only used
-  // where the browser reports 8 GB or more (Chrome/Edge; others report nothing and keep the small frames).
-  const [fullQuality] = useState(() => frameSet === "desktop" && (navigator.deviceMemory ?? 0) >= 8);
+  // Rotating a phone or tablet swaps to the other video's frames (frames reload, the scroll position stays).
+  const portraitScreen = usePortraitScreen();
+  const frameSet = useMemo(() => pickFrameSet(portraitScreen), [portraitScreen]);
+  // Full-size landscape frames at every scroll speed need all 150 frames decoded (~1.2 GB), so it is only
+  // used where the browser reports 8 GB or more (Chrome/Edge; others report nothing and keep the small frames).
+  const fullQuality = frameSet.full && (navigator.deviceMemory ?? 0) >= 8;
 
   const getSrc = useMemo(() => {
     const base = import.meta.env.BASE_URL;
-    return (i) => `${base}${FRAMES_DIR}/${frameSet}/frame_${String(i + 1).padStart(4, "0")}.webp`;
+    return (i) => `${base}${FRAMES_DIR}/${frameSet.folder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
   }, [frameSet]);
   // Reduced motion only ever shows the last frame, so it has no use for the small ones.
   const previewSrc = useMemo(() => {
     if (reduced) return undefined;
     const base = import.meta.env.BASE_URL;
-    return (i) => `${base}${FRAMES_DIR}/${frameSet}${SMALL_SUFFIX}/frame_${String(i + 1).padStart(4, "0")}.webp`;
+    return (i) => `${base}${FRAMES_DIR}/${frameSet.preview}/frame_${String(i + 1).padStart(4, "0")}.webp`;
   }, [frameSet, reduced]);
 
   // Declared before the hook so the loader can request a redraw when a closer frame arrives.
@@ -118,7 +151,8 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
     state.drawnB = over;
     state.drawnKey = key;
 
-    // object-fit: cover, centred on the tree
+    // object-fit: cover, centred on the tree sideways. Vertically it is centred too, until the top crop
+    // would reach MAX_TOP_CROP: from there the extra comes off the bottom.
     const cw = canvas.width;
     const ch = canvas.height;
     const iw = base.naturalWidth || base.width;
@@ -127,7 +161,7 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
     const dw = iw * scale;
     const dh = ih * scale;
     const x = (cw - dw) / 2;
-    const y = (ch - dh) / 2;
+    const y = -Math.min((dh - ch) / 2, dh * MAX_TOP_CROP);
     ctx.imageSmoothingQuality = smoothingFor(base);
     ctx.drawImage(base, x, y, dw, dh);
     if (over) {
@@ -142,8 +176,8 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
     count: FRAME_COUNT,
     getSrc,
     onFrameLoad: () => draw(),
-    // Decoded window either side of the playhead: ~8 MB per desktop frame, ~3.7 MB per mobile one.
-    keepDecoded: frameSet === "desktop" ? 12 : 8,
+    // Decoded window either side of the playhead: ~6 MB per full landscape frame, 2-4 MB for the others.
+    keepDecoded: frameSet.full ? 12 : 8,
     decodeAll: fullQuality,
     previewSrc,
     // Reduced motion only ever shows the last frame, so it skips the other 149.
@@ -160,7 +194,7 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
-    const [frameW, frameH] = NATIVE[frameSet];
+    const [frameW, frameH] = frameSet.size;
     const resize = () => {
       const { clientWidth, clientHeight } = canvas;
       // With cover-fit, one canvas pixel per frame pixel is all the detail there is to show.
@@ -279,6 +313,9 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
               0.8
             );
         }
+        // Hold the last frame: the stage stays pinned a little longer instead of sliding away the moment
+        // the tree is finished (the star, at the top of the picture, would slip under the header first).
+        tl.to({}, { duration: END_HOLD }, 1);
       });
 
       return () => mm.revert();
@@ -293,7 +330,7 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
     <section
       ref={sectionRef}
       aria-label="Raave's Evergreen hero"
-      className={`relative bg-[#0B1A14] ${reduced ? "" : scrollClass}`}
+      className={`relative bg-[#0B1A14] ${reduced ? "" : `${scrollClass} -mt-(--announce-h)`}`}
     >
       <div
         className={
@@ -313,7 +350,7 @@ export default function ScrollTreeHero({ scrollClass = "h-[450svh]", shopHref, s
         {/* Legibility scrim: bottom-up on phones, sides-in on desktop so the tree stays clean. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgba(7,18,13,0.92)_0%,rgba(7,18,13,0.5)_36%,transparent_60%)] lg:bg-[linear-gradient(90deg,rgba(7,18,13,0.8)_0%,transparent_34%,transparent_66%,rgba(7,18,13,0.7)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgba(7,18,13,0.95)_0%,rgba(7,18,13,0.7)_28%,rgba(7,18,13,0.35)_46%,transparent_62%)] lg:bg-[linear-gradient(90deg,rgba(7,18,13,0.9)_0%,rgba(7,18,13,0.55)_22%,transparent_36%,transparent_66%,rgba(7,18,13,0.7)_100%)]"
         />
 
         <div

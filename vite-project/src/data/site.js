@@ -1,4 +1,4 @@
-export const PHONE_E164 = '+919840788950';
+const PHONE_E164 = '+919840788950';
 export const PHONE_DISPLAY = '+91 98407 88950';
 export const PHONE_HREF = `tel:${PHONE_E164}`;
 export const ORDER_HOURS = '8 AM – 10 PM';

@@ -1,4 +1,4 @@
-export const FIELD_LABEL_CLASS = 'text-[0.78rem] text-gold-300';
+const FIELD_LABEL_CLASS = 'text-[0.78rem] text-gold-300';
 
 /**
  * The "label above one field" wrapper repeated in every form on the site. Only

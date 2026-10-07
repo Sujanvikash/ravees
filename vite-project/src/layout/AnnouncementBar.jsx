@@ -16,7 +16,7 @@ const MESSAGES = [
 
 export default function AnnouncementBar() {
   return (
-    <div className="relative z-[105] overflow-hidden whitespace-nowrap border-b border-gold-400/15 bg-[linear-gradient(90deg,#04120a,#0b2e1f,#04120a)] px-4 py-2 text-center text-[0.76rem] tracking-[0.08em] text-gold-200">
+    <div className="relative z-[105] box-border h-(--announce-h) overflow-hidden whitespace-nowrap border-b border-gold-400/15 bg-[linear-gradient(90deg,#04120a,#0b2e1f,#04120a)] px-4 py-2 text-center text-[0.76rem] tracking-[0.08em] text-gold-200">
       <div className="inline-flex items-center gap-4">
         {MESSAGES.map((msg, i) => (
           <span key={i} className="inline-flex items-center gap-4">
