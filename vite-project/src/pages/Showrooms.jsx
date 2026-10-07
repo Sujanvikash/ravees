@@ -5,6 +5,8 @@ import { SHOWROOMS } from '../data/showrooms.js';
 import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { pineCrateBaubles } from '../assets/decorations';
 
 const Showrooms = () => {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -13,6 +15,11 @@ const Showrooms = () => {
   return (
     <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
       <Aurora />
+      <Decoration
+        side
+        src={pineCrateBaubles}
+        className="top-6 right-0 h-[300px] w-[min(400px,calc((100vw-1360px)/2+120px))]"
+      />
       <Container>
         <SectionHeading
           eyebrow="✦ 5 FLAGSHIP DESTINATIONS ✦"

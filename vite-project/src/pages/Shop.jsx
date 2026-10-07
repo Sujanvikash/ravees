@@ -11,6 +11,11 @@ import { useWishlist } from '../context/WishlistContext.jsx';
 import Container from '../components/Container.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { pineBranchLeft, pineBranchRight } from '../assets/decorations';
+
+// Pine branches on both top corners of the shop header, in the space beside the content column.
+const SIDE_BRANCH = 'top-0 h-[330px] w-[min(440px,calc((100vw-1360px)/2+160px))]';
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
@@ -59,6 +64,8 @@ const Shop = () => {
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
       <Aurora />
+      <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-left-top" />
+      <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-right-top" />
       <Container>
         <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
           <div>

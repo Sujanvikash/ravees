@@ -8,6 +8,11 @@ import { addEnquiry } from '../lib/enquiries.js';
 import Container from '../components/Container.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { goldenBellsCluster, luxuryWreathAccent } from '../assets/decorations';
+
+// Corner accents just outside the form card, partly tucked behind it.
+const CORNER_ACCENT = 'h-[230px] w-[230px]';
 
 const METHOD_ROW =
   'flex items-center gap-4 rounded-xl border border-gold-400/15 bg-white/4 p-4 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/30 hover:bg-gold-400/15 hover:text-white';
@@ -16,9 +21,11 @@ const Contact = () => {
   const { session } = useCustomerAuth();
 
   return (
-    <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
+    <section className="relative z-20 overflow-x-clip bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] py-16 md:py-25">
       <Aurora />
-      <Container className="w-full">
+      <Container className="relative w-full">
+        <Decoration side src={goldenBellsCluster} className={`-top-14 -left-[150px] ${CORNER_ACCENT}`} />
+        <Decoration side src={luxuryWreathAccent} className={`-right-[150px] -bottom-14 ${CORNER_ACCENT}`} />
         <div className="grid gap-10 rounded-3xl border border-gold-400/30 bg-[rgba(8,28,20,0.85)] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:p-12 lg:grid-cols-2">
           <div>
             <Eyebrow>

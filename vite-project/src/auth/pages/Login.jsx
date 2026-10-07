@@ -36,7 +36,7 @@ const Login = () => {
   };
 
   return (
-    <AuthCard eyebrow="✦ WELCOME BACK ✦" title="Sign In To Your Account" onSubmit={handleSubmit}>
+    <AuthCard eyebrow="✦ WELCOME BACK ✦" title="Sign In To Your Account" decorated onSubmit={handleSubmit}>
       <FormField label="Email" htmlFor="login-email">
         <Input
           id="login-email"

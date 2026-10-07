@@ -50,6 +50,7 @@ const Signup = () => {
       eyebrow="✦ JOIN THE RAAVE FAMILY ✦"
       title="Create Your Account"
       maxWidth="max-w-[480px]"
+      decorated
       onSubmit={handleSubmit}
     >
       <FormField label="Full Name" htmlFor="signup-name">

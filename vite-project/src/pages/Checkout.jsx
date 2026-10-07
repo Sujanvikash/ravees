@@ -13,6 +13,8 @@ import { SHOWROOMS } from '../data/showrooms.js';
 import Eyebrow from '../components/Eyebrow.jsx';
 import { Input, Select, Textarea } from '../components/Input.jsx';
 import Aurora from '../components/Aurora.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { luxuryGiftBoxes } from '../assets/decorations';
 
 const Checkout = () => {
   const { cart, totalCount, clearCart } = useCart();
@@ -58,7 +60,15 @@ const Checkout = () => {
       <section className="relative z-20 flex min-h-[60vh] items-center justify-center bg-bg-primary px-6 py-25">
         <Aurora />
         <div className="max-w-[560px] text-center">
-          <CheckCircle2 size={56} strokeWidth={1.5} className="mx-auto mb-5 text-emerald-400" />
+          {/* Wrapped gifts, with the success check as a badge on their bottom edge. */}
+          <div className="relative isolate mx-auto mb-6 h-[220px] w-[min(330px,100%)]">
+            <Decoration src={luxuryGiftBoxes} className="inset-0" />
+            <CheckCircle2
+              size={44}
+              strokeWidth={1.5}
+              className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-bg-primary text-emerald-400"
+            />
+          </div>
           <h1 className={`mb-4 font-serif text-[2rem] font-bold leading-[1.2] ${GRADIENT_TITLE}`}>
             Your Request Is In
           </h1>

@@ -7,6 +7,11 @@ import { SHOWROOMS } from '../data/showrooms.js';
 import Container from '../components/Container.jsx';
 import Button from '../components/Button.jsx';
 import { Input } from '../components/Input.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { garlandDivider, pineBranchLeft, pineBranchRight } from '../assets/decorations';
+
+// Bottom-corner branches sit in the space beside the 1360px content column.
+const FOOTER_CORNER = 'bottom-0 h-[280px] w-[min(380px,calc((100vw-1360px)/2+100px))]';
 
 const COLLECTION_LINKS = [
   { label: 'European Christmas Trees', to: '/shop?category=christmas-trees' },
@@ -46,6 +51,12 @@ const Footer = () => {
 
   return (
     <footer className="relative z-20 border-t border-gold-400/15 bg-[#020704] pt-20 pb-8">
+      {/* Garland laid across the top edge: 48px over the section above (its bottom padding), the rest
+          inside the footer's top padding, so it never reaches any text. */}
+      <Decoration src={garlandDivider} fade="strip" className="inset-x-0 -top-12 h-32" imgClassName="object-[center_48%]" />
+      {/* Pine branches growing up from both bottom corners (the pictures flipped upside down). */}
+      <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${FOOTER_CORNER}`} imgClassName="-scale-y-100 object-left-top" />
+      <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${FOOTER_CORNER}`} imgClassName="-scale-y-100 object-right-top" />
       <Container>
         <div className="mb-14 grid gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.5fr]">
           <div>

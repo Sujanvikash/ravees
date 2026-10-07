@@ -3,11 +3,19 @@ import Button from '../components/Button.jsx';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { baublesScatter } from '../assets/decorations';
 
 const NotFound = () => {
   return (
-    <section className="relative z-20 flex min-h-[70vh] items-center justify-center bg-bg-primary px-6 py-25">
+    <section className="relative z-20 flex min-h-[70vh] items-center justify-center overflow-hidden bg-bg-primary px-6 py-25">
       <Aurora />
+      {/* Scattered ornaments behind the message: the ones that "wandered off". */}
+      <Decoration
+        src={baublesScatter}
+        opacity={0.3}
+        className="top-1/2 left-1/2 h-[min(640px,85%)] w-[min(900px,100%)] -translate-x-1/2 -translate-y-1/2"
+      />
       <div className="max-w-[520px] text-center">
         <Eyebrow>
           ✦ 404 ✦

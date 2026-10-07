@@ -24,6 +24,16 @@
   /* ruby (wishlist / alerts) */
   --color-ruby-500: #e11d48;
 
+  /* cream: the light surfaces (product cards, the "Our Purpose" band) with dark-green ink on them */
+  --color-cream-50: #fbf7ee;
+  --color-cream-100: #f4ecdc;
+  --color-cream-200: #e6dac2;
+  --color-ink: #11261b;
+  --color-ink-soft: #4b5d52;
+  --color-gold-ink: #8d6a24; /* gold that reads on cream */
+  --color-forest: #0f3322; /* dark green buttons and icon discs on cream */
+  --color-forest-hover: #17492f;
+
   /* text */
   --color-text-primary: #f8fafc;
   --color-text-secondary: #9cb3a8;
@@ -97,6 +107,47 @@
       scale: 1.15;
       rotate: 12deg;
     }
+  }
+}
+
+/* Edge fades for decorative photos (components/Decoration.jsx): the images have backgrounds, so each
+   edge fades into the page. Two gradients are intersected where both directions need a fade. */
+.deco-fade-left {
+  -webkit-mask-image: linear-gradient(to right, #000 40%, transparent 96%), linear-gradient(to bottom, #000 62%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, #000 40%, transparent 96%), linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-composite: intersect;
+}
+.deco-fade-right {
+  -webkit-mask-image: linear-gradient(to left, #000 40%, transparent 96%), linear-gradient(to bottom, #000 62%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to left, #000 40%, transparent 96%), linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-composite: intersect;
+}
+.deco-fade-oval {
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+}
+.deco-fade-strip {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent), linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent), linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  mask-composite: intersect;
+}
+.deco-fade-under {
+  -webkit-mask-image: linear-gradient(to right, #000 25%, transparent 75%);
+  mask-image: linear-gradient(to right, #000 25%, transparent 75%);
+}
+
+/* "Our Purpose" photo melting into the cream: downward when stacked (phones), sideways from lg. */
+.purpose-photo-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+}
+@media (min-width: 1024px) {
+  .purpose-photo-fade {
+    -webkit-mask-image: linear-gradient(to right, #000 60%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 60%, transparent 100%);
   }
 }
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Trash2, ArrowRight } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import IconButton from '../components/IconButton.jsx';
 import QuantityStepper from '../components/QuantityStepper.jsx';
@@ -7,6 +7,8 @@ import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { luxuryGiftBoxes } from '../assets/decorations';
 
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
@@ -24,7 +26,9 @@ const Cart = () => {
 
         {cart.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-6 py-20 text-center">
-            <ShoppingBag size={44} strokeWidth={1.5} className="text-gold-400/50" />
+            <div className="relative isolate h-[170px] w-[min(250px,100%)]">
+              <Decoration src={luxuryGiftBoxes} className="inset-0" />
+            </div>
             <p className="text-text-secondary">Your cart is empty.</p>
             <Button to="/shop">Browse the Collections</Button>
           </div>

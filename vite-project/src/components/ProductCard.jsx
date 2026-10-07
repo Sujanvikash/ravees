@@ -1,17 +1,21 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Eye, ShoppingBag, Info } from 'lucide-react';
-import Badge from './Badge.jsx';
-import Button from './Button.jsx';
+import { Heart, Eye, ShoppingCart } from 'lucide-react';
 import PriceTag from './PriceTag.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
 import { useInView } from '../hooks/useInView.js';
 
+// Round icon buttons over the photo (wishlist, quick view): white discs that read on any photo.
 const ACTION_CIRCLE =
-  'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-gold-400/30 bg-[rgba(4,18,12,0.85)] text-gold-300 transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-[#04120a]';
+  'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-300 hover:border-gold-500 hover:bg-gold-400 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500';
 
+/**
+ * Product card: a cream card with the photo on a white panel, a stock badge, the category in gold,
+ * the name, sizes, the price slot ("Enquire for Price") and one full-width "Add to Cart".
+ * The photo and the name open the product page.
+ */
 const ProductCard = ({ product, onQuickView }) => {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -32,17 +36,18 @@ const ProductCard = ({ product, onQuickView }) => {
     <div
       onMouseEnter={() => hoverCard(addBtnRef.current)}
       onMouseLeave={leaveCard}
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] transition-all duration-300 ease-premium hover:-translate-y-1.5 hover:border-gold-400/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6),0_0_24px_rgba(229,199,139,0.15)]">
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-cream-200 bg-cream-50 shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition-all duration-300 ease-premium hover:-translate-y-1.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.5),0_0_24px_rgba(229,199,139,0.18)]"
+    >
       <Link
         ref={photoRef}
         to={`/product/${product.id}`}
-        className="relative block h-[110px] w-full overflow-hidden bg-[#020805] sm:h-[150px]"
+        className="relative m-2 mb-0 block aspect-[5/4] overflow-hidden rounded-xl bg-white"
       >
         {/* Shimmer placeholder until the photo has loaded; the photo (above it) then covers it. */}
         {!imageLoaded && photoInView && (
           <span
             aria-hidden="true"
-            className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_25%,rgba(229,199,139,0.16)_50%,transparent_75%)]"
+            className="absolute inset-0 animate-shimmer bg-[linear-gradient(110deg,transparent_25%,rgba(17,38,27,0.08)_50%,transparent_75%)]"
           />
         )}
         <img
@@ -60,14 +65,17 @@ const ProductCard = ({ product, onQuickView }) => {
         />
       </Link>
 
-      {!product.inStock && (
-        <div className="absolute top-3 left-3 hidden sm:block">
-          <Badge variant="ruby">On Backorder</Badge>
-        </div>
-      )}
+      <span
+        className={`absolute top-4 left-4 rounded-md px-2 py-0.5 text-[0.62rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] sm:text-[0.68rem] ${
+          product.inStock ? 'bg-forest' : 'bg-ruby-500'
+        }`}
+      >
+        {product.inStock ? 'In Stock' : 'Backorder'}
+      </span>
 
-      <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+      <div className="absolute top-4 right-4 flex flex-col gap-1.5">
         <button
+          type="button"
           className={`${ACTION_CIRCLE} ${wishlisted ? 'border-ruby-500 text-ruby-500' : ''}`}
           title="Save to wishlist"
           onClick={() => toggleWishlist(product.id)}
@@ -80,26 +88,19 @@ const ProductCard = ({ product, onQuickView }) => {
           />
         </button>
         {onQuickView && (
-          <button className={ACTION_CIRCLE} title="Quick specs & details" onClick={() => onQuickView(product)}>
+          <button type="button" className={ACTION_CIRCLE} title="Quick specs & details" onClick={() => onQuickView(product)}>
             <Eye size={16} strokeWidth={2} />
           </button>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-3">
-        <div className="mb-1 flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-          <span className="min-w-0 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-gold-400 sm:text-[0.68rem] sm:tracking-[0.12em]">
-            {product.categoryLabel}
-          </span>
-          <span
-            className={`shrink-0 text-[0.62rem] font-medium sm:text-[0.68rem] ${product.inStock ? 'text-emerald-400' : 'text-text-muted'}`}
-          >
-            {product.inStock ? 'In Stock' : 'Backorder'}
-          </span>
-        </div>
+      <div className="flex flex-1 flex-col p-3 pt-3.5">
+        <span className="mb-1 min-w-0 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-gold-ink sm:text-[0.68rem] sm:tracking-[0.12em]">
+          {product.categoryLabel}
+        </span>
 
-        <h3 className="mb-1.5 font-serif text-[0.92rem] font-semibold leading-[1.3] text-white sm:text-[1rem]">
-          <Link to={`/product/${product.id}`} className="no-underline transition-colors hover:text-gold-200">
+        <h3 className="mb-1.5 font-serif text-[0.92rem] font-semibold leading-[1.3] text-ink sm:text-[1rem]">
+          <Link to={`/product/${product.id}`} className="no-underline transition-colors hover:text-gold-ink">
             {product.name}
           </Link>
         </h3>
@@ -110,7 +111,7 @@ const ProductCard = ({ product, onQuickView }) => {
               {product.sizes.map((size) => (
                 <span
                   key={size}
-                  className="rounded-md border border-gold-400/15 bg-gold-400/8 px-1.5 py-px text-[0.66rem] text-gold-300"
+                  className="rounded-md border border-ink/10 bg-cream-100 px-1.5 py-px text-[0.66rem] text-ink-soft"
                 >
                   {size}
                 </span>
@@ -119,21 +120,18 @@ const ProductCard = ({ product, onQuickView }) => {
           </div>
         )}
 
-        <PriceTag size="sm" compact className="mt-auto mb-2" />
+        <PriceTag size="sm" compact tone="light" className="mt-auto mb-2.5" />
 
-        <div className="mt-auto grid grid-cols-[1fr_1.3fr] gap-2">
-          <Link
-            to={`/product/${product.id}`}
-            className="inline-flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-gold-400/30 px-2 py-1.5 text-[0.78rem] sm:gap-1.5 sm:px-3 font-semibold text-gold-300 no-underline transition-all duration-300 hover:bg-gold-400/15 hover:text-white"
-          >
-            <span>More</span>
-            <Info size={14} strokeWidth={2} />
-          </Link>
-          <Button ref={addBtnRef} size="sm" onClick={handleAdd} title="Add to cart" className="gap-1.5! px-2! py-1.5! sm:gap-2! sm:px-4!">
-            <ShoppingBag size={16} strokeWidth={2} />
-            <span>Add</span>
-          </Button>
-        </div>
+        <button
+          ref={addBtnRef}
+          type="button"
+          onClick={handleAdd}
+          title="Add to cart"
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-forest px-3 py-2 text-[0.8rem] font-semibold text-cream-50 transition-colors duration-200 hover:bg-forest-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:text-[0.85rem]"
+        >
+          Add to Cart
+          <ShoppingCart size={15} strokeWidth={2} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

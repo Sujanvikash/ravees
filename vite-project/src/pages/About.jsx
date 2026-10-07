@@ -6,6 +6,8 @@ import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
 import CountUp from '../components/CountUp.jsx';
 import Reveal from '../components/Reveal.jsx';
+import Decoration from '../components/Decoration.jsx';
+import { nativityCribSet } from '../assets/decorations';
 
 // Numbers count up when they scroll into view; the suffix is shown as-is.
 const STATS = [
@@ -64,7 +66,9 @@ const About = () => {
             </div>
           </div>
 
-          <div className="rounded-[20px] border border-gold-400/30 bg-[radial-gradient(circle_at_center,#0a291c_0%,#041009_100%)] px-8 py-10 text-center shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+          <div className="relative isolate overflow-hidden rounded-[20px] border border-gold-400/30 bg-[radial-gradient(circle_at_center,#0a291c_0%,#041009_100%)] px-8 py-10 text-center shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+            {/* The nativity, softly behind the John 3:16 verse. */}
+            <Decoration src={nativityCribSet} opacity={0.38} className="inset-0" />
             <img
               src="/logo.svg"
               alt="Raave's Evergreen emblem"
