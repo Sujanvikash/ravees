@@ -56,8 +56,9 @@ const ShowroomCard = ({ showroom }) => {
         <div>
           <h4 className="mb-3 font-serif text-[1.05rem] text-gold-300">Store Highlights</h4>
           <ul className="flex list-none flex-col gap-2 text-[0.85rem] text-text-secondary">
-            {showroom.features.map((feature) => (
-              <li key={feature} className="flex gap-2">
+            {/* The highlights cascade in whenever the card appears (each city switch remounts it). */}
+            {showroom.features.map((feature, i) => (
+              <li key={feature} className="flex animate-slide-in gap-2" style={{ animationDelay: `${150 + i * 70}ms` }}>
                 <span className="text-gold-400">✦</span>
                 {feature}
               </li>

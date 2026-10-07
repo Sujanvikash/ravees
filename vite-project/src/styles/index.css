@@ -63,10 +63,44 @@
   --animate-gold-sheen: gold-sheen 6s linear infinite;
   --animate-aurora: aurora 24s ease-in-out infinite alternate;
   --animate-aurora-reverse: aurora 30s ease-in-out infinite alternate-reverse;
+  /* Content that just changed (a new summary, a different showroom) settling in. */
+  --animate-fade-in: page-in 0.45s var(--ease-premium) backwards;
+  --animate-slide-in: slide-in 0.55s var(--ease-premium) backwards;
+  /* A chosen option giving a small springy nudge. */
+  --animate-select: select 0.4s var(--ease-spring);
+  /* Very slow drift on a background picture, and a breathing glow on the emblem (About). */
+  --animate-ken-burns: ken-burns 22s ease-in-out infinite alternate;
+  --animate-glow: glow 3.5s ease-in-out infinite alternate;
 
   @keyframes page-in {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+    }
+  }
+  @keyframes select {
+    40% {
+      scale: 1.04;
+    }
+  }
+  @keyframes ken-burns {
+    to {
+      scale: 1.12;
+      translate: 2% -2%;
+    }
+  }
+  /* filter repaints, but only on one small image */
+  @keyframes glow {
+    from {
+      filter: drop-shadow(0 0 12px rgba(229, 199, 139, 0.25));
+    }
+    to {
+      filter: drop-shadow(0 0 34px rgba(229, 199, 139, 0.65));
     }
   }
   @keyframes pop {
@@ -107,6 +141,23 @@
       scale: 1.15;
       rotate: 12deg;
     }
+  }
+}
+
+/* Reduced motion (an OS accessibility setting): every CSS animation and transition finishes at once,
+   so things still change state (hover colours, selected options) but nothing moves, drifts or loops.
+   JS-driven motion checks the setting itself (useInView/Reveal, CountUp, SmoothScroll, the hero, Santa).
+   Nothing here waits for animationend/transitionend, so near-zero durations are safe. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
   }
 }
 
