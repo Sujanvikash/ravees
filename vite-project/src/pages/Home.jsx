@@ -21,7 +21,7 @@ import Flourish from '../components/Flourish.jsx';
 import OurPurpose from '../components/OurPurpose.jsx';
 import {
   festiveLanternGlow,
-  goldenReindeerStatue,
+  goldenReindeerCutout,
   heroTreeGlow,
   pineBranchLeft,
   pineBranchRight,
@@ -34,7 +34,7 @@ const SIDE_BRANCH = 'top-0 h-[330px] w-[min(440px,calc((100vw-1360px)/2+160px))]
 const SIDE_STANDING = 'top-10 h-[340px] w-[min(260px,calc((100vw-1360px)/2+40px))]';
 
 // Hero loads separately so the rest of the homepage can paint first.
-const ScrollTreeHero = lazy(() => import('../components/ScrollTreeHero'));
+const CinematicHero = lazy(() => import('../components/CinematicHero'));
 
 const TRUST_ITEMS = [
   { Icon: ShieldCheck, title: 'European Safety Certified', body: 'Fire-retardant & non-toxic' },
@@ -63,7 +63,7 @@ const Home = () => {
   return (
     <>
       <Suspense fallback={<div className="h-[calc(100svh-var(--header-h))] w-full bg-[#0B1A14]" />}>
-        <ScrollTreeHero />
+        <CinematicHero />
       </Suspense>
 
       {/* Trust strip: one slim row of promises, then a shortcut into the catalogue */}
@@ -188,7 +188,14 @@ const Home = () => {
       {/* Testimonials teaser */}
       <section className="relative z-20 bg-bg-primary py-16 md:py-20">
         <Aurora />
-        <Decoration side src={goldenReindeerStatue} className={`right-0 ${SIDE_STANDING}`} />
+        {/* A cut-out, so no edge fade: contained (antlers and hooves stay whole) and standing on the bottom edge. */}
+        <Decoration
+          side
+          src={goldenReindeerCutout}
+          fade="none"
+          className={`right-0 ${SIDE_STANDING}`}
+          imgClassName="object-contain! object-bottom!"
+        />
         <Decoration side src={festiveLanternGlow} className={`left-0 ${SIDE_STANDING}`} />
         <Container>
           <SectionHeading eyebrow="✦ TESTIMONIALS ✦" title="Loved Across Generations" />

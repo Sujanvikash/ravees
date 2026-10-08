@@ -16,12 +16,15 @@ import pineCrateBaubles from './pine_crate_baubles.webp';
 import santaChildGift from './santa_child_gift.webp';
 // Cut out of pine_branch_right.jpg (velvet background removed, transparent), for the cream section.
 import pineCornerCutout from './pine_corner_cutout.webp';
+// Cut out of golden_reindeer_statue.jpg (curtain and table removed, transparent), for the testimonials.
+import goldenReindeerCutout from './golden_reindeer_cutout.webp';
 
 export {
   baublesScatter,
   festiveLanternGlow,
   garlandDivider,
   goldenBellsCluster,
+  goldenReindeerCutout,
   goldenReindeerStatue,
   heroTreeGlow,
   luxuryGiftBoxes,

@@ -1,31 +1,27 @@
 /**
- * Builds every frame the scroll hero needs from one or two videos:
- *
- *   --landscape <video>   laptops, desktops, tablets held sideways (a wide video, e.g. 16:9 or 21:9)
- *   --portrait  <video>   phones and tablets held upright          (a tall video, e.g. 9:16 or 4:5)
+ * Builds the desktop frames of the cinematic hero (CinematicHero/HeroCanvas.jsx) from one wide video
+ * (laptops, desktops, tablets held sideways; e.g. 16:9 or 21:9):
  *
  *   public/<out>/landscape/        1920 px wide  (sharp)
  *   public/<out>/landscape-lite/   1280 px wide  (small laptops, data saver)
  *   public/<out>/landscape-small/   480 px wide  (stand-ins for fast scrolling)
- *   public/<out>/portrait/          900 px wide  (sharp)             only with --portrait
- *   public/<out>/portrait-small/    240 px wide  (stand-ins)         only with --portrait
  *
- * Heights follow each video's own shape, so any ratio works (no stretching). Per video, in this order:
+ * Phones and upright tablets play a video instead of frames: that one is made by make-mobile-video.mjs.
+ *
+ * Heights follow the video's own shape, so any ratio works (no stretching). In this order:
  *   1. the sparkle watermark is removed (see --watermark),
  *   2. black bars above/below (or left/right of) the picture are cropped off (see --crop),
  *   3. the result is scaled to the sizes above.
- * With only a landscape video (or a single bare path, the old usage) phones get the landscape frames.
  *
- * Frames are picked evenly across each video (first and last included) and written as
- * frame_0001.webp, frame_0002.webp, ... Both videos get the same frame count, so the scroll lines up.
- * The count is whatever you pass; without one it is every frame of the shorter video (the most possible).
+ * Frames are picked evenly across the video (first and last included) and written as
+ * frame_0001.webp, frame_0002.webp, ... The count is whatever you pass; without one it is every frame.
  *
  * Needs ffmpeg and ffprobe on the PATH (winget install Gyan.FFmpeg). Nothing else.
  *
  * Run:
- *   node scripts/make-frames.mjs --landscape land.mp4 --portrait port.mp4 [--frames 120]
- *   node scripts/make-frames.mjs land.mp4 port.mp4 120          (same, without the flag names)
- *   node scripts/make-frames.mjs video.mp4                      (same as --landscape video.mp4)
+ *   node scripts/make-frames.mjs video.mp4 [--frames 120]
+ *   node scripts/make-frames.mjs video.mp4 120                  (same, without the flag name)
+ *   node scripts/make-frames.mjs --landscape video.mp4          (the older spelling, still accepted)
  *
  * Other options:
  *   --watermark auto|off|SPOTS          Remove the sparkle watermark by filling from the pixels around it.
@@ -41,12 +37,14 @@
  *                                       at about 20 frames AFTER the watermark is removed (a sparkle
  *                                       sitting in a bar would otherwise count as picture). W:H:X:Y is an
  *                                       explicit crop rectangle in video pixels. off keeps the whole frame.
- *   --landscape-watermark / --portrait-watermark / --landscape-crop / --portrait-crop
- *                                       The same, for just one of the two videos.
+ *   --alt                               Build the ALTERNATE animation (the hero's toggle switch shows it)
+ *                                       instead of the main one: folder frames-alt-<timestamp>, manifest
+ *                                       src/data/heroFramesAlt.json. The main set is left untouched.
  *   --out <name>                        Folder name under public/ (default frames-<timestamp>).
  *
- * Each run writes a NEW folder (so browsers never serve stale frames), then deletes every older
- * public/frames-* folder and rewrites src/data/heroFrames.json, which ScrollTreeHero.jsx imports.
+ * Each run writes a NEW folder (so browsers never serve stale frames), then deletes the older folders
+ * of the same set (public/frames-* for the main one, public/frames-alt-* for --alt) and rewrites its
+ * manifest (src/data/heroFrames.json or heroFramesAlt.json), which CinematicHero imports.
  * Nothing to edit by hand: the hero always shows the latest frames.
  */
 import { spawnSync } from 'node:child_process';
@@ -60,37 +58,36 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---- Command line -----------------------------------------------------------------------------
 const args = process.argv.slice(2);
-const OPTIONS_WITH_VALUE = [
-  'landscape', 'portrait', 'frames', 'out',
-  'watermark', 'landscape-watermark', 'portrait-watermark',
-  'crop', 'landscape-crop', 'portrait-crop',
-];
+const OPTIONS_WITH_VALUE = ['landscape', 'portrait', 'frames', 'out', 'watermark', 'crop'];
 const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : fallback;
 };
-// Bare arguments: the first path is the landscape video, the second the portrait one, a bare number the frame count.
+// Bare arguments: a path is the video, a bare number the frame count.
 const bare = args.filter((a, i) => !a.startsWith('--') && !OPTIONS_WITH_VALUE.includes(args[i - 1]?.slice(2)));
 const barePaths = bare.filter((a) => !/^\d+$/.test(a));
 const bareCount = bare.find((a) => /^\d+$/.test(a));
-const landscapeVideo = flag('landscape', barePaths[0]);
-const portraitVideo = flag('portrait', barePaths[1]);
+const video = flag('landscape', barePaths[0]);
 const framesArg = flag('frames', bareCount);
 const PUBLIC = path.join(__dirname, '..', 'public');
-const OUT_NAME = flag('out', `frames-${Date.now().toString(36)}`);
+const ALT = args.includes('--alt');
+const PREFIX = ALT ? 'frames-alt-' : 'frames-';
+const MANIFEST = ALT ? 'heroFramesAlt.json' : 'heroFrames.json';
+const OUT_NAME = flag('out', `${PREFIX}${Date.now().toString(36)}`);
 const OUT = path.join(PUBLIC, OUT_NAME);
 
-const usage = () => {
-  console.error('Usage: node scripts/make-frames.mjs --landscape <video> [--portrait <video>] [--frames <count>]');
-  console.error('       node scripts/make-frames.mjs <landscape video> [<portrait video>] [<count>]');
+// Portrait frames are gone: phones play a video now. Say so, rather than silently ignoring a second video.
+if (args.includes('--portrait') || barePaths.length > 1) {
+  console.error('Portrait frames are no longer made. For the phone video run: node scripts/make-mobile-video.mjs <video>');
   process.exit(1);
-};
-if (!landscapeVideo) usage();
-for (const [label, file] of [['landscape', landscapeVideo], ['portrait', portraitVideo]]) {
-  if (file && !fs.existsSync(file)) {
-    console.error(`The ${label} video was not found: ${file}`);
-    process.exit(1);
-  }
+}
+if (!video) {
+  console.error('Usage: node scripts/make-frames.mjs <video> [--frames <count>]');
+  process.exit(1);
+}
+if (!fs.existsSync(video)) {
+  console.error(`The video was not found: ${video}`);
+  process.exit(1);
 }
 if (framesArg !== undefined && !(Number.isInteger(Number(framesArg)) && Number(framesArg) >= 2)) {
   console.error(`--frames must be a whole number of at least 2; got "${framesArg}".`);
@@ -105,8 +102,8 @@ const run = (cmd, argv, cwd) => {
 };
 
 // ---- Per-video facts ----------------------------------------------------------------------------
-/** Width, height and real frame count of a video, so the picks are spread over all of its frames. */
-const probe = (video) => {
+/** Width, height and real frame count of the video, so the picks are spread over all of its frames. */
+const probe = () => {
   const out = run('ffprobe', [
     '-v', 'error', '-select_streams', 'v:0', '-count_frames',
     '-show_entries', 'stream=width,height,nb_read_frames', '-of', 'csv=p=0', video,
@@ -136,7 +133,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'make-frames-'));
 const CORNER = [260, 260]; // the part of the frame, from the bottom-right, that is searched (the stars sit within ~200 px of the corner)
 const DEFAULT_RADIUS = 50;
 
-/** Looks for the sparkle in a video; writes its mask (full frame size) to tmp/<maskFile>. null if none found. */
+/** Looks for the sparkle in the video; writes its mask (full frame size) to tmp/<maskFile>. null if none found. */
 const detectSparkles = (info, maskFile) => {
   const every = Math.max(1, Math.floor(info.total / 32));
   const rw = Math.min(CORNER[0], info.width);
@@ -166,9 +163,9 @@ const detectSparkles = (info, maskFile) => {
   return { stars, samples: frames.length, box: { x0: x0 + box.x0, y0: y0 + box.y0, x1: x0 + box.x1, y1: y0 + box.y1 } };
 };
 
-/** The spots from --<label>-watermark / --watermark when given as positions ([] for off, null for auto). */
-const manualSpots = (label) => {
-  const spec = flag(`${label}-watermark`, flag('watermark', 'auto'));
+/** The spots from --watermark when given as positions ([] for off, null for auto). */
+const manualSpots = () => {
+  const spec = flag('watermark', 'auto');
   if (spec === 'off') return [];
   if (spec === 'auto') return null;
   return spec.split(';').map((part) => {
@@ -198,8 +195,8 @@ const writeMask = (info, marks, file) => {
  * auto looks at about 20 frames spread over the video, after the sparkle is removed, and keeps the
  * smallest rectangle that holds the picture in all of them (ffmpeg's cropdetect with reset=0).
  */
-const cropFor = (info, label, maskFile, masked) => {
-  const spec = flag(`${label}-crop`, flag('crop', 'auto'));
+const cropFor = (info, maskFile, masked) => {
+  const spec = flag('crop', 'auto');
   if (spec === 'off') return null;
   if (spec !== 'auto') {
     const [w, h, x, y] = spec.split(':').map(Number);
@@ -225,7 +222,7 @@ const cropFor = (info, label, maskFile, masked) => {
   const removedH = info.height - h;
   if (removedW < 4 && removedH < 4) return null; // no real bars
   if (removedW > info.width * 0.45 || removedH > info.height * 0.45) {
-    console.log(`  crop detection found ${w}x${h}, more than 45% of the frame: ignored (pass --${label}-crop W:H:X:Y to force one)`);
+    console.log(`  crop detection found ${w}x${h}, more than 45% of the frame: ignored (pass --crop W:H:X:Y to force one)`);
     return null;
   }
   return { w, h, x, y };
@@ -233,20 +230,17 @@ const cropFor = (info, label, maskFile, masked) => {
 
 // ---- Build ---------------------------------------------------------------------------------------
 // [folder, width in px, webp quality]. "-small" are the soft stand-ins used while a sharp frame decodes.
-const LANDSCAPE_SETS = [
+// The folder names are what HeroCanvas.jsx and heroFrames.json expect.
+const SETS = [
   ['landscape', 1920, 80],
   ['landscape-lite', 1280, 80],
   ['landscape-small', 480, 72],
 ];
-const PORTRAIT_SETS = [
-  ['portrait', 900, 80],
-  ['portrait-small', 240, 72],
-];
 
-const buildFrom = (info, sets, label) => {
-  console.log(`\n${label}: ${path.basename(info.video)} (${info.width}x${info.height}, ${info.total} frames)`);
-  const maskFile = `mask-${label}.pgm`;
-  const spots = manualSpots(label);
+const build = (info) => {
+  console.log(`\n${path.basename(info.video)} (${info.width}x${info.height}, ${info.total} frames)`);
+  const maskFile = 'mask.pgm';
+  const spots = manualSpots();
   let masked = false;
   if (spots === null) {
     const found = detectSparkles(info, maskFile);
@@ -264,7 +258,7 @@ const buildFrom = (info, sets, label) => {
     console.log('  watermark removal is off');
   }
 
-  const crop = cropFor(info, label, maskFile, masked);
+  const crop = cropFor(info, maskFile, masked);
   if (crop) {
     console.log(`  cropping black bars: keeping ${crop.w}x${crop.h} at (${crop.x}, ${crop.y}) of ${info.width}x${info.height}`);
   } else {
@@ -278,7 +272,7 @@ const buildFrom = (info, sets, label) => {
   const pick = `select='not(eq(floor(n*${FRAMES - 1}/${info.total - 1}),floor((n-1)*${FRAMES - 1}/${info.total - 1})))'`;
 
   const sizes = {};
-  for (const [name, width, quality] of sets) {
+  for (const [name, width, quality] of SETS) {
     const [w, h] = sizeFor(view, width);
     const dir = path.join(OUT, name);
     fs.rmSync(dir, { recursive: true, force: true });
@@ -305,21 +299,17 @@ const buildFrom = (info, sets, label) => {
   return sizes;
 };
 
-const landscapeInfo = probe(landscapeVideo);
-const portraitInfo = portraitVideo ? probe(portraitVideo) : null;
+const info = probe();
 
-// Both videos get the same count, so the most there can be is the shorter video's frame count (also the default).
-const available = Math.min(landscapeInfo.total, portraitInfo?.total ?? Infinity);
-const FRAMES = framesArg === undefined ? available : Number(framesArg);
-if (FRAMES > available) {
-  const shorter = portraitInfo && portraitInfo.total < landscapeInfo.total ? portraitInfo : landscapeInfo;
-  console.error(`${FRAMES} frames asked for, but ${path.basename(shorter.video)} has only ${shorter.total}. Use --frames ${available} or fewer.`);
+// The default, and the most there can be, is every frame of the video.
+const FRAMES = framesArg === undefined ? info.total : Number(framesArg);
+if (FRAMES > info.total) {
+  console.error(`${FRAMES} frames asked for, but ${path.basename(info.video)} has only ${info.total}. Use --frames ${info.total} or fewer.`);
   process.exit(1);
 }
-console.log(`Making ${FRAMES} frames${framesArg === undefined ? ' (every frame of the shorter video; pass --frames to choose)' : ''}.`);
+console.log(`Making ${FRAMES} frames${framesArg === undefined ? ' (every frame of the video; pass --frames to choose)' : ''}.`);
 
-const landscapeSizes = buildFrom(landscapeInfo, LANDSCAPE_SETS, 'landscape');
-const portraitSizes = portraitInfo ? buildFrom(portraitInfo, PORTRAIT_SETS, 'portrait') : null;
+const sizes = build(info);
 
 fs.rmSync(tmp, { recursive: true, force: true });
 
@@ -329,19 +319,20 @@ const manifest = {
   dir: OUT_NAME,
   count: FRAMES,
   landscape: {
-    full: landscapeSizes.landscape,
-    lite: landscapeSizes['landscape-lite'],
-    small: landscapeSizes['landscape-small'],
+    full: sizes.landscape,
+    lite: sizes['landscape-lite'],
+    small: sizes['landscape-small'],
   },
-  ...(portraitSizes ? { portrait: { full: portraitSizes.portrait, small: portraitSizes['portrait-small'] } } : {}),
 };
-fs.writeFileSync(path.join(__dirname, '..', 'src', 'data', 'heroFrames.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+fs.writeFileSync(path.join(__dirname, '..', 'src', 'data', MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
+// The main and alternate sets each clear out only their own old folders.
+const ownSet = (entry) => entry.startsWith(PREFIX) && (ALT || !entry.startsWith('frames-alt-'));
 for (const entry of fs.readdirSync(PUBLIC)) {
-  if (entry.startsWith('frames-') && entry !== OUT_NAME) {
+  if (ownSet(entry) && entry !== OUT_NAME) {
     fs.rmSync(path.join(PUBLIC, entry), { recursive: true, force: true });
     console.log(`Deleted old frames: ${entry}`);
   }
 }
 console.log(
-  `\nDone: ${path.relative(process.cwd(), OUT)} (${FRAMES} frames, ${portraitInfo ? 'landscape + portrait' : 'landscape only'}). Hero updated via src/data/heroFrames.json.`,
+  `\nDone: ${path.relative(process.cwd(), OUT)} (${FRAMES} frames). Hero updated via src/data/${MANIFEST}.`,
 );

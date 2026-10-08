@@ -238,7 +238,7 @@
     /* No page scrollbar on any page (it still scrolls by wheel, touch, keys and drag). With no scrollbar
        taking width, locking the page for a modal/drawer can't make it jump sideways either. */
     scrollbar-width: none;
-    /* Height of the sticky header: also read by Home's hero placeholder and ScrollTreeHero. */
+    /* Height of the sticky header: also read by Home's hero placeholder and CinematicHero. */
     --header-h: 76px;
   }
 
