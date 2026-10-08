@@ -1,12 +1,9 @@
 import { useEffect } from 'react';
 
-// Tailwind classes put on <html> while any overlay is open (written out in full so Tailwind finds them).
-// - overflow-hidden: the page behind can't scroll. It goes on <html>, not <body>: index.css gives
-//   <html> `overflow-x: hidden`, and then `overflow: hidden` on <body> doesn't stop the page.
-// - the background: index.css reserves the scrollbar's space (scrollbar-gutter: stable) so the page
-//   doesn't jump sideways when locked; a fixed backdrop can't reach into that gap, so the gap gets
-//   the backdrop's colour instead of showing a lighter strip.
-const LOCK_CLASSES = ['overflow-hidden', 'bg-[#030b07]'];
+// Tailwind class put on <html> while any overlay is open: the page behind can't scroll. It goes on
+// <html>, not <body>: index.css gives <html> `overflow-x: hidden`, and then `overflow: hidden` on <body>
+// doesn't stop the page. (The page has no scrollbar, so locking it doesn't shift anything sideways.)
+const LOCK_CLASSES = ['overflow-hidden'];
 
 // How many overlays are open, so closing one doesn't unlock the page while another is still open.
 let openCount = 0;

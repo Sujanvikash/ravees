@@ -4,6 +4,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { useFrameSequence } from "./useFrameSequence";
 import { HeroCard, CraftCard } from "./HeroCards";
+import HeroSnow from "./HeroSnow";
 import heroFrames from "../../data/heroFrames.json";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -352,6 +353,9 @@ const ScrollTreeHero = ({ scrollClass = "h-[500svh]", shopHref, studioHref }) =>
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgba(7,18,13,0.95)_0%,rgba(7,18,13,0.7)_28%,rgba(7,18,13,0.35)_46%,transparent_62%)] lg:bg-[linear-gradient(90deg,rgba(7,18,13,0.9)_0%,rgba(7,18,13,0.55)_22%,transparent_36%,transparent_66%,rgba(7,18,13,0.7)_100%)]"
         />
+
+        {/* Falling snow over the picture, behind the cards. None with reduced motion. */}
+        {!reduced && <HeroSnow visible={firstFrameReady} />}
 
         <div
           className={`relative mx-auto w-full max-w-[1680px] ${

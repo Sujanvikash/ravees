@@ -1,6 +1,6 @@
 {
-  "dir": "frames-muxmybfg",
-  "count": 115,
+  "dir": "frames-muz6jsdq",
+  "count": 192,
   "landscape": {
     "full": [
       1920,
@@ -18,11 +18,11 @@
   "portrait": {
     "full": [
       900,
-      1210
+      506
     ],
     "small": [
       240,
-      322
+      136
     ]
   }
 }

@@ -235,8 +235,9 @@
     font-family: var(--font-sans);
     scroll-behavior: smooth;
     overflow-x: hidden;
-    /* Keeps the scrollbar's space when a modal/drawer locks scrolling, so the page doesn't jump sideways. */
-    scrollbar-gutter: stable;
+    /* No page scrollbar on any page (it still scrolls by wheel, touch, keys and drag). With no scrollbar
+       taking width, locking the page for a modal/drawer can't make it jump sideways either. */
+    scrollbar-width: none;
     /* Height of the sticky header: also read by Home's hero placeholder and ScrollTreeHero. */
     --header-h: 76px;
   }
@@ -247,6 +248,12 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Older WebKit/Blink (before scrollbar-width) and Safari: hide the page's scrollbar the old way. */
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Scroll areas inside the page (cart drawer, modals) keep a thin gold scrollbar. */
   ::-webkit-scrollbar {
     width: 6px;
   }

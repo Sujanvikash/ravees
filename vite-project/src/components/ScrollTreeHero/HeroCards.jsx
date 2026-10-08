@@ -13,13 +13,17 @@ const iconFor = (name) => {
 };
 
 const HEADING = "font-serif";
-const EYEBROW = "font-mono text-[0.68rem] uppercase tracking-[0.26em] text-gold-400 sm:text-xs";
-const EYEBROW_LARGE = "font-mono text-sm uppercase tracking-[0.26em] text-gold-400 sm:text-[0.95rem]";
+const EYEBROW = "font-mono text-[0.68rem] uppercase tracking-[0.28em] text-gold-300 sm:text-xs";
+const EYEBROW_LARGE = "font-mono text-sm uppercase tracking-[0.28em] text-gold-300 sm:text-[0.95rem]";
 const FOCUS =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-300";
+// A light tinted panel, not a solid box: the scrim in ScrollTreeHero already darkens the right edge,
+// so the panel only needs to separate the text from the snow. No drop shadow, so it sits in the scene.
 // No backdrop-filter on purpose: blur over a moving canvas is the #1 cause of dropped frames.
-const CARD =
-  "rounded-[1.75rem] border border-gold-400/25 bg-[rgba(8,28,20,0.82)] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85),0_0_30px_rgba(229,199,139,0.08),inset_0_1px_0_rgba(255,246,223,0.06)]";
+const PANEL =
+  "rounded-3xl border border-gold-400/15 bg-[linear-gradient(160deg,rgba(7,18,13,0.62)_0%,rgba(7,18,13,0.36)_100%)] shadow-[inset_0_1px_0_rgba(255,246,223,0.07)]";
+// Small round gold-tinted badge: holds each standard's icon and the rating pills.
+const BADGE = "border border-gold-400/30 bg-gold-400/10";
 
 // The headline block has no card behind it: just text over the scene, kept legible by the scrim in
 // ScrollTreeHero and a soft shadow on the text. (Still no filter/backdrop-filter: they hurt scroll.)
@@ -37,9 +41,10 @@ export const HeroCard = ({ shopHref, studioHref, reduced }) => {
         {hero.title}
       </h1>
 
+      {/* The value proposition under the headline: near-white, gold rule on the left so it reads as one unit with the title. */}
       <p
         data-part="lede"
-        className={`mt-5 text-[1.1rem] leading-relaxed text-white/85 lg:text-[1.3rem] short:mt-3 lg:short:text-[1.05rem] ${TEXT_SHADOW}`}
+        className={`mt-6 max-w-[34ch] border-l-2 border-gold-400/70 pl-4 text-[1.1rem] leading-relaxed text-white/95 lg:text-[1.3rem] short:mt-3 lg:short:text-[1.05rem] ${TEXT_SHADOW}`}
       >
         {hero.text}
       </p>
@@ -93,34 +98,38 @@ export const HeroCard = ({ shopHref, studioHref, reduced }) => {
 /** Right card: craftsmanship standards and rating. */
 export const CraftCard = () => {
   return (
-    <div data-beat="craft" className={`${CARD} p-5 will-change-[transform,opacity] sm:p-6 lg:p-7`}>
+    <div data-beat="craft" className={`${PANEL} p-5 will-change-[transform,opacity] sm:p-6 lg:p-7`}>
       <p className={EYEBROW}>✦ {craft.eyebrow}</p>
 
-      <ul className="mt-5 space-y-4">
+      <ul className="mt-4 divide-y divide-gold-400/10">
         {craft.items.map((item) => {
           const ItemIcon = iconFor(item.icon);
           return (
-            <li key={item.title} className="flex items-start gap-3.5">
-              <ItemIcon className="mt-0.5 h-6 w-6 shrink-0 text-gold-400" strokeWidth={1.6} aria-hidden="true" />
+            <li key={item.title} className="flex items-center gap-3.5 py-3.5 short:py-2.5">
+              <span className={`${BADGE} flex h-10 w-10 shrink-0 items-center justify-center rounded-full`}>
+                <ItemIcon className="h-5 w-5 text-gold-300" strokeWidth={1.6} aria-hidden="true" />
+              </span>
               <div>
-                <p className="font-semibold leading-snug text-white">{item.title}</p>
-                <p className="mt-0.5 text-[0.85rem] leading-snug text-text-secondary">{item.text}</p>
+                <p className="text-[1rem] font-semibold leading-snug tracking-[0.01em] text-white">{item.title}</p>
+                <p className="mt-1 text-[0.85rem] leading-snug text-white/70">{item.text}</p>
               </div>
             </li>
           );
         })}
       </ul>
 
-      <div className="mt-5 flex items-center justify-between border-t border-gold-400/15 pt-4">
-        <span className="flex items-center gap-2 text-gold-300">
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <span className={`${BADGE} inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-gold-300`}>
           <span className="flex gap-0.5" role="img" aria-label={`Rated ${craft.rating} out of 5`}>
             {[0, 1, 2, 3, 4].map((i) => (
-              <Star key={i} className="h-3.5 w-3.5" strokeWidth={2} fill="currentColor" aria-hidden="true" />
+              <Star key={i} className="h-3 w-3" strokeWidth={2} fill="currentColor" aria-hidden="true" />
             ))}
           </span>
-          <span className="font-mono text-sm">{craft.rating}</span>
+          <span className="font-mono text-[0.8rem] text-gold-200">{craft.rating}</span>
         </span>
-        <span className="font-mono text-sm text-gold-300">{craft.homes}</span>
+        <span className={`${BADGE} inline-flex items-center rounded-full px-2.5 py-1.5 font-mono text-[0.8rem] text-gold-200`}>
+          {craft.homes}
+        </span>
       </div>
     </div>
   );

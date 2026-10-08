@@ -18,11 +18,13 @@
  *
  * Frames are picked evenly across each video (first and last included) and written as
  * frame_0001.webp, frame_0002.webp, ... Both videos get the same frame count, so the scroll lines up.
+ * The count is whatever you pass; without one it is every frame of the shorter video (the most possible).
  *
  * Needs ffmpeg and ffprobe on the PATH (winget install Gyan.FFmpeg). Nothing else.
  *
  * Run:
- *   node scripts/make-frames.mjs --landscape land.mp4 --portrait port.mp4 [--frames 150]
+ *   node scripts/make-frames.mjs --landscape land.mp4 --portrait port.mp4 [--frames 120]
+ *   node scripts/make-frames.mjs land.mp4 port.mp4 120          (same, without the flag names)
  *   node scripts/make-frames.mjs video.mp4                      (same as --landscape video.mp4)
  *
  * Other options:
@@ -67,18 +69,20 @@ const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : fallback;
 };
-// A bare path (the old usage) counts as the landscape video.
-const bare = args.find((a, i) => !a.startsWith('--') && !OPTIONS_WITH_VALUE.includes(args[i - 1]?.slice(2)));
-const landscapeVideo = flag('landscape', bare);
-const portraitVideo = flag('portrait');
-const FRAMES = Number(flag('frames', 150));
+// Bare arguments: the first path is the landscape video, the second the portrait one, a bare number the frame count.
+const bare = args.filter((a, i) => !a.startsWith('--') && !OPTIONS_WITH_VALUE.includes(args[i - 1]?.slice(2)));
+const barePaths = bare.filter((a) => !/^\d+$/.test(a));
+const bareCount = bare.find((a) => /^\d+$/.test(a));
+const landscapeVideo = flag('landscape', barePaths[0]);
+const portraitVideo = flag('portrait', barePaths[1]);
+const framesArg = flag('frames', bareCount);
 const PUBLIC = path.join(__dirname, '..', 'public');
 const OUT_NAME = flag('out', `frames-${Date.now().toString(36)}`);
 const OUT = path.join(PUBLIC, OUT_NAME);
 
 const usage = () => {
-  console.error('Usage: node scripts/make-frames.mjs --landscape <video> [--portrait <video>] [--frames 150]');
-  console.error('       node scripts/make-frames.mjs <video>            (one landscape video, as before)');
+  console.error('Usage: node scripts/make-frames.mjs --landscape <video> [--portrait <video>] [--frames <count>]');
+  console.error('       node scripts/make-frames.mjs <landscape video> [<portrait video>] [<count>]');
   process.exit(1);
 };
 if (!landscapeVideo) usage();
@@ -88,8 +92,8 @@ for (const [label, file] of [['landscape', landscapeVideo], ['portrait', portrai
     process.exit(1);
   }
 }
-if (!Number.isInteger(FRAMES) || FRAMES < 2) {
-  console.error('--frames must be a whole number of at least 2.');
+if (framesArg !== undefined && !(Number.isInteger(Number(framesArg)) && Number(framesArg) >= 2)) {
+  console.error(`--frames must be a whole number of at least 2; got "${framesArg}".`);
   process.exit(1);
 }
 
@@ -109,7 +113,7 @@ const probe = (video) => {
   ]).trim();
   const [width, height, total] = out.split(',').map(Number);
   if (!(width > 0 && height > 0)) throw new Error(`Could not read the size of ${video}.`);
-  if (!(total >= FRAMES)) throw new Error(`${video} has ${total} frames, fewer than the ${FRAMES} asked for.`);
+  if (!(total >= 2)) throw new Error(`Could not count the frames of ${video}.`);
   return { video: path.resolve(video), width, height, total };
 };
 
@@ -303,6 +307,16 @@ const buildFrom = (info, sets, label) => {
 
 const landscapeInfo = probe(landscapeVideo);
 const portraitInfo = portraitVideo ? probe(portraitVideo) : null;
+
+// Both videos get the same count, so the most there can be is the shorter video's frame count (also the default).
+const available = Math.min(landscapeInfo.total, portraitInfo?.total ?? Infinity);
+const FRAMES = framesArg === undefined ? available : Number(framesArg);
+if (FRAMES > available) {
+  const shorter = portraitInfo && portraitInfo.total < landscapeInfo.total ? portraitInfo : landscapeInfo;
+  console.error(`${FRAMES} frames asked for, but ${path.basename(shorter.video)} has only ${shorter.total}. Use --frames ${available} or fewer.`);
+  process.exit(1);
+}
+console.log(`Making ${FRAMES} frames${framesArg === undefined ? ' (every frame of the shorter video; pass --frames to choose)' : ''}.`);
 
 const landscapeSizes = buildFrom(landscapeInfo, LANDSCAPE_SETS, 'landscape');
 const portraitSizes = portraitInfo ? buildFrom(portraitInfo, PORTRAIT_SETS, 'portrait') : null;
