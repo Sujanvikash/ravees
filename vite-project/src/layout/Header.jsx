@@ -9,7 +9,7 @@ import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 import PopBadge from '../components/PopBadge.jsx';
 
 const NAV_LINKS = [
-  { to: '/', label: '3D Tree Experience', end: true },
+  { to: '/', label: 'Home', end: true },
   { to: '/shop', label: 'Collections' },
   { to: '/tree-studio', label: 'Tree Studio', tag: 'NEW' },
   { to: '/about', label: 'Why Raave' },

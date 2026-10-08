@@ -2,9 +2,7 @@
  * Builds the desktop frames of the cinematic hero (CinematicHero/HeroCanvas.jsx) from one wide video
  * (laptops, desktops, tablets held sideways; e.g. 16:9 or 21:9):
  *
- *   public/<out>/landscape/        1920 px wide  (sharp)
- *   public/<out>/landscape-lite/   1280 px wide  (small laptops, data saver)
- *   public/<out>/landscape-small/   480 px wide  (stand-ins for fast scrolling)
+ *   public/<out>/landscape/        1920 px wide (Full HD, used on every screen)
  *
  * Phones and upright tablets play a video instead of frames: that one is made by make-mobile-video.mjs.
  *
@@ -229,12 +227,9 @@ const cropFor = (info, maskFile, masked) => {
 };
 
 // ---- Build ---------------------------------------------------------------------------------------
-// [folder, width in px, webp quality]. "-small" are the soft stand-ins used while a sharp frame decodes.
-// The folder names are what HeroCanvas.jsx and heroFrames.json expect.
+// [folder, width in px, webp quality]. The folder name is what HeroCanvas.jsx expects.
 const SETS = [
   ['landscape', 1920, 80],
-  ['landscape-lite', 1280, 80],
-  ['landscape-small', 480, 72],
 ];
 
 const build = (info) => {
@@ -320,8 +315,6 @@ const manifest = {
   count: FRAMES,
   landscape: {
     full: sizes.landscape,
-    lite: sizes['landscape-lite'],
-    small: sizes['landscape-small'],
   },
 };
 fs.writeFileSync(path.join(__dirname, '..', 'src', 'data', MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);

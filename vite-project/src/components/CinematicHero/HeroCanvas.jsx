@@ -2,15 +2,10 @@ import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, 
 import { useFrameSequence } from "./useFrameSequence";
 
 const MAX_DPR = 2; // above 2x the extra pixels cost fill-rate without visible gain
-// A small frame stretched to fill the screen is soft anyway, so the cheap filter looks the same (and
-// the "high" filter on them made fast scrolls drop frames). Sharp frames keep "high".
-const smoothingFor = (img) => (img.width < 600 ? "low" : "high");
 
-/** Full HD (1920 px) frames on every screen. (The 1280 px "landscape-lite" set is still built but unused.) */
-const pickFrameSet = (frames) => ({ folder: "landscape", size: frames.landscape.full, full: true });
-
-const frameUrl = (dir, folder) => (i) =>
-  `${import.meta.env.BASE_URL}${dir}/${folder}/frame_${String(i + 1).padStart(4, "0")}.webp`;
+// Only the Full HD (1920 px) "landscape" frames are used, on every screen and at every scroll speed.
+const frameUrl = (dir) => (i) =>
+  `${import.meta.env.BASE_URL}${dir}/landscape/frame_${String(i + 1).padStart(4, "0")}.webp`;
 
 /**
  * Desktop visual: the frame sequence drawn on a canvas. Scroll never re-renders it: the parent calls
@@ -25,15 +20,9 @@ const HeroCanvas = ({ ref, reduced, frames }) => {
   const ctxRef = useRef(null);
   const state = useRef({ frame: 0, drawnA: null, drawnB: null, drawnKey: -1 });
 
-  const [frameSet] = useState(() => pickFrameSet(frames));
   // Every 1080p frame decoded at once is ~1.5 GB, so that is only done where the browser reports 8 GB+.
-  const decodeAll = frameSet.full && (navigator.deviceMemory ?? 0) >= 8;
-  const getSrc = useMemo(() => frameUrl(frames.dir, frameSet.folder), [frames.dir, frameSet]);
-  // Small stand-ins shown while a sharp frame decodes during a fast scroll. A still has no use for them.
-  const previewSrc = useMemo(
-    () => (reduced ? undefined : frameUrl(frames.dir, "landscape-small")),
-    [frames.dir, reduced]
-  );
+  const [decodeAll] = useState(() => (navigator.deviceMemory ?? 0) >= 8);
+  const getSrc = useMemo(() => frameUrl(frames.dir), [frames.dir]);
 
   const getFrameRef = useRef(() => null);
   const warmRef = useRef(() => {});
@@ -71,10 +60,9 @@ const HeroCanvas = ({ ref, reduced, frames }) => {
     const dw = iw * scale;
     const dh = ih * scale;
     const x = (cw - dw) / 2;
-    ctx.imageSmoothingQuality = smoothingFor(base);
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(base, x, 0, dw, dh);
     if (over) {
-      ctx.imageSmoothingQuality = smoothingFor(over);
       ctx.globalAlpha = alpha;
       ctx.drawImage(over, x, 0, dw, dh);
       ctx.globalAlpha = 1;
@@ -85,9 +73,8 @@ const HeroCanvas = ({ ref, reduced, frames }) => {
     count: FRAME_COUNT,
     getSrc,
     onFrameLoad: () => draw(),
-    keepDecoded: frameSet.full ? 12 : 8,
+    keepDecoded: 12,
     decodeAll,
-    previewSrc,
     lastFrameOnly: reduced,
   });
   // Layout effect: in place before the loader's first onFrameLoad → draw() needs it.
@@ -111,7 +98,7 @@ const HeroCanvas = ({ ref, reduced, frames }) => {
   // Canvas backing store = CSS box × devicePixelRatio (capped, and never finer than the frames have detail for).
   useEffect(() => {
     const canvas = canvasRef.current;
-    const [frameW, frameH] = frameSet.size;
+    const [frameW, frameH] = frames.landscape.full;
     const resize = () => {
       const { clientWidth, clientHeight } = canvas;
       if (!clientWidth || !clientHeight) return;
@@ -134,7 +121,7 @@ const HeroCanvas = ({ ref, reduced, frames }) => {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     return () => ro.disconnect();
-  }, [draw, frameSet]);
+  }, [draw, frames]);
 
   return (
     <>
