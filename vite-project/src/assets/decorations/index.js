@@ -3,6 +3,8 @@
 // originals they were made from; nothing imports those, so they are not shipped.
 import baublesScatter from './baubles_scatter.webp';
 import festiveLanternGlow from './festive_lantern_glow.webp';
+// Pine branches, cones and gold ribbon framing a dark middle (footer background; the .png is the original).
+import footerBackground from './footer_background.webp';
 import garlandDivider from './garland_divider.webp';
 import goldenBellsCluster from './golden_bells_cluster.webp';
 import goldenReindeerStatue from './golden_reindeer_statue.webp';
@@ -22,6 +24,7 @@ import goldenReindeerCutout from './golden_reindeer_cutout.webp';
 export {
   baublesScatter,
   festiveLanternGlow,
+  footerBackground,
   garlandDivider,
   goldenBellsCluster,
   goldenReindeerCutout,
