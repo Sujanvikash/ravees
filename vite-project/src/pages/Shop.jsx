@@ -63,7 +63,7 @@ const Shop = () => {
   }, [category, query, sort, wishlistOnly, wishlist]);
 
   return (
-    <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+    <section className="relative z-20 bg-bg-primary pt-6 pb-16 md:pt-9 md:pb-25">
       <Aurora />
       <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-left-top" />
       <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-right-top" />
@@ -94,10 +94,6 @@ const Shop = () => {
               <Dropdown options={SORT_OPTIONS} value={sort} onChange={setSort} label="Sort by" icon={ArrowUpDown} />
             </div>
           </div>
-          <p className="mt-2 text-[0.95rem] text-text-secondary">
-            {filtered.length} of {PRODUCTS.length} products
-            {wishlistOnly && ' · saved items only'}
-          </p>
         </div>
 
         {wishlistOnly && (

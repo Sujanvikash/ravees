@@ -67,13 +67,13 @@ const Header = ({ onOpenCart }) => {
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Logo
               size="1em"
-              className="shrink-0 text-[34px] drop-shadow-[0_0_8px_rgba(229,199,139,0.4)] sm:text-[46px]"
+              className="shrink-0 text-[30px] drop-shadow-[0_0_8px_rgba(229,199,139,0.4)] sm:text-[40px]"
             />
             <div className="flex min-w-0 flex-col sm:self-stretch sm:justify-between">
-              <span className="whitespace-nowrap bg-[linear-gradient(135deg,#fff0c4_0%,#e5c78b_35%,#c99e52_70%,#f5e1a4_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.6rem] sm:leading-none sm:tracking-[0.12em]">
+              <span className="whitespace-nowrap bg-[linear-gradient(135deg,#fff0c4_0%,#e5c78b_35%,#c99e52_70%,#f5e1a4_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.4rem] sm:leading-none sm:tracking-[0.12em]">
                 RAAVE&apos;S EVERGREEN
               </span>
-              <span className="hidden text-[0.74rem] font-normal leading-none tracking-[0.14em] text-[#a7c2b5] sm:block">
+              <span className="hidden text-[0.65rem] font-normal leading-none tracking-[0.14em] text-[#a7c2b5] sm:block">
                 EUROPEAN STANDARD SINCE 1998
               </span>
             </div>

@@ -19,7 +19,7 @@ const STATS = [
 
 const About = () => {
   return (
-    <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker pt-10 pb-16 md:pt-14 md:pb-25">
+    <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker pt-4 pb-16 md:pt-5 md:pb-25">
       <Aurora />
       <Container>
         <div className="grid items-center gap-12 lg:grid-cols-[1fr_440px]">

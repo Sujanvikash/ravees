@@ -38,7 +38,7 @@ const Showrooms = () => {
   };
 
   return (
-    <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] pt-10 pb-16 md:pt-14 md:pb-25">
+    <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] pt-3 pb-16 md:pt-5 md:pb-25">
       <Aurora />
       <Decoration
         side
