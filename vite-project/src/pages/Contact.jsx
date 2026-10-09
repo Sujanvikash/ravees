@@ -15,6 +15,9 @@ import { goldenBellsCluster, luxuryWreathAccent } from '../assets/decorations';
 
 // Corner accents just outside the form card, partly tucked behind it.
 const CORNER_ACCENT = 'h-[230px] w-[230px]';
+// Both cards share this look (the single card this page used to have).
+const CARD =
+  'rounded-3xl border border-gold-400/30 bg-[rgba(8,28,20,0.85)] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:p-12';
 
 const METHOD_ROW =
   'group flex h-full items-center gap-4 rounded-xl border border-gold-400/15 bg-white/4 p-4 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/30 hover:bg-gold-400/15 hover:text-white';
@@ -32,8 +35,10 @@ const Contact = () => {
       <Container className="relative w-full">
         <Decoration side src={goldenBellsCluster} className={`-top-14 -left-[150px] ${CORNER_ACCENT}`} />
         <Decoration side src={luxuryWreathAccent} className={`-right-[150px] -bottom-14 ${CORNER_ACCENT}`} />
-        <Reveal className="grid gap-10 rounded-3xl border border-gold-400/30 bg-[rgba(8,28,20,0.85)] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:p-12 lg:grid-cols-2">
-          <div>
+        {/* Two cards side by side (stacked below lg). The left one rises in and scrolls with the page; the
+            form card is static, only as tall as the form, and stays pinned under the header meanwhile. */}
+        <div className="grid items-start gap-6 lg:grid-cols-2">
+          <Reveal className={CARD}>
             <Eyebrow>
               ✦ CONCIERGE SUPPORT ✦
             </Eyebrow>
@@ -86,9 +91,9 @@ const Contact = () => {
                 </a>
               </Reveal>
             </div>
-          </div>
+          </Reveal>
 
-          <div>
+          <div className={`${CARD} lg:sticky lg:top-[calc(var(--header-h)+24px)]`}>
             <h2 className="mb-5 font-serif text-[1.25rem] text-white">
               Request Personal Styling Consultation
             </h2>
@@ -99,7 +104,7 @@ const Contact = () => {
               }}
             />
           </div>
-        </Reveal>
+        </div>
       </Container>
     </section>
   );

@@ -63,25 +63,25 @@ const Header = ({ onOpenCart }) => {
               size="1em"
               className="shrink-0 text-[34px] drop-shadow-[0_0_8px_rgba(229,199,139,0.4)] sm:text-[46px]"
             />
-            <div className="flex min-w-0 flex-col">
-              <span className="whitespace-nowrap bg-[linear-gradient(135deg,#fff0c4_0%,#e5c78b_35%,#c99e52_70%,#f5e1a4_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.15rem] sm:tracking-[0.24em]">
+            <div className="flex min-w-0 flex-col sm:self-stretch sm:justify-between">
+              <span className="whitespace-nowrap bg-[linear-gradient(135deg,#fff0c4_0%,#e5c78b_35%,#c99e52_70%,#f5e1a4_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.6rem] sm:leading-none sm:tracking-[0.12em]">
                 RAAVE&apos;S EVERGREEN
               </span>
-              <span className="hidden text-[0.56rem] font-normal tracking-[0.24em] text-[#a7c2b5] sm:block">
+              <span className="hidden text-[0.74rem] font-normal leading-none tracking-[0.14em] text-[#a7c2b5] sm:block">
                 EUROPEAN STANDARD SINCE 1998
               </span>
             </div>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-7 xl:flex">
+        <nav className="hidden items-center gap-5 xl:flex 2xl:gap-7">
           {NAV_LINKS.map(({ to, label, tag, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               className={({ isActive }) =>
-                `group py-1.5 text-[0.88rem] font-medium tracking-[0.04em] no-underline transition-colors duration-300 ${
+                `group whitespace-nowrap py-1.5 text-[0.88rem] font-medium tracking-[0.04em] no-underline transition-colors duration-300 ${
                   isActive ? 'text-gold-300' : 'text-text-secondary hover:text-gold-300 focus-visible:text-gold-300'
                 }`
               }
