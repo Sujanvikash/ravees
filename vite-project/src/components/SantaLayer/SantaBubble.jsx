@@ -14,7 +14,7 @@ const SantaBubble = ({ message, onPause, onResume }) => {
           key={message.id}
           onMouseEnter={onPause}
           onMouseLeave={onResume}
-          className="pointer-events-auto relative w-max max-w-[230px] rounded-xl border border-gold-400/40 bg-bg-dark-emerald px-3 py-2 text-[0.78rem] leading-snug text-white shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-[opacity,translate] duration-300 starting:translate-y-1 starting:opacity-0"
+          className="pointer-events-auto relative w-max max-w-57.5 rounded-xl border border-gold-400/40 bg-bg-dark-emerald px-3 py-2 text-[0.78rem] leading-snug text-white shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-[opacity,translate] duration-300 starting:translate-y-1 starting:opacity-0"
         >
           <p className="m-0">{message.text}</p>
           {message.actions?.length > 0 && (
@@ -33,7 +33,7 @@ const SantaBubble = ({ message, onPause, onResume }) => {
           )}
           <span
             aria-hidden="true"
-            className="absolute -bottom-[7px] h-3 w-3 rotate-45 border-r border-b border-gold-400/40 bg-bg-dark-emerald"
+            className="absolute -bottom-1.75 h-3 w-3 rotate-45 border-r border-b border-gold-400/40 bg-bg-dark-emerald"
             style={align === "right" ? { right: 24 } : { left: 24 }}
           />
         </div>

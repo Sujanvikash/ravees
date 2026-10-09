@@ -8,14 +8,18 @@ const getObserver = () => {
   if (observer || typeof IntersectionObserver === 'undefined') return observer;
   observer = new IntersectionObserver(
     (entries) => {
-      // Siblings that come into view together (a grid row) get their place among each other, for a
-      // stagger. Counted per parent, so other elements arriving at the same moment don't take a place.
+      // Siblings that come into view together on one row of a grid get their place along that row, for a
+      // left-to-right stagger. Counted per parent AND row (same top edge), so a second row arriving in the
+      // same moment starts its own cascade, and unrelated elements don't take a place.
       const counts = new Map();
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
+        const row = `${Math.round(entry.boundingClientRect.top)}`;
         const parent = entry.target.parentElement;
-        const order = counts.get(parent) ?? 0;
-        counts.set(parent, order + 1);
+        const slots = counts.get(parent) ?? new Map();
+        counts.set(parent, slots);
+        const order = slots.get(row) ?? 0;
+        slots.set(row, order + 1);
         callbacks.get(entry.target)?.(order);
         callbacks.delete(entry.target);
         observer.unobserve(entry.target);

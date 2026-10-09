@@ -82,7 +82,7 @@ const About = () => {
             <img
               src="/logo.svg"
               alt="Raave's Evergreen emblem"
-              className="mx-auto mb-6 h-[180px] w-[220px] animate-glow object-contain"
+              className="mx-auto mb-6 h-45 w-55 animate-glow object-contain"
             />
             <p className="mb-3 font-quote text-[1.15rem] italic leading-[1.6] text-gold-200">
               &ldquo;For God so loved the world that He gave His one and only Son...&rdquo;

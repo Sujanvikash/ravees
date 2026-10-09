@@ -16,7 +16,7 @@ const Cart = () => {
   return (
     <section className="relative z-20 bg-bg-primary py-16 md:py-25">
       <Aurora />
-      <div className="mx-auto max-w-[1100px] px-6">
+      <div className="mx-auto max-w-275 px-6">
         <Eyebrow>
           ✦ YOUR CART ✦
         </Eyebrow>
@@ -26,7 +26,7 @@ const Cart = () => {
 
         {cart.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-6 py-20 text-center">
-            <div className="relative isolate h-[170px] w-[min(250px,100%)]">
+            <div className="relative isolate h-42.5 w-[min(250px,100%)]">
               <Decoration src={luxuryGiftBoxes} className="inset-0" />
             </div>
             <p className="text-text-secondary">Your cart is empty.</p>
@@ -47,7 +47,7 @@ const Cart = () => {
                     <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                   </Link>
 
-                  <div className="min-w-[200px] flex-1">
+                  <div className="min-w-50 flex-1">
                     <span className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-400">
                       {product.categoryLabel}
                     </span>
