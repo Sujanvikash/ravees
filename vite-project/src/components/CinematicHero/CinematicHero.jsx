@@ -42,6 +42,21 @@ const readSet = () => {
   }
 };
 
+// The site header shows on arrival, slides away as soon as the visitor starts scrolling (together with the
+// scroll hint), stays hidden for the rest of the hero so the tree has the full screen, and slides back in as
+// the next section scrolls up into view. Scrolling back up reverses it. The hero publishes how far it is
+// shown (0 → 1) on <html> (--hero-chrome, plus an attribute while fully hidden) and Header.jsx reads them,
+// so neither component needs a reference to the other.
+const setHeaderVisibility = (opacity) => {
+  const root = document.documentElement;
+  root.style.setProperty("--hero-chrome", opacity.toFixed(3));
+  root.toggleAttribute("data-hero-chrome-hidden", opacity < 0.01);
+};
+const resetHeaderVisibility = () => {
+  document.documentElement.style.removeProperty("--hero-chrome");
+  document.documentElement.removeAttribute("data-hero-chrome-hidden");
+};
+
 // Legibility scrims, faded together with the copy so the cinematic middle is the untouched picture.
 const SCRIM = {
   desktop:
@@ -117,15 +132,25 @@ const CinematicHero = ({ scrollHeight = HERO_SCROLL_HEIGHT }) => {
     const section = sectionRef.current;
     const stage = stageRef.current;
     // Cached on resize so a scroll only reads one rect.
-    const m = { top: 0, travel: 1 };
+    const m = { top: 0, travel: 1, height: 0, header: 1 };
     const measure = () => {
-      m.top = parseFloat(getComputedStyle(stage).top) || 0; // the sticky offset (header height)
+      m.top = parseFloat(getComputedStyle(stage).top) || 0; // the sticky offset
       m.travel = Math.max(1, section.offsetHeight - stage.offsetHeight);
+      m.height = section.offsetHeight;
+      m.header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 76;
     };
     let raf = 0;
     const update = () => {
       raf = 0;
-      apply(reduced ? 1 : clamp01((m.top - section.getBoundingClientRect().top) / m.travel));
+      const top = section.getBoundingClientRect().top;
+      const p = reduced ? 1 : clamp01((m.top - top) / m.travel);
+      apply(p);
+      // Header: shown at the very start, gone by SCROLL_HINT_FADE_END; back once the hero's bottom edge rises
+      // above the screen's, sliding in over the first header-height of the next section.
+      // Reduced motion has no scroll story: it simply shows.
+      const intro = 1 - range(p, 0, SCROLL_HINT_FADE_END);
+      const after = clamp01((window.innerHeight - (top + m.height)) / m.header);
+      setHeaderVisibility(reduced ? 1 : Math.max(intro, after));
     };
     const request = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -145,6 +170,7 @@ const CinematicHero = ({ scrollHeight = HERO_SCROLL_HEIGHT }) => {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", request);
       ro.disconnect();
+      resetHeaderVisibility(); // leaving the page (or re-measuring): the header is back to normal
     };
   }, [apply, reduced, mode, setId]);
 
@@ -152,14 +178,16 @@ const CinematicHero = ({ scrollHeight = HERO_SCROLL_HEIGHT }) => {
     <section
       ref={sectionRef}
       aria-label="Raave's Evergreen: premium Christmas trees"
-      className="relative bg-[#0B1A14]"
+      // Pulled up under the sticky header (-mt), so the picture fills the screen from the very top: when the
+      // header slides away with the copy, the tree shows in its place instead of an empty strip.
+      className="relative -mt-(--header-h) bg-[#0B1A14]"
       style={reduced ? undefined : { height: scrollHeight }}
     >
       <div
         ref={stageRef}
         className={`${
           reduced ? "relative" : "sticky"
-        } top-(--header-h) h-[calc(100svh-var(--header-h))] w-full overflow-hidden contain-[layout_paint]`}
+        } top-0 h-svh w-full overflow-hidden contain-[layout_paint]`}
       >
         {mobile ? (
           <MobileHeroVideo key="video" ref={visualRef} reduced={reduced} />

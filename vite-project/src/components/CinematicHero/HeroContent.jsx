@@ -17,7 +17,7 @@ const LAYOUT = {
   desktop:
     "left-6 top-1/2 w-[min(34rem,40vw)] -translate-y-1/2 sm:left-10 xl:left-16",
   mobile:
-    "inset-x-5 top-6 sm:inset-x-8 data-[placement=final]:top-auto data-[placement=final]:bottom-[max(5.25rem,env(safe-area-inset-bottom))]",
+    "inset-x-5 top-[calc(var(--header-h)+1.5rem)] sm:inset-x-8 data-[placement=final]:top-auto data-[placement=final]:bottom-[max(5.25rem,env(safe-area-inset-bottom))]",
 };
 const INTRO_ONLY = "group-data-[placement=final]/content:hidden";
 

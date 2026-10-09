@@ -39,7 +39,13 @@ const Header = ({ onOpenCart }) => {
   const { session, isAuthenticated } = useCustomerAuth();
 
   return (
-    <header className="sticky top-0 z-[100] h-[var(--header-h)] border-b border-gold-400/15 bg-[rgba(5,22,15,0.96)]">
+    // On the home page the hero sets --hero-chrome (0 → 1): the header shows on arrival, slides away once the
+    // hero starts scrolling and slides back in as the next section arrives. Fully hidden, it is also invisible (out of the tab order, no clicks).
+    // Every other page never sets it, so the header just shows.
+    <header
+      style={{ opacity: 'var(--hero-chrome, 1)', translate: '0 calc((var(--hero-chrome, 1) - 1) * 100%)' }}
+      className="sticky top-0 z-[100] h-[var(--header-h)] border-b border-gold-400/15 bg-[rgba(5,22,15,0.96)] [html[data-hero-chrome-hidden]_&]:invisible"
+    >
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-3 px-4 sm:gap-5 sm:px-6">
         <button
           className="flex shrink-0 cursor-pointer flex-col gap-[5px] border-none bg-transparent xl:hidden"
