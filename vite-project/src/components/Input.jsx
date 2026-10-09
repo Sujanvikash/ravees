@@ -1,6 +1,9 @@
+import { Children, isValidElement } from 'react';
+import Dropdown from './Dropdown.jsx';
+
 /**
- * Form controls with the site's field style. Every prop is passed through to the
- * underlying element, so they work exactly like <input>, <select> and <textarea>.
+ * Form controls with the site's field style. Input and Textarea pass every prop through to the
+ * underlying element, so they work exactly like <input> and <textarea>; Select is described below.
  *
  * size: "md" (storefront, auth, product form) or "sm" (compact admin editors).
  */
@@ -18,11 +21,27 @@ export const Input = ({ size = 'md', className = '', ...rest }) => {
   return <input className={fieldClass(size, className)} {...rest} />;
 };
 
-export const Select = ({ size = 'md', className = '', children, ...rest }) => {
+/** Plain text of an <option>'s children (e.g. {room.city}{' (Flagship)'} → "Delhi (Flagship)"). */
+const optionText = (children) => Children.toArray(children).join('');
+
+/**
+ * Same API as a <select> with <option> children, but opens the site's Dropdown list (the collection
+ * page's "Featured" panel) instead of the browser's OS-coloured one. onChange gets an event-like
+ * object, so `(e) => e.target.value` handlers keep working.
+ */
+export const Select = ({ size = 'md', className = '', children, value, onChange, id, name }) => {
+  const options = Children.toArray(children)
+    .filter(isValidElement)
+    .map((opt) => ({ value: opt.props.value ?? optionText(opt.props.children), label: optionText(opt.props.children) }));
   return (
-    <select className={fieldClass(size, `cursor-pointer ${className}`)} {...rest}>
-      {children}
-    </select>
+    <Dropdown
+      id={id}
+      options={options}
+      value={value}
+      onChange={(next) => onChange?.({ target: { value: next, id, name, type: 'select-one' } })}
+      // Closed, it looks like the text boxes beside it (BASE); the open list keeps the Dropdown panel.
+      className={fieldClass(size, `flex w-full items-center gap-2.5 ${className}`)}
+    />
   );
 };
 

@@ -9,11 +9,11 @@ import { useInView } from '../hooks/useInView.js';
 
 // Round icon buttons over the photo (wishlist, quick view): white discs that read on any photo.
 const ACTION_CIRCLE =
-  'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-300 hover:border-gold-500 hover:bg-gold-400 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500';
+  'flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-300 hover:border-gold-500 hover:bg-gold-400 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500';
 
 /**
  * Product card: a cream card topped by a full-width square photo, a stock badge, the category in gold,
- * the name, sizes, the price slot ("Enquire for Price") and one full-width "Add to Cart".
+ * the name, the price slot ("Enquire for Price") and one full-width "Add to Cart".
  * The photo and the name open the product page.
  */
 const ProductCard = ({ product, onQuickView }) => {
@@ -67,14 +67,14 @@ const ProductCard = ({ product, onQuickView }) => {
       </Link>
 
       <span
-        className={`absolute top-3 left-3 rounded-md px-2 py-0.5 text-[0.62rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] sm:text-[0.68rem] ${
+        className={`absolute top-2.5 left-2.5 rounded-md px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] sm:text-[0.64rem] ${
           product.inStock ? 'bg-forest' : 'bg-ruby-500'
         }`}
       >
         {product.inStock ? 'In Stock' : 'Backorder'}
       </span>
 
-      <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+      <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
         <button
           type="button"
           className={`${ACTION_CIRCLE} ${wishlisted ? 'border-ruby-500 text-ruby-500' : ''}`}
@@ -82,7 +82,7 @@ const ProductCard = ({ product, onQuickView }) => {
           onClick={() => toggleWishlist(product.id)}
         >
           <Heart
-            size={16}
+            size={14}
             strokeWidth={2}
             fill={wishlisted ? 'currentColor' : 'none'}
             className={wishlisted ? 'animate-pop' : ''}
@@ -90,48 +90,33 @@ const ProductCard = ({ product, onQuickView }) => {
         </button>
         {onQuickView && (
           <button type="button" className={ACTION_CIRCLE} title="Quick specs & details" onClick={() => onQuickView(product)}>
-            <Eye size={16} strokeWidth={2} />
+            <Eye size={14} strokeWidth={2} />
           </button>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-3 pt-3.5">
-        <span className="mb-1 min-w-0 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-gold-ink sm:text-[0.68rem] sm:tracking-[0.12em]">
+      <div className="flex flex-1 flex-col p-2.5 pt-3">
+        <span className="mb-1 min-w-0 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-gold-ink sm:text-[0.64rem] sm:tracking-[0.12em]">
           {product.categoryLabel}
         </span>
 
-        <h3 className="mb-1.5 font-serif text-[0.92rem] font-semibold leading-[1.3] text-ink sm:text-[1rem]">
+        <h3 className="mb-1.5 font-serif text-[0.88rem] font-semibold leading-[1.3] text-ink sm:text-[0.92rem]">
           <Link to={`/product/${product.id}`} className="no-underline transition-colors hover:text-gold-ink">
             {product.name}
           </Link>
         </h3>
 
-        {product.sizes.length > 0 && (
-          <div className="mb-2">
-            <div className="flex flex-wrap gap-1" aria-label="Sizes available">
-              {product.sizes.map((size) => (
-                <span
-                  key={size}
-                  className="rounded-md border border-ink/10 bg-cream-100 px-1.5 py-px text-[0.66rem] text-ink-soft"
-                >
-                  {size}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <PriceTag size="sm" compact tone="light" className="mt-auto mb-2.5" />
+        <PriceTag size="sm" compact tone="light" className="mt-auto mb-2" />
 
         <button
           ref={addBtnRef}
           type="button"
           onClick={handleAdd}
           title="Add to cart"
-          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-forest px-3 py-2 text-[0.8rem] font-semibold text-cream-50 transition-colors duration-200 hover:bg-forest-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:text-[0.85rem]"
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-forest px-2.5 py-1.5 text-[0.76rem] font-semibold text-cream-50 transition-colors duration-200 hover:bg-forest-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:text-[0.8rem]"
         >
           Add to Cart
-          <ShoppingCart size={15} strokeWidth={2} aria-hidden="true" />
+          <ShoppingCart size={14} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
     </div>

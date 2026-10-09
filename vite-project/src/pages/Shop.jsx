@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Heart, X } from 'lucide-react';
+import { Search, Heart, X, ArrowUpDown } from 'lucide-react';
 import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import CategoryTabs from '../components/CategoryTabs.jsx';
+import Dropdown from '../components/Dropdown.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
 import QuickViewModal from '../components/QuickViewModal.jsx';
 import { PRODUCTS } from '../data/products.js';
@@ -67,43 +68,36 @@ const Shop = () => {
       <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-left-top" />
       <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-right-top" />
       <Container>
-        <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
-          <div>
-            <Eyebrow>
-              ✦ 2026 SIGNATURE COLLECTION ✦
-            </Eyebrow>
+        <div className="mb-9">
+          <Eyebrow>
+            ✦ 2026 SIGNATURE COLLECTION ✦
+          </Eyebrow>
+          {/* Title and controls share one line (centred on each other); they stack when the screen is too narrow. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-4">
             <h1 className={`font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.5rem] ${GRADIENT_TITLE}`}>
               European Standard Masterpieces
             </h1>
-            <p className="mt-2 text-[0.95rem] text-text-secondary">
-              {filtered.length} of {PRODUCTS.length} products
-              {wishlistOnly && ' · saved items only'}
-            </p>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-lg border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-3.5 py-2 text-text-secondary">
-              <Search size={16} strokeWidth={2} />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setParam('q', e.target.value)}
-                placeholder="Filter by product name..."
-                className="w-[200px] border-none bg-transparent font-sans text-[0.85rem] text-white outline-none placeholder:text-text-muted"
-              />
+            {/* Counts as 340px when deciding whether it fits beside the title, then grows up to 460px:
+                the search box gives way first, so the row still fits on a 1280px laptop. */}
+            <div className="ml-auto flex min-w-0 max-w-[460px] flex-1 basis-[340px] items-center gap-3 max-sm:flex-wrap">
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-3.5 py-2 text-text-secondary max-sm:basis-full">
+                <Search size={16} strokeWidth={2} className="shrink-0" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setParam('q', e.target.value)}
+                  placeholder="Filter by product name..."
+                  className="w-full min-w-0 border-none bg-transparent font-sans text-[0.85rem] text-white outline-none placeholder:text-text-muted"
+                />
+              </div>
+              <Dropdown options={SORT_OPTIONS} value={sort} onChange={setSort} label="Sort by" icon={ArrowUpDown} />
             </div>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="cursor-pointer rounded-lg border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-3.5 py-2 font-sans text-[0.85rem] text-text-secondary outline-none"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value} className="bg-bg-dark-emerald">
-                  {opt.label}
-                </option>
-              ))}
-            </select>
           </div>
+          <p className="mt-2 text-[0.95rem] text-text-secondary">
+            {filtered.length} of {PRODUCTS.length} products
+            {wishlistOnly && ' · saved items only'}
+          </p>
         </div>
 
         {wishlistOnly && (

@@ -11,14 +11,11 @@ export const WishlistProvider = ({ children }) => {
   const wishlist = useMemo(() => new Set(ids), [ids]);
 
   const toggleWishlist = (productId) => {
-    setIds((prev) => {
-      if (prev.includes(productId)) {
-        showToast('Removed from wishlist');
-        return prev.filter((id) => id !== productId);
-      }
-      showToast('Saved to wishlist');
-      return [...prev, productId];
-    });
+    // The toast stays out of the state updater: React may run an updater twice (StrictMode does in
+    // development), which showed every toast twice.
+    const saved = wishlist.has(productId);
+    setIds((prev) => (saved ? prev.filter((id) => id !== productId) : [...new Set([...prev, productId])]));
+    showToast(saved ? 'Removed from wishlist' : 'Saved to wishlist');
   };
 
   const isWishlisted = (productId) => wishlist.has(productId);

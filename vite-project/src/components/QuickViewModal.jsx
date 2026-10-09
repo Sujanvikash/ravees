@@ -6,8 +6,16 @@ import PriceTag from './PriceTag.jsx';
 import Badge from './Badge.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
+// The sizes list is scraped from one of the specs (e.g. "Feet: 10 Feet, 6 Feet"); it is shown as chips
+// under "Sizes Available", so that spec row is left out instead of repeating the same sizes.
+const withoutSizeSpec = (product) => {
+  const sizes = product.sizes.join('|');
+  return sizes ? product.specs.filter((spec) => spec.value.split(/,\s*/).join('|') !== sizes) : product.specs;
+};
+
 const QuickViewModal = ({ product, onClose }) => {
   const { addToCart } = useCart();
+  const specs = product ? withoutSizeSpec(product) : [];
 
   return (
     <Modal
@@ -15,12 +23,15 @@ const QuickViewModal = ({ product, onClose }) => {
       onClose={onClose}
       eyebrow="✦ QUICK SPECIFICATIONS ✦"
       title={product?.name}
-      size="lg"
+      size="sm"
     >
       {product && (
-        <div className="grid gap-8 p-8 md:grid-cols-2">
-          <div className="overflow-hidden rounded-xl border border-gold-400/20 bg-[#020805]">
-            <img src={product.image} alt={product.name} className="h-full max-h-105 w-full object-cover" />
+        // A compact square photo beside the details, both starting at the top: most products have a
+        // one-line description and no specs, so a tall photo with the price pinned to the bottom left
+        // a large empty block in the middle.
+        <div className="grid items-start gap-6 px-6 pt-5 pb-6 sm:grid-cols-[minmax(0,300px)_1fr]">
+          <div className="aspect-square overflow-hidden rounded-xl border border-gold-400/20 bg-[#020805]">
+            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
           </div>
 
           <div className="flex flex-col gap-4">
@@ -35,13 +46,13 @@ const QuickViewModal = ({ product, onClose }) => {
 
             <p className="text-[0.92rem] leading-[1.7] text-text-secondary">{product.description}</p>
 
-            {product.specs.length > 0 && (
+            {specs.length > 0 && (
               <div className="flex flex-col gap-2">
                 <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   Specifications
                 </span>
                 <dl className="flex flex-col gap-1.5">
-                  {product.specs.map((spec) => (
+                  {specs.map((spec) => (
                     <div
                       key={spec.label}
                       className="flex justify-between gap-4 border-b border-white/5 pb-1.5 text-[0.85rem]"
@@ -72,7 +83,7 @@ const QuickViewModal = ({ product, onClose }) => {
               </div>
             )}
 
-            <PriceTag size="lg" className="mt-auto" />
+            <PriceTag size="lg" className="border-t border-white/8 pt-4" />
 
             <div className="flex flex-wrap gap-3">
               <Button

@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Trash2, Phone, Mail, MapPin, Inbox } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import IconButton from '../../components/IconButton.jsx';
+import Dropdown from '../../components/Dropdown.jsx';
 import {
   STATUSES,
   deleteEnquiry,
   listEnquiries,
   updateEnquiryStatus,
 } from '../../lib/enquiries.js';
+
+const STATUS_OPTIONS = STATUSES.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }));
 
 const STATUS_STYLE = {
   new: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
@@ -70,20 +73,16 @@ const AdminEnquiries = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <select
+                  <Dropdown
+                    label="Enquiry status"
+                    options={STATUS_OPTIONS}
                     value={enq.status}
-                    onChange={(e) => {
-                      updateEnquiryStatus(enq.id, e.target.value);
+                    onChange={(status) => {
+                      updateEnquiryStatus(enq.id, status);
                       refresh();
                     }}
-                    className={`cursor-pointer rounded-full border px-3 py-1 text-[0.75rem] font-bold uppercase outline-none ${STATUS_STYLE[enq.status]}`}
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s} className="bg-bg-dark-emerald text-white">
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.75rem] font-bold uppercase ${STATUS_STYLE[enq.status]}`}
+                  />
                   <IconButton variant="delete" label="Delete enquiry" onClick={() => setPendingDelete(enq)}>
                     <Trash2 size={14} strokeWidth={2} />
                   </IconButton>

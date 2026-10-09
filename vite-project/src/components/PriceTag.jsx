@@ -9,7 +9,7 @@ import { MessageCircle } from 'lucide-react';
  * tone:    "dark" for dark surfaces (light gold), "light" for cream surfaces (deeper gold).
  */
 const PriceTag = ({ size = 'md', compact = false, tone = 'dark', className = '' }) => {
-  const titleSize = { lg: 'text-[1.6rem]', md: 'text-[1.25rem]', sm: 'text-[0.8rem] tracking-tight sm:text-[1.05rem] sm:tracking-normal' }[size] ?? 'text-[1.25rem]';
+  const titleSize = { lg: 'text-[1.6rem]', md: 'text-[1.25rem]', sm: 'text-[0.78rem] tracking-tight sm:text-[0.92rem] sm:tracking-normal' }[size] ?? 'text-[1.25rem]';
   const color = tone === 'light' ? 'text-gold-ink' : 'text-gold-200';
 
   return (

@@ -19,7 +19,7 @@ const ProductGrid = ({ products, onQuickView, oneRow = false, emptyMessage = 'No
   return (
     <div
       className={
-        oneRow ? ONE_ROW_GRID : 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] sm:gap-5'
+        oneRow ? ONE_ROW_GRID : 'grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-4'
       }
     >
       {(oneRow ? products.slice(0, ONE_ROW_HIDE.length) : products).map((product, i) => (
