@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, RotateCcw, Save, X } from 'lucide-react';
+import { Plus, Trash2, Save, X } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
@@ -7,6 +7,8 @@ import IconButton from '../../components/IconButton.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Input, Textarea } from '../../components/Input.jsx';
+import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import { cardClass } from '../../components/cardClass.js';
 
 const LABEL = 'text-[0.75rem] text-gold-300';
 
@@ -39,33 +41,21 @@ const AdminTestimonials = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">Testimonials</h1>
-          <p className="mt-1 text-[0.85rem] text-text-secondary">
-            {testimonials.items.length} published{testimonials.isOverridden && ' · locally edited'}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2.5">
-          {testimonials.isOverridden && (
-            <button
-              onClick={testimonials.reset}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gold-400/25 px-4 py-2.5 text-[0.82rem] text-text-secondary transition-all hover:border-gold-400 hover:text-white"
-            >
-              <RotateCcw size={14} strokeWidth={2} />
-              Reset
-            </button>
-          )}
+      <AdminPageHeader
+        title="Testimonials"
+        subtitle={<>{testimonials.items.length} published{testimonials.isOverridden && ' · locally edited'}</>}
+        onReset={testimonials.isOverridden ? testimonials.reset : undefined}
+        resetLabel="Reset"
+        actions={
           <Button size="sm" onClick={() => setEditing({ ...BLANK, __new: true })}>
             <Plus size={15} strokeWidth={2.5} />
             New testimonial
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {editing && (
-        <div className="flex max-w-[720px] flex-col gap-4 rounded-xl border border-gold-400/30 bg-[rgba(8,28,20,0.9)] p-6">
+        <div className={`${cardClass('form')} flex max-w-[720px] flex-col gap-4 p-6`}>
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-[1.1rem] text-white">
               {isNew ? 'New testimonial' : `Editing ${editing.__originalAuthor}`}
@@ -130,7 +120,7 @@ const AdminTestimonials = () => {
 
       <div className="grid gap-4 md:grid-cols-2">
         {testimonials.items.map((t) => (
-          <div key={t.author} className="flex flex-col rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+          <div key={t.author} className={`${cardClass('tile')} flex flex-col p-5`}>
             <div className="mb-2 flex items-start justify-between gap-3">
               <div>
                 <p className="text-[0.92rem] font-semibold text-gold-300">{t.author}</p>

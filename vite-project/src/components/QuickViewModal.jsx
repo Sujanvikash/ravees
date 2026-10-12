@@ -30,7 +30,7 @@ const QuickViewModal = ({ product, onClose }) => {
         // one-line description and no specs, so a tall photo with the price pinned to the bottom left
         // a large empty block in the middle.
         <div className="grid items-start gap-6 px-6 pt-5 pb-6 sm:grid-cols-[minmax(0,300px)_1fr]">
-          <div className="aspect-square overflow-hidden rounded-xl border border-gold-400/20 bg-[#020805]">
+          <div className="aspect-square overflow-hidden rounded-xl border border-gold-400/20 bg-bg-deepest">
             <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
           </div>
 
@@ -98,7 +98,7 @@ const QuickViewModal = ({ product, onClose }) => {
               <Link
                 to={`/product/${product.id}`}
                 onClick={onClose}
-                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-[rgba(8,28,20,0.6)] px-6.5 py-3 font-sans text-[0.88rem] font-semibold tracking-[0.06em] text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white"
+                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-surface/60 px-6.5 py-3 font-sans text-[0.88rem] font-semibold tracking-[0.06em] text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white"
               >
                 Full Details
                 <ArrowRight size={16} strokeWidth={2} />

@@ -6,6 +6,7 @@ import { TESTIMONIALS } from '../data/testimonials.js';
 import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
+import { cardClass } from '../components/cardClass.js';
 
 const Testimonials = () => {
   return (
@@ -26,7 +27,7 @@ const Testimonials = () => {
           ))}
         </div>
 
-        <Reveal className="mt-14 rounded-3xl border border-gold-400/20 bg-[rgba(8,28,20,0.85)] p-8 text-center md:p-12">
+        <Reveal className={`${cardClass('panel')} mt-14 p-8 text-center md:p-12`}>
           <h3 className="mb-3 font-serif text-[1.4rem] text-white">Ready to start your own tradition?</h3>
           <p className="mx-auto mb-6 max-w-[520px] text-[0.95rem] leading-[1.7] text-text-secondary">
             Browse the collections or book a styling consultation with one of our holiday specialists.

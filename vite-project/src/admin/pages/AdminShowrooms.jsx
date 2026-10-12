@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { Save, RotateCcw, Star, Plus, Trash2, X } from 'lucide-react';
+import { Save, Star, Plus, Trash2, X } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
 import IconButton from '../../components/IconButton.jsx';
+import Chip from '../../components/Chip.jsx';
 import { Input, Textarea } from '../../components/Input.jsx';
+import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import { cardClass } from '../../components/cardClass.js';
 
 const LABEL = 'text-[0.75rem] text-gold-300';
 
@@ -57,23 +60,12 @@ const AdminShowrooms = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">Showrooms</h1>
-          <p className="mt-1 text-[0.85rem] text-text-secondary">
-            {showrooms.items.length} locations{showrooms.isOverridden && ' · locally edited'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          {showrooms.isOverridden && (
-            <button
-              onClick={showrooms.reset}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gold-400/25 px-4 py-2.5 text-[0.82rem] text-text-secondary transition-all hover:border-gold-400 hover:text-white"
-            >
-              <RotateCcw size={14} strokeWidth={2} />
-              Reset to original
-            </button>
-          )}
+      <AdminPageHeader
+        title="Showrooms"
+        subtitle={<>{showrooms.items.length} locations{showrooms.isOverridden && ' · locally edited'}</>}
+        onReset={showrooms.isOverridden ? showrooms.reset : undefined}
+        resetLabel="Reset to original"
+        actions={
           <Button
             size="sm"
             onClick={() => {
@@ -84,13 +76,13 @@ const AdminShowrooms = () => {
             <Plus size={15} strokeWidth={2.5} />
             New location
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {isAdding && (
         <form
           onSubmit={saveNewLocation}
-          className="flex max-w-[480px] flex-col gap-4 rounded-xl border border-gold-400/30 bg-[rgba(8,28,20,0.9)] p-6"
+          className={`${cardClass('form')} flex max-w-[480px] flex-col gap-4 p-6`}
         >
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-[1.1rem] text-white">New location</h2>
@@ -119,25 +111,22 @@ const AdminShowrooms = () => {
 
       <div className="flex flex-wrap gap-2.5">
         {showrooms.items.map((room) => (
-          <button
+          <Chip
             key={room.city}
             onClick={() => {
               setActiveCity(room.city);
               setDraft({});
             }}
-            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-2 text-[0.85rem] transition-all ${
-              room.city === activeCity
-                ? 'border-gold-300 bg-gold-500 font-semibold text-[#04120a]'
-                : 'border-gold-400/15 bg-[rgba(8,28,20,0.85)] text-text-secondary hover:border-gold-400 hover:text-white'
-            }`}
+            active={room.city === activeCity}
+            className="inline-flex items-center gap-1.5"
           >
             {room.isFlagship && <Star size={12} strokeWidth={2} fill="currentColor" />}
             {room.city}
-          </button>
+          </Chip>
         ))}
       </div>
 
-      <div className="grid w-full gap-6 rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-6 md:p-8 lg:grid-cols-2">
+      <div className={`${cardClass('tile')} grid w-full gap-6 p-6 md:p-8 lg:grid-cols-2`}>
         {/* Left column: contact details */}
         <div className="flex min-w-0 flex-col gap-4">
           <FormField label="Title" labelClassName={LABEL}>

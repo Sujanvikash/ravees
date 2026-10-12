@@ -14,7 +14,7 @@ const ToastContainer = () => {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="relative overflow-hidden rounded-lg border border-gold-400 bg-bg-dark-emerald px-5 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-[opacity,translate] duration-500 ease-spring starting:translate-x-12 starting:opacity-0"
+          className="relative overflow-hidden rounded-lg border border-gold-400 bg-bg-dark-emerald px-5 py-3 text-white shadow-[0_10px_30px_--alpha(var(--color-black)/60%)] transition-[opacity,translate] duration-500 ease-spring starting:translate-x-12 starting:opacity-0"
         >
           {toast.message}
           {/* Shrinks over the toast's 3.2s life (ToastContext), so you can see when it will go. */}

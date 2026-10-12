@@ -5,6 +5,7 @@ import { SHOWROOMS } from '../data/showrooms.js';
 import Container from '../components/Container.jsx';
 import Reveal from '../components/Reveal.jsx';
 import PageBackdrop from '../components/PageBackdrop.jsx';
+import { CHIP_ACTIVE, CHIP_GLOW, CHIP_IDLE } from '../components/Chip.jsx';
 import { showroomsBg } from '../assets/backgrounds';
 
 const Showrooms = () => {
@@ -53,7 +54,7 @@ const Showrooms = () => {
           <div ref={rowRef} className="relative isolate mb-8 flex flex-wrap justify-center gap-3">
             <span
               aria-hidden="true"
-              className={`absolute -z-10 rounded-full border border-gold-300 bg-gold-500 shadow-[0_0_16px_rgba(229,199,139,0.4)] transition-[left,top,width,height] duration-500 ease-premium ${
+              className={`absolute -z-10 rounded-full border ${CHIP_ACTIVE} ${CHIP_GLOW} transition-[left,top,width,height] duration-500 ease-premium ${
                 pill ? '' : 'opacity-0'
               }`}
               style={pill ?? undefined}
@@ -68,9 +69,8 @@ const Showrooms = () => {
                 aria-pressed={i === activeIdx}
                 onClick={() => choose(i)}
                 className={`cursor-pointer rounded-full border px-7 py-3 font-serif text-[0.95rem] font-semibold transition-colors duration-300 ${
-                  i === activeIdx
-                    ? 'border-transparent text-[#04120a]'
-                    : 'border-gold-400/15 bg-[rgba(8,28,20,0.85)] text-text-secondary hover:border-gold-400 hover:text-white'
+                  // The gold behind the chosen city is the sliding pill above; the button itself stays clear.
+                  i === activeIdx ? 'border-transparent text-on-gold' : CHIP_IDLE
                 }`}
               >
                 {room.city}

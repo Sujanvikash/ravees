@@ -4,6 +4,8 @@ import { Package, Inbox, AlertTriangle, Store, Tags, ArrowRight } from 'lucide-r
 import AdminStatCard from '../components/AdminStatCard.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { listEnquiries } from '../../lib/enquiries.js';
+import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import { cardClass } from '../../components/cardClass.js';
 
 const AdminDashboard = () => {
   const { products, categories, showrooms } = useAdminData();
@@ -21,13 +23,10 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">Overview</h1>
-        <p className="mt-1 text-[0.88rem] text-text-secondary">
-          Catalog scraped from christmasraave.in — {products.items.length} products across{' '}
-          {perCategory.length} collections.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Overview"
+        subtitle={<>Catalog scraped from christmasraave.in — {products.items.length} products across{' '}{perCategory.length} collections.</>}
+      />
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard Icon={Package} label="Total products" value={products.items.length} />
@@ -43,7 +42,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <section className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-6">
+        <section className={`${cardClass('tile')} p-6`}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-serif text-[1.1rem] text-white">
               <Tags size={17} strokeWidth={2} className="text-gold-400" />
@@ -79,7 +78,7 @@ const AdminDashboard = () => {
           </div>
         </section>
 
-        <section className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-6">
+        <section className={`${cardClass('tile')} p-6`}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-serif text-[1.1rem] text-white">
               <Inbox size={17} strokeWidth={2} className="text-gold-400" />

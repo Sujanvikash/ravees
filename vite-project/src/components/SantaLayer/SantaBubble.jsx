@@ -14,7 +14,7 @@ const SantaBubble = ({ message, onPause, onResume }) => {
           key={message.id}
           onMouseEnter={onPause}
           onMouseLeave={onResume}
-          className="pointer-events-auto relative w-max max-w-57.5 rounded-xl border border-gold-400/40 bg-bg-dark-emerald px-3 py-2 text-[0.78rem] leading-snug text-white shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-[opacity,translate] duration-300 starting:translate-y-1 starting:opacity-0"
+          className="pointer-events-auto relative w-max max-w-57.5 rounded-xl border border-gold-400/40 bg-bg-dark-emerald px-3 py-2 text-[0.78rem] leading-snug text-white shadow-[0_10px_30px_--alpha(var(--color-black)/60%)] transition-[opacity,translate] duration-300 starting:translate-y-1 starting:opacity-0"
         >
           <p className="m-0">{message.text}</p>
           {message.actions?.length > 0 && (

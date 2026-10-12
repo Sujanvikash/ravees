@@ -15,8 +15,8 @@ const Aurora = ({ className = '' }) => {
       aria-hidden="true"
       className={`pointer-events-none absolute inset-x-0 top-0 -z-10 h-screen max-h-full overflow-hidden ${className}`}
     >
-      <div className="absolute -top-1/3 -left-1/4 h-[70%] w-[70%] animate-aurora rounded-full bg-[radial-gradient(closest-side,rgba(229,199,139,0.10),transparent)]" />
-      <div className="absolute -right-1/4 -bottom-1/3 h-[75%] w-[75%] animate-aurora-reverse rounded-full bg-[radial-gradient(closest-side,rgba(16,185,129,0.09),transparent)]" />
+      <div className="absolute -top-1/3 -left-1/4 h-[70%] w-[70%] animate-aurora rounded-full bg-[radial-gradient(closest-side,--alpha(var(--color-gold-400)/10%),transparent)]" />
+      <div className="absolute -right-1/4 -bottom-1/3 h-[75%] w-[75%] animate-aurora-reverse rounded-full bg-[radial-gradient(closest-side,--alpha(var(--color-emerald-500)/9%),transparent)]" />
     </div>
   );
 };

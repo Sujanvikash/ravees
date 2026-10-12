@@ -8,7 +8,7 @@ import Dropdown from './Dropdown.jsx';
  * size: "md" (storefront, auth, product form) or "sm" (compact admin editors).
  */
 const BASE =
-  'rounded-lg border border-white/10 bg-white/5 font-sans text-white outline-none transition-all placeholder:text-text-muted focus:border-gold-400 focus:shadow-[0_0_10px_rgba(229,199,139,0.4)]';
+  'rounded-lg border border-white/10 bg-white/5 font-sans text-white outline-none transition-all placeholder:text-text-muted focus:border-gold-400 focus:shadow-[0_0_10px_--alpha(var(--color-gold-400)/40%)]';
 
 const SIZES = {
   md: 'px-3.5 py-2.5 text-[0.88rem]',

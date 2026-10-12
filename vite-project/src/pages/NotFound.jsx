@@ -1,10 +1,10 @@
 import { Home, Store } from 'lucide-react';
 import Button from '../components/Button.jsx';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Decoration from '../components/Decoration.jsx';
 import { baublesScatter } from '../assets/decorations';
+import PageTitle from '../components/PageTitle.jsx';
 
 const NotFound = () => {
   return (
@@ -20,9 +20,9 @@ const NotFound = () => {
         <Eyebrow>
           ✦ 404 ✦
         </Eyebrow>
-        <h1 className={`mb-4 font-serif text-[2.2rem] font-bold leading-[1.2] tracking-[0.03em] ${GRADIENT_TITLE}`}>
+        <PageTitle className="mb-4">
           This Ornament Wandered Off
-        </h1>
+        </PageTitle>
         <p className="mb-8 text-[1rem] leading-[1.7] text-text-secondary">
           The page you were looking for isn&apos;t here. Let&apos;s get you back to the collections.
         </p>

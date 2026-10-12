@@ -60,9 +60,9 @@ const resetHeaderVisibility = () => {
 // Legibility scrims, faded together with the copy so the cinematic middle is the untouched picture.
 const SCRIM = {
   desktop:
-    "bg-[linear-gradient(90deg,rgba(7,18,13,0.88)_0%,rgba(7,18,13,0.55)_24%,rgba(7,18,13,0.15)_40%,transparent_50%)]",
-  intro: "bg-[linear-gradient(180deg,rgba(7,18,13,0.85)_0%,rgba(7,18,13,0.5)_32%,transparent_52%)]",
-  final: "bg-[linear-gradient(0deg,rgba(7,18,13,0.92)_0%,rgba(7,18,13,0.6)_18%,transparent_34%)]",
+    "bg-[linear-gradient(90deg,--alpha(var(--color-shade)/88%)_0%,--alpha(var(--color-shade)/55%)_24%,--alpha(var(--color-shade)/15%)_40%,transparent_50%)]",
+  intro: "bg-[linear-gradient(180deg,--alpha(var(--color-shade)/85%)_0%,--alpha(var(--color-shade)/50%)_32%,transparent_52%)]",
+  final: "bg-[linear-gradient(0deg,--alpha(var(--color-shade)/92%)_0%,--alpha(var(--color-shade)/60%)_18%,transparent_34%)]",
 };
 
 /**
@@ -180,7 +180,7 @@ const CinematicHero = ({ scrollHeight = HERO_SCROLL_HEIGHT }) => {
       aria-label="Raave's Evergreen: premium Christmas trees"
       // Pulled up under the sticky header (-mt), so the picture fills the screen from the very top: when the
       // header slides away with the copy, the tree shows in its place instead of an empty strip.
-      className="relative -mt-(--header-h) bg-[#0B1A14]"
+      className="relative -mt-(--header-h) bg-hero-bg"
       style={reduced ? undefined : { height: scrollHeight }}
     >
       <div
@@ -211,7 +211,7 @@ const CinematicHero = ({ scrollHeight = HERO_SCROLL_HEIGHT }) => {
           <p
             ref={hintRef}
             aria-hidden="true"
-            className={`pointer-events-none absolute left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 font-mono text-[0.68rem] uppercase tracking-[0.26em] text-gold-300 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)] ${
+            className={`pointer-events-none absolute left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 font-mono text-[0.68rem] uppercase tracking-[0.26em] text-gold-300 [text-shadow:0_1px_10px_--alpha(var(--color-black)/80%)] ${
               mobile ? "bottom-5" : "bottom-8 short:hidden"
             }`}
           >

@@ -6,6 +6,8 @@ import { useToast } from '../../context/ToastContext.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
 import { Input, Select, Textarea } from '../../components/Input.jsx';
+import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import { cardClass } from '../../components/cardClass.js';
 
 const LABEL = 'text-[0.78rem] text-gold-300';
 
@@ -99,22 +101,22 @@ const AdminProductForm = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Link
-          to="/admin/products"
-          className="mb-3 inline-flex items-center gap-1.5 text-[0.82rem] text-text-secondary no-underline hover:text-gold-300"
-        >
-          <ChevronLeft size={15} strokeWidth={2} />
-          Back to products
-        </Link>
-        <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">
-          {existing ? 'Edit product' : 'New product'}
-        </h1>
-      </div>
+      <AdminPageHeader
+        title={existing ? 'Edit product' : 'New product'}
+        before={
+          <Link
+            to="/admin/products"
+            className="mb-3 inline-flex items-center gap-1.5 text-[0.82rem] text-text-secondary no-underline hover:text-gold-300"
+          >
+            <ChevronLeft size={15} strokeWidth={2} />
+            Back to products
+          </Link>
+        }
+      />
 
       <form
         onSubmit={handleSubmit}
-        className="grid w-full gap-6 rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-6 md:p-8 lg:grid-cols-[1fr_360px]"
+        className={`${cardClass('tile')} grid w-full gap-6 p-6 md:p-8 lg:grid-cols-[1fr_360px]`}
       >
         {/* Left column: fields */}
         <div className="flex min-w-0 flex-col gap-4">
@@ -186,7 +188,7 @@ const AdminProductForm = () => {
           <span className={LABEL}>Product image</span>
 
           <div
-            className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-gold-400/25 bg-[#020805]"
+            className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-gold-400/25 bg-bg-deepest"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();

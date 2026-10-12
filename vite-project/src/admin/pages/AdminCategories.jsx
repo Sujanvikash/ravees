@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, RotateCcw, Plus, Trash2, X } from 'lucide-react';
+import { Save, Plus, Trash2, X } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
@@ -7,6 +7,8 @@ import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
 import IconButton from '../../components/IconButton.jsx';
 import { Input } from '../../components/Input.jsx';
+import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import { cardClass } from '../../components/cardClass.js';
 
 const slugify = (value) =>
   value
@@ -63,34 +65,22 @@ const AdminCategories = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">Categories</h1>
-          <p className="mt-1 text-[0.85rem] text-text-secondary">
-            {editable.length} collections{categories.isOverridden && ' · locally edited'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          {categories.isOverridden && (
-            <button
-              onClick={categories.reset}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gold-400/25 px-4 py-2.5 text-[0.82rem] text-text-secondary transition-all hover:border-gold-400 hover:text-white"
-            >
-              <RotateCcw size={14} strokeWidth={2} />
-              Reset to scraped data
-            </button>
-          )}
+      <AdminPageHeader
+        title="Categories"
+        subtitle={<>{editable.length} collections{categories.isOverridden && ' · locally edited'}</>}
+        onReset={categories.isOverridden ? categories.reset : undefined}
+        actions={
           <Button size="sm" onClick={startAdding}>
             <Plus size={15} strokeWidth={2.5} />
             New collection
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {isAdding && (
         <form
           onSubmit={saveNewCategory}
-          className="flex max-w-[720px] flex-col gap-4 rounded-xl border border-gold-400/30 bg-[rgba(8,28,20,0.9)] p-6"
+          className={`${cardClass('form')} flex max-w-[720px] flex-col gap-4 p-6`}
         >
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-[1.1rem] text-white">New collection</h2>
@@ -133,7 +123,7 @@ const AdminCategories = () => {
           const dirty = Object.keys(draft).length > 0;
 
           return (
-            <div key={cat.id} className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+            <div key={cat.id} className={`${cardClass('tile')} p-5`}>
               <div className="mb-4 flex items-center justify-between">
                 <span className="text-[1.4rem]">{cat.icon}</span>
                 <div className="flex items-center gap-2">

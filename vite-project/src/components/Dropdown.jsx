@@ -4,7 +4,7 @@ import { Check, ChevronDown } from 'lucide-react';
 
 // The look of the collection page's "Featured" sort control: dark emerald, gold hairline border.
 const TRIGGER =
-  'flex min-w-[190px] items-center gap-2.5 rounded-lg border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-3.5 py-2 font-sans text-[0.85rem] text-white hover:border-gold-400/40';
+  'flex min-w-[190px] items-center gap-2.5 rounded-lg border border-gold-400/15 bg-surface/85 px-3.5 py-2 font-sans text-[0.85rem] text-white hover:border-gold-400/40';
 const GAP = 6; // px between the trigger and the list
 
 /**
@@ -145,7 +145,7 @@ const Dropdown = ({ options, value, onChange, id, label, icon: Icon, className =
             aria-label={label}
             data-lenis-prevent
             style={place ? { left: place.left, top: place.top, minWidth: place.minWidth } : { left: 0, top: 0 }}
-            className={`fixed z-1100 max-h-72 overflow-y-auto rounded-xl border border-gold-400/20 bg-bg-dark-emerald p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,246,223,0.06)] transition-[opacity,translate] duration-150 starting:opacity-0 ${
+            className={`fixed z-1100 max-h-72 overflow-y-auto rounded-xl border border-gold-400/20 bg-bg-dark-emerald p-1.5 shadow-[0_18px_40px_--alpha(var(--color-black)/45%),inset_0_1px_0_--alpha(var(--color-highlight)/6%)] transition-[opacity,translate] duration-150 starting:opacity-0 ${
               place ? '' : 'invisible'
             } ${place?.up ? 'starting:translate-y-1' : 'starting:-translate-y-1'}`}
           >

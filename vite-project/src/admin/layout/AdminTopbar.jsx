@@ -7,7 +7,7 @@ const AdminTopbar = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b border-gold-400/15 bg-[rgba(4,18,10,0.92)] px-5 py-3.5 backdrop-blur-[12px] md:px-8">
+    <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b border-gold-400/15 bg-shade/92 px-5 py-3.5 backdrop-blur-[12px] md:px-8">
       <div className="flex items-center gap-2 text-[0.78rem] text-text-muted">
         <ShieldAlert size={15} strokeWidth={2} className="text-gold-400" />
         <span>Local demo console — data is stored in this browser only</span>

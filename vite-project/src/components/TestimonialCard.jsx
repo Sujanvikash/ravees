@@ -1,8 +1,9 @@
 import RatingStars from './RatingStars.jsx';
+import { cardClass } from './cardClass.js';
 
 const TestimonialCard = ({ testimonial }) => {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-8">
+    <div className={`${cardClass('panel')} flex h-full flex-col p-8`}>
       <RatingStars rating={testimonial.rating} size={16} />
       <p className="my-4 flex-1 font-quote text-[1rem] italic leading-[1.7] text-[#f1f5f9]">
         &ldquo;{testimonial.quote}&rdquo;

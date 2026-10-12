@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Headphones, ShieldCheck, ShoppingBag, Star, TreePine } from 'lucide-react';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import Button from '../components/Button.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import { PRODUCTS } from '../data/products.js';
@@ -9,7 +8,11 @@ import { useSanta } from '../context/SantaContext.jsx';
 import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
+import FeatureItem from '../components/FeatureItem.jsx';
+import { CHIP_ACTIVE_RICH, CHIP_IDLE } from '../components/Chip.jsx';
 import { heroTreeGlow } from '../assets/decorations';
+import PageTitle from '../components/PageTitle.jsx';
+import { cardClass } from '../components/cardClass.js';
 
 // The tree icon grows with the height, so the cards read as a scale at a glance.
 const HEIGHTS = [
@@ -49,8 +52,9 @@ const optionsFrom = (category, limit, extraLabel) => {
   return extraLabel ? [...opts, { id: 'none', label: extraLabel, image: null }] : opts;
 };
 
-const ACTIVE = 'border-gold-300 bg-[linear-gradient(135deg,var(--color-gold-300),var(--color-gold-500))] text-[#04120a] shadow-[0_0_18px_rgba(229,199,139,0.35)]';
-const IDLE = 'border-gold-400/15 bg-[rgba(6,22,15,0.8)] text-text-secondary hover:border-gold-400/60 hover:text-white';
+// The option cards use the site's chip states (components/Chip.jsx), the richer gold for their larger size.
+const ACTIVE = CHIP_ACTIVE_RICH;
+const IDLE = CHIP_IDLE;
 
 /** The tick that pops into the corner of the selected card. */
 const Tick = ({ on }) => (
@@ -163,16 +167,16 @@ const TreeStudioPage = () => {
         <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-10">
           {/* Left: the photo panel with the title and the steps, then the promises. */}
           <Reveal className="flex flex-col gap-5">
-            <div className="relative isolate flex min-h-[560px] flex-col overflow-hidden rounded-2xl border border-gold-400/20 p-7 shadow-[0_20px_50px_rgba(0,0,0,0.5)] sm:p-9">
+            <div className="relative isolate flex min-h-[560px] flex-col overflow-hidden rounded-2xl border border-gold-400/20 p-7 shadow-[0_20px_50px_--alpha(var(--color-black)/50%)] sm:p-9">
               <img src={heroTreeGlow} alt="" className="absolute inset-0 -z-10 size-full object-cover object-[72%_center]" />
-              <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(4,15,10,0.95)_0%,rgba(4,15,10,0.82)_38%,rgba(4,15,10,0.25)_72%,rgba(4,15,10,0.05)_100%)]" />
+              <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,--alpha(var(--color-shade)/95%)_0%,--alpha(var(--color-shade)/82%)_38%,--alpha(var(--color-shade)/25%)_72%,--alpha(var(--color-shade)/5%)_100%)]" />
 
               <Eyebrow>✦ CREATE YOUR PERFECT TREE ✦</Eyebrow>
-              <h1 className={`mb-4 font-serif text-[1.9rem] font-bold leading-[1.15] tracking-[0.04em] sm:text-[2.3rem] ${GRADIENT_TITLE}`}>
+              <PageTitle size="sm" className="mb-4">
                 Raave&apos;s Interactive
                 <br />
                 Tree Studio
-              </h1>
+              </PageTitle>
               <p className="max-w-[26rem] text-[0.95rem] leading-[1.7] text-text-secondary">
                 Customize every detail — height, foliage, lighting density and heirloom ornaments to create a tree
                 that&apos;s uniquely yours.
@@ -191,16 +195,16 @@ const TreeStudioPage = () => {
                         onClick={() => goTo(p)}
                         aria-current={current ? 'step' : undefined}
                         className={`relative flex w-full cursor-pointer items-center gap-4 rounded-lg py-2 pr-3 pl-2.5 text-left text-[0.88rem] transition-colors duration-300 ${
-                          current ? 'bg-[linear-gradient(90deg,rgba(229,199,139,0.18),transparent)] text-white' : 'text-text-secondary hover:text-white'
+                          current ? 'bg-[linear-gradient(90deg,--alpha(var(--color-gold-400)/18%),transparent)] text-white' : 'text-text-secondary hover:text-white'
                         }`}
                       >
                         <span
                           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[0.8rem] font-bold transition-colors duration-300 ${
                             current
-                              ? 'border-gold-300 bg-gold-400 text-[#04120a]'
+                              ? 'border-gold-300 bg-gold-400 text-on-gold'
                               : done
-                                ? 'border-gold-400/60 bg-[#06160f] text-gold-300'
-                                : 'border-gold-400/30 bg-[#06160f] text-text-secondary'
+                                ? 'border-gold-400/60 bg-surface text-gold-300'
+                                : 'border-gold-400/30 bg-surface text-text-secondary'
                           }`}
                         >
                           {done ? <Check size={15} strokeWidth={2.5} /> : i + 1}
@@ -215,10 +219,7 @@ const TreeStudioPage = () => {
 
             <div className="grid grid-cols-1 gap-4 border-t border-gold-400/15 pt-5 sm:grid-cols-3">
               {PROMISES.map(({ Icon, text }) => (
-                <div key={text} className="flex items-center gap-3 text-[0.82rem] text-text-secondary">
-                  <Icon size={24} strokeWidth={1.5} className="shrink-0 text-gold-400" aria-hidden="true" />
-                  {text}
-                </div>
+                <FeatureItem key={text} Icon={Icon} title={text} />
               ))}
             </div>
           </Reveal>
@@ -275,7 +276,7 @@ const TreeStudioPage = () => {
               {page === 2 && (
                 <div>
                   <BlockTitle n="4">Preview &amp; enquire</BlockTitle>
-                  <div className="flex flex-col gap-5 rounded-2xl border border-gold-400/25 bg-[rgba(6,22,15,0.85)] p-6 sm:flex-row">
+                  <div className={`${cardClass('raised')} flex flex-col gap-5 p-6 sm:flex-row`}>
                     <div className="flex h-56 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white sm:w-44">
                       <img ref={previewRef} src={previewImage} alt="Your tree" className="h-full object-contain" />
                     </div>

@@ -24,10 +24,10 @@
  *   --crf    x264 quality, lower is sharper and bigger. Default 23.
  *   --gop    frames between keyframes. Lower seeks faster and makes a bigger file. Default 6.
  */
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { run, probeVideo, even } from './lib.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -55,22 +55,7 @@ for (const [name, n] of [['width', MAX_WIDTH], ['crf', CRF], ['gop', GOP]]) {
   }
 }
 
-const run = (cmd, argv) => {
-  const r = spawnSync(cmd, argv, { encoding: 'utf8', maxBuffer: 1 << 26 });
-  if (r.error) throw new Error(`${cmd} not found. Install ffmpeg and make sure it is on the PATH.`);
-  if (r.status !== 0) throw new Error(`${cmd} failed:\n${r.stderr}`);
-  return r;
-};
-
-const probe = () => {
-  const out = run('ffprobe', [
-    '-v', 'error', '-select_streams', 'v:0', '-count_frames',
-    '-show_entries', 'stream=width,height,nb_read_frames,r_frame_rate', '-of', 'csv=p=0', input,
-  ]).stdout.trim();
-  const [width, height, rate, total] = out.split(',');
-  const [num, den] = rate.split('/').map(Number);
-  return { width: Number(width), height: Number(height), fps: num / (den || 1), total: Number(total) };
-};
+const probe = () => probeVideo(input);
 
 /** The picture inside any black bars, as { w, h, x, y }, or null for the whole frame. */
 const findCrop = (info) => {
@@ -96,7 +81,6 @@ const findCrop = (info) => {
   return info.width - w < 4 && info.height - h < 4 ? null : { w, h, x, y };
 };
 
-const even = (n) => Math.max(2, Math.round(n / 2) * 2);
 
 const info = probe();
 console.log(`${path.basename(input)}: ${info.width}x${info.height}, ${info.total} frames at ${info.fps.toFixed(2)} fps`);

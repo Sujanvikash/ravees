@@ -8,13 +8,24 @@
   --color-bg-primary: #05160f;
   --color-bg-dark-emerald: #082117;
   --color-bg-darker: #06160c;
+  --color-bg-deepest: #020704; /* footer, admin sidebar, image wells, modal backdrop */
+  --color-hero-bg: #0b1a14; /* the home hero behind its frames */
+
+  /* dark-green surfaces, used see-through (e.g. bg-surface/85) over pictures and backgrounds */
+  --color-surface: #081c14; /* cards, chips, fields */
+  --color-shade: #040f0a; /* darkening over photos, hero copy panels */
 
   /* gold / champagne accent scale */
+  --color-gold-100: #fff0c4; /* the light end of gold gradients */
   --color-gold-200: #faebc3;
+  --color-gold-250: #f5e1a4;
   --color-gold-300: #f2d48a;
   --color-gold-400: #e5c78b;
   --color-gold-500: #dfb76c;
+  --color-gold-550: #c99e52; /* the deep end of gold gradients (logo, wordmark) */
   --color-gold-600: #b89146;
+  --color-on-gold: #04120a; /* dark text and icons on gold buttons and pills */
+  --color-highlight: #fff6df; /* the faint light line along the top edge of dark cards */
 
   /* emerald accent scale */
   --color-emerald-300: #6ee7b7;
@@ -23,6 +34,7 @@
 
   /* ruby (wishlist / alerts) */
   --color-ruby-500: #e11d48;
+  --color-danger: #ff5c5c; /* delete / remove actions */
 
   /* cream: the light surfaces (product cards, the "Our Purpose" band) with dark-green ink on them */
   --color-cream-50: #fbf7ee;
@@ -38,6 +50,7 @@
   --color-text-primary: #f8fafc;
   --color-text-secondary: #9cb3a8;
   --color-text-muted: #627c70;
+  --color-text-tagline: #a7c2b5; /* the logo's "European standard since 1998" line */
 
   /* fonts */
   --font-serif: 'Cinzel', Georgia, serif;
@@ -97,10 +110,10 @@
   /* filter repaints, but only on one small image */
   @keyframes glow {
     from {
-      filter: drop-shadow(0 0 12px rgba(229, 199, 139, 0.25));
+      filter: drop-shadow(0 0 12px --alpha(var(--color-gold-400) / 25%));
     }
     to {
-      filter: drop-shadow(0 0 34px rgba(229, 199, 139, 0.65));
+      filter: drop-shadow(0 0 34px --alpha(var(--color-gold-400) / 65%));
     }
   }
   @keyframes pop {

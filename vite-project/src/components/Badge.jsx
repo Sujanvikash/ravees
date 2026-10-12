@@ -1,5 +1,5 @@
 const VARIANTS = {
-  gold: 'bg-[linear-gradient(135deg,var(--color-gold-500),var(--color-gold-600))] text-[#031008]',
+  gold: 'bg-[linear-gradient(135deg,var(--color-gold-500),var(--color-gold-600))] text-on-gold',
   emerald: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
   ruby: 'bg-ruby-500 text-white',
   muted: 'bg-white/5 text-text-muted border border-white/10',

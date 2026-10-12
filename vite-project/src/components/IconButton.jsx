@@ -11,7 +11,7 @@ const BASE =
 
 const VARIANTS = {
   close: 'border-none hover:text-white',
-  remove: 'rounded-lg border-none hover:bg-[rgba(255,92,92,0.15)] hover:text-[#ff5c5c]',
+  remove: 'rounded-lg border-none hover:bg-danger/15 hover:text-danger',
   delete: 'rounded-lg border border-white/10 p-1.5 hover:border-ruby-500 hover:text-ruby-500',
 };
 

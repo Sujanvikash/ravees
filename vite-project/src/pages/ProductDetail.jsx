@@ -5,15 +5,17 @@ import WhatsAppLink from '../components/WhatsAppLink.jsx';
 import { PHONE_HREF, PHONE_DISPLAY, ORDER_HOURS } from '../data/site.js';
 import Badge from '../components/Badge.jsx';
 import Button from '../components/Button.jsx';
+import Chip from '../components/Chip.jsx';
 import PriceTag from '../components/PriceTag.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { PRODUCTS } from '../data/products.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import NotFound from './NotFound.jsx';
 import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
+import PageTitle from '../components/PageTitle.jsx';
+import { cardClass } from '../components/cardClass.js';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -48,7 +50,7 @@ const ProductDetail = () => {
         <div className="grid gap-10 lg:grid-cols-2">
           {/* Gallery */}
           <div className="flex flex-col gap-4">
-            <div className="overflow-hidden rounded-2xl border border-gold-400/20 bg-[#020805]">
+            <div className="overflow-hidden rounded-2xl border border-gold-400/20 bg-bg-deepest">
               <img
                 src={product.images[activeImage] ?? product.image}
                 alt={product.name}
@@ -61,7 +63,7 @@ const ProductDetail = () => {
                   <button
                     key={img}
                     onClick={() => setActiveImage(i)}
-                    className={`h-20 w-20 shrink-0 cursor-pointer overflow-hidden rounded-lg border bg-[#020805] transition-all ${
+                    className={`h-20 w-20 shrink-0 cursor-pointer overflow-hidden rounded-lg border bg-bg-deepest transition-all ${
                       i === activeImage ? 'border-gold-400' : 'border-gold-400/15 hover:border-gold-400/50'
                     }`}
                   >
@@ -83,9 +85,9 @@ const ProductDetail = () => {
               </Badge>
             </div>
 
-            <h1 className={`font-serif text-[1.9rem] font-bold leading-[1.2] tracking-[0.02em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
+            <PageTitle>
               {product.name}
-            </h1>
+            </PageTitle>
 
             <p className="text-[1rem] leading-[1.8] text-text-secondary">{product.description}</p>
 
@@ -96,24 +98,16 @@ const ProductDetail = () => {
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`cursor-pointer rounded-lg border px-4 py-2 text-[0.85rem] transition-all ${
-                        selectedSize === size
-                          ? 'border-gold-300 bg-gold-500 font-semibold text-[#04120a]'
-                          : 'border-gold-400/20 bg-gold-400/8 text-gold-300 hover:border-gold-400'
-                      }`}
-                    >
+                    <Chip key={size} shape="box" tone="gold" active={selectedSize === size} onClick={() => setSelectedSize(size)}>
                       {size}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
               </div>
             )}
 
             {product.specs.length > 0 && (
-              <div className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+              <div className={`${cardClass('tile')} p-5`}>
                 <span className="mb-3 block text-[0.72rem] font-semibold uppercase tracking-widest text-gold-300">
                   Specifications
                 </span>
@@ -168,9 +162,9 @@ const ProductDetail = () => {
 
         {related.length > 0 && (
           <div className="mt-20">
-            <h2 className={`mb-7 font-serif text-[1.6rem] font-bold tracking-[0.03em] ${GRADIENT_TITLE}`}>
+            <PageTitle as="h2" size="xs" className="mb-7">
               More from {product.categoryLabel}
-            </h2>
+            </PageTitle>
             <ProductGrid products={related} />
           </div>
         )}

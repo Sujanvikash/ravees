@@ -11,11 +11,11 @@
 const GlowBorder = ({ rounded = 'rounded-3xl', className = '', children }) => {
   return (
     <div
-      className={`relative overflow-hidden ${rounded} bg-gold-400/20 p-px shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_30px_rgba(229,199,139,0.08)] ${className}`}
+      className={`relative overflow-hidden ${rounded} bg-gold-400/20 p-px shadow-[0_20px_50px_--alpha(var(--color-black)/60%),0_0_30px_--alpha(var(--color-gold-400)/8%)] ${className}`}
     >
       <span
         aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-1/3 animate-gold-sheen bg-[linear-gradient(110deg,transparent,rgba(250,235,195,0.9),transparent)]"
+        className="absolute inset-y-0 left-0 w-1/3 animate-gold-sheen bg-[linear-gradient(110deg,transparent,--alpha(var(--color-gold-200)/90%),transparent)]"
       />
       <div className="relative">{children}</div>
     </div>

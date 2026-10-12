@@ -17,7 +17,7 @@ const HeroFinalBadge = ({ ref }) => {
   return (
     <div
       ref={ref}
-      className="absolute bottom-28 right-6 z-20 rounded-2xl border border-gold-400/25 bg-[linear-gradient(160deg,rgba(7,18,13,0.66),rgba(7,18,13,0.4))] px-5 py-4 text-right shadow-[inset_0_1px_0_rgba(255,246,223,0.07)] will-change-[transform,opacity] sm:right-10 xl:right-16 short:bottom-24"
+      className="absolute bottom-28 right-6 z-20 rounded-2xl border border-gold-400/25 bg-[linear-gradient(160deg,--alpha(var(--color-shade)/66%),--alpha(var(--color-shade)/40%))] px-5 py-4 text-right shadow-[inset_0_1px_0_--alpha(var(--color-highlight)/7%)] will-change-[transform,opacity] sm:right-10 xl:right-16 short:bottom-24"
     >
       <p className="font-serif text-[0.95rem] font-bold uppercase leading-snug tracking-[0.08em] text-gold-200">
         {lines(title)}

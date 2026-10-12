@@ -12,12 +12,12 @@ const SIZES = {
 
 // Gold buttons: a streak of light sweeps across on hover (the ::before layer, clipped by overflow-hidden).
 const SHINE =
-  'relative overflow-hidden before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-1/3 before:-translate-x-[120%] before:skew-x-[-20deg] before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent)] before:transition-transform before:duration-700 before:ease-premium hover:before:translate-x-[420%]';
+  'relative overflow-hidden before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-1/3 before:-translate-x-[120%] before:skew-x-[-20deg] before:bg-[linear-gradient(90deg,transparent,--alpha(var(--color-white)/55%),transparent)] before:transition-transform before:duration-700 before:ease-premium hover:before:translate-x-[420%]';
 
 const VARIANTS = {
-  gold: SHINE + ' border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] text-[#04140b] shadow-[0_0_20px_rgba(229,199,139,0.4)] hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#fff0c4,var(--color-gold-400))] hover:shadow-[0_0_30px_rgba(229,199,139,0.65)]',
+  gold: SHINE + ' border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] text-on-gold shadow-[0_0_20px_--alpha(var(--color-gold-400)/40%)] hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,var(--color-gold-100),var(--color-gold-400))] hover:shadow-[0_0_30px_--alpha(var(--color-gold-400)/65%)]',
   outline:
-    'border border-gold-400/30 bg-[rgba(8,28,20,0.6)] text-gold-300 backdrop-blur-[8px] hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white',
+    'border border-gold-400/30 bg-surface/60 text-gold-300 backdrop-blur-[8px] hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white',
   ghost: 'border border-transparent text-text-secondary hover:text-gold-300',
 };
 

@@ -51,7 +51,7 @@ const FOOTER_LINK_LABEL = 'transition-transform duration-300 ease-premium group-
 
 // Legal links in a row along the bottom: a smaller ✦ springs in above the word, like the header.
 const FOOTER_LEGAL =
-  "relative whitespace-nowrap text-text-muted no-underline transition-colors duration-300 after:pointer-events-none after:absolute after:-top-2.5 after:left-1/2 after:-translate-x-1/2 after:scale-50 after:-rotate-45 after:text-[0.5rem] after:leading-none after:text-gold-400 after:opacity-0 after:drop-shadow-[0_0_6px_rgba(229,199,139,0.85)] after:transition-[opacity,scale,rotate] after:duration-400 after:ease-spring after:content-['✦'] hover:text-gold-400 hover:after:scale-100 hover:after:rotate-0 hover:after:opacity-100 focus-visible:text-gold-400 focus-visible:after:scale-100 focus-visible:after:rotate-0 focus-visible:after:opacity-100";
+  "relative whitespace-nowrap text-text-muted no-underline transition-colors duration-300 after:pointer-events-none after:absolute after:-top-2.5 after:left-1/2 after:-translate-x-1/2 after:scale-50 after:-rotate-45 after:text-[0.5rem] after:leading-none after:text-gold-400 after:opacity-0 after:drop-shadow-[0_0_6px_--alpha(var(--color-gold-400)/85%)] after:transition-[opacity,scale,rotate] after:duration-400 after:ease-spring after:content-['✦'] hover:text-gold-400 hover:after:scale-100 hover:after:rotate-0 hover:after:opacity-100 focus-visible:text-gold-400 focus-visible:after:scale-100 focus-visible:after:rotate-0 focus-visible:after:opacity-100";
 
 // Thin gold rules between the four columns once they sit in one row.
 const COLUMN_DIVIDER = 'xl:border-l xl:border-gold-400/15 xl:pl-12';
@@ -67,7 +67,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="relative z-20 overflow-hidden border-t border-gold-400/15 bg-[#020704] pt-12 pb-8">
+    <footer className="relative z-20 overflow-hidden border-t border-gold-400/15 bg-bg-deepest pt-12 pb-8">
       {/* The pine-and-ribbon background: dark in the middle (behind the text), branches framing both sides.
           Wide screens (columns in one row): drawn as two halves, the left one pinned left and the right one
           pinned right, each the footer's full height, so both sets of branches show whole at any width (the
@@ -88,8 +88,8 @@ const Footer = () => {
         />
         {/* Shade over it: fades in from the border line at the top and, on wide screens, darkens the middle
             behind the columns while the branches at the far left and right stay bright. */}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,#020704_0%,rgba(2,7,4,0)_14%,rgba(2,7,4,0)_80%,rgba(2,7,4,0.5)_100%)] max-xl:bg-[rgba(2,7,4,0.6)]" />
-        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(2,7,4,0)_0%,rgba(2,7,4,0.82)_15%,rgba(2,7,4,0.88)_50%,rgba(2,7,4,0.82)_85%,rgba(2,7,4,0)_100%)] xl:block" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--color-bg-deepest)_0%,--alpha(var(--color-bg-deepest)/0%)_14%,--alpha(var(--color-bg-deepest)/0%)_80%,--alpha(var(--color-bg-deepest)/50%)_100%)] max-xl:bg-bg-deepest/60" />
+        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,--alpha(var(--color-bg-deepest)/0%)_0%,--alpha(var(--color-bg-deepest)/82%)_15%,--alpha(var(--color-bg-deepest)/88%)_50%,--alpha(var(--color-bg-deepest)/82%)_85%,--alpha(var(--color-bg-deepest)/0%)_100%)] xl:block" />
       </div>
 
       {/* Narrower than the page width (Container), so the branches at the sides frame the columns. */}
@@ -97,7 +97,7 @@ const Footer = () => {
         {/* Top ornament: the emblem between two short gold rules. */}
         <div aria-hidden="true" className="mb-10 flex items-center justify-center gap-4 md:mb-14">
           <span className="h-px w-16 bg-linear-to-r from-transparent to-gold-400/70 sm:w-28" />
-          <Logo size={34} className="drop-shadow-[0_0_8px_rgba(229,199,139,0.4)]" />
+          <Logo size={34} className="drop-shadow-[0_0_8px_--alpha(var(--color-gold-400)/40%)]" />
           <span className="h-px w-16 bg-linear-to-l from-transparent to-gold-400/70 sm:w-28" />
         </div>
 
@@ -107,11 +107,11 @@ const Footer = () => {
           <div className="col-span-2 md:col-span-1 xl:pr-12">
             {/* The brand logo (assets/logo.svg) at a readable size: the emblem over its wordmark and tagline. */}
             <div className="mb-6 inline-flex flex-col items-center">
-              <Logo size={64} className="mb-3 drop-shadow-[0_0_10px_rgba(229,199,139,0.4)]" />
-              <span className="bg-[linear-gradient(135deg,#fff0c4_0%,#e5c78b_35%,#c99e52_70%,#f5e1a4_100%)] bg-clip-text font-serif text-[1.15rem] font-semibold leading-none tracking-[0.2em] whitespace-nowrap text-transparent">
+              <Logo size={64} className="mb-3 drop-shadow-[0_0_10px_--alpha(var(--color-gold-400)/40%)]" />
+              <span className="bg-[linear-gradient(135deg,var(--color-gold-100)_0%,var(--color-gold-400)_35%,var(--color-gold-550)_70%,var(--color-gold-250)_100%)] bg-clip-text font-serif text-[1.15rem] font-semibold leading-none tracking-[0.2em] whitespace-nowrap text-transparent">
                 RAAVE&apos;S EVERGREEN
               </span>
-              <span className="mt-2 text-[0.6rem] leading-none tracking-[0.24em] whitespace-nowrap text-[#a7c2b5]">
+              <span className="mt-2 text-[0.6rem] leading-none tracking-[0.24em] whitespace-nowrap text-text-tagline">
                 EUROPEAN STANDARD SINCE 1998
               </span>
             </div>
@@ -128,7 +128,7 @@ const Footer = () => {
                   rel="noreferrer"
                   title={title}
                   aria-label={title}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-gold-400/35 bg-[rgba(2,7,4,0.4)] text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-[#04120a]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-gold-400/35 bg-bg-deepest/40 text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-on-gold"
                 >
                   <Icon size={16} />
                 </a>
@@ -180,7 +180,7 @@ const Footer = () => {
                 aria-label="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="min-w-0 flex-1 bg-[rgba(2,7,4,0.55)] px-4 py-3"
+                className="min-w-0 flex-1 bg-bg-deepest/55 px-4 py-3"
               />
               <Button size="sm" type="submit" className="px-5">
                 Join
@@ -191,7 +191,7 @@ const Footer = () => {
               href={PHONE_HREF}
               className="group flex items-center gap-4 border-t border-white/8 pt-6 no-underline"
             >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold-400/45 text-gold-300 transition-colors duration-300 group-hover:bg-gold-400 group-hover:text-[#04120a]">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold-400/45 text-gold-300 transition-colors duration-300 group-hover:bg-gold-400 group-hover:text-on-gold">
                 <Phone size={19} strokeWidth={1.8} />
               </span>
               <span className="flex flex-col">
@@ -225,7 +225,7 @@ const Footer = () => {
               aria-label="Back to top"
               title="Back to top"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="ml-2 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-transparent text-gold-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400 hover:text-[#04120a]"
+              className="ml-2 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-transparent text-gold-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400 hover:text-on-gold"
             >
               <ArrowUp size={16} strokeWidth={2} />
             </button>

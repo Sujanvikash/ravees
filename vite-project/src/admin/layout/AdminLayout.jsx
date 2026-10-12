@@ -14,7 +14,7 @@ const AdminShell = () => {
 
   return (
     <AdminDataProvider>
-      <div className="flex min-h-screen bg-[#04120a]">
+      <div className="flex min-h-screen bg-shade">
         <AdminSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <AdminTopbar />

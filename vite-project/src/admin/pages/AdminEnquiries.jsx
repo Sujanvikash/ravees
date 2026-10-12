@@ -3,12 +3,15 @@ import { Trash2, Phone, Mail, MapPin, Inbox } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import IconButton from '../../components/IconButton.jsx';
 import Dropdown from '../../components/Dropdown.jsx';
+import Chip from '../../components/Chip.jsx';
 import {
   STATUSES,
   deleteEnquiry,
   listEnquiries,
   updateEnquiryStatus,
 } from '../../lib/enquiries.js';
+import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import { cardClass } from '../../components/cardClass.js';
 
 const STATUS_OPTIONS = STATUSES.map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }));
 
@@ -28,41 +31,31 @@ const AdminEnquiries = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">Enquiries</h1>
-        <p className="mt-1 text-[0.85rem] text-text-secondary">
-          Quote requests from checkout and consultation requests from the contact page.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Enquiries"
+        subtitle="Quote requests from checkout and consultation requests from the contact page."
+      />
 
       <div className="flex flex-wrap gap-2">
         {['all', ...STATUSES].map((s) => {
           const count = s === 'all' ? enquiries.length : enquiries.filter((e) => e.status === s).length;
           return (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`cursor-pointer rounded-full border px-4 py-1.5 text-[0.8rem] capitalize transition-all ${
-                filter === s
-                  ? 'border-gold-300 bg-gold-500 font-semibold text-[#04120a]'
-                  : 'border-gold-400/15 bg-[rgba(8,28,20,0.85)] text-text-secondary hover:border-gold-400 hover:text-white'
-              }`}
-            >
+            <Chip key={s} size="sm" active={filter === s} onClick={() => setFilter(s)} className="capitalize">
               {s} ({count})
-            </button>
+            </Chip>
           );
         })}
       </div>
 
       {visible.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] py-16 text-center">
+        <div className={`${cardClass('tile')} flex flex-col items-center gap-3 py-16 text-center`}>
           <Inbox size={36} strokeWidth={1.5} className="text-gold-400/50" />
           <p className="text-[0.88rem] text-text-muted">No enquiries in this view.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           {visible.map((enq) => (
-            <div key={enq.id} className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+            <div key={enq.id} className={`${cardClass('tile')} p-5`}>
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-[1rem] font-semibold text-white">{enq.name || 'Unnamed'}</p>

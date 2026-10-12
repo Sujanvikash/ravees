@@ -1,7 +1,7 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Clock, Star, Truck, ArrowRight, Wand2 } from 'lucide-react';
-import SectionHeading, { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
+import SectionHeading from '../components/SectionHeading.jsx';
 import ShopByCategory from '../components/ShopByCategory.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
 import TestimonialCard from '../components/TestimonialCard.jsx';
@@ -19,6 +19,8 @@ import GlowBorder from '../components/GlowBorder.jsx';
 import Decoration from '../components/Decoration.jsx';
 import Flourish from '../components/Flourish.jsx';
 import OurPurpose from '../components/OurPurpose.jsx';
+import PageTitle from '../components/PageTitle.jsx';
+import FeatureItem from '../components/FeatureItem.jsx';
 import {
   festiveLanternGlow,
   goldenReindeerCutout,
@@ -27,6 +29,7 @@ import {
   pineBranchRight,
   pineCrateBaubles,
 } from '../assets/decorations';
+import { cardClass } from '../components/cardClass.js';
 
 // Side decorations fill the space beside the 1360px content column (plus a little overlap, faded).
 const SIDE_BRANCH = 'top-0 h-[330px] w-[min(440px,calc((100vw-1360px)/2+160px))]';
@@ -62,28 +65,23 @@ const Home = () => {
 
   return (
     <>
-      <Suspense fallback={<div className="-mt-(--header-h) h-svh w-full bg-[#0B1A14]" />}>
+      <Suspense fallback={<div className="-mt-(--header-h) h-svh w-full bg-hero-bg" />}>
         <CinematicHero />
       </Suspense>
 
       {/* Trust strip: one slim row of promises, then a shortcut into the catalogue */}
       <section className="relative z-20 border-t border-b border-gold-400/15 bg-[linear-gradient(180deg,var(--color-bg-darker)_0%,var(--color-bg-primary)_100%)] py-5">
         <Container>
-          {/* Phones show the titles only, to keep the strip short */}
           <Reveal className="grid grid-cols-2 items-center gap-x-3 gap-y-3.5 sm:gap-x-4 sm:gap-y-5 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] lg:gap-0">
             {TRUST_ITEMS.map(({ Icon, title, body }) => (
-              <div
+              <FeatureItem
                 key={title}
-                className="flex items-center gap-2.5 sm:gap-3 lg:border-r lg:border-gold-400/15 lg:px-5 lg:first:pl-0"
-              >
-                <Icon strokeWidth={1.5} className="size-5.5 shrink-0 text-gold-400 sm:size-7.5" />
-                <div className="min-w-0">
-                  <h3 className="font-serif text-[0.78rem] font-semibold leading-tight text-white sm:text-[0.95rem]">
-                    {title}
-                  </h3>
-                  <p className="mt-0.5 hidden text-[0.8rem] leading-snug text-text-muted sm:block">{body}</p>
-                </div>
-              </div>
+                variant="trust"
+                Icon={Icon}
+                title={title}
+                body={body}
+                className="lg:border-r lg:border-gold-400/15 lg:px-5 lg:first:pl-0"
+              />
             ))}
             <Button variant="outline" size="sm" to="/shop" className="col-span-2 lg:col-span-1 lg:ml-6">
               View All Categories
@@ -108,9 +106,9 @@ const Home = () => {
                 ✦ 2026 SIGNATURE COLLECTION ✦
               </Eyebrow>
               <div className="flex items-center gap-4">
-                <h2 className={`font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.5rem] ${GRADIENT_TITLE}`}>
+                <PageTitle as="h2" size="lg">
                   European Standard Masterpieces
-                </h2>
+                </PageTitle>
                 <Flourish className="hidden md:block" />
               </div>
             </div>
@@ -140,9 +138,9 @@ const Home = () => {
                   <span className="mb-3 inline-block font-mono text-[0.68rem] uppercase tracking-[0.22em] text-gold-400">
                     ✦ INTERACTIVE TREE STUDIO ✦
                   </span>
-                  <h2 className={`mb-4 font-serif text-[1.8rem] font-bold leading-[1.2] tracking-[0.03em] sm:text-[2.2rem] ${GRADIENT_TITLE}`}>
+                  <PageTitle as="h2" size="sm" className="mb-4">
                     Design Your Tree, Piece By Piece
-                  </h2>
+                  </PageTitle>
                   <p className="mb-6 text-[1.02rem] leading-[1.8] text-text-secondary">
                     Pick a tree, layer on cluster lights, baubles and a topper, then send the whole build to our
                     concierge as a single quote request. Our stylists confirm pricing and reserve your pieces.
@@ -153,23 +151,23 @@ const Home = () => {
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-5">
-                  <div className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+                  <div className={`${cardClass('tile')} p-5`}>
                     <CountUp value={PRODUCTS.length} className="block font-serif text-[2rem] font-bold text-gold-300" />
                     <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">
                       Products to combine
                     </span>
                   </div>
-                  <div className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+                  <div className={`${cardClass('tile')} p-5`}>
                     <CountUp value={CATEGORIES.length - 1} className="block font-serif text-[2rem] font-bold text-gold-300" />
                     <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">
                       Collections
                     </span>
                   </div>
-                  <div className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+                  <div className={`${cardClass('tile')} p-5`}>
                     <CountUp value={5} className="block font-serif text-[2rem] font-bold text-gold-300" />
                     <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">Showrooms</span>
                   </div>
-                  <div className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+                  <div className={`${cardClass('tile')} p-5`}>
                     <CountUp value={27} className="block font-serif text-[2rem] font-bold text-gold-300" />
                     <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">
                       Years in India

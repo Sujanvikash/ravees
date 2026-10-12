@@ -31,6 +31,54 @@ const getInitials = (name = '') => {
   return (first + last).toUpperCase();
 };
 
+// The red NEW tag next to a link (Tree Studio).
+const NewTag = ({ children }) => (
+  <span className="ml-1 rounded bg-ruby-500 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">{children}</span>
+);
+
+// The sparkle over a desktop link: springs in on hover / keyboard focus, steady over the active page.
+const SPARKLE =
+  "relative after:pointer-events-none after:absolute after:-top-2.5 after:left-1/2 after:-translate-x-1/2 after:text-[0.62rem] after:leading-none after:text-gold-400 after:drop-shadow-[0_0_6px_--alpha(var(--color-gold-400)/85%)] after:transition-[opacity,scale,rotate] after:duration-400 after:ease-spring after:content-['✦']";
+
+/**
+ * One navigation link, for the desktop bar and the phone menu alike. On desktop a small gold sparkle springs
+ * in above the word (it sits on the label, so a tag like NEW doesn't pull it off-centre); in the phone menu
+ * the link closes the menu when tapped.
+ */
+const NavItem = ({ link: { to, label, tag, end }, mobile = false, onClick }) => (
+  <NavLink
+    to={to}
+    end={end}
+    onClick={onClick}
+    className={({ isActive }) =>
+      mobile
+        ? `py-2 text-[0.95rem] font-medium tracking-[0.04em] no-underline ${isActive ? 'text-gold-300' : 'text-text-secondary'}`
+        : `group whitespace-nowrap py-1.5 text-[0.88rem] font-medium tracking-[0.04em] no-underline transition-colors duration-300 ${
+            isActive ? 'text-gold-300' : 'text-text-secondary hover:text-gold-300 focus-visible:text-gold-300'
+          }`
+    }
+  >
+    {({ isActive }) => (
+      <>
+        {mobile ? (
+          label
+        ) : (
+          <span
+            className={`${SPARKLE} ${
+              isActive
+                ? 'after:scale-100 after:opacity-100'
+                : 'after:scale-50 after:-rotate-45 after:opacity-0 group-hover:after:scale-100 group-hover:after:rotate-0 group-hover:after:opacity-100 group-focus-visible:after:scale-100 group-focus-visible:after:rotate-0 group-focus-visible:after:opacity-100'
+            }`}
+          >
+            {label}
+          </span>
+        )}
+        {tag && <NewTag>{tag}</NewTag>}
+      </>
+    )}
+  </NavLink>
+);
+
 const Header = ({ onOpenCart }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { totalCount } = useCart();
@@ -44,7 +92,7 @@ const Header = ({ onOpenCart }) => {
     // Every other page never sets it, so the header just shows.
     <header
       style={{ opacity: 'var(--hero-chrome, 1)', translate: '0 calc((var(--hero-chrome, 1) - 1) * 100%)' }}
-      className="sticky top-0 z-[100] h-[var(--header-h)] border-b border-gold-400/15 bg-[rgba(5,22,15,0.96)] [html[data-hero-chrome-hidden]_&]:invisible"
+      className="sticky top-0 z-[100] h-[var(--header-h)] border-b border-gold-400/15 bg-bg-primary/96 [html[data-hero-chrome-hidden]_&]:invisible"
     >
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-3 px-4 sm:gap-5 sm:px-6">
         <button
@@ -67,13 +115,13 @@ const Header = ({ onOpenCart }) => {
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Logo
               size="1em"
-              className="shrink-0 text-[30px] drop-shadow-[0_0_8px_rgba(229,199,139,0.4)] sm:text-[40px]"
+              className="shrink-0 text-[30px] drop-shadow-[0_0_8px_--alpha(var(--color-gold-400)/40%)] sm:text-[40px]"
             />
             <div className="flex min-w-0 flex-col sm:self-stretch sm:justify-between">
-              <span className="whitespace-nowrap bg-[linear-gradient(135deg,#fff0c4_0%,#e5c78b_35%,#c99e52_70%,#f5e1a4_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.4rem] sm:leading-none sm:tracking-[0.12em]">
+              <span className="whitespace-nowrap bg-[linear-gradient(135deg,var(--color-gold-100)_0%,var(--color-gold-400)_35%,var(--color-gold-550)_70%,var(--color-gold-250)_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.4rem] sm:leading-none sm:tracking-[0.12em]">
                 RAAVE&apos;S EVERGREEN
               </span>
-              <span className="hidden text-[0.65rem] font-normal leading-none tracking-[0.14em] text-[#a7c2b5] sm:block">
+              <span className="hidden text-[0.65rem] font-normal leading-none tracking-[0.14em] text-text-tagline sm:block">
                 EUROPEAN STANDARD SINCE 1998
               </span>
             </div>
@@ -81,39 +129,8 @@ const Header = ({ onOpenCart }) => {
         </Link>
 
         <nav className="hidden items-center gap-5 xl:flex 2xl:gap-7">
-          {NAV_LINKS.map(({ to, label, tag, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `group whitespace-nowrap py-1.5 text-[0.88rem] font-medium tracking-[0.04em] no-underline transition-colors duration-300 ${
-                  isActive ? 'text-gold-300' : 'text-text-secondary hover:text-gold-300 focus-visible:text-gold-300'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {/* A small gold sparkle springs in above the word on hover (and keyboard focus) and
-                      stays steady over the active page. It sits on the label, so a tag like NEW
-                      doesn't pull it off-centre. */}
-                  <span
-                    className={`relative after:pointer-events-none after:absolute after:-top-2.5 after:left-1/2 after:-translate-x-1/2 after:text-[0.62rem] after:leading-none after:text-gold-400 after:drop-shadow-[0_0_6px_rgba(229,199,139,0.85)] after:transition-[opacity,scale,rotate] after:duration-400 after:ease-spring after:content-['✦'] ${
-                      isActive
-                        ? 'after:scale-100 after:opacity-100'
-                        : 'after:scale-50 after:-rotate-45 after:opacity-0 group-hover:after:scale-100 group-hover:after:rotate-0 group-hover:after:opacity-100 group-focus-visible:after:scale-100 group-focus-visible:after:rotate-0 group-focus-visible:after:opacity-100'
-                    }`}
-                  >
-                    {label}
-                  </span>
-                  {tag && (
-                    <span className="ml-1 rounded bg-ruby-500 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
-                      {tag}
-                    </span>
-                  )}
-                </>
-              )}
-            </NavLink>
+          {NAV_LINKS.map((link) => (
+            <NavItem key={link.to} link={link} />
           ))}
         </nav>
 
@@ -139,7 +156,7 @@ const Header = ({ onOpenCart }) => {
           </Link>
 
           <button
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gold-400/30 bg-[linear-gradient(135deg,rgba(229,199,139,0.2),rgba(8,28,20,0.8))] px-3.5 py-2 text-[0.8rem] text-gold-300 transition-all duration-300 hover:border-gold-400"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gold-400/30 bg-[linear-gradient(135deg,--alpha(var(--color-gold-400)/20%),--alpha(var(--color-surface)/80%))] px-3.5 py-2 text-[0.8rem] text-gold-300 transition-all duration-300 hover:border-gold-400"
             title="View cart"
             onClick={() => requireLogin('Please sign in to view your cart.') && onOpenCart()}
           >
@@ -153,7 +170,7 @@ const Header = ({ onOpenCart }) => {
       </div>
 
       {mobileMenuOpen && (
-        <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)] sm:px-6 xl:hidden">
+        <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_--alpha(var(--color-black)/60%)] sm:px-6 xl:hidden">
           <Link
             to="/shop?wishlist=1"
             onClick={() => setMobileMenuOpen(false)}
@@ -171,25 +188,8 @@ const Header = ({ onOpenCart }) => {
             <User size={16} strokeWidth={2} className="text-gold-400" />
             {isAuthenticated ? `My Account (${session.name.split(' ')[0]})` : 'Sign In'}
           </Link>
-          {NAV_LINKS.map(({ to, label, tag, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `py-2 text-[0.95rem] font-medium tracking-[0.04em] no-underline ${
-                  isActive ? 'text-gold-300' : 'text-text-secondary'
-                }`
-              }
-            >
-              {label}
-              {tag && (
-                <span className="ml-1 rounded bg-ruby-500 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
-                  {tag}
-                </span>
-              )}
-            </NavLink>
+          {NAV_LINKS.map((link) => (
+            <NavItem key={link.to} link={link} mobile onClick={() => setMobileMenuOpen(false)} />
           ))}
         </nav>
       )}

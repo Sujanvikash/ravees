@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, ShoppingBag } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import FormField from '../components/FormField.jsx';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
@@ -15,6 +14,8 @@ import { Input, Select, Textarea } from '../components/Input.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Decoration from '../components/Decoration.jsx';
 import { luxuryGiftBoxes } from '../assets/decorations';
+import PageTitle from '../components/PageTitle.jsx';
+import { cardClass } from '../components/cardClass.js';
 
 const Checkout = () => {
   const { cart, totalCount, clearCart } = useCart();
@@ -69,9 +70,9 @@ const Checkout = () => {
               className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-bg-primary text-emerald-400"
             />
           </div>
-          <h1 className={`mb-4 font-serif text-[2rem] font-bold leading-[1.2] ${GRADIENT_TITLE}`}>
+          <PageTitle className="mb-4">
             Your Request Is In
-          </h1>
+          </PageTitle>
           <p className="mb-8 text-[1rem] leading-[1.7] text-text-secondary">
             Thank you! Our holiday concierge will contact you on WhatsApp or phone to confirm pricing,
             availability and your white-glove delivery schedule.
@@ -113,14 +114,14 @@ const Checkout = () => {
         <Eyebrow>
           ✦ CONCIERGE QUOTE REQUEST ✦
         </Eyebrow>
-        <h1 className={`mb-8 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
+        <PageTitle className="mb-8">
           Request Your Final Quote
-        </h1>
+        </PageTitle>
 
         <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-4 rounded-2xl border border-gold-400/20 bg-[rgba(8,28,20,0.85)] p-6 md:p-8"
+            className={`${cardClass('panel')} flex flex-col gap-4 p-6 md:p-8`}
           >
             <div className="grid gap-3.5 sm:grid-cols-2">
               <FormField label="Full Name" htmlFor="co-name">
@@ -213,12 +214,12 @@ const Checkout = () => {
             </p>
           </form>
 
-          <aside className="h-fit rounded-2xl border border-gold-400/20 bg-[#04120a] p-6">
+          <aside className="h-fit rounded-2xl border border-gold-400/20 bg-shade p-6">
             <h2 className="mb-4 font-serif text-[1.1rem] text-white">Your list ({totalCount})</h2>
             <div className="flex flex-col gap-3">
               {cart.map(({ product, quantity }) => (
                 <div key={product.id} className="flex items-center gap-3">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-[#020805]">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
                     <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">

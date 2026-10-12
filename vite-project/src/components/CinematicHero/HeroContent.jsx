@@ -4,7 +4,7 @@ import Eyebrow from "../Eyebrow.jsx";
 import { HERO_COPY } from "./heroConfig";
 
 // The text sits straight on the picture (no card); a soft shadow plus the scrim keep it legible.
-const TEXT_SHADOW = "[text-shadow:0_2px_18px_rgba(0,0,0,0.8),0_0_2px_rgba(0,0,0,0.5)]";
+const TEXT_SHADOW = "[text-shadow:0_2px_18px_--alpha(var(--color-black)/80%),0_0_2px_--alpha(var(--color-black)/50%)]";
 
 /**
  * Placement per visual. Desktop: a left column beside the tree, the same at the start and the end.
@@ -74,7 +74,7 @@ const HeroContent = ({ ref, mode }) => {
           to={HERO_COPY.secondary.href}
           variant="outline"
           size="lg"
-          className={`uppercase backdrop-blur-none! bg-[rgba(7,18,13,0.6)]! ${mobile ? "max-sm:px-4! max-sm:text-[0.8rem]!" : ""}`}
+          className={`uppercase backdrop-blur-none! bg-shade/60! ${mobile ? "max-sm:px-4! max-sm:text-[0.8rem]!" : ""}`}
         >
           {HERO_COPY.secondary.label}
         </Button>

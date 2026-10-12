@@ -12,6 +12,7 @@ import {
   santaChildGift,
   luxuryWreathAccent,
 } from '../assets/decorations';
+import { cardClass } from './cardClass.js';
 
 // PLACEHOLDER photos until each showroom has its own: a showroom with an `images` array in
 // data/showrooms.js shows those instead. These are general festive photos, not of any store.
@@ -46,7 +47,7 @@ const ShowroomCard = ({ showroom }) => {
     <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
       {/* Gallery */}
       <div className="flex flex-col gap-3">
-        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-gold-400/25 bg-[#04120a] shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_20px_50px_--alpha(var(--color-black)/60%)]">
           {photos.map((src, i) => (
             <img
               key={src}
@@ -59,7 +60,7 @@ const ShowroomCard = ({ showroom }) => {
               }`}
             />
           ))}
-          <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full border border-white/15 bg-[rgba(4,15,10,0.7)] px-2 py-1 text-[0.8rem] text-white">
+          <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full border border-white/15 bg-shade/70 px-2 py-1 text-[0.8rem] text-white">
             <button type="button" onClick={() => go(-1)} aria-label="Previous photo" className="cursor-pointer rounded-full p-1 hover:text-gold-300">
               <ChevronLeft size={16} strokeWidth={2} />
             </button>
@@ -83,7 +84,7 @@ const ShowroomCard = ({ showroom }) => {
                 aria-label={`Show photo ${i + 1}`}
                 aria-current={i === idx}
                 className={`aspect-[4/3] cursor-pointer overflow-hidden rounded-lg border transition-all duration-300 ${
-                  i === idx ? 'border-gold-400 shadow-[0_0_12px_rgba(229,199,139,0.4)]' : 'border-gold-400/15 opacity-70 hover:opacity-100'
+                  i === idx ? 'border-gold-400 shadow-[0_0_12px_--alpha(var(--color-gold-400)/40%)]' : 'border-gold-400/15 opacity-70 hover:opacity-100'
                 }`}
               >
                 <img src={src} alt="" loading="lazy" className="size-full object-cover" />
@@ -94,7 +95,7 @@ const ShowroomCard = ({ showroom }) => {
       </div>
 
       {/* Details */}
-      <div className="flex flex-col rounded-2xl border border-gold-400/25 bg-[rgba(6,22,15,0.82)] p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] md:p-8">
+      <div className={`${cardClass('raised')} flex flex-col p-7 md:p-8`}>
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <h3 className="font-serif text-[1.3rem] text-white md:text-[1.4rem]">{showroom.city} Experience Centre</h3>
           {showroom.isFlagship && <Badge>Flagship</Badge>}

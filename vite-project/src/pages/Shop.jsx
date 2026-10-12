@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Heart, X, ArrowUpDown } from 'lucide-react';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import CategoryTabs from '../components/CategoryTabs.jsx';
 import Dropdown from '../components/Dropdown.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
@@ -14,6 +13,7 @@ import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Decoration from '../components/Decoration.jsx';
 import { pineBranchLeft, pineBranchRight } from '../assets/decorations';
+import PageTitle from '../components/PageTitle.jsx';
 
 // Pine branches on both top corners of the shop header, in the space beside the content column.
 const SIDE_BRANCH = 'top-0 h-[330px] w-[min(440px,calc((100vw-1360px)/2+160px))]';
@@ -74,14 +74,14 @@ const Shop = () => {
           </Eyebrow>
           {/* Title and controls share one line (centred on each other); they stack when the screen is too narrow. */}
           <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-4">
-            <h1 className={`font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.5rem] ${GRADIENT_TITLE}`}>
+            <PageTitle size="lg">
               European Standard Masterpieces
-            </h1>
+            </PageTitle>
 
             {/* Counts as 340px when deciding whether it fits beside the title, then grows up to 460px:
                 the search box gives way first, so the row still fits on a 1280px laptop. */}
             <div className="ml-auto flex min-w-0 max-w-[460px] flex-1 basis-[340px] items-center gap-3 max-sm:flex-wrap">
-              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-3.5 py-2 text-text-secondary max-sm:basis-full">
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-gold-400/15 bg-surface/85 px-3.5 py-2 text-text-secondary max-sm:basis-full">
                 <Search size={16} strokeWidth={2} className="shrink-0" />
                 <input
                   type="text"

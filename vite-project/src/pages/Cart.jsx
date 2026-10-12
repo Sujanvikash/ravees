@@ -3,12 +3,13 @@ import { Trash2, ArrowRight } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import IconButton from '../components/IconButton.jsx';
 import QuantityStepper from '../components/QuantityStepper.jsx';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Decoration from '../components/Decoration.jsx';
 import { luxuryGiftBoxes } from '../assets/decorations';
+import PageTitle from '../components/PageTitle.jsx';
+import { cardClass } from '../components/cardClass.js';
 
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
@@ -20,12 +21,12 @@ const Cart = () => {
         <Eyebrow>
           ✦ YOUR CART ✦
         </Eyebrow>
-        <h1 className={`mb-8 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
+        <PageTitle className="mb-8">
           Review Your Selection
-        </h1>
+        </PageTitle>
 
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-6 py-20 text-center">
+          <div className={`${cardClass('panel')} flex flex-col items-center gap-4 px-6 py-20 text-center`}>
             <div className="relative isolate h-42.5 w-[min(250px,100%)]">
               <Decoration src={luxuryGiftBoxes} className="inset-0" />
             </div>
@@ -38,11 +39,11 @@ const Cart = () => {
               {cart.map(({ product, quantity }) => (
                 <div
                   key={product.id}
-                  className="flex flex-wrap items-center gap-5 rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5 transition-all hover:border-gold-400/30"
+                  className={`${cardClass('panel')} flex flex-wrap items-center gap-5 p-5 transition-all hover:border-gold-400/30`}
                 >
                   <Link
                     to={`/product/${product.id}`}
-                    className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-gold-400/20 bg-[#020805]"
+                    className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-gold-400/20 bg-bg-deepest"
                   >
                     <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                   </Link>
@@ -79,7 +80,7 @@ const Cart = () => {
               ))}
             </div>
 
-            <div className="mt-8 flex flex-col gap-5 rounded-2xl border border-gold-400/30 bg-[#04120a] p-6 md:p-8">
+            <div className="mt-8 flex flex-col gap-5 rounded-2xl border border-gold-400/30 bg-shade p-6 md:p-8">
               <div className="flex justify-between text-[0.92rem] text-text-secondary">
                 <span>Items in list</span>
                 <span className="font-mono text-white">{totalCount}</span>
@@ -102,7 +103,7 @@ const Cart = () => {
                 </Button>
                 <button
                   onClick={clearCart}
-                  className="cursor-pointer border-none bg-transparent text-[0.85rem] text-text-muted underline-offset-4 hover:text-[#ff5c5c] hover:underline"
+                  className="cursor-pointer border-none bg-transparent text-[0.85rem] text-text-muted underline-offset-4 hover:text-danger hover:underline"
                 >
                   Clear list
                 </button>

@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { LogOut, Mail, Phone, User, Inbox } from 'lucide-react';
-import { GRADIENT_TITLE } from '../../components/SectionHeading.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { listEnquiries } from '../../lib/enquiries.js';
 import Eyebrow from '../../components/Eyebrow.jsx';
 import Aurora from '../../components/Aurora.jsx';
+import PageTitle from '../../components/PageTitle.jsx';
+import { cardClass } from '../../components/cardClass.js';
 
 const STATUS_STYLE = {
   new: 'bg-emerald-500/15 text-emerald-300',
@@ -39,11 +40,11 @@ const Account = () => {
         <Eyebrow>
           ✦ MY ACCOUNT ✦
         </Eyebrow>
-        <h1 className={`mb-8 font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.04em] sm:text-[2.4rem] ${GRADIENT_TITLE}`}>
+        <PageTitle className="mb-8">
           Welcome, {session.name.split(' ')[0]}
-        </h1>
+        </PageTitle>
 
-        <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-gold-400/20 bg-[rgba(8,28,20,0.85)] p-6 md:p-8">
+        <div className={`${cardClass('panel')} mb-8 flex flex-col gap-4 p-6 md:p-8`}>
           <div className="flex items-center gap-3">
             <User size={18} strokeWidth={2} className="shrink-0 text-gold-400" />
             <span className="text-[0.95rem] text-white">{session.name}</span>
@@ -77,13 +78,13 @@ const Account = () => {
         </h2>
 
         {myEnquiries.length === 0 ? (
-          <div className="rounded-2xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-6 py-12 text-center text-text-secondary">
+          <div className={`${cardClass('panel')} px-6 py-12 text-center text-text-secondary`}>
             You haven&apos;t submitted a quote request or consultation yet.
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             {myEnquiries.map((enq) => (
-              <div key={enq.id} className="rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+              <div key={enq.id} className={`${cardClass('tile')} p-5`}>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="font-mono text-[0.7rem] uppercase tracking-widest text-gold-400">
                     {enq.type === 'quote-request' ? 'Quote Request' : 'Consultation'} &bull;{' '}

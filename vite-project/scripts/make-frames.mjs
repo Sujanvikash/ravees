@@ -51,6 +51,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findSparkleMask } from './sparkle-mask.mjs';
+import { run, probeVideo, even } from './lib.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -92,28 +93,16 @@ if (framesArg !== undefined && !(Number.isInteger(Number(framesArg)) && Number(f
   process.exit(1);
 }
 
-const run = (cmd, argv, cwd) => {
-  const r = spawnSync(cmd, argv, { cwd, encoding: 'utf8' });
-  if (r.error) throw new Error(`${cmd} not found. Install ffmpeg and make sure it is on the PATH.`);
-  if (r.status !== 0) throw new Error(`${cmd} failed:\n${r.stderr}`);
-  return r.stdout;
-};
-
 // ---- Per-video facts ----------------------------------------------------------------------------
 /** Width, height and real frame count of the video, so the picks are spread over all of its frames. */
 const probe = () => {
-  const out = run('ffprobe', [
-    '-v', 'error', '-select_streams', 'v:0', '-count_frames',
-    '-show_entries', 'stream=width,height,nb_read_frames', '-of', 'csv=p=0', video,
-  ]).trim();
-  const [width, height, total] = out.split(',').map(Number);
+  const { width, height, total } = probeVideo(video);
   if (!(width > 0 && height > 0)) throw new Error(`Could not read the size of ${video}.`);
   if (!(total >= 2)) throw new Error(`Could not count the frames of ${video}.`);
   return { video: path.resolve(video), width, height, total };
 };
 
 /** Frame size for a set `w` px wide, keeping the video's shape. Both sides even (webp/ffmpeg like that). */
-const even = (n) => Math.max(2, Math.round(n / 2) * 2);
 const sizeFor = (info, w) => {
   const width = even(Math.min(w, info.width)); // never upscale
   return [width, even((width * info.height) / info.width)];

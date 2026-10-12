@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, RotateCcw, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import DataTable from '../components/DataTable.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import Button from '../../components/Button.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
+import AdminPageHeader from '../components/AdminPageHeader.jsx';
 
 const AdminProducts = () => {
   const { products } = useAdminData();
@@ -17,7 +18,7 @@ const AdminProducts = () => {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-[#020805]">
+          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
             {row.image && <img src={row.image} alt="" className="h-full w-full object-cover" />}
           </div>
           <span className="font-medium text-white">{row.name}</span>
@@ -77,32 +78,17 @@ const AdminProducts = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">Products</h1>
-          <p className="mt-1 text-[0.85rem] text-text-secondary">
-            {products.items.length} products
-            {products.isOverridden && ' · locally edited'}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2.5">
-          {products.isOverridden && (
-            <button
-              onClick={products.reset}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gold-400/25 bg-transparent px-4 py-2.5 text-[0.82rem] text-text-secondary transition-all hover:border-gold-400 hover:text-white"
-              title="Discard local edits and reload the scraped catalog"
-            >
-              <RotateCcw size={14} strokeWidth={2} />
-              Reset to scraped data
-            </button>
-          )}
+      <AdminPageHeader
+        title="Products"
+        subtitle={<>{products.items.length} products{products.isOverridden && ' · locally edited'}</>}
+        onReset={products.isOverridden ? products.reset : undefined}
+        actions={
           <Button size="sm" to="/admin/products/new">
             <Plus size={15} strokeWidth={2.5} />
             New product
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <DataTable
         columns={columns}

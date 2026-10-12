@@ -2,8 +2,8 @@ import { useId } from 'react';
 
 // Literal class names so Tailwind can detect them.
 const GLOW = {
-  16: 'drop-shadow-[0_0_16px_rgba(229,199,139,0.4)]',
-  20: 'drop-shadow-[0_0_20px_rgba(229,199,139,0.4)]',
+  16: 'drop-shadow-[0_0_16px_--alpha(var(--color-gold-400)/40%)]',
+  20: 'drop-shadow-[0_0_20px_--alpha(var(--color-gold-400)/40%)]',
 };
 
 /**
@@ -27,12 +27,13 @@ const Logo = ({ size = 30, className = '', glow }) => {
       focusable="false"
       className={`${GLOW[glow] ?? ''} ${className}`.trim()}
     >
+      {/* Colours come from index.css (style, not attributes: SVG presentation attributes can't read var()). */}
       <defs>
         <linearGradient id={gold} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fff0c4" />
-          <stop offset="35%" stopColor="#e5c78b" />
-          <stop offset="70%" stopColor="#c99e52" />
-          <stop offset="100%" stopColor="#f5e1a4" />
+          <stop offset="0%" style={{ stopColor: 'var(--color-gold-100)' }} />
+          <stop offset="35%" style={{ stopColor: 'var(--color-gold-400)' }} />
+          <stop offset="70%" style={{ stopColor: 'var(--color-gold-550)' }} />
+          <stop offset="100%" style={{ stopColor: 'var(--color-gold-250)' }} />
         </linearGradient>
       </defs>
       <g transform="translate(0, 10)">
@@ -41,10 +42,10 @@ const Logo = ({ size = 30, className = '', glow }) => {
         {/* outer tier */}
         <path d="M 250,98 Q 285,170 330,225 C 310,215 285,200 250,212 C 215,200 190,215 170,225 Q 215,170 250,98 Z" fill={fill} />
         {/* middle tier: dark cut, then gold */}
-        <path d="M 250,140 Q 278,185 305,225 C 285,218 268,212 250,220 C 232,212 215,218 195,225 Q 222,185 250,140 Z" fill="#061c14" />
+        <path d="M 250,140 Q 278,185 305,225 C 285,218 268,212 250,220 C 232,212 215,218 195,225 Q 222,185 250,140 Z" style={{ fill: 'var(--color-surface)' }} />
         <path d="M 250,145 Q 275,188 300,224 C 282,216 266,210 250,218 C 234,210 218,216 200,224 Q 225,188 250,145 Z" fill={fill} />
         {/* inner tier: dark cut, then gold */}
-        <path d="M 250,175 Q 268,205 285,224 C 272,220 260,216 250,221 C 240,216 228,220 215,224 Q 232,205 250,175 Z" fill="#061c14" />
+        <path d="M 250,175 Q 268,205 285,224 C 272,220 260,216 250,221 C 240,216 228,220 215,224 Q 232,205 250,175 Z" style={{ fill: 'var(--color-surface)' }} />
         <path d="M 250,180 Q 266,206 280,224 C 270,219 260,216 250,220 C 240,216 230,219 220,224 Q 234,206 250,180 Z" fill={fill} />
         {/* central spine */}
         <line x1="250" y1="98" x2="250" y2="218" stroke={fill} strokeWidth="1.5" opacity="0.6" />

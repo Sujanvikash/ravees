@@ -61,7 +61,7 @@ const OurPurpose = () => {
               />
               {PURPOSE.map(({ Icon, title, text }) => (
                 <div key={title} className="relative">
-                  <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-gold-500/60 bg-forest text-gold-300 shadow-[0_6px_16px_rgba(15,51,34,0.25)]">
+                  <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-gold-500/60 bg-forest text-gold-300 shadow-[0_6px_16px_--alpha(var(--color-forest)/25%)]">
                     <Icon size={24} strokeWidth={1.6} aria-hidden="true" />
                   </span>
                   <h3 className="mb-2 font-serif text-[1.15rem] font-bold text-ink">{title}</h3>

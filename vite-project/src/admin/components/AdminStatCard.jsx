@@ -1,3 +1,5 @@
+import { cardClass } from '../../components/cardClass.js';
+
 const AdminStatCard = ({ Icon, label, value, hint, accent = 'gold' }) => {
   const accents = {
     gold: 'text-gold-300 bg-gold-400/10 border-gold-400/20',
@@ -6,7 +8,7 @@ const AdminStatCard = ({ Icon, label, value, hint, accent = 'gold' }) => {
   };
 
   return (
-    <div className="flex items-start gap-4 rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.85)] p-5">
+    <div className={`${cardClass('tile')} flex items-start gap-4 p-5`}>
       {Icon && (
         <div className={`rounded-lg border p-2.5 ${accents[accent] ?? accents.gold}`}>
           <Icon size={20} strokeWidth={2} />

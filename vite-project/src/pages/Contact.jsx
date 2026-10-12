@@ -1,7 +1,7 @@
 import { Phone, Mail } from 'lucide-react';
 import WhatsAppLink from '../components/WhatsAppLink.jsx';
-import { PHONE_HREF, EMAIL } from '../data/site.js';
-import { GRADIENT_TITLE } from '../components/SectionHeading.jsx';
+import { PHONE_HREF, PHONE_DISPLAY, EMAIL } from '../data/site.js';
+import { SHOWROOMS } from '../data/showrooms.js';
 import ConsultForm from '../components/ConsultForm.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
@@ -11,9 +11,14 @@ import Reveal from '../components/Reveal.jsx';
 import PageBackdrop from '../components/PageBackdrop.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
 import { contactBg } from '../assets/backgrounds';
+import PageTitle from '../components/PageTitle.jsx';
+import { cardClass } from '../components/cardClass.js';
+
+// The hotline is the flagship showroom's lines (kept in the showroom data, so it is written in one place).
+const HOTLINE = SHOWROOMS.find((room) => room.isFlagship)?.phone ?? PHONE_DISPLAY;
 
 const METHOD_ROW =
-  'group flex items-center gap-5 rounded-xl border border-gold-400/20 bg-[rgba(6,22,15,0.72)] px-6 py-5 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/40 hover:bg-gold-400/12 hover:text-white';
+  `${cardClass('glass')} group flex items-center gap-5 px-6 py-5 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/40 hover:bg-gold-400/12 hover:text-white`;
 
 // The row's icon gives a little springy tilt when the row is hovered.
 const METHOD_ICON = 'shrink-0 transition-transform duration-300 ease-spring group-hover:scale-115 group-hover:-rotate-8';
@@ -35,13 +40,11 @@ const Contact = () => {
           <div>
             <Reveal>
               <Eyebrow>✦ CONCIERGE SUPPORT ✦</Eyebrow>
-              <h1
-                className={`mb-5 font-serif text-[2rem] font-bold leading-[1.15] tracking-[0.04em] sm:text-[2.6rem] xl:text-[2.9rem] ${GRADIENT_TITLE}`}
-              >
+              <PageTitle size="xl" className="mb-5">
                 Speak With A
                 <br />
                 Holiday Specialist
-              </h1>
+              </PageTitle>
               <p className="max-w-[36rem] text-[0.98rem] leading-[1.75] text-text-secondary">
                 Whether you need advice on tree heights for high ceilings, commercial installations for corporate
                 headquarters, or personalised home delivery, our concierge is here to assist.
@@ -55,7 +58,7 @@ const Contact = () => {
                   <Phone size={26} strokeWidth={1.6} className={`${METHOD_ICON} text-gold-400`} />
                   <div>
                     <strong className="block text-[1.02rem] text-white">Hotline / Orders</strong>
-                    <span className="text-[0.92rem]">+91 98407 88950 / +91 44 2819 3715</span>
+                    <span className="text-[0.92rem]">{HOTLINE}</span>
                   </div>
                 </a>
               </Reveal>
@@ -81,7 +84,7 @@ const Contact = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gold-400/25 bg-[rgba(6,22,15,0.82)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)] md:p-9 lg:sticky lg:top-[calc(var(--header-h)+24px)]">
+          <div className={`${cardClass('raised')} p-7 md:p-9 lg:sticky lg:top-[calc(var(--header-h)+24px)]`}>
             <h2 className="mb-6 font-serif text-[1.3rem] text-white">Request Personal Styling Consultation</h2>
             <ConsultForm
               onSubmitted={(data) => {

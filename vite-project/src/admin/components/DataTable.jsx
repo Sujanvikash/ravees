@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Search, ArrowUpDown } from 'lucide-react';
+import { cardClass } from '../../components/cardClass.js';
 
 /**
  * Generic searchable/sortable table for the admin list pages.
@@ -35,7 +36,7 @@ const DataTable = ({ columns, rows, rowKey = 'id', searchKeys = [], emptyMessage
   return (
     <div className="flex flex-col gap-4">
       {searchKeys.length > 0 && (
-        <div className="flex w-full max-w-[320px] items-center gap-2 rounded-lg border border-gold-400/15 bg-[rgba(8,28,20,0.85)] px-3.5 py-2 text-text-secondary">
+        <div className="flex w-full max-w-[320px] items-center gap-2 rounded-lg border border-gold-400/15 bg-surface/85 px-3.5 py-2 text-text-secondary">
           <Search size={15} strokeWidth={2} />
           <input
             value={query}
@@ -46,7 +47,7 @@ const DataTable = ({ columns, rows, rowKey = 'id', searchKeys = [], emptyMessage
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-gold-400/15 bg-[rgba(8,28,20,0.6)]">
+      <div className={`${cardClass('tile')} overflow-x-auto`}>
         <table className="w-full min-w-[640px] border-collapse text-left">
           <thead>
             <tr className="border-b border-gold-400/15">

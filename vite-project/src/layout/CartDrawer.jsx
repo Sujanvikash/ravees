@@ -14,7 +14,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
   return (
     <div
       data-lenis-prevent
-      className={`fixed inset-0 z-1000 flex justify-end bg-[rgba(2,8,5,0.75)] backdrop-blur-md transition-opacity duration-300 ${
+      className={`fixed inset-0 z-1000 flex justify-end bg-bg-deepest/75 backdrop-blur-md transition-opacity duration-300 ${
         isOpen ? 'visible opacity-100' : 'invisible opacity-0'
       }`}
       onClick={onClose}
@@ -58,9 +58,9 @@ const CartDrawer = ({ isOpen, onClose }) => {
             cart.map(({ product, quantity }) => (
               <div
                 key={product.id}
-                className="flex items-center gap-3.5 rounded-xl border border-gold-400/15 bg-[rgba(4,18,12,0.7)] p-3.5 transition-all duration-300 hover:border-gold-400/30 hover:bg-[rgba(4,18,12,0.9)]"
+                className="flex items-center gap-3.5 rounded-xl border border-gold-400/15 bg-shade/70 p-3.5 transition-all duration-300 hover:border-gold-400/30 hover:bg-shade/90"
               >
-                <div className="flex h-[76px] w-[76px] flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gold-400/20 bg-[#020805]">
+                <div className="flex h-[76px] w-[76px] flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
                   <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                 </div>
 
@@ -98,7 +98,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
         </div>
 
         {cart.length > 0 && (
-          <div className="border-t border-white/10 bg-[#04120a] p-6">
+          <div className="border-t border-white/10 bg-shade p-6">
             <div className="mb-2.5 flex justify-between text-[0.88rem] text-text-secondary">
               <span>Items</span>
               <span className="font-mono text-white">{totalCount}</span>

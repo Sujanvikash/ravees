@@ -1,9 +1,10 @@
 import Aurora from './Aurora.jsx';
 import Eyebrow from './Eyebrow.jsx';
 import Reveal from './Reveal.jsx';
-import { GRADIENT_TITLE } from './SectionHeading.jsx';
 import Decoration from './Decoration.jsx';
 import { festiveLanternGlow, goldenReindeerStatue } from '../assets/decorations';
+import PageTitle from './PageTitle.jsx';
+import { cardClass } from './cardClass.js';
 
 // Tall side pictures for the storefront sign-in pages: 300px wide, their inner edge 300px from the centre,
 // so they stay clear of the form (at most 480px wide).
@@ -45,16 +46,16 @@ const AuthCard = ({
           {header ?? (
             <>
               <Eyebrow>{eyebrow}</Eyebrow>
-              <h1 className={`font-serif text-[1.8rem] font-bold leading-[1.2] tracking-[0.03em] ${GRADIENT_TITLE}`}>
+              <PageTitle size="xs">
                 {title}
-              </h1>
+              </PageTitle>
             </>
           )}
         </div>
 
         <form
           onSubmit={onSubmit}
-          className="flex flex-col gap-4 rounded-2xl border border-gold-400/25 bg-[rgba(8,28,20,0.9)] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
+          className={`${cardClass('raised')} flex flex-col gap-4 p-7`}
         >
           {children}
         </form>
