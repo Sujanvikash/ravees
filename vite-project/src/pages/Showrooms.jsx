@@ -3,10 +3,9 @@ import SectionHeading from '../components/SectionHeading.jsx';
 import ShowroomCard from '../components/ShowroomCard.jsx';
 import { SHOWROOMS } from '../data/showrooms.js';
 import Container from '../components/Container.jsx';
-import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
-import Decoration from '../components/Decoration.jsx';
-import { pineCrateBaubles } from '../assets/decorations';
+import PageBackdrop from '../components/PageBackdrop.jsx';
+import { showroomsBg } from '../assets/backgrounds';
 
 const Showrooms = () => {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -38,22 +37,20 @@ const Showrooms = () => {
   };
 
   return (
-    <section className="relative z-20 bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] pt-3 pb-16 md:pt-5 md:pb-25">
-      <Aurora />
-      <Decoration
-        side
-        src={pineCrateBaubles}
-        className="top-6 right-0 h-[300px] w-[min(400px,calc((100vw-1360px)/2+120px))]"
-      />
+    <section className="relative isolate z-20 overflow-hidden bg-bg-darker pt-3 pb-16 md:pt-5 md:pb-24">
+      {/* The storefront backdrop: the centred heading sits in its dark middle, the shop front to the right. */}
+      <PageBackdrop src={showroomsBg} fade="center" />
       <Container>
         <SectionHeading
+          flourishes={false}
+          className="mb-8!"
           eyebrow="✦ 5 FLAGSHIP DESTINATIONS ✦"
           title="Visit Our Experience Showrooms"
           subtitle="Walk through 10,000+ sq.ft of European winter wonder. Touch the foliage, explore lighting displays, and consult with our master holiday stylists."
         />
 
         <Reveal>
-          <div ref={rowRef} className="relative isolate mb-10 flex flex-wrap justify-center gap-3">
+          <div ref={rowRef} className="relative isolate mb-8 flex flex-wrap justify-center gap-3">
             <span
               aria-hidden="true"
               className={`absolute -z-10 rounded-full border border-gold-300 bg-gold-500 shadow-[0_0_16px_rgba(229,199,139,0.4)] transition-[left,top,width,height] duration-500 ease-premium ${
