@@ -26,8 +26,9 @@ const ShopByCategory = ({ className = '' }) => {
     <div id="categories" className={className}>
       <SectionHeading eyebrow="✦ OUR COLLECTIONS ✦" title="Shop by Category" />
       <ul className="grid grid-cols-4 gap-x-3 gap-y-7 lg:grid-cols-8 lg:gap-x-5">
-        {CATEGORIES.map(({ id, name, count }, i) => (
-          <Reveal as="li" key={id} delay={i % 4}>
+        {/* One left-to-right wave per row: all 8 across on desktop, each row of 4 on phones. */}
+        {CATEGORIES.map(({ id, name, count }) => (
+          <Reveal as="li" key={id} delay="auto">
             <Link
               to={id === 'all' ? '/shop' : `/shop?category=${id}`}
               className="group flex flex-col items-center text-center no-underline"

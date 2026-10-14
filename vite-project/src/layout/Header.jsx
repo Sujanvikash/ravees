@@ -18,7 +18,7 @@ const NAV_LINKS = [
 ];
 
 const UTIL_BTN =
-  'inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[0.8rem] text-text-primary transition-all duration-300 hover:border-gold-400/40 hover:bg-white/10';
+  'inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[0.8rem] text-text-primary transition-all duration-300 hover:border-gold-400/40 hover:bg-white/10';
 
 const BADGE_COUNT =
   'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ruby-500 px-1 text-[0.68rem] font-bold text-white';
@@ -115,13 +115,13 @@ const Header = ({ onOpenCart }) => {
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Logo
               size="1em"
-              className="shrink-0 text-[30px] drop-shadow-[0_0_8px_--alpha(var(--color-gold-400)/40%)] sm:text-[40px]"
+              className="shrink-0 text-[28px] drop-shadow-[0_0_8px_--alpha(var(--color-gold-400)/40%)] sm:text-[34px]"
             />
             <div className="flex min-w-0 flex-col sm:self-stretch sm:justify-between">
-              <span className="whitespace-nowrap bg-[linear-gradient(135deg,var(--color-gold-100)_0%,var(--color-gold-400)_35%,var(--color-gold-550)_70%,var(--color-gold-250)_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.4rem] sm:leading-none sm:tracking-[0.12em]">
+              <span className="whitespace-nowrap bg-[linear-gradient(135deg,var(--color-gold-100)_0%,var(--color-gold-400)_35%,var(--color-gold-550)_70%,var(--color-gold-250)_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.25rem] sm:leading-none sm:tracking-[0.12em]">
                 RAAVE&apos;S EVERGREEN
               </span>
-              <span className="hidden text-[0.65rem] font-normal leading-none tracking-[0.14em] text-text-tagline sm:block">
+              <span className="hidden text-[0.6rem] font-normal leading-none tracking-[0.14em] text-text-tagline sm:block">
                 EUROPEAN STANDARD SINCE 1998
               </span>
             </div>
@@ -156,7 +156,7 @@ const Header = ({ onOpenCart }) => {
           </Link>
 
           <button
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gold-400/30 bg-[linear-gradient(135deg,--alpha(var(--color-gold-400)/20%),--alpha(var(--color-surface)/80%))] px-3.5 py-2 text-[0.8rem] text-gold-300 transition-all duration-300 hover:border-gold-400"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gold-400/30 bg-[linear-gradient(135deg,--alpha(var(--color-gold-400)/20%),--alpha(var(--color-surface)/80%))] px-3 py-1.5 text-[0.8rem] text-gold-300 transition-all duration-300 hover:border-gold-400"
             title="View cart"
             onClick={() => requireLogin('Please sign in to view your cart.') && onOpenCart()}
           >

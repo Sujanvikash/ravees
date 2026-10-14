@@ -3,5 +3,8 @@
 import whyRaaveBg from './why-raave.webp';
 import showroomsBg from './showrooms.webp';
 import contactBg from './contact.webp';
+import productBg from './product.webp';
+import quickViewBg from './quick-view.webp';
+import checkoutBg from './checkout.webp';
 
-export { whyRaaveBg, showroomsBg, contactBg };
+export { whyRaaveBg, showroomsBg, contactBg, productBg, quickViewBg, checkoutBg };

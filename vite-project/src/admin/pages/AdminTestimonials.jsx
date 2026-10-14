@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Trash2, Save, X } from 'lucide-react';
-import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
 import IconButton from '../../components/IconButton.jsx';

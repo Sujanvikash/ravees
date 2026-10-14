@@ -1,4 +1,4 @@
-import Modal from '../../components/Modal.jsx';
+import Modal from './Modal.jsx';
 
 const ConfirmDialog = ({ open, title, message, confirmLabel = 'Delete', onConfirm, onCancel }) => {
   return (

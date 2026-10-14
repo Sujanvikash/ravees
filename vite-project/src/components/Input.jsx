@@ -6,6 +6,7 @@ import Dropdown from './Dropdown.jsx';
  * underlying element, so they work exactly like <input> and <textarea>; Select is described below.
  *
  * size: "md" (storefront, auth, product form) or "sm" (compact admin editors).
+ * icon: optional lucide icon shown inside the field on the left (e.g. icon={Mail}).
  */
 const BASE =
   'rounded-lg border border-white/10 bg-white/5 font-sans text-white outline-none transition-all placeholder:text-text-muted focus:border-gold-400 focus:shadow-[0_0_10px_--alpha(var(--color-gold-400)/40%)]';
@@ -17,8 +18,24 @@ const SIZES = {
 
 const fieldClass = (size, className) => `${BASE} ${SIZES[size] ?? SIZES.md} ${className}`;
 
-export const Input = ({ size = 'md', className = '', ...rest }) => {
-  return <input className={fieldClass(size, className)} {...rest} />;
+/** Puts `Icon` inside the left edge of a field (vertically centred, or at the top for a textarea). */
+const withIcon = (Icon, atTop, field) =>
+  Icon ? (
+    <div className="relative">
+      <Icon
+        size={17}
+        strokeWidth={1.7}
+        aria-hidden="true"
+        className={`pointer-events-none absolute left-3.5 text-gold-400 ${atTop ? 'top-3' : 'top-1/2 -translate-y-1/2'}`}
+      />
+      {field}
+    </div>
+  ) : (
+    field
+  );
+
+export const Input = ({ size = 'md', icon, className = '', ...rest }) => {
+  return withIcon(icon, false, <input className={fieldClass(size, `${icon ? 'w-full pl-10' : ''} ${className}`)} {...rest} />);
 };
 
 /** Plain text of an <option>'s children (e.g. {room.city}{' (Flagship)'} → "Delhi (Flagship)"). */
@@ -29,13 +46,14 @@ const optionText = (children) => Children.toArray(children).join('');
  * page's "Featured" panel) instead of the browser's OS-coloured one. onChange gets an event-like
  * object, so `(e) => e.target.value` handlers keep working.
  */
-export const Select = ({ size = 'md', className = '', children, value, onChange, id, name }) => {
+export const Select = ({ size = 'md', icon, className = '', children, value, onChange, id, name }) => {
   const options = Children.toArray(children)
     .filter(isValidElement)
     .map((opt) => ({ value: opt.props.value ?? optionText(opt.props.children), label: optionText(opt.props.children) }));
   return (
     <Dropdown
       id={id}
+      icon={icon}
       options={options}
       value={value}
       onChange={(next) => onChange?.({ target: { value: next, id, name, type: 'select-one' } })}
@@ -45,6 +63,6 @@ export const Select = ({ size = 'md', className = '', children, value, onChange,
   );
 };
 
-export const Textarea = ({ size = 'md', className = '', ...rest }) => {
-  return <textarea className={fieldClass(size, `resize-y ${className}`)} {...rest} />;
+export const Textarea = ({ size = 'md', icon, className = '', ...rest }) => {
+  return withIcon(icon, true, <textarea className={fieldClass(size, `resize-y ${icon ? 'w-full pl-10' : ''} ${className}`)} {...rest} />);
 };

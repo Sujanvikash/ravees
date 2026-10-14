@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trash2, Phone, Mail, MapPin, Inbox } from 'lucide-react';
-import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import IconButton from '../../components/IconButton.jsx';
 import Dropdown from '../../components/Dropdown.jsx';
 import Chip from '../../components/Chip.jsx';

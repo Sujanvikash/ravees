@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Save, Plus, Trash2, X } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
-import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
 import IconButton from '../../components/IconButton.jsx';

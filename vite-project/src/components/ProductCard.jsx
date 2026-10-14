@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Eye, ShoppingCart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import PriceTag from './PriceTag.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
 import { useInView } from '../hooks/useInView.js';
 
-// Round icon buttons over the photo (wishlist, quick view): white discs that read on any photo.
+// Round icon button over the photo (wishlist): white discs that read on any photo.
 const ACTION_CIRCLE =
   'flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink shadow-[0_2px_8px_--alpha(var(--color-black)/15%)] transition-all duration-300 hover:border-gold-500 hover:bg-gold-400 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500';
 
@@ -27,6 +27,15 @@ const ProductCard = ({ product, onQuickView }) => {
   // The shimmer only runs once the card is on screen, not for every card further down the page.
   const [photoRef, photoInView] = useInView();
 
+  // A plain click on the photo or name opens the quick specs (its "Full Details" goes on to the product page).
+  // They stay real links, so Ctrl/⌘-click or a middle click still opens the product page in a new tab,
+  // and a grid without quick view (no onQuickView) simply follows the link.
+  const openQuickView = (e) => {
+    if (!onQuickView || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    onQuickView(product);
+  };
+
   const handleAdd = () => {
     // Santa gives the feedback (speech bubble / sign-in nudge) instead of the toast and redirect.
     if (addToCart(product, { quiet: true, onNeedLogin: needLogin })) added(product, imageRef.current);
@@ -41,6 +50,8 @@ const ProductCard = ({ product, onQuickView }) => {
       <Link
         ref={photoRef}
         to={`/product/${product.id}`}
+        onClick={openQuickView}
+        aria-label={`${product.name}: quick specifications`}
         // Full bleed: the photo spans the card's width, its top corners rounded by the card itself.
         className="relative block aspect-square overflow-hidden bg-white"
       >
@@ -88,11 +99,6 @@ const ProductCard = ({ product, onQuickView }) => {
             className={wishlisted ? 'animate-pop' : ''}
           />
         </button>
-        {onQuickView && (
-          <button type="button" className={ACTION_CIRCLE} title="Quick specs & details" onClick={() => onQuickView(product)}>
-            <Eye size={14} strokeWidth={2} />
-          </button>
-        )}
       </div>
 
       <div className="flex flex-1 flex-col p-2.5 pt-3">
@@ -101,7 +107,7 @@ const ProductCard = ({ product, onQuickView }) => {
         </span>
 
         <h3 className="mb-1.5 font-serif text-[0.88rem] font-semibold leading-[1.3] text-ink sm:text-[0.92rem]">
-          <Link to={`/product/${product.id}`} className="no-underline transition-colors hover:text-gold-ink">
+          <Link to={`/product/${product.id}`} onClick={openQuickView} className="no-underline transition-colors hover:text-gold-ink">
             {product.name}
           </Link>
         </h3>

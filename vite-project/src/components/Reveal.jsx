@@ -1,7 +1,8 @@
 import { useInView } from '../hooks/useInView.js';
 
 // Stagger steps (class names must be written out in full so Tailwind can find them).
-const DELAYS = ['delay-0', 'delay-75', 'delay-150', 'delay-225', 'delay-300', 'delay-375'];
+// Eight steps, so a full row of 8 (Shop by Category on desktop) still ripples one by one.
+const DELAYS = ['delay-0', 'delay-75', 'delay-150', 'delay-225', 'delay-300', 'delay-375', 'delay-450', 'delay-525'];
 
 // Where the content starts from before it appears (written out in full so Tailwind can find the classes).
 const HIDDEN = { bottom: 'translate-y-6 opacity-0', left: '-translate-x-10 opacity-0' };
@@ -9,7 +10,7 @@ const HIDDEN = { bottom: 'translate-y-6 opacity-0', left: '-translate-x-10 opaci
 /**
  * Fades and moves its content into place the first time it scrolls into view.
  *
- * delay     stagger step for items in a row or grid (0, 1, 2 …; wraps after 6), or 'auto': the item's
+ * delay     stagger step for items in a row or grid (0, 1, 2 …; wraps after 8), or 'auto': the item's
  *           place among those that scrolled into view with it, so each grid row cascades left to right
  *           whatever the column count
  * from      where it comes in from: 'bottom' (rises into place, the default) or 'left' (slides in)

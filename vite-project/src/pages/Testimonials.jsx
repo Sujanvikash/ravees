@@ -10,7 +10,7 @@ import { cardClass } from '../components/cardClass.js';
 
 const Testimonials = () => {
   return (
-    <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+    <section className="relative z-20 bg-bg-primary pt-6 pb-16 md:pt-9 md:pb-25">
       <Aurora />
       <Container>
         <SectionHeading

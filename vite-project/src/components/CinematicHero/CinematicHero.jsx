@@ -137,7 +137,7 @@ const CinematicHero = ({ scrollHeight = HERO_SCROLL_HEIGHT }) => {
       m.top = parseFloat(getComputedStyle(stage).top) || 0; // the sticky offset
       m.travel = Math.max(1, section.offsetHeight - stage.offsetHeight);
       m.height = section.offsetHeight;
-      m.header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 76;
+      m.header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 64;
     };
     let raf = 0;
     const update = () => {

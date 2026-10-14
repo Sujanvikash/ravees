@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import DataTable from '../components/DataTable.jsx';
-import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import Button from '../../components/Button.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
