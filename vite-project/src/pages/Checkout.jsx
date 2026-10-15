@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import FormField from '../components/FormField.jsx';
+import { errorProps } from '../components/fieldError.js';
 import FeatureItem from '../components/FeatureItem.jsx';
 import QuantityStepper from '../components/QuantityStepper.jsx';
 import IconButton from '../components/IconButton.jsx';
@@ -32,6 +33,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
 import { addEnquiry } from '../lib/enquiries.js';
+import { checkoutSchema, focusFirstError, validate } from '../lib/validation.js';
 import { SHOWROOMS } from '../data/showrooms.js';
 import { Input, Select, Textarea } from '../components/Input.jsx';
 import Aurora from '../components/Aurora.jsx';
@@ -89,15 +91,26 @@ const Checkout = () => {
     timeline: TIMELINES[0],
     notes: '',
   });
+  const [errors, setErrors] = useState({});
 
-  const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  // Editing a field clears its error; the rest stay until the next submit.
+  const update = (key) => (e) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const { data, errors: found } = validate(checkoutSchema, form);
+    if (found) {
+      setErrors(found);
+      focusFirstError(found, 'co');
+      return;
+    }
     addEnquiry({
       type: 'quote-request',
       customerEmail: session?.email ?? null,
-      ...form,
+      ...data,
       items: cart.map(({ product, quantity }) => ({
         id: product.id,
         name: product.name,
@@ -207,20 +220,20 @@ const Checkout = () => {
           </div>
 
           {/* ① and ② the request form */}
-          <form onSubmit={handleSubmit} className={`${cardClass('raised')} flex flex-col gap-5 p-6 md:p-7`}>
+          <form onSubmit={handleSubmit} noValidate className={`${cardClass('raised')} flex flex-col gap-5 p-6 md:p-7`}>
             <StepTitle n="1" title="Your details" hint="Help us understand your requirements" />
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Full Name" htmlFor="co-name" required>
-                <Input id="co-name" icon={User} required value={form.name} onChange={update('name')} placeholder="Your name" />
+              <FormField label="Full Name" htmlFor="co-name" required error={errors.name}>
+                <Input id="co-name" {...errorProps('co-name', errors.name)} icon={User} required value={form.name} onChange={update('name')} placeholder="Your name" />
               </FormField>
-              <FormField label="Phone / WhatsApp" htmlFor="co-phone" required>
-                <Input id="co-phone" icon={Phone} type="tel" required value={form.phone} onChange={update('phone')} placeholder="+91 98765 43210" />
+              <FormField label="Phone / WhatsApp" htmlFor="co-phone" required error={errors.phone}>
+                <Input id="co-phone" {...errorProps('co-phone', errors.phone)} icon={Phone} type="tel" required value={form.phone} onChange={update('phone')} placeholder="+91 98765 43210" />
               </FormField>
-              <FormField label="Email" htmlFor="co-email" required>
-                <Input id="co-email" icon={Mail} type="email" required value={form.email} onChange={update('email')} placeholder="you@example.com" />
+              <FormField label="Email" htmlFor="co-email" required error={errors.email}>
+                <Input id="co-email" {...errorProps('co-email', errors.email)} icon={Mail} type="email" required value={form.email} onChange={update('email')} placeholder="you@example.com" />
               </FormField>
-              <FormField label="City" htmlFor="co-city" required>
-                <Input id="co-city" icon={MapPin} required value={form.city} onChange={update('city')} placeholder="Enter your city" />
+              <FormField label="City" htmlFor="co-city" required error={errors.city}>
+                <Input id="co-city" {...errorProps('co-city', errors.city)} icon={MapPin} required value={form.city} onChange={update('city')} placeholder="Enter your city" />
               </FormField>
             </div>
 
@@ -261,9 +274,10 @@ const Checkout = () => {
                 </Select>
               </FormField>
             ) : (
-              <FormField label="Delivery Address" htmlFor="co-address" required>
+              <FormField label="Delivery Address" htmlFor="co-address" required error={errors.address}>
                 <Textarea
                   id="co-address"
+                  {...errorProps('co-address', errors.address)}
                   icon={MapPin}
                   rows="2"
                   required
@@ -274,9 +288,10 @@ const Checkout = () => {
               </FormField>
             )}
 
-            <FormField label="Additional Notes for the Concierge" htmlFor="co-notes">
+            <FormField label="Additional Notes for the Concierge" htmlFor="co-notes" error={errors.notes}>
               <Textarea
                 id="co-notes"
+                {...errorProps('co-notes', errors.notes)}
                 icon={NotebookPen}
                 rows="2"
                 placeholder="Ceiling height, installation date, colour palette, special requests..."

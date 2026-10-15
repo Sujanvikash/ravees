@@ -5,9 +5,11 @@ import AuthCard from '../../components/AuthCard.jsx';
 import Button from '../../components/Button.jsx';
 import FormError from '../../components/FormError.jsx';
 import FormField from '../../components/FormField.jsx';
+import { errorProps } from '../../components/fieldError.js';
 import { Input } from '../../components/Input.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
+import { focusFirstError, signupSchema, validate } from '../../lib/validation.js';
 
 const Signup = () => {
   const { signup } = useCustomerAuth();
@@ -17,28 +19,31 @@ const Signup = () => {
 
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  // Editing a field clears its error; the rest stay until the next submit.
+  const update = (key) => (e) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    setFieldErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (form.password.length < 6) {
-      setError('Please choose a password of at least 6 characters.');
-      return;
-    }
-    if (form.password !== form.confirm) {
-      setError('Passwords do not match.');
+    const { data, errors } = validate(signupSchema, form);
+    if (errors) {
+      setFieldErrors(errors);
+      focusFirstError(errors, 'signup');
       return;
     }
 
     setSubmitting(true);
-    const result = await signup(form);
+    const result = await signup(data);
     setSubmitting(false);
     if (result.ok) {
-      showToast(`Welcome to Raave's Evergreen, ${form.name.split(' ')[0]}!`);
+      showToast(`Welcome to Raave's Evergreen, ${data.name.split(' ')[0]}!`);
       navigate(location.state?.from ?? '/account');
     } else {
       setError(result.error);
@@ -52,10 +57,12 @@ const Signup = () => {
       maxWidth="max-w-[480px]"
       decorated
       onSubmit={handleSubmit}
+      noValidate
     >
-      <FormField label="Full Name" htmlFor="signup-name">
+      <FormField label="Full Name" htmlFor="signup-name" error={fieldErrors.name}>
         <Input
           id="signup-name"
+          {...errorProps('signup-name', fieldErrors.name)}
           required
           autoFocus
           value={form.name}
@@ -65,9 +72,10 @@ const Signup = () => {
       </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Email" htmlFor="signup-email">
+        <FormField label="Email" htmlFor="signup-email" error={fieldErrors.email}>
           <Input
             id="signup-email"
+            {...errorProps('signup-email', fieldErrors.email)}
             type="email"
             required
             value={form.email}
@@ -75,9 +83,10 @@ const Signup = () => {
             placeholder="you@example.com"
           />
         </FormField>
-        <FormField label="Phone" htmlFor="signup-phone">
+        <FormField label="Phone" htmlFor="signup-phone" error={fieldErrors.phone}>
           <Input
             id="signup-phone"
+            {...errorProps('signup-phone', fieldErrors.phone)}
             type="tel"
             required
             value={form.phone}
@@ -88,18 +97,20 @@ const Signup = () => {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Password" htmlFor="signup-password">
+        <FormField label="Password" htmlFor="signup-password" error={fieldErrors.password}>
           <Input
             id="signup-password"
+            {...errorProps('signup-password', fieldErrors.password)}
             type="password"
             required
             value={form.password}
             onChange={update('password')}
           />
         </FormField>
-        <FormField label="Confirm Password" htmlFor="signup-confirm">
+        <FormField label="Confirm Password" htmlFor="signup-confirm" error={fieldErrors.confirm}>
           <Input
             id="signup-confirm"
+            {...errorProps('signup-confirm', fieldErrors.confirm)}
             type="password"
             required
             value={form.confirm}

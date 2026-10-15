@@ -9,7 +9,7 @@ import Dropdown from './Dropdown.jsx';
  * icon: optional lucide icon shown inside the field on the left (e.g. icon={Mail}).
  */
 const BASE =
-  'rounded-lg border border-white/10 bg-white/5 font-sans text-white outline-none transition-all placeholder:text-text-muted focus:border-gold-400 focus:shadow-[0_0_10px_--alpha(var(--color-gold-400)/40%)]';
+  'rounded-lg border border-white/10 bg-white/5 font-sans text-white outline-none transition-all placeholder:text-text-muted focus:border-gold-400 focus:shadow-[0_0_10px_--alpha(var(--color-gold-400)/40%)] aria-invalid:border-ruby-500/70 aria-invalid:focus:border-ruby-500 aria-invalid:focus:shadow-[0_0_10px_--alpha(var(--color-ruby-500)/35%)]';
 
 const SIZES = {
   md: 'px-3.5 py-2.5 text-[0.88rem]',

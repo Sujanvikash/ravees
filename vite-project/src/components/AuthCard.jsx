@@ -19,6 +19,7 @@ const SIDE_PICTURE = 'top-1/2 h-[400px] w-[300px] -translate-y-1/2';
  * fullHeight       fill the whole screen (the admin page has no site header or footer around it)
  * decorated        festive pictures either side of the form (storefront sign-in / sign-up, wide screens)
  * onSubmit         the form's submit handler; children are the form's contents
+ * noValidate       skip the browser's own checks (the form validates itself and shows errors per field)
  */
 const AuthCard = ({
   eyebrow,
@@ -28,6 +29,7 @@ const AuthCard = ({
   fullHeight = false,
   decorated = false,
   onSubmit,
+  noValidate = false,
   children,
 }) => {
   return (
@@ -55,6 +57,7 @@ const AuthCard = ({
 
         <form
           onSubmit={onSubmit}
+          noValidate={noValidate}
           className={`${cardClass('raised')} flex flex-col gap-4 p-7`}
         >
           {children}

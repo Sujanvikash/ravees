@@ -5,9 +5,11 @@ import AuthCard from '../../components/AuthCard.jsx';
 import Button from '../../components/Button.jsx';
 import FormError from '../../components/FormError.jsx';
 import FormField from '../../components/FormField.jsx';
+import { errorProps } from '../../components/fieldError.js';
 import { Input } from '../../components/Input.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
+import { focusFirstError, loginSchema, validate } from '../../lib/validation.js';
 
 const Login = () => {
   const { login } = useCustomerAuth();
@@ -17,18 +19,31 @@ const Login = () => {
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  // Editing a field clears its error; the rest stay until the next submit.
+  const update = (key) => (e) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    setFieldErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const { data, errors } = validate(loginSchema, form);
+    if (errors) {
+      setFieldErrors(errors);
+      focusFirstError(errors, 'login');
+      return;
+    }
+
     setSubmitting(true);
-    const result = await login(form);
+    const result = await login(data);
     setSubmitting(false);
     if (result.ok) {
-      showToast(`Welcome back, ${form.email.split('@')[0]}!`);
+      showToast(`Welcome back, ${data.email.split('@')[0]}!`);
       navigate(location.state?.from ?? '/account');
     } else {
       setError(result.error);
@@ -36,10 +51,11 @@ const Login = () => {
   };
 
   return (
-    <AuthCard eyebrow="✦ WELCOME BACK ✦" title="Sign In To Your Account" decorated onSubmit={handleSubmit}>
-      <FormField label="Email" htmlFor="login-email">
+    <AuthCard eyebrow="✦ WELCOME BACK ✦" title="Sign In To Your Account" decorated noValidate onSubmit={handleSubmit}>
+      <FormField label="Email" htmlFor="login-email" error={fieldErrors.email}>
         <Input
           id="login-email"
+          {...errorProps('login-email', fieldErrors.email)}
           type="email"
           required
           autoFocus
@@ -49,9 +65,10 @@ const Login = () => {
         />
       </FormField>
 
-      <FormField label="Password" htmlFor="login-password">
+      <FormField label="Password" htmlFor="login-password" error={fieldErrors.password}>
         <Input
           id="login-password"
+          {...errorProps('login-password', fieldErrors.password)}
           type="password"
           required
           value={form.password}
