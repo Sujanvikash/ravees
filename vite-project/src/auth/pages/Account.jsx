@@ -8,6 +8,7 @@ import Eyebrow from '../../components/Eyebrow.jsx';
 import Aurora from '../../components/Aurora.jsx';
 import PageTitle from '../../components/PageTitle.jsx';
 import { cardClass } from '../../components/cardClass.js';
+import { sectionClass } from '../../components/sectionClass.js';
 
 const STATUS_STYLE = {
   new: 'bg-emerald-500/15 text-emerald-300',
@@ -34,7 +35,7 @@ const Account = () => {
   }
 
   return (
-    <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+    <section className={sectionClass('panel')}>
       <Aurora />
       <div className="mx-auto max-w-225 px-6">
         <Eyebrow>

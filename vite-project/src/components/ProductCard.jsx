@@ -73,7 +73,7 @@ const ProductCard = ({ product, onQuickView }) => {
           loading="lazy"
           onLoad={() => setImageLoaded(true)}
           onError={() => setImageLoaded(true)}
-          className="relative h-full w-full object-cover transition-[scale] duration-[600ms] ease-premium group-hover:scale-[1.06]"
+          className="relative h-full w-full object-cover transition-[scale] duration-600 ease-premium group-hover:scale-[1.06]"
         />
       </Link>
 

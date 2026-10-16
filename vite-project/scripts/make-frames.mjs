@@ -51,19 +51,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findSparkleMask } from './sparkle-mask.mjs';
-import { run, probeVideo, even } from './lib.mjs';
+import { run, probeVideo, even, parseArgs, parseCrop, detectCrop } from './lib.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---- Command line -----------------------------------------------------------------------------
 const args = process.argv.slice(2);
 const OPTIONS_WITH_VALUE = ['landscape', 'portrait', 'frames', 'out', 'watermark', 'crop'];
-const flag = (name, fallback) => {
-  const i = args.indexOf(`--${name}`);
-  return i >= 0 ? args[i + 1] : fallback;
-};
 // Bare arguments: a path is the video, a bare number the frame count.
-const bare = args.filter((a, i) => !a.startsWith('--') && !OPTIONS_WITH_VALUE.includes(args[i - 1]?.slice(2)));
+const { flag, bare } = parseArgs(args, OPTIONS_WITH_VALUE);
 const barePaths = bare.filter((a) => !/^\d+$/.test(a));
 const bareCount = bare.find((a) => /^\d+$/.test(a));
 const video = flag('landscape', barePaths[0]);
@@ -185,34 +181,16 @@ const writeMask = (info, marks, file) => {
 const cropFor = (info, maskFile, masked) => {
   const spec = flag('crop', 'auto');
   if (spec === 'off') return null;
-  if (spec !== 'auto') {
-    const [w, h, x, y] = spec.split(':').map(Number);
-    if (![w, h, x, y].every((n) => Number.isInteger(n) && n >= 0) || w < 2 || h < 2 || x + w > info.width || y + h > info.height) {
-      throw new Error(`--crop must be auto, off or W:H:X:Y inside the ${info.width}x${info.height} frame; got "${spec}".`);
-    }
-    return w === info.width && h === info.height ? null : { w, h, x, y };
-  }
+  if (spec !== 'auto') return parseCrop(spec, info);
 
-  const every = Math.max(1, Math.floor(info.total / 20));
-  const vf = [
-    `select='not(mod(n,${every}))'`,
-    masked ? `removelogo=${maskFile}` : null,
-    // limit 20: black in video is Y=16 (limited range), plus a little compression noise.
-    'cropdetect=limit=20:round=2:reset=0',
-  ].filter(Boolean).join(',');
-  const r = spawnSync('ffmpeg', ['-hide_banner', '-v', 'info', '-i', info.video, '-vf', vf, '-f', 'null', '-'], { cwd: tmp, encoding: 'utf8' });
-  if (r.error) throw new Error('ffmpeg not found. Install ffmpeg and make sure it is on the PATH.');
-  const found = [...r.stderr.matchAll(/crop=(\d+):(\d+):(\d+):(\d+)/g)].at(-1);
+  const found = detectCrop(info.video, info, { before: masked ? `removelogo=${maskFile}` : null, cwd: tmp });
   if (!found) return null;
-  const [w, h, x, y] = found.slice(1).map(Number);
-  const removedW = info.width - w;
-  const removedH = info.height - h;
-  if (removedW < 4 && removedH < 4) return null; // no real bars
-  if (removedW > info.width * 0.45 || removedH > info.height * 0.45) {
+  const { w, h } = found;
+  if (info.width - w > info.width * 0.45 || info.height - h > info.height * 0.45) {
     console.log(`  crop detection found ${w}x${h}, more than 45% of the frame: ignored (pass --crop W:H:X:Y to force one)`);
     return null;
   }
-  return { w, h, x, y };
+  return found;
 };
 
 // ---- Build ---------------------------------------------------------------------------------------

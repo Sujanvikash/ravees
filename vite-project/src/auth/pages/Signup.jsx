@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 import AuthCard from '../../components/AuthCard.jsx';
 import Button from '../../components/Button.jsx';
@@ -8,47 +7,19 @@ import FormField from '../../components/FormField.jsx';
 import { errorProps } from '../../components/fieldError.js';
 import { Input } from '../../components/Input.jsx';
 import { useCustomerAuth } from '../context/CustomerAuthContext.jsx';
-import { useToast } from '../../context/ToastContext.jsx';
-import { focusFirstError, signupSchema, validate } from '../../lib/validation.js';
+import { signupSchema } from '../../lib/validation.js';
+import { useAuthForm } from '../useAuthForm.js';
 
 const Signup = () => {
   const { signup } = useCustomerAuth();
-  const { showToast } = useToast();
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
-  const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-
-  // Editing a field clears its error; the rest stay until the next submit.
-  const update = (key) => (e) => {
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
-    setFieldErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    const { data, errors } = validate(signupSchema, form);
-    if (errors) {
-      setFieldErrors(errors);
-      focusFirstError(errors, 'signup');
-      return;
-    }
-
-    setSubmitting(true);
-    const result = await signup(data);
-    setSubmitting(false);
-    if (result.ok) {
-      showToast(`Welcome to Raave's Evergreen, ${data.name.split(' ')[0]}!`);
-      navigate(location.state?.from ?? '/account');
-    } else {
-      setError(result.error);
-    }
-  };
+  const { form, update, error, fieldErrors, submitting, handleSubmit } = useAuthForm({
+    initial: { name: '', email: '', phone: '', password: '', confirm: '' },
+    schema: signupSchema,
+    idPrefix: 'signup',
+    submit: signup,
+    welcome: (data) => `Welcome to Raave's Evergreen, ${data.name.split(' ')[0]}!`,
+  });
 
   return (
     <AuthCard

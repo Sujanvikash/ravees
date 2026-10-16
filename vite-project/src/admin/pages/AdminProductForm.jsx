@@ -5,21 +5,13 @@ import { z } from 'zod';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import FormField from '../../components/FormField.jsx';
-import { errorProps } from '../../components/fieldError.js';
+import { FIELD_LABEL_CLASS, errorProps } from '../../components/fieldError.js';
 import Button from '../../components/Button.jsx';
 import { Input, Select, Textarea } from '../../components/Input.jsx';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
 import { cardClass } from '../../components/cardClass.js';
 import { focusFirstError, validate } from '../../lib/validation.js';
-
-const LABEL = 'text-[0.78rem] text-gold-300';
-
-const slugify = (value) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+import { slugify } from '../components/adminForm.js';
 
 const productSchema = z.object({
   name: z.string().trim().min(1, 'Please enter a product name').max(120, 'Keep the name under 120 characters'),
@@ -220,7 +212,7 @@ const AdminProductForm = () => {
 
         {/* Right column: image upload */}
         <div className="flex flex-col gap-1.5">
-          <span className={LABEL}>Product image</span>
+          <span className={FIELD_LABEL_CLASS}>Product image</span>
 
           <div
             className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-gold-400/25 bg-bg-deepest"

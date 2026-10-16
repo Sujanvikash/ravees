@@ -27,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { run, probeVideo, even } from './lib.mjs';
+import { run, probeVideo, even, parseArgs, parseCrop, detectCrop } from './lib.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -35,11 +35,8 @@ const MANIFEST = path.join(__dirname, '..', 'src', 'data', 'heroMobileVideo.json
 
 const args = process.argv.slice(2);
 const OPTIONS_WITH_VALUE = ['crop', 'width', 'crf', 'gop'];
-const flag = (name, fallback) => {
-  const i = args.indexOf(`--${name}`);
-  return i >= 0 ? args[i + 1] : fallback;
-};
-const input = args.find((a, i) => !a.startsWith('--') && !OPTIONS_WITH_VALUE.includes(args[i - 1]?.slice(2)));
+const { flag, bare } = parseArgs(args, OPTIONS_WITH_VALUE);
+const input = bare[0];
 if (!input || !fs.existsSync(input)) {
   console.error('Usage: node scripts/make-mobile-video.mjs <video> [--crop auto|off|W:H:X:Y] [--width 720] [--crf 23] [--gop 6]');
   if (input) console.error(`Video not found: ${input}`);
@@ -61,24 +58,10 @@ const probe = () => probeVideo(input);
 const findCrop = (info) => {
   const spec = flag('crop', 'auto');
   if (spec === 'off') return null;
-  if (spec !== 'auto') {
-    const [w, h, x, y] = spec.split(':').map(Number);
-    if (![w, h, x, y].every((n) => Number.isInteger(n) && n >= 0) || x + w > info.width || y + h > info.height) {
-      throw new Error(`--crop must be auto, off or W:H:X:Y inside the ${info.width}x${info.height} frame; got "${spec}".`);
-    }
-    return { w, h, x, y };
-  }
-  const every = Math.max(1, Math.floor(info.total / 20));
+  if (spec !== 'auto') return parseCrop(spec, info);
   // Unlike make-frames.mjs there is no "too much cropped" guard: a portrait picture inside a 16:9 frame
   // loses about two thirds of the width to bars, and that is exactly the case this script is for.
-  const r = run('ffmpeg', [
-    '-hide_banner', '-v', 'info', '-i', input,
-    '-vf', `select='not(mod(n,${every}))',cropdetect=limit=20:round=2:reset=0`, '-f', 'null', '-',
-  ]);
-  const found = [...r.stderr.matchAll(/crop=(\d+):(\d+):(\d+):(\d+)/g)].at(-1);
-  if (!found) return null;
-  const [w, h, x, y] = found.slice(1).map(Number);
-  return info.width - w < 4 && info.height - h < 4 ? null : { w, h, x, y };
+  return detectCrop(input, info);
 };
 
 

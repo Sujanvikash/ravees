@@ -18,7 +18,8 @@ import {
   MOBILE_QUERY,
   SCROLL_HINT_FADE_END,
 } from "./heroConfig";
-import { clamp01, range, smooth, useMediaQuery, usePrefersReducedMotion } from "./heroUtils";
+import { clamp01, range, smooth, usePrefersReducedMotion } from "./heroUtils";
+import { useMediaQuery } from "../../hooks/useMediaQuery.js";
 
 // Halfway through the hidden stretch: the copy is invisible, so it can move to its closing position.
 const PLACEMENT_SWITCH = (CONTENT_FADE_END + CONTENT_REVEAL_START) / 2;

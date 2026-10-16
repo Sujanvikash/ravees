@@ -14,6 +14,7 @@ import Aurora from '../components/Aurora.jsx';
 import Decoration from '../components/Decoration.jsx';
 import { pineBranchLeft, pineBranchRight } from '../assets/decorations';
 import PageTitle from '../components/PageTitle.jsx';
+import { sectionClass } from '../components/sectionClass.js';
 
 // Pine branches on both top corners of the shop header, in the space beside the content column.
 const SIDE_BRANCH = 'top-0 h-[330px] w-[min(440px,calc((100vw-1360px)/2+160px))]';
@@ -63,10 +64,10 @@ const Shop = () => {
   }, [category, query, sort, wishlistOnly, wishlist]);
 
   return (
-    <section className="relative z-20 bg-bg-primary pt-6 pb-16 md:pt-9 md:pb-25">
+    <section className={sectionClass('listing')}>
       <Aurora />
-      <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-left-top" />
-      <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-right-top" />
+      <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-top-left" />
+      <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-top-right" />
       <Container>
         <div className="mb-9">
           <Eyebrow>

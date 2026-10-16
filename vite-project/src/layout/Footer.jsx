@@ -79,11 +79,11 @@ const Footer = () => {
           style={{ backgroundImage: `url(${footerBackground})` }}
         />
         <div
-          className="absolute inset-y-0 left-0 hidden w-1/2 bg-[length:auto_100%] bg-left bg-no-repeat xl:block"
+          className="absolute inset-y-0 left-0 hidden w-1/2 bg-size-[auto_100%] bg-left bg-no-repeat xl:block"
           style={{ backgroundImage: `url(${footerBackground})` }}
         />
         <div
-          className="absolute inset-y-0 right-0 hidden w-1/2 bg-[length:auto_100%] bg-right bg-no-repeat xl:block"
+          className="absolute inset-y-0 right-0 hidden w-1/2 bg-size-[auto_100%] bg-right bg-no-repeat xl:block"
           style={{ backgroundImage: `url(${footerBackground})` }}
         />
         {/* Shade over it: fades in from the border line at the top and, on wide screens, darkens the middle

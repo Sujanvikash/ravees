@@ -23,6 +23,10 @@ const UTIL_BTN =
 const BADGE_COUNT =
   'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ruby-500 px-1 text-[0.68rem] font-bold text-white';
 
+// Saved items and account in the open phone menu (the bar shows them as buttons from md).
+const MOBILE_EXTRA_LINK =
+  'flex items-center gap-2 py-2 text-[0.95rem] font-medium tracking-[0.04em] text-text-secondary no-underline md:hidden';
+
 const getInitials = (name = '') => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';
@@ -92,7 +96,7 @@ const Header = ({ onOpenCart }) => {
     // Every other page never sets it, so the header just shows.
     <header
       style={{ opacity: 'var(--hero-chrome, 1)', translate: '0 calc((var(--hero-chrome, 1) - 1) * 100%)' }}
-      className="sticky top-0 z-[100] h-[var(--header-h)] border-b border-gold-400/15 bg-bg-primary/96 [html[data-hero-chrome-hidden]_&]:invisible"
+      className="sticky top-0 z-100 h-(--header-h) border-b border-gold-400/15 bg-bg-primary/96 [html[data-hero-chrome-hidden]_&]:invisible"
     >
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-3 px-4 sm:gap-5 sm:px-6">
         <button
@@ -174,7 +178,7 @@ const Header = ({ onOpenCart }) => {
           <Link
             to="/shop?wishlist=1"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 py-2 text-[0.95rem] font-medium tracking-[0.04em] text-text-secondary no-underline md:hidden"
+            className={MOBILE_EXTRA_LINK}
           >
             <Heart size={16} strokeWidth={2} className="text-gold-400" />
             Saved items
@@ -183,7 +187,7 @@ const Header = ({ onOpenCart }) => {
           <Link
             to={isAuthenticated ? '/account' : '/login'}
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 py-2 text-[0.95rem] font-medium tracking-[0.04em] text-text-secondary no-underline md:hidden"
+            className={MOBILE_EXTRA_LINK}
           >
             <User size={16} strokeWidth={2} className="text-gold-400" />
             {isAuthenticated ? `My Account (${session.name.split(' ')[0]})` : 'Sign In'}

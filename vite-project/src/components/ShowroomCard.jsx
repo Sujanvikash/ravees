@@ -47,7 +47,7 @@ const ShowroomCard = ({ showroom }) => {
     <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
       {/* Gallery */}
       <div className="flex flex-col gap-3">
-        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_20px_50px_--alpha(var(--color-black)/60%)]">
+        <div className="relative aspect-16/10 overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_20px_50px_--alpha(var(--color-black)/60%)]">
           {photos.map((src, i) => (
             <img
               key={src}
@@ -83,7 +83,7 @@ const ShowroomCard = ({ showroom }) => {
                 onClick={() => setIdx(i)}
                 aria-label={`Show photo ${i + 1}`}
                 aria-current={i === idx}
-                className={`aspect-[4/3] cursor-pointer overflow-hidden rounded-lg border transition-all duration-300 ${
+                className={`aspect-4/3 cursor-pointer overflow-hidden rounded-lg border transition-all duration-300 ${
                   i === idx ? 'border-gold-400 shadow-[0_0_12px_--alpha(var(--color-gold-400)/40%)]' : 'border-gold-400/15 opacity-70 hover:opacity-100'
                 }`}
               >

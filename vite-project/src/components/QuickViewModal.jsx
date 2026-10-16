@@ -48,7 +48,7 @@ const QuickViewModal = ({ product, onClose }) => {
         <div className="grid items-start gap-7 px-6 pt-5 pb-7 sm:px-8 md:grid-cols-[minmax(0,1fr)_1.15fr]">
           {/* Gallery */}
           <div className="flex flex-col gap-3">
-            <div className="relative aspect-[7/6] overflow-hidden rounded-xl border border-gold-400/25 bg-bg-deepest shadow-[0_16px_40px_--alpha(var(--color-black)/55%)]">
+            <div className="relative aspect-7/6 overflow-hidden rounded-xl border border-gold-400/25 bg-bg-deepest shadow-[0_16px_40px_--alpha(var(--color-black)/55%)]">
               <img src={current} alt={product.name} className="size-full object-cover" />
               {photos.length > 1 && (
                 <>

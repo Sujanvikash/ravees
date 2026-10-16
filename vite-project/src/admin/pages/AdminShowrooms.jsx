@@ -10,8 +10,7 @@ import Chip from '../../components/Chip.jsx';
 import { Input, Textarea } from '../../components/Input.jsx';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
 import { cardClass } from '../../components/cardClass.js';
-
-const LABEL = 'text-[0.75rem] text-gold-300';
+import { ADMIN_LABEL } from '../components/adminForm.js';
 
 const AdminShowrooms = () => {
   const { showrooms } = useAdminData();
@@ -91,7 +90,7 @@ const AdminShowrooms = () => {
             </IconButton>
           </div>
 
-          <FormField label="City" labelClassName={LABEL}>
+          <FormField label="City" labelClassName={ADMIN_LABEL}>
             <Input
               size="sm"
               autoFocus
@@ -129,7 +128,7 @@ const AdminShowrooms = () => {
       <div className={`${cardClass('tile')} grid w-full gap-6 p-6 md:p-8 lg:grid-cols-2`}>
         {/* Left column: contact details */}
         <div className="flex min-w-0 flex-col gap-4">
-          <FormField label="Title" labelClassName={LABEL}>
+          <FormField label="Title" labelClassName={ADMIN_LABEL}>
             <Input
               size="sm"
               value={value('title')}
@@ -137,7 +136,7 @@ const AdminShowrooms = () => {
             />
           </FormField>
 
-          <FormField label="Address" labelClassName={LABEL}>
+          <FormField label="Address" labelClassName={ADMIN_LABEL}>
             <Textarea
               size="sm"
               rows="3"
@@ -147,14 +146,14 @@ const AdminShowrooms = () => {
           </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Phone" labelClassName={LABEL}>
+            <FormField label="Phone" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 value={value('phone')}
                 onChange={(e) => setDraft((prev) => ({ ...prev, phone: e.target.value }))}
               />
             </FormField>
-            <FormField label="Timing" labelClassName={LABEL}>
+            <FormField label="Timing" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 value={value('timing')}
@@ -176,7 +175,7 @@ const AdminShowrooms = () => {
 
         {/* Right column: highlights + actions */}
         <div className="flex min-w-0 flex-col gap-4">
-          <FormField label="Store highlights (one per line)" labelClassName={LABEL} className="flex-1">
+          <FormField label="Store highlights (one per line)" labelClassName={ADMIN_LABEL} className="flex-1">
             <Textarea
               size="sm"
               rows="8"

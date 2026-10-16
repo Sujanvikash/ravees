@@ -5,7 +5,7 @@ const TestimonialCard = ({ testimonial }) => {
   return (
     <div className={`${cardClass('panel')} flex h-full flex-col p-8`}>
       <RatingStars rating={testimonial.rating} size={16} />
-      <p className="my-4 flex-1 font-quote text-[1rem] italic leading-[1.7] text-[#f1f5f9]">
+      <p className="my-4 flex-1 font-quote text-[1rem] italic leading-[1.7] text-text-quote">
         &ldquo;{testimonial.quote}&rdquo;
       </p>
       <div>

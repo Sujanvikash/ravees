@@ -12,7 +12,7 @@ const SIZES = {
 
 // Gold buttons: a streak of light sweeps across on hover (the ::before layer, clipped by overflow-hidden).
 const SHINE =
-  'relative overflow-hidden before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-1/3 before:-translate-x-[120%] before:skew-x-[-20deg] before:bg-[linear-gradient(90deg,transparent,--alpha(var(--color-white)/55%),transparent)] before:transition-transform before:duration-700 before:ease-premium hover:before:translate-x-[420%]';
+  'relative overflow-hidden before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-1/3 before:translate-x-[-120%] before:skew-x-[-20deg] before:bg-[linear-gradient(90deg,transparent,--alpha(var(--color-white)/55%),transparent)] before:transition-transform before:duration-700 before:ease-premium hover:before:translate-x-[420%]';
 
 const VARIANTS = {
   gold: SHINE + ' border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] text-on-gold shadow-[0_0_20px_--alpha(var(--color-gold-400)/40%)] hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,var(--color-gold-100),var(--color-gold-400))] hover:shadow-[0_0_30px_--alpha(var(--color-gold-400)/65%)]',

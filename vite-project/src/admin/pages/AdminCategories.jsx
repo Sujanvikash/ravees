@@ -9,15 +9,7 @@ import IconButton from '../../components/IconButton.jsx';
 import { Input } from '../../components/Input.jsx';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
 import { cardClass } from '../../components/cardClass.js';
-
-const slugify = (value) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-
-const LABEL = 'text-[0.75rem] text-gold-300';
+import { ADMIN_LABEL, slugify } from '../components/adminForm.js';
 
 const AdminCategories = () => {
   const { categories, products } = useAdminData();
@@ -90,7 +82,7 @@ const AdminCategories = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-[1fr_80px]">
-            <FormField label="Display name" labelClassName={LABEL}>
+            <FormField label="Display name" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 autoFocus
@@ -100,7 +92,7 @@ const AdminCategories = () => {
                 placeholder="e.g. Gift Hampers"
               />
             </FormField>
-            <FormField label="Icon" labelClassName={LABEL}>
+            <FormField label="Icon" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 value={newCat.icon}
@@ -135,7 +127,7 @@ const AdminCategories = () => {
               </div>
 
               <div className="flex flex-col gap-3">
-                <FormField label="Display name" labelClassName={LABEL}>
+                <FormField label="Display name" labelClassName={ADMIN_LABEL}>
                   <Input
                     size="sm"
                     value={draft.name ?? cat.name}
@@ -145,7 +137,7 @@ const AdminCategories = () => {
                   />
                 </FormField>
 
-                <FormField label="Icon" labelClassName={LABEL}>
+                <FormField label="Icon" labelClassName={ADMIN_LABEL}>
                   <Input
                     size="sm"
                     value={draft.icon ?? cat.icon}

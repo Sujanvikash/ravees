@@ -46,6 +46,14 @@ const TRUST_ITEMS = [
   { Icon: Truck, title: 'Free Pan-India Delivery', body: 'White-glove, to your door' },
 ];
 
+// The counters beside the Tree Studio teaser.
+const STUDIO_STATS = [
+  { value: PRODUCTS.length, label: 'Products to combine' },
+  { value: CATEGORIES.length - 1, label: 'Collections' },
+  { value: 5, label: 'Showrooms' },
+  { value: 27, label: 'Years in India' },
+];
+
 const Home = () => {
   const [quickView, setQuickView] = useState(null);
 
@@ -95,8 +103,8 @@ const Home = () => {
           cover both without a seam between them */}
       <section className="relative z-20 bg-bg-primary pt-12 pb-16 md:pt-20 md:pb-20">
         <Aurora />
-        <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-left-top" />
-        <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-right-top" />
+        <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-top-left" />
+        <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-top-right" />
         <Container>
           <ShopByCategory className="mb-14 md:mb-20" />
 
@@ -151,28 +159,12 @@ const Home = () => {
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-5">
-                  <div className={`${cardClass('tile')} p-5`}>
-                    <CountUp value={PRODUCTS.length} className="block font-serif text-[2rem] font-bold text-gold-300" />
-                    <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">
-                      Products to combine
-                    </span>
-                  </div>
-                  <div className={`${cardClass('tile')} p-5`}>
-                    <CountUp value={CATEGORIES.length - 1} className="block font-serif text-[2rem] font-bold text-gold-300" />
-                    <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">
-                      Collections
-                    </span>
-                  </div>
-                  <div className={`${cardClass('tile')} p-5`}>
-                    <CountUp value={5} className="block font-serif text-[2rem] font-bold text-gold-300" />
-                    <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">Showrooms</span>
-                  </div>
-                  <div className={`${cardClass('tile')} p-5`}>
-                    <CountUp value={27} className="block font-serif text-[2rem] font-bold text-gold-300" />
-                    <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">
-                      Years in India
-                    </span>
-                  </div>
+                  {STUDIO_STATS.map(({ value, label }) => (
+                    <div key={label} className={`${cardClass('tile')} p-5`}>
+                      <CountUp value={value} className="block font-serif text-[2rem] font-bold text-gold-300" />
+                      <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">{label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </GlowBorder>

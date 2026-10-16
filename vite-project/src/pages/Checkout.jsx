@@ -42,6 +42,7 @@ import { luxuryGiftBoxes } from '../assets/decorations';
 import { checkoutBg } from '../assets/backgrounds';
 import PageTitle from '../components/PageTitle.jsx';
 import { cardClass } from '../components/cardClass.js';
+import { sectionClass } from '../components/sectionClass.js';
 
 const PROMISES = [
   { Icon: Headphones, text: 'Dedicated Concierge Support' },
@@ -127,7 +128,7 @@ const Checkout = () => {
 
   if (submitted) {
     return (
-      <section className="relative z-20 flex min-h-[60vh] items-center justify-center bg-bg-primary px-6 py-25">
+      <section className={sectionClass('centered')}>
         <Aurora />
         <div className="max-w-[560px] text-center">
           {/* Wrapped gifts, with the success check as a badge on their bottom edge. */}
@@ -160,7 +161,7 @@ const Checkout = () => {
 
   if (cart.length === 0) {
     return (
-      <section className="relative z-20 flex min-h-[60vh] items-center justify-center bg-bg-primary px-6 py-25">
+      <section className={sectionClass('centered')}>
         <Aurora />
         <div className="flex max-w-[480px] flex-col items-center gap-4 text-center">
           <ShoppingBag size={44} strokeWidth={1.5} className="text-gold-400/50" />

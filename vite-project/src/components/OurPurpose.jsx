@@ -31,7 +31,7 @@ const PURPOSE = [
 const OurPurpose = () => {
   return (
     <section aria-labelledby="purpose-title" className="relative z-20 isolate overflow-hidden bg-cream-100 text-ink">
-      <Decoration side src={pineCornerCutout} fade="right" className="top-0 right-0 h-[340px] w-[230px]" imgClassName="object-left-top" />
+      <Decoration side src={pineCornerCutout} fade="right" className="top-0 right-0 h-[340px] w-[230px]" imgClassName="object-top-left" />
 
       <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="relative h-[280px] sm:h-[380px] lg:h-auto lg:min-h-[500px]">

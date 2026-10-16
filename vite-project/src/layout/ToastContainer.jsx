@@ -9,7 +9,7 @@ const ToastContainer = () => {
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-4 top-[calc(var(--header-h)+12px)] z-[2000] flex flex-col gap-2.5 sm:inset-x-auto sm:right-8 sm:top-[calc(var(--header-h)+16px)]"
+      className="pointer-events-none fixed inset-x-4 top-[calc(var(--header-h)+12px)] z-2000 flex flex-col gap-2.5 sm:inset-x-auto sm:right-8 sm:top-[calc(var(--header-h)+16px)]"
     >
       {toasts.map((toast) => (
         <div

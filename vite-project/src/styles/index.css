@@ -51,6 +51,7 @@
   --color-text-secondary: #9cb3a8;
   --color-text-muted: #627c70;
   --color-text-tagline: #a7c2b5; /* the logo's "European standard since 1998" line */
+  --color-text-quote: #f1f5f9; /* testimonial quotes */
 
   /* fonts */
   --font-serif: 'Cinzel', Georgia, serif;
@@ -81,9 +82,6 @@
   --animate-slide-in: slide-in 0.55s var(--ease-premium) backwards;
   /* A chosen option giving a small springy nudge. */
   --animate-select: select 0.4s var(--ease-spring);
-  /* Very slow drift on a background picture, and a breathing glow on the emblem (About). */
-  --animate-ken-burns: ken-burns 22s ease-in-out infinite alternate;
-  --animate-glow: glow 3.5s ease-in-out infinite alternate;
 
   @keyframes page-in {
     from {
@@ -99,21 +97,6 @@
   @keyframes select {
     40% {
       scale: 1.04;
-    }
-  }
-  @keyframes ken-burns {
-    to {
-      scale: 1.12;
-      translate: 2% -2%;
-    }
-  }
-  /* filter repaints, but only on one small image */
-  @keyframes glow {
-    from {
-      filter: drop-shadow(0 0 12px --alpha(var(--color-gold-400) / 25%));
-    }
-    to {
-      filter: drop-shadow(0 0 34px --alpha(var(--color-gold-400) / 65%));
     }
   }
   @keyframes pop {

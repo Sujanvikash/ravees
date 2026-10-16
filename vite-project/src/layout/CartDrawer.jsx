@@ -20,7 +20,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <aside
-        className={`flex h-full w-full max-w-[440px] flex-col border-l border-gold-400/30 bg-bg-dark-emerald transition-transform duration-[350ms] ease-premium ${
+        className={`flex h-full w-full max-w-[440px] flex-col border-l border-gold-400/30 bg-bg-dark-emerald transition-transform duration-350 ease-premium ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -60,7 +60,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 key={product.id}
                 className="flex items-center gap-3.5 rounded-xl border border-gold-400/15 bg-shade/70 p-3.5 transition-all duration-300 hover:border-gold-400/30 hover:bg-shade/90"
               >
-                <div className="flex h-[76px] w-[76px] flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
+                <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
                   <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                 </div>
 

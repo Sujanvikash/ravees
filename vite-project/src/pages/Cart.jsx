@@ -10,12 +10,13 @@ import Decoration from '../components/Decoration.jsx';
 import { luxuryGiftBoxes } from '../assets/decorations';
 import PageTitle from '../components/PageTitle.jsx';
 import { cardClass } from '../components/cardClass.js';
+import { sectionClass } from '../components/sectionClass.js';
 
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
 
   return (
-    <section className="relative z-20 bg-bg-primary py-16 md:py-25">
+    <section className={sectionClass('panel')}>
       <Aurora />
       <div className="mx-auto max-w-275 px-6">
         <Eyebrow>

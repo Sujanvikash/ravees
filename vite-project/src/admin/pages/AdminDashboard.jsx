@@ -7,6 +7,22 @@ import { listEnquiries } from '../../lib/enquiries.js';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
 import { cardClass } from '../../components/cardClass.js';
 
+// A dashboard card's title, with a link to the full page for it on the right.
+const CardHeader = ({ Icon, title, to, link }) => (
+  <div className="mb-4 flex items-center justify-between">
+    <h2 className="flex items-center gap-2 font-serif text-[1.1rem] text-white">
+      <Icon size={17} strokeWidth={2} className="text-gold-400" />
+      {title}
+    </h2>
+    <Link
+      to={to}
+      className="inline-flex items-center gap-1 text-[0.8rem] text-gold-300 no-underline hover:text-white"
+    >
+      {link} <ArrowRight size={13} strokeWidth={2} />
+    </Link>
+  </div>
+);
+
 const AdminDashboard = () => {
   const { products, categories, showrooms } = useAdminData();
   const [enquiries] = useState(listEnquiries);
@@ -43,18 +59,7 @@ const AdminDashboard = () => {
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <section className={`${cardClass('tile')} p-6`}>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-serif text-[1.1rem] text-white">
-              <Tags size={17} strokeWidth={2} className="text-gold-400" />
-              Products by collection
-            </h2>
-            <Link
-              to="/admin/products"
-              className="inline-flex items-center gap-1 text-[0.8rem] text-gold-300 no-underline hover:text-white"
-            >
-              Manage <ArrowRight size={13} strokeWidth={2} />
-            </Link>
-          </div>
+          <CardHeader Icon={Tags} title="Products by collection" to="/admin/products" link="Manage" />
 
           <div className="flex flex-col gap-3">
             {perCategory.map((cat) => {
@@ -79,18 +84,7 @@ const AdminDashboard = () => {
         </section>
 
         <section className={`${cardClass('tile')} p-6`}>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-serif text-[1.1rem] text-white">
-              <Inbox size={17} strokeWidth={2} className="text-gold-400" />
-              Latest enquiries
-            </h2>
-            <Link
-              to="/admin/enquiries"
-              className="inline-flex items-center gap-1 text-[0.8rem] text-gold-300 no-underline hover:text-white"
-            >
-              All <ArrowRight size={13} strokeWidth={2} />
-            </Link>
-          </div>
+          <CardHeader Icon={Inbox} title="Latest enquiries" to="/admin/enquiries" link="All" />
 
           {enquiries.length === 0 ? (
             <p className="py-8 text-center text-[0.85rem] text-text-muted">

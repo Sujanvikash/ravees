@@ -7,10 +7,11 @@ import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
 import { cardClass } from '../components/cardClass.js';
+import { sectionClass } from '../components/sectionClass.js';
 
 const Testimonials = () => {
   return (
-    <section className="relative z-20 bg-bg-primary pt-6 pb-16 md:pt-9 md:pb-25">
+    <section className={sectionClass('listing')}>
       <Aurora />
       <Container>
         <SectionHeading

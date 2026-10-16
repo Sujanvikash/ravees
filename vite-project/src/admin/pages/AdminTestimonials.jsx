@@ -9,8 +9,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { Input, Textarea } from '../../components/Input.jsx';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
 import { cardClass } from '../../components/cardClass.js';
-
-const LABEL = 'text-[0.75rem] text-gold-300';
+import { ADMIN_LABEL } from '../components/adminForm.js';
 
 const BLANK = { author: '', location: '', quote: '', rating: 5, treeModel: '' };
 
@@ -66,14 +65,14 @@ const AdminTestimonials = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Author" labelClassName={LABEL}>
+            <FormField label="Author" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 value={editing.author}
                 onChange={(e) => setEditing((prev) => ({ ...prev, author: e.target.value }))}
               />
             </FormField>
-            <FormField label="Location" labelClassName={LABEL}>
+            <FormField label="Location" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 value={editing.location}
@@ -83,14 +82,14 @@ const AdminTestimonials = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Product owned" labelClassName={LABEL}>
+            <FormField label="Product owned" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 value={editing.treeModel}
                 onChange={(e) => setEditing((prev) => ({ ...prev, treeModel: e.target.value }))}
               />
             </FormField>
-            <FormField label="Rating (1–5)" labelClassName={LABEL}>
+            <FormField label="Rating (1–5)" labelClassName={ADMIN_LABEL}>
               <Input
                 size="sm"
                 type="number"
@@ -102,7 +101,7 @@ const AdminTestimonials = () => {
             </FormField>
           </div>
 
-          <FormField label="Quote" labelClassName={LABEL}>
+          <FormField label="Quote" labelClassName={ADMIN_LABEL}>
             <Textarea
               size="sm"
               rows="4"

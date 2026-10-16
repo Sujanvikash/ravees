@@ -14,6 +14,7 @@ import { getSeason } from "./santaSeason.js";
 import { playJingle, playJingleBells } from "./santaSound.js";
 import { burstConfetti } from "./santaConfetti.js";
 import { suggestFor } from "./santaSuggest.js";
+import { useMediaQuery } from "../../hooks/useMediaQuery.js";
 
 const SIZE_DESKTOP = 65; // px; the SVG is square (viewBox 120×120)
 const SIZE_PHONE = 52; // smaller on phones so he never covers much of the page
@@ -67,17 +68,6 @@ const isLowEnd = () =>
   ((navigator.hardwareConcurrency ?? 8) <= 4 || (navigator.deviceMemory ?? 8) <= 4);
 const overlayIsOpen = () =>
   typeof document !== "undefined" && document.documentElement.classList.contains("overflow-hidden");
-
-const useMediaQuery = (query) => {
-  const [match, setMatch] = useState(() => matches(query));
-  useEffect(() => {
-    const list = window.matchMedia(query);
-    const onChange = () => setMatch(list.matches);
-    list.addEventListener("change", onChange);
-    return () => list.removeEventListener("change", onChange);
-  }, [query]);
-  return match;
-};
 
 // Santa with his gift sack. Rests in the bottom-right corner (click → open cart). Hovering a product
 // card (for HOVER_DELAY_MS) makes him walk to the top-right of its Add button and wave; added

@@ -24,6 +24,9 @@ import { cardClass } from '../components/cardClass.js';
 import { productBg } from '../assets/backgrounds';
 
 const THUMBS = 5; // thumbnails shown beside the photo; the column scrolls with the selection
+// The up/down buttons at the ends of the thumbnail column (desktop only).
+const THUMB_ARROW =
+  'hidden size-8 cursor-pointer items-center justify-center rounded-full border border-gold-400/25 bg-surface/80 text-gold-300 hover:border-gold-400 lg:flex';
 
 // Promises that hold for every product, shown as tiles along the bottom.
 const PROMISES = [
@@ -106,7 +109,7 @@ const ProductDetail = () => {
               {/* Thumbnails: a column beside the photo on desktop, a row under it on phones. Only with 2+ photos. */}
               {photos.length > 1 && (
                 <div className="flex items-center gap-2 lg:w-[5.75rem] lg:flex-col">
-                  <button type="button" onClick={() => go(-1)} aria-label="Previous photo" className="hidden size-8 cursor-pointer items-center justify-center rounded-full border border-gold-400/25 bg-surface/80 text-gold-300 hover:border-gold-400 lg:flex">
+                  <button type="button" onClick={() => go(-1)} aria-label="Previous photo" className={THUMB_ARROW}>
                     <ChevronUp size={16} strokeWidth={2} />
                   </button>
                   <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
@@ -128,7 +131,7 @@ const ProductDetail = () => {
                       );
                     })}
                   </div>
-                  <button type="button" onClick={() => go(1)} aria-label="Next photo" className="hidden size-8 cursor-pointer items-center justify-center rounded-full border border-gold-400/25 bg-surface/80 text-gold-300 hover:border-gold-400 lg:flex">
+                  <button type="button" onClick={() => go(1)} aria-label="Next photo" className={THUMB_ARROW}>
                     <ChevronDown size={16} strokeWidth={2} />
                   </button>
                 </div>
