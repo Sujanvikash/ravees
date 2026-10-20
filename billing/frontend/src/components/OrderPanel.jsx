@@ -1,6 +1,6 @@
 import { ArrowRight, CircleCheck, Phone, User } from 'lucide-react';
 import { countLabel, gstLines } from '../lib/bill.js';
-import { isValidMobile } from '../lib/customer.js';
+import { isValidMobile, isValidName } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
 import Kbd from './Kbd.jsx';
 import PaymentMethods from './PaymentMethods.jsx';
@@ -16,11 +16,60 @@ const Row = ({ label, value, className = 'text-ink-2' }) => (
  * The right-hand order panel: customer number, the bill's breakdown, then the total, payment method and
  * Collect pinned at the bottom. On a counter monitor it runs the full height beside the bill.
  */
-const field =
-  'flex h-10 items-center gap-2 rounded-xl border px-3 transition-shadow focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]';
+/** One required customer input with its icon, a red state and the error message under it. */
+const CustomerField = ({ id, label, Icon, error, inputRef, ...input }) => (
+  <div>
+    <label htmlFor={id} className="sr-only">
+      {label} (required)
+    </label>
+    <div
+      className={`flex h-10 items-center gap-2 rounded-xl border px-3 transition-shadow ${
+        error
+          ? 'border-ruby focus-within:shadow-[0_0_0_3px_rgba(220,38,38,0.12)]'
+          : 'border-line focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]'
+      }`}
+    >
+      <Icon size={15} className={error ? 'text-ruby' : 'text-ink-3'} aria-hidden="true" />
+      <input
+        id={id}
+        ref={inputRef}
+        autoComplete="off"
+        required
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+        placeholder={label}
+        className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
+        {...input}
+      />
+      <span className="text-xs text-ruby-ink" aria-hidden="true">
+        *
+      </span>
+    </div>
+    {error && (
+      <p id={`${id}-error`} role="alert" className="mt-1.5 animate-pop text-xs font-medium text-ruby-ink">
+        {error}
+      </p>
+    )}
+  </div>
+);
 
-const OrderPanel = ({ bill, phone, onPhone, phoneError, phoneRef, name, onName, method, onMethod, onCollect }) => {
-  const valid = isValidMobile(phone);
+const OrderPanel = ({
+  bill,
+  phone,
+  onPhone,
+  phoneError,
+  phoneRef,
+  name,
+  onName,
+  nameError,
+  nameRef,
+  method,
+  onMethod,
+  onCollect,
+}) => {
+  const ready = isValidMobile(phone) && isValidName(name);
+  // Enter in either field tries to collect, which points at whatever is still missing.
+  const collectOnEnter = (e) => e.key === 'Enter' && onCollect();
   return (
     <aside className="flex min-h-0 flex-col border-t border-line bg-surface lg:w-96 lg:border-t-0 lg:border-l xl:w-104">
       <section aria-labelledby="customer-heading" className="border-b border-line-soft p-5">
@@ -29,65 +78,35 @@ const OrderPanel = ({ bill, phone, onPhone, phoneError, phoneRef, name, onName, 
             Customer
           </h2>
           <span className="flex items-center gap-1.5 text-xs text-ink-3">
-            {valid && <CircleCheck size={13} className="text-ok" aria-hidden="true" />}
-            {valid ? 'Ready' : 'Mobile number needed'} <Kbd>F4</Kbd>
+            {ready && <CircleCheck size={13} className="text-ok" aria-hidden="true" />}
+            {ready ? 'Ready' : 'Mobile and name needed'} <Kbd>F4</Kbd>
           </span>
         </div>
         <div className="flex flex-col gap-2">
-          <div>
-            <label htmlFor="customer-phone" className="sr-only">
-              Mobile number (required)
-            </label>
-            <div
-              className={`${field} ${
-                phoneError
-                  ? 'border-ruby focus-within:shadow-[0_0_0_3px_rgba(220,38,38,0.12)]'
-                  : 'border-line focus-within:border-evergreen-800/50'
-              }`}
-            >
-              <Phone size={15} className={phoneError ? 'text-ruby' : 'text-ink-3'} aria-hidden="true" />
-              <input
-                id="customer-phone"
-                ref={phoneRef}
-                type="tel"
-                inputMode="numeric"
-                autoComplete="off"
-                required
-                aria-invalid={phoneError ? true : undefined}
-                aria-describedby={phoneError ? 'customer-phone-error' : undefined}
-                value={phone}
-                onChange={(e) => onPhone(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && onCollect()}
-                placeholder="Mobile number"
-                className="min-w-0 flex-1 bg-transparent text-sm tabular-nums placeholder:text-ink-3"
-              />
-              <span className="text-xs text-ruby-ink" aria-hidden="true">
-                *
-              </span>
-            </div>
-            {phoneError && (
-              <p id="customer-phone-error" role="alert" className="mt-1.5 animate-pop text-xs font-medium text-ruby-ink">
-                {phoneError}
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="customer-name" className="sr-only">
-              Customer name (optional)
-            </label>
-            <div className={`${field} border-line focus-within:border-evergreen-800/50`}>
-              <User size={15} className="text-ink-3" aria-hidden="true" />
-              <input
-                id="customer-name"
-                type="text"
-                autoComplete="off"
-                value={name}
-                onChange={(e) => onName(e.target.value)}
-                placeholder="Name (optional)"
-                className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
-              />
-            </div>
-          </div>
+          <CustomerField
+            id="customer-phone"
+            label="Mobile number"
+            Icon={Phone}
+            error={phoneError}
+            inputRef={phoneRef}
+            type="tel"
+            inputMode="numeric"
+            value={phone}
+            onChange={(e) => onPhone(e.target.value)}
+            onKeyDown={collectOnEnter}
+          />
+          <CustomerField
+            id="customer-name"
+            label="Customer name"
+            Icon={User}
+            error={nameError}
+            inputRef={nameRef}
+            type="text"
+            autoCapitalize="words"
+            value={name}
+            onChange={(e) => onName(e.target.value)}
+            onKeyDown={collectOnEnter}
+          />
         </div>
       </section>
 

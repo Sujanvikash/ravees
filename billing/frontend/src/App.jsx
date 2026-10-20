@@ -14,7 +14,7 @@ import { useClock } from './hooks/useClock.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { billNumber, buildBill, countLabel } from './lib/bill.js';
 import { SEASON, SEASON_COUNT } from './lib/catalogue.js';
-import { customerLabel, isValidMobile, phoneDigits } from './lib/customer.js';
+import { customerLabel, isValidMobile, isValidName, phoneDigits } from './lib/customer.js';
 
 const toolButton =
   'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 transition-colors enabled:hover:bg-mist enabled:hover:text-ink disabled:opacity-40';
@@ -34,10 +34,11 @@ const App = () => {
   const [seasonPref, setSeasonPref] = useLocalStorage('billing-season-only', true);
   const seasonOnly = seasonPref && SEASON_COUNT > 0;
 
-  // The customer: the mobile number is required to bill (F12 / Collect checks it), the name is optional.
+  // The customer: mobile number and name are both required to bill (F12 / Collect checks them).
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [nameError, setNameError] = useState('');
   const [method, setMethod] = useState('cash');
   const [dialog, setDialog] = useState(null); // 'pay' | 'done' | 'held'
   const [notice, setNotice] = useState(null);
@@ -46,6 +47,7 @@ const App = () => {
 
   const scanRef = useRef(null);
   const phoneRef = useRef(null);
+  const nameRef = useRef(null);
 
   const totals = useMemo(() => buildBill(bill.items), [bill.items]);
   const billNo = billNumber(seq, now);
@@ -72,6 +74,7 @@ const App = () => {
     setPhone(next.phone ?? '');
     setName(next.name ?? '');
     setPhoneError('');
+    setNameError('');
   };
 
   const closeDialog = () => {
@@ -109,9 +112,16 @@ const App = () => {
 
   const openPay = () => {
     if (!totals.count) return;
-    if (!isValidMobile(phone)) {
-      setPhoneError(phone.trim() ? 'Enter a valid 10-digit mobile number' : 'Mobile number is required to bill');
-      phoneRef.current?.focus();
+    const phoneProblem = isValidMobile(phone)
+      ? ''
+      : phone.trim()
+        ? 'Enter a valid 10-digit mobile number'
+        : 'Mobile number is required to bill';
+    const nameProblem = isValidName(name) ? '' : name.trim() ? 'Enter the full name' : 'Customer name is required to bill';
+    setPhoneError(phoneProblem);
+    setNameError(nameProblem);
+    if (phoneProblem || nameProblem) {
+      (phoneProblem ? phoneRef : nameRef).current?.focus();
       return;
     }
     setDialog('pay');
@@ -227,7 +237,12 @@ const App = () => {
             }}
             phoneError={phoneError}
             name={name}
-            onName={setName}
+            onName={(value) => {
+              setName(value);
+              setNameError('');
+            }}
+            nameError={nameError}
+            nameRef={nameRef}
             phoneRef={phoneRef}
             method={method}
             onMethod={setMethod}

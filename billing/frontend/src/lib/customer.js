@@ -7,6 +7,9 @@ const INDIAN_MOBILE = /^(?:91|0)?[6-9]\d{9}$/;
 /** True for a valid Indian mobile number; spaces, dashes, brackets and a leading +91 or 0 are fine. */
 export const isValidMobile = (phone) => INDIAN_MOBILE.test(phone.replace(/\D/g, ''));
 
+/** A customer name is required on every bill: at least two letters once trimmed. */
+export const isValidName = (name) => name.trim().replace(/[^\p{L}]/gu, '').length >= 2;
+
 /** "+91 98407 88950" */
 export const formatMobile = (phone) => {
   const d = phoneDigits(phone);
