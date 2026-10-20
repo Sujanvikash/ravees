@@ -1,5 +1,6 @@
 import { STORE } from '../config.js';
 import { countLabel, gstLines } from '../lib/bill.js';
+import { formatMobile } from '../lib/customer.js';
 import { amount, inr } from '../lib/money.js';
 import { methodLabel } from '../lib/payment.js';
 
@@ -41,7 +42,8 @@ const Receipt = ({ sale }) => {
       <Line label="Bill" value={sale.billNo} />
       <Line label="Date" value={when.format(new Date(sale.at)).replace(',', '')} />
       <Line label="Counter" value={STORE.counter} />
-      <Line label="Customer" value={sale.customer} />
+      {sale.name && <Line label="Customer" value={sale.name} />}
+      {sale.phone && <Line label="Mobile" value={formatMobile(sale.phone)} />}
 
       <Line label="ITEM / QTY × RATE" value="AMOUNT" className={`mt-2 font-bold ${rule}`} />
       <div className="mt-1 flex flex-col gap-1.5">

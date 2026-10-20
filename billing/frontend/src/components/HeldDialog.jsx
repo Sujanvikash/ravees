@@ -7,69 +7,36 @@ import Dialog from './Dialog.jsx';
 
 const time = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit' });
 
-/** The right-hand preview: every item on the held bill, and its totals. */
-const Preview = ({ entry, onRecall }) => {
-  const { bill } = entry;
-  return (
-    <div className="flex min-h-0 flex-col" aria-live="polite">
-      <div className="px-5 pt-1 pb-3">
-        <div className="text-sm font-medium">{customerLabel(entry.phone ?? '')}</div>
-        <div className="text-xs text-ink-3">
-          Held at {time.format(new Date(entry.at))} · {countLabel(bill)}
-        </div>
+/** The items of one held bill, shown inside its card when the card is open. */
+const Items = ({ bill }) => (
+  <div className="mt-3 border-t border-line-soft pt-2">
+    <ul aria-label="Items on this held bill" className="flex flex-col">
+      {bill.lines.map((l) => (
+        <li key={l.code} className="flex items-center gap-3 py-1.5 text-[13px]">
+          <span className="shrink-0 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
+          <span className="min-w-0 flex-1 truncate">{l.product.name}</span>
+          <span className="shrink-0 text-xs text-ink-3 tabular-nums">
+            {l.qty} × {inr(l.price)}
+          </span>
+          <span className="w-24 shrink-0 text-right font-medium tabular-nums">{inr(l.amount)}</span>
+        </li>
+      ))}
+    </ul>
+    {bill.savings > 0 && (
+      <div className="mt-1 flex justify-between text-xs text-ok-ink">
+        <span>Offer discount</span>
+        <span className="tabular-nums">{inr(-bill.savings)}</span>
       </div>
-      <ul aria-label="Items on this held bill" className="min-h-0 flex-1 overflow-y-auto px-3">
-        {bill.lines.map((l) => (
-          <li key={l.code} className="flex items-center gap-3 rounded-lg px-2 py-2 text-[13px]">
-            <span className="shrink-0 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-medium">{l.product.name}</span>
-              <span className="block text-xs text-ink-3 tabular-nums">
-                {l.qty} × {inr(l.price)}
-              </span>
-            </span>
-            <span className="font-medium tabular-nums">{inr(l.amount)}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-2 border-t border-line-soft px-5 pt-3 pb-5">
-        <div className="flex flex-col gap-1 text-xs text-ink-3">
-          <div className="flex justify-between">
-            <span>MRP total</span>
-            <span className="tabular-nums">{inr(bill.mrpTotal)}</span>
-          </div>
-          {bill.savings > 0 && (
-            <div className="flex justify-between text-ok-ink">
-              <span>Offer discount</span>
-              <span className="tabular-nums">{inr(-bill.savings)}</span>
-            </div>
-          )}
-        </div>
-        <div className="mt-2 flex items-end justify-between">
-          <span className="text-[13px] font-medium text-ink-2">Total</span>
-          <span className="text-2xl leading-none font-semibold tracking-tight tabular-nums">{inr(bill.payable)}</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => onRecall(entry.id)}
-          className="mt-4 h-10 w-full rounded-xl bg-evergreen-800 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900"
-        >
-          Recall this bill
-        </button>
-      </div>
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
 /**
- * Bills put on hold (customer stepped away). Hovering or tabbing to one shows all its items on the right;
- * recall it onto the counter, or discard it.
+ * Bills put on hold (customer stepped away). Hovering or tabbing to a bill opens its card to show the
+ * items; it stays open until another one is chosen, so the list doesn't jump while the mouse moves.
  */
 const HeldDialog = ({ held, onRecall, onDiscard, onClose }) => {
-  const entries = held.map((h) => ({ ...h, bill: buildBill(h.items) }));
-  const [previewId, setPreviewId] = useState(() => held.at(-1)?.id);
-  // After a discard the previewed bill may be gone: fall back to the most recent one.
-  const preview = entries.find((e) => e.id === previewId) ?? entries.at(-1);
+  const [openId, setOpenId] = useState(() => held.at(-1)?.id);
 
   return (
     <Dialog
@@ -77,31 +44,32 @@ const HeldDialog = ({ held, onRecall, onDiscard, onClose }) => {
       title="Held bills"
       subtitle="Recalling one puts the bill on the counter on hold in its place"
       onClose={onClose}
-      size="max-w-4xl"
+      size="max-w-2xl"
     >
-      <div className="grid max-h-[65vh] min-h-80 grid-cols-1 border-t border-line-soft md:grid-cols-[minmax(0,1fr)_20rem]">
-        <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto p-3">
-          {entries.map((h, i) => {
-            const on = h.id === preview?.id;
-            return (
-              <li
-                key={h.id}
-                onMouseEnter={() => setPreviewId(h.id)}
-                onFocus={() => setPreviewId(h.id)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors ${
-                  on ? 'bg-mist-2 ring-1 ring-line' : 'hover:bg-mist-2'
-                }`}
-              >
+      <ul className="flex max-h-[65vh] flex-col gap-1.5 overflow-y-auto border-t border-line-soft p-3">
+        {held.map((h, i) => {
+          const bill = buildBill(h.items);
+          // After a discard the open bill may be gone: open the most recent one instead.
+          const open = h.id === openId || (!held.some((x) => x.id === openId) && i === held.length - 1);
+          return (
+            <li
+              key={h.id}
+              onMouseEnter={() => setOpenId(h.id)}
+              onFocus={() => setOpenId(h.id)}
+              className={`rounded-xl px-4 py-3 transition-colors ${open ? 'bg-mist-2 ring-1 ring-line' : 'hover:bg-mist-2'}`}
+            >
+              <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2 text-sm">
-                    <span className="font-medium">{customerLabel(h.phone ?? '')}</span>
+                    <span className="font-medium">{customerLabel(h.phone, h.name)}</span>
                     <span className="text-xs text-ink-3">held at {time.format(new Date(h.at))}</span>
                   </div>
                   <div className="mt-0.5 truncate text-xs text-ink-3">
-                    {countLabel(h.bill)} · {h.bill.lines.map((l) => l.product.name).join(', ')}
+                    {countLabel(bill)}
+                    {!open && ` · ${bill.lines.map((l) => l.product.name).join(', ')}`}
                   </div>
                 </div>
-                <div className="text-sm font-semibold tabular-nums">{inr(h.bill.payable)}</div>
+                <div className="text-sm font-semibold tabular-nums">{inr(bill.payable)}</div>
                 <button
                   type="button"
                   onClick={() => onDiscard(h.id)}
@@ -112,23 +80,24 @@ const HeldDialog = ({ held, onRecall, onDiscard, onClose }) => {
                 </button>
                 <button
                   type="button"
-                  autoFocus={i === entries.length - 1}
+                  autoFocus={i === held.length - 1}
                   onClick={() => onRecall(h.id)}
                   className="h-8 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900"
                 >
                   Recall
                 </button>
-              </li>
-            );
-          })}
-        </ul>
+              </div>
 
-        {preview && (
-          <div className="flex min-h-0 flex-col border-t border-line-soft bg-mist-2 pt-4 md:border-t-0 md:border-l">
-            <Preview key={preview.id} entry={preview} onRecall={onRecall} />
-          </div>
-        )}
-      </div>
+              {/* Opens smoothly: the grid row animates from 0fr to 1fr. */}
+              <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                <div className="overflow-hidden" aria-hidden={!open}>
+                  <Items bill={bill} />
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </Dialog>
   );
 };

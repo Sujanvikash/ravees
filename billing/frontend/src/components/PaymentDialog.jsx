@@ -37,7 +37,7 @@ const Switch = ({ checked, onChange, children }) => (
 );
 
 /** Takes the payment for the bill. Enter completes the sale once the amount is enough. */
-const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComplete }) => {
+const PaymentDialog = ({ bill, billNo, method, onMethod, phone, name, onBack, onComplete }) => {
   const due = bill.payable;
   const [tendered, setTendered] = useState('');
   const [approval, setApproval] = useState('');
@@ -72,7 +72,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
             <div className="text-[13px] text-ink-3">Amount due</div>
             <div className="mt-0.5 text-[44px] leading-tight font-semibold tracking-tight tabular-nums">{inr(due)}</div>
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-3">
-              <span>{customerLabel(phone)}</span>
+              <span>{customerLabel(phone, name)}</span>
               {bill.savings > 0 && <span className="text-ok-ink">Customer saves {inr(bill.savings)}</span>}
               <span>GST {inr(bill.tax)} included</span>
             </div>

@@ -14,7 +14,7 @@ import { useClock } from './hooks/useClock.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { billNumber, buildBill, countLabel } from './lib/bill.js';
 import { SEASON, SEASON_COUNT } from './lib/catalogue.js';
-import { customerLabel } from './lib/customer.js';
+import { customerLabel, isValidMobile, phoneDigits } from './lib/customer.js';
 
 const toolButton =
   'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 transition-colors enabled:hover:bg-mist enabled:hover:text-ink disabled:opacity-40';
@@ -34,7 +34,10 @@ const App = () => {
   const [seasonPref, setSeasonPref] = useLocalStorage('billing-season-only', true);
   const seasonOnly = seasonPref && SEASON_COUNT > 0;
 
+  // The customer: the mobile number is required to bill (F12 / Collect checks it), the name is optional.
   const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [method, setMethod] = useState('cash');
   const [dialog, setDialog] = useState(null); // 'pay' | 'done' | 'held'
   const [notice, setNotice] = useState(null);
@@ -65,19 +68,25 @@ const App = () => {
     });
   };
 
+  const setCustomer = (next = {}) => {
+    setPhone(next.phone ?? '');
+    setName(next.name ?? '');
+    setPhoneError('');
+  };
+
   const closeDialog = () => {
     setDialog(null);
     requestAnimationFrame(() => scanRef.current?.focus());
   };
 
   const holdCurrent = (list) =>
-    bill.items.length ? [...list, { id: Date.now(), at: new Date().toISOString(), items: bill.items, phone }] : list;
+    bill.items.length ? [...list, { id: Date.now(), at: new Date().toISOString(), items: bill.items, phone, name }] : list;
 
   const hold = () => {
     if (!bill.items.length) return;
     setHeld(holdCurrent(held));
     bill.clear();
-    setPhone('');
+    setCustomer();
     setNotice({ tone: 'ok', text: 'Bill held · press F9 to recall it' });
   };
 
@@ -86,27 +95,36 @@ const App = () => {
     if (!target) return;
     setHeld(holdCurrent(held.filter((h) => h.id !== id)));
     bill.load(target.items);
-    setPhone(target.phone ?? '');
+    setCustomer(target);
     setNotice({ tone: 'ok', text: 'Held bill recalled' });
     closeDialog();
   };
 
   const clearBill = () => {
     bill.clear();
-    setPhone('');
+    setCustomer();
     setNotice(null);
     scanRef.current?.focus();
   };
 
-  const openPay = () => totals.count && setDialog('pay');
+  const openPay = () => {
+    if (!totals.count) return;
+    if (!isValidMobile(phone)) {
+      setPhoneError(phone.trim() ? 'Enter a valid 10-digit mobile number' : 'Mobile number is required to bill');
+      phoneRef.current?.focus();
+      return;
+    }
+    setDialog('pay');
+  };
   const openHeld = () => held.length && setDialog('held');
 
   const completeSale = (payment) => {
     const sale = {
       billNo,
       at: new Date().toISOString(),
-      phone,
-      customer: customerLabel(phone),
+      phone: phoneDigits(phone),
+      name: name.trim(),
+      customer: customerLabel(phone, name),
       lines: totals.lines.map((l) => ({ code: l.code, name: l.product.name, qty: l.qty, price: l.price, mrp: l.product.mrp })),
       totals: {
         count: totals.count,
@@ -125,7 +143,7 @@ const App = () => {
     setSeq(seq + 1);
     setLastSale(sale);
     bill.clear();
-    setPhone('');
+    setCustomer();
     setMethod('cash');
     setNotice(null);
     setDialog('done');
@@ -203,7 +221,13 @@ const App = () => {
           <OrderPanel
             bill={totals}
             phone={phone}
-            onPhone={setPhone}
+            onPhone={(value) => {
+              setPhone(value);
+              setPhoneError('');
+            }}
+            phoneError={phoneError}
+            name={name}
+            onName={setName}
             phoneRef={phoneRef}
             method={method}
             onMethod={setMethod}
@@ -219,6 +243,7 @@ const App = () => {
           method={method}
           onMethod={setMethod}
           phone={phone}
+          name={name}
           onBack={closeDialog}
           onComplete={completeSale}
         />
