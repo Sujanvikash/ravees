@@ -29,11 +29,11 @@ const reducer = (state, action) => {
 };
 
 /**
- * The bill being rung up: items ({ code, qty }) and the last scanned code. It is kept in localStorage,
- * so a refresh or a power cut mid-bill doesn't lose it.
+ * The bill being rung up at one showroom: items ({ code, qty }) and the last scanned code. It is kept in
+ * localStorage under that showroom's key, so a refresh or a power cut mid-bill doesn't lose it.
  */
-export const useBill = () => {
-  const [state, setState] = useLocalStorage('billing-current', EMPTY);
+export const useBill = (location) => {
+  const [state, setState] = useLocalStorage(`billing-current-${location}`, EMPTY);
   const dispatch = (action) => setState((prev) => reducer(prev, action));
 
   return {

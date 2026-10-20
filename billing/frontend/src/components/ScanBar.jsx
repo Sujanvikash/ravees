@@ -15,7 +15,7 @@ const NOTICE = {
  * The scan box. A barcode scanner types the code and presses Enter, which adds the product. Typing a
  * name instead lists matches: arrow keys move, Enter or a click adds.
  */
-const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }) => {
+const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice, inStock }) => {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const matches = useMemo(() => searchProducts(query, { seasonOnly }), [query, seasonOnly]);
@@ -138,7 +138,12 @@ const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }
                   <span className="truncate text-sm font-medium">{p.name}</span>
                   <span className="hidden truncate text-xs text-ink-3 sm:inline">{p.dept}</span>
                 </span>
-                <span className="text-sm tabular-nums">{inr(priceOf(p))}</span>
+                <span className="flex items-baseline gap-3">
+                  <span className={`text-xs tabular-nums ${inStock(p.code) > 0 ? 'text-ink-3' : 'text-ruby-ink'}`}>
+                    {inStock(p.code) > 0 ? `${inStock(p.code)} in stock` : 'Out of stock'}
+                  </span>
+                  <span className="w-24 text-right text-sm tabular-nums">{inr(priceOf(p))}</span>
+                </span>
               </li>
             ))}
           </ul>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import { STORE } from '../config.js';
 import { countLabel } from '../lib/bill.js';
 import { customerLabel } from '../lib/customer.js';
 import { inr, inrWhole, parseAmount } from '../lib/money.js';
@@ -37,7 +36,7 @@ const Switch = ({ checked, onChange, children }) => (
 );
 
 /** Takes the payment for the bill. Enter completes the sale once the amount is enough. */
-const PaymentDialog = ({ bill, billNo, method, onMethod, phone, name, onBack, onComplete }) => {
+const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onBack, onComplete }) => {
   const due = bill.payable;
   const [tendered, setTendered] = useState('');
   const [approval, setApproval] = useState('');
@@ -128,7 +127,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, name, onBack, on
             <div className="rounded-xl border border-dashed border-line-strong p-4 text-[13px] text-ink-2">
               <div className="font-medium text-ink">Ask the customer to pay {inr(due)} by UPI</div>
               <div className="mt-1">
-                UPI ID: <span className="font-mono text-ink">{STORE.upiId || 'not set yet (src/config.js)'}</span>
+                UPI ID: <span className="font-mono text-ink">{upiId || 'not set yet (src/config.js)'}</span>
               </div>
               <div className="mt-1 text-ink-3">Complete the sale once the payment shows as received.</div>
             </div>

@@ -1,4 +1,4 @@
-import { STORE } from '../config.js';
+import { BRAND, locationById } from '../config.js';
 import { countLabel, gstLines } from '../lib/bill.js';
 import { formatMobile } from '../lib/customer.js';
 import { amount, inr } from '../lib/money.js';
@@ -25,23 +25,24 @@ const rule = 'border-t border-dashed border-black pt-1.5';
 /** The 80mm thermal tax invoice. Hidden on screen; it is the only thing that prints. */
 const Receipt = ({ sale }) => {
   const { totals, payment } = sale;
+  const shop = locationById(sale.location) ?? {};
   return (
     <div className="hidden font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
-        <div className="font-display text-[15px] font-bold tracking-[0.14em] uppercase">{STORE.name}</div>
-        <div className="mb-0.5">{STORE.tagline}</div>
-        {STORE.address.map((a) => (
+        <div className="font-display text-[15px] font-bold tracking-[0.14em] uppercase">{BRAND.name}</div>
+        <div className="mb-0.5">{BRAND.tagline}</div>
+        {(shop.address ?? []).map((a) => (
           <div key={a}>{a}</div>
         ))}
-        {STORE.phone && <div>Ph: {STORE.phone}</div>}
-        {STORE.gstin && <div>GSTIN: {STORE.gstin}</div>}
+        {shop.phone && <div>Ph: {shop.phone}</div>}
+        {shop.gstin && <div>GSTIN: {shop.gstin}</div>}
       </div>
 
       <div className="my-2 border-y border-dashed border-black py-1 text-center font-bold tracking-[0.18em]">TAX INVOICE</div>
 
       <Line label="Bill" value={sale.billNo} />
       <Line label="Date" value={when.format(new Date(sale.at)).replace(',', '')} />
-      <Line label="Counter" value={STORE.counter} />
+      <Line label="Showroom" value={shop.city} />
       {sale.name && <Line label="Customer" value={sale.name} />}
       {sale.phone && <Line label="Mobile" value={formatMobile(sale.phone)} />}
 
@@ -88,8 +89,8 @@ const Receipt = ({ sale }) => {
 
       <div className={`mt-2 flex flex-col items-center gap-0.5 pt-2 text-center ${rule}`}>
         <div className="font-bold">Thank you &amp; Merry Christmas!</div>
-        {STORE.receiptNote && <div>{STORE.receiptNote}</div>}
-        {STORE.email && <div>{STORE.email}</div>}
+        {BRAND.receiptNote && <div>{BRAND.receiptNote}</div>}
+        {BRAND.email && <div>{BRAND.email}</div>}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { PRICES_INCLUDE_GST, STORE } from '../config.js';
+import { PRICES_INCLUDE_GST } from '../config.js';
 import { findProduct } from './catalogue.js';
 
 /** What a product sells for: its offer price when it has one, else MRP. */
@@ -72,5 +72,5 @@ const financialYear = (date) => {
   return `${String(start).slice(2)}-${String(start + 1).slice(2)}`;
 };
 
-/** CHN/26-27/00184 */
-export const billNumber = (seq, date) => `${STORE.billPrefix}/${financialYear(date)}/${String(seq).padStart(5, '0')}`;
+/** CHN/26-27/00184: the showroom's prefix, the financial year and its running number. */
+export const billNumber = (prefix, seq, date) => `${prefix}/${financialYear(date)}/${String(seq).padStart(5, '0')}`;

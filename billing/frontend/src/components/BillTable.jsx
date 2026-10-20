@@ -10,7 +10,7 @@ const cols = 'sm:grid sm:grid-cols-[minmax(0,1fr)_auto_7.5rem_2rem] sm:items-cen
  * The lines of the current bill. It fills the space left in the bill area and scrolls inside it, with
  * the column labels pinned. The last scanned line is highlighted.
  */
-const BillTable = ({ lines, lastCode, onQty }) => {
+const BillTable = ({ lines, lastCode, onQty, inStock }) => {
   if (!lines.length) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
@@ -45,6 +45,8 @@ const BillTable = ({ lines, lastCode, onQty }) => {
           const { product: p } = line;
           const isLast = p.code === lastCode;
           const off = p.offer ? Math.round((1 - p.offer / p.mrp) * 100) : 0;
+          const stock = inStock(p.code);
+          const short = line.qty > stock;
           return (
             <li
               key={p.code}
@@ -61,7 +63,7 @@ const BillTable = ({ lines, lastCode, onQty }) => {
                   <span className="truncate text-sm font-medium">{p.name}</span>
                   {isLast && <span className="shrink-0 text-[11px] font-medium text-evergreen-800">Just scanned</span>}
                 </div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-3 tabular-nums">
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs whitespace-nowrap text-ink-3 tabular-nums">
                   <span>{p.dept}</span>
                   <span aria-hidden="true">·</span>
                   <span>{inr(line.price)} each</span>
@@ -71,6 +73,10 @@ const BillTable = ({ lines, lastCode, onQty }) => {
                       <span className="rounded bg-ok-50 px-1 font-medium text-ok-ink">−{off}%</span>
                     </>
                   )}
+                  <span aria-hidden="true">·</span>
+                  <span className={short ? 'font-medium text-ruby-ink' : ''}>
+                    {short ? `Only ${Math.max(stock, 0)} in stock` : `${stock} in stock`}
+                  </span>
                 </div>
               </div>
 

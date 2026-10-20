@@ -1,287 +1,58 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { History, Pause, Trash2 } from 'lucide-react';
-import BillTable from './components/BillTable.jsx';
-import DoneDialog from './components/DoneDialog.jsx';
-import Header from './components/Header.jsx';
-import HeldDialog from './components/HeldDialog.jsx';
-import Kbd from './components/Kbd.jsx';
-import OrderPanel from './components/OrderPanel.jsx';
-import PaymentDialog from './components/PaymentDialog.jsx';
-import Receipt from './components/Receipt.jsx';
-import ScanBar from './components/ScanBar.jsx';
-import { useBill } from './hooks/useBill.js';
-import { useClock } from './hooks/useClock.js';
+import { useState } from 'react';
+import Sidebar from './components/Sidebar.jsx';
+import { useStore } from './context/StoreContext.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
-import { billNumber, buildBill, countLabel } from './lib/bill.js';
-import { SEASON, SEASON_COUNT } from './lib/catalogue.js';
-import { customerLabel, isValidMobile, isValidName, phoneDigits } from './lib/customer.js';
-
-const toolButton =
-  'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 transition-colors enabled:hover:bg-mist enabled:hover:text-ink disabled:opacity-40';
-
-const sameDay = (a, b) => a.toDateString() === b.toDateString();
+import { NAV } from './lib/nav.js';
+import { ordersNeedingAction } from './lib/orders.js';
+import Counter from './pages/Counter.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import Inventory from './pages/Inventory.jsx';
+import Login from './pages/Login.jsx';
+import PurchaseOrders from './pages/PurchaseOrders.jsx';
+import Sales from './pages/Sales.jsx';
 
 /**
- * The billing counter. Until the billing backend exists, everything is kept in this browser's
- * localStorage: the bill in progress, held bills, the bill number sequence and completed sales.
+ * Sign-in, then the app: a collapsible menu on the left and the chosen page. A showroom login opens on its
+ * billing counter, the admin on the dashboard; each remembers the last page it was on.
  */
-const App = () => {
-  const now = useClock();
-  const bill = useBill();
-  const [held, setHeld] = useLocalStorage('billing-held', []);
-  const [sales, setSales] = useLocalStorage('billing-sales', []);
-  const [seq, setSeq] = useLocalStorage('billing-seq', 1);
-  const [seasonPref, setSeasonPref] = useLocalStorage('billing-season-only', true);
-  const seasonOnly = seasonPref && SEASON_COUNT > 0;
+const Shell = ({ session, onSignOut }) => {
+  const { orders } = useStore();
+  const items = NAV[session.role];
+  const [saved, setPage] = useLocalStorage(`billing-page-${session.username}`, items[0].id);
+  const page = items.some((i) => i.id === saved) ? saved : items[0].id;
+  const [collapsed, setCollapsed] = useLocalStorage('billing-menu-collapsed', false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // The customer: mobile number and name are both required to bill (F12 / Collect checks them).
-  const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [method, setMethod] = useState('cash');
-  const [dialog, setDialog] = useState(null); // 'pay' | 'done' | 'held'
-  const [notice, setNotice] = useState(null);
-  const [lastSale, setLastSale] = useState(null);
-  const [printJob, setPrintJob] = useState(0);
-
-  const scanRef = useRef(null);
-  const phoneRef = useRef(null);
-  const nameRef = useRef(null);
-
-  const totals = useMemo(() => buildBill(bill.items), [bill.items]);
-  const billNo = billNumber(seq, now);
-
-  // Print once the receipt for the sale is on the page.
-  useEffect(() => {
-    if (printJob) window.print();
-  }, [printJob]);
-
-  const today = sales.filter((s) => sameDay(new Date(s.at), now));
-  const todayTotal = today.reduce((sum, s) => sum + s.totals.payable, 0);
-
-  const addProduct = (product) => {
-    const qty = (bill.items.find((it) => it.code === product.code)?.qty ?? 0) + 1;
-    bill.add(product.code);
-    const outOfSeason = SEASON_COUNT > 0 && !product.inSeason;
-    setNotice({
-      tone: outOfSeason ? 'warn' : 'ok',
-      text: `Added ${product.name} · qty ${qty}${outOfSeason ? ` · not marked for Season ${SEASON}` : ''}`,
-    });
-  };
-
-  const setCustomer = (next = {}) => {
-    setPhone(next.phone ?? '');
-    setName(next.name ?? '');
-    setPhoneError('');
-    setNameError('');
-  };
-
-  const closeDialog = () => {
-    setDialog(null);
-    requestAnimationFrame(() => scanRef.current?.focus());
-  };
-
-  const holdCurrent = (list) =>
-    bill.items.length ? [...list, { id: Date.now(), at: new Date().toISOString(), items: bill.items, phone, name }] : list;
-
-  const hold = () => {
-    if (!bill.items.length) return;
-    setHeld(holdCurrent(held));
-    bill.clear();
-    setCustomer();
-    setNotice({ tone: 'ok', text: 'Bill held · press F9 to recall it' });
-  };
-
-  const recall = (id) => {
-    const target = held.find((h) => h.id === id);
-    if (!target) return;
-    setHeld(holdCurrent(held.filter((h) => h.id !== id)));
-    bill.load(target.items);
-    setCustomer(target);
-    setNotice({ tone: 'ok', text: 'Held bill recalled' });
-    closeDialog();
-  };
-
-  const clearBill = () => {
-    bill.clear();
-    setCustomer();
-    setNotice(null);
-    scanRef.current?.focus();
-  };
-
-  const openPay = () => {
-    if (!totals.count) return;
-    const phoneProblem = isValidMobile(phone)
-      ? ''
-      : phone.trim()
-        ? 'Enter a valid 10-digit mobile number'
-        : 'Mobile number is required to bill';
-    const nameProblem = isValidName(name) ? '' : name.trim() ? 'Enter the full name' : 'Customer name is required to bill';
-    setPhoneError(phoneProblem);
-    setNameError(nameProblem);
-    if (phoneProblem || nameProblem) {
-      (phoneProblem ? phoneRef : nameRef).current?.focus();
-      return;
-    }
-    setDialog('pay');
-  };
-  const openHeld = () => held.length && setDialog('held');
-
-  const completeSale = (payment) => {
-    const sale = {
-      billNo,
-      at: new Date().toISOString(),
-      phone: phoneDigits(phone),
-      name: name.trim(),
-      customer: customerLabel(phone, name),
-      lines: totals.lines.map((l) => ({ code: l.code, name: l.product.name, qty: l.qty, price: l.price, mrp: l.product.mrp })),
-      totals: {
-        count: totals.count,
-        qty: totals.qty,
-        mrpTotal: totals.mrpTotal,
-        savings: totals.savings,
-        taxable: totals.taxable,
-        tax: totals.tax,
-        gstRows: totals.gstRows,
-        roundOff: totals.roundOff,
-        payable: totals.payable,
-      },
-      payment,
-    };
-    setSales([...sales, sale]);
-    setSeq(seq + 1);
-    setLastSale(sale);
-    bill.clear();
-    setCustomer();
-    setMethod('cash');
-    setNotice(null);
-    setDialog('done');
-    if (payment.print) setPrintJob((n) => n + 1);
-  };
-
-  const onShortcut = useEffectEvent((e) => {
-    const keys = {
-      F2: () => !dialog && scanRef.current?.focus(),
-      F4: () => !dialog && phoneRef.current?.focus(),
-      F8: () => !dialog && hold(),
-      F9: () => !dialog && openHeld(),
-      F12: () => !dialog && openPay(),
-      Escape: () => dialog && closeDialog(),
-    };
-    if (!keys[e.key]) return;
-    e.preventDefault();
-    keys[e.key]();
-  });
-
-  useEffect(() => {
-    const handler = (e) => onShortcut(e);
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
+  const props = { session, onMenu: () => setMenuOpen(true), onNavigate: setPage };
 
   return (
-    <>
-      {/* On a counter monitor (lg and up) the screen is exactly the window's height: only the bill list
-          scrolls. Narrower windows stack the order panel under the bill and scroll as a normal page. */}
-      <div className="flex min-h-screen flex-col lg:h-dvh lg:min-h-0 lg:overflow-hidden print:hidden">
-        <Header now={now} todayCount={today.length} todayTotal={todayTotal} />
-
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 p-5">
-            <ScanBar
-              inputRef={scanRef}
-              seasonOnly={seasonOnly}
-              onSeasonOnly={setSeasonPref}
-              onAdd={addProduct}
-              notice={notice}
-              onNotice={setNotice}
-            />
-
-            <section className="flex min-h-72 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(9,9,11,0.04)] lg:min-h-0">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-4 pb-2">
-                <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                  <h1 className="text-[15px] font-semibold tracking-tight">Current bill</h1>
-                  <span className="font-mono text-xs text-ink-3">{billNo}</span>
-                  {totals.count > 0 && <span className="text-xs text-ink-3">· {countLabel(totals)}</span>}
-                </div>
-                <div className="flex flex-wrap items-center gap-0.5">
-                  <button type="button" className={toolButton} onClick={hold} disabled={!totals.count}>
-                    <Pause size={15} /> Hold <Kbd>F8</Kbd>
-                  </button>
-                  <button type="button" className={toolButton} onClick={openHeld} disabled={!held.length}>
-                    <History size={15} /> Held
-                    {held.length > 0 && (
-                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-raave-red-50 px-1.5 text-[11px] font-semibold text-raave-red-ink">
-                        {held.length}
-                      </span>
-                    )}
-                    <Kbd>F9</Kbd>
-                  </button>
-                  <span className="mx-1 h-4 w-px bg-line" aria-hidden="true" />
-                  <button type="button" className={`${toolButton} enabled:hover:bg-ruby-50! enabled:hover:text-ruby-ink!`} onClick={clearBill} disabled={!totals.count}>
-                    <Trash2 size={15} /> Clear
-                  </button>
-                </div>
-              </div>
-              <BillTable lines={totals.lines} lastCode={bill.lastCode} onQty={bill.setQty} />
-            </section>
-          </main>
-
-          <OrderPanel
-            bill={totals}
-            phone={phone}
-            onPhone={(value) => {
-              setPhone(value);
-              setPhoneError('');
-            }}
-            phoneError={phoneError}
-            name={name}
-            onName={(value) => {
-              setName(value);
-              setNameError('');
-            }}
-            nameError={nameError}
-            nameRef={nameRef}
-            phoneRef={phoneRef}
-            method={method}
-            onMethod={setMethod}
-            onCollect={openPay}
-          />
-        </div>
+    <div className="flex min-h-dvh lg:h-dvh lg:overflow-hidden">
+      <Sidebar
+        session={session}
+        page={page}
+        onPage={setPage}
+        badges={{ orders: ordersNeedingAction(orders, session) }}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(!collapsed)}
+        mobileOpen={menuOpen}
+        onMobileClose={() => setMenuOpen(false)}
+        onSignOut={onSignOut}
+      />
+      <div className="flex min-w-0 flex-1 flex-col lg:min-h-0">
+        {page === 'counter' && <Counter key={session.location} location={session.location} {...props} />}
+        {page === 'dashboard' && <Dashboard {...props} />}
+        {page === 'sales' && <Sales {...props} />}
+        {page === 'inventory' && <Inventory {...props} />}
+        {page === 'orders' && <PurchaseOrders {...props} />}
       </div>
-
-      {dialog === 'pay' && (
-        <PaymentDialog
-          bill={totals}
-          billNo={billNo}
-          method={method}
-          onMethod={setMethod}
-          phone={phone}
-          name={name}
-          onBack={closeDialog}
-          onComplete={completeSale}
-        />
-      )}
-      {dialog === 'held' && (
-        <HeldDialog
-          held={held}
-          onRecall={recall}
-          onDiscard={(id) => {
-            const rest = held.filter((h) => h.id !== id);
-            setHeld(rest);
-            if (!rest.length) closeDialog();
-          }}
-          onClose={closeDialog}
-        />
-      )}
-      {dialog === 'done' && lastSale && (
-        <DoneDialog sale={lastSale} onReprint={() => setPrintJob((n) => n + 1)} onNewBill={closeDialog} />
-      )}
-
-      {lastSale && <Receipt sale={lastSale} />}
-    </>
+    </div>
   );
+};
+
+const App = () => {
+  const [session, setSession] = useLocalStorage('billing-session', null);
+  if (!session) return <Login onSignedIn={setSession} />;
+  return <Shell key={session.username} session={session} onSignOut={() => setSession(null)} />;
 };
 
 export default App;

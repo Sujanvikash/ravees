@@ -4,7 +4,8 @@ Export products-clean.xlsx to the JSON the billing frontend reads, until the bil
     python export_products.py products-clean.xlsx ../../frontend/src/data/products.json
 
 Needs: pip install openpyxl. Re-run it after editing products-clean.xlsx (e.g. the "In Season 2026" column).
-Cost price, manufacturer and the other purchase details stay out: the counter screen never shows them.
+Cost price is included for the admin's purchase-rate and profit figures (location logins never show it).
+Until the billing backend exists it ships inside the app, so anyone with browser developer tools could read it.
 """
 import json
 import sys
@@ -40,6 +41,7 @@ for values in rows:
         'hsn': text(r['HSN']),
         'mrp': money(r['MRP']),
         'offer': money(r['Offer Price']),
+        'cost': money(r['Cost Price']),
         'gst': money(r['GST % (Sale)']),
         'inSeason': text(r[season_col]).upper() in ('Y', 'YES', '1', 'TRUE'),
     })
