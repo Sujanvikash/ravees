@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  /* page and surfaces */
+  --color-ground: #f3f5f2; /* the page behind the cards */
+  --color-surface: #ffffff; /* cards, dialogs */
+  --color-mist: #f1f4f2; /* quiet fills: steppers, key hints, segmented controls */
+  --color-mist-2: #f7f9f7; /* table header, side panels */
+  --color-line: #e2e7e3; /* card borders, dividers */
+  --color-line-soft: #eef1ef; /* row separators */
+  --color-line-strong: #cbd5ce; /* input borders */
+
+  /* text */
+  --color-ink: #102019;
+  --color-ink-2: #4a5a51; /* secondary text */
+  --color-ink-3: #5f6d65; /* hints and captions (still 4.5:1 on white) */
+
+  /* brand: the logo's evergreen and gold */
+  --color-pine-950: #0a2117; /* top bar, primary buttons (the logo's own background) */
+  --color-pine-900: #12392a; /* primary button hover */
+  --color-pine-700: #1d5a3c; /* codes, focus rings, selected states */
+  --color-pine-50: #eaf2ec; /* selected fill */
+  --color-gold-300: #e5c77f; /* gold text on pine */
+  --color-gold-500: #c49a45; /* focus outline */
+  --color-gold-800: #6e4e12; /* gold text on light gold */
+  --color-gold-100: #f3e3bc; /* "just scanned" tag */
+  --color-gold-50: #fbf4e2; /* last scanned row, change to return */
+
+  /* status */
+  --color-ok: #1d7a46;
+  --color-ok-ink: #17663a;
+  --color-ok-50: #e3f1e8;
+  --color-warn-ink: #8a5300;
+  --color-warn-50: #fdf1dc;
+  --color-ruby: #b42318;
+  --color-ruby-ink: #a0261b;
+  --color-ruby-50: #fdecea;
+
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+  --font-display: "Montserrat", ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-ground font-sans text-sm text-ink antialiased print:bg-white;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold-500);
+    outline-offset: 2px;
+  }
+  input:focus-visible {
+    outline: none;
+  }
+}
+
+/* The receipt prints on an 80mm thermal roll; everything else is hidden in print. */
+@page {
+  size: 80mm auto;
+  margin: 3mm;
+}
