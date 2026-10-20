@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Raave's Evergreen: a storefront and admin dashboard for a Christmas-tree retailer. It is **frontend only**: React 19, Vite 8, Tailwind CSS v4 and react-router-dom 7, written in plain JS/JSX with no TypeScript. There is no backend. Every bit of "persistence" is localStorage.
 
+This app lives at `ecommerce/frontend/` in the repo. All paths and commands below are relative to that folder. The other folders (`ecommerce/backend`, `billing/`) are described in the root `README.md`.
+
 ## Commands
 
 ```bash
