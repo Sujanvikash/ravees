@@ -48,7 +48,7 @@ There is no billing backend yet, so:
 | `src/lib/bill.js` | totals, GST split, bill numbers (`CHN/26-27/00001`) |
 | `src/lib/money.js` | ₹ formatting with Indian digit grouping |
 | `src/hooks/useBill.js` | the current bill (items and last scanned), kept in localStorage |
-| `src/styles/index.css` | the Tailwind theme: the logo's evergreen and gold, used on a light background |
+| `src/styles/index.css` | the Tailwind theme: the logo's evergreen green and red, on a light background |
 
 ## Not done yet
 

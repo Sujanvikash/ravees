@@ -56,9 +56,9 @@ const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }
       <div className="flex flex-wrap items-center gap-3">
         <label
           htmlFor="scan"
-          className="flex h-16 min-w-0 flex-[1_1_420px] cursor-text items-center gap-3.5 rounded-xl border-2 border-line-strong px-4.5 focus-within:border-pine-700 focus-within:shadow-[0_0_0_4px_rgba(29,90,60,0.14)]"
+          className="flex h-16 min-w-0 flex-[1_1_420px] cursor-text items-center gap-3.5 rounded-xl border-2 border-line-strong px-4.5 focus-within:border-evergreen-800 focus-within:shadow-[0_0_0_4px_rgba(23,92,38,0.16)]"
         >
-          <ScanBarcode size={28} strokeWidth={1.8} className="text-pine-700" aria-hidden="true" />
+          <ScanBarcode size={28} strokeWidth={1.8} className="text-evergreen-800" aria-hidden="true" />
           <span className="sr-only">Scan barcode or search product</span>
           <input
             id="scan"
@@ -93,7 +93,7 @@ const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }
               disabled={s.disabled}
               title={s.disabled ? `No products are marked “In Season ${SEASON}” yet` : undefined}
               className={`h-10 rounded-[9px] px-3.5 text-[13px] font-semibold disabled:opacity-50 ${
-                s.on ? 'bg-surface text-pine-950 shadow-[0_1px_3px_rgba(10,33,23,0.16)]' : 'text-ink-2'
+                s.on ? 'bg-surface text-ink shadow-[0_1px_3px_rgba(10,33,23,0.16)]' : 'text-ink-2'
               }`}
             >
               {s.label}
@@ -131,10 +131,10 @@ const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }
                 onClick={() => add(p)}
                 onMouseEnter={() => setActive(i)}
                 className={`grid cursor-pointer grid-cols-[96px_minmax(0,1fr)_150px_110px] items-center gap-4 border-b border-mist px-4 py-3 ${
-                  i === active ? 'bg-pine-50' : ''
+                  i === active ? 'bg-evergreen-50' : ''
                 }`}
               >
-                <span className="font-mono text-[13px] font-semibold text-pine-700">{p.code}</span>
+                <span className="font-mono text-[13px] font-semibold text-evergreen-800">{p.code}</span>
                 <span className="truncate text-[15px] font-semibold">{p.name}</span>
                 <span className="text-xs text-ink-3">{p.dept}</span>
                 <span className="text-right font-mono text-sm">{inr(priceOf(p))}</span>

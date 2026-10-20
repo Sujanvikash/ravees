@@ -15,7 +15,7 @@ const PaymentMethods = ({ value, onChange, compact = false }) => (
             compact ? 'h-12' : 'h-16'
           } ${
             on
-              ? 'border-2 border-pine-700 bg-pine-50 text-pine-950'
+              ? 'border-2 border-evergreen-800 bg-evergreen-50 text-ink'
               : 'border border-line text-ink-2 hover:border-line-strong hover:bg-mist-2'
           }`}
         >

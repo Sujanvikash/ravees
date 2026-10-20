@@ -183,7 +183,7 @@ const App = () => {
                   </button>
                   <button type="button" className={toolButton} onClick={openHeld} disabled={!held.length}>
                     <History size={16} /> Held bills
-                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-50 px-1.5 text-xs font-bold text-gold-800">
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-raave-red-50 px-1.5 text-xs font-bold text-raave-red-ink">
                       {held.length}
                     </span>
                   </button>

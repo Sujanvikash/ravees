@@ -1,5 +1,4 @@
-import { Minus, Plus, X } from 'lucide-react';
-import mark from '../assets/logo-mark.png';
+import { Minus, Plus, ScanBarcode, X } from 'lucide-react';
 import { inr } from '../lib/money.js';
 
 const cell = 'border-t border-line-soft px-3 py-3.5';
@@ -10,7 +9,9 @@ const BillTable = ({ lines, lastCode, onQty }) => {
   if (!lines.length) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-18 text-center">
-        <img src={mark} alt="" className="h-15.25 w-16 rounded-[14px]" />
+        <span className="flex size-16 items-center justify-center rounded-full bg-evergreen-50 text-evergreen-800">
+          <ScanBarcode size={30} strokeWidth={1.8} aria-hidden="true" />
+        </span>
         <div className="text-lg font-bold">Scan an item to start the bill</div>
         <div className="max-w-105 text-sm text-ink-3">
           Point the scanner at a tag, or type a product code like TR0278 and press Enter.
@@ -42,14 +43,14 @@ const BillTable = ({ lines, lastCode, onQty }) => {
             const isLast = p.code === lastCode;
             const off = p.offer ? Math.round((1 - p.offer / p.mrp) * 100) : 0;
             return (
-              <tr key={p.code} className={isLast ? 'bg-gold-50' : 'hover:bg-mist-2'}>
+              <tr key={p.code} className={isLast ? 'bg-evergreen-50' : 'hover:bg-mist-2'}>
                 <td className={`${cell} pl-5 font-mono text-[13px] text-ink-3`}>{i + 1}</td>
-                <td className={`${cell} font-mono text-[13px] font-semibold text-pine-700`}>{p.code}</td>
+                <td className={`${cell} font-mono text-[13px] font-semibold text-evergreen-800`}>{p.code}</td>
                 <td className={cell}>
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                     <span className="text-[15px] font-semibold">{p.name}</span>
                     {isLast && (
-                      <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[11px] font-bold tracking-wide text-gold-800">
+                      <span className="rounded-full bg-raave-red-50 px-2 py-0.5 text-[11px] font-bold tracking-wide text-raave-red-ink">
                         JUST SCANNED
                       </span>
                     )}

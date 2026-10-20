@@ -30,7 +30,7 @@ const SummaryCard = ({ bill, method, onMethod, onCollect }) => (
         <div className="text-xs font-semibold tracking-[0.08em] whitespace-nowrap text-ink-2 uppercase">Total payable</div>
         <div className="mt-0.5 text-xs text-ink-3">{countLabel(bill)} · incl. GST</div>
       </div>
-      <div className="font-mono text-[32px] font-semibold tracking-tight text-pine-950">{inr(bill.payable)}</div>
+      <div className="font-mono text-[32px] font-semibold tracking-tight text-ink">{inr(bill.payable)}</div>
     </div>
 
     <div className="mt-4.5 mb-2.5 text-[13px] font-semibold text-ink-2">Payment method</div>
@@ -40,10 +40,10 @@ const SummaryCard = ({ bill, method, onMethod, onCollect }) => (
       type="button"
       onClick={onCollect}
       disabled={!bill.count}
-      className="mt-4 flex h-15 w-full items-center justify-center gap-3 rounded-xl bg-pine-950 text-[17px] font-bold text-gold-300 hover:bg-pine-900 disabled:bg-line disabled:text-ink-3"
+      className="mt-4 flex h-15 w-full items-center justify-center gap-3 rounded-xl bg-evergreen-800 text-[17px] font-bold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3"
     >
       Collect {inr(bill.payable)}
-      <Kbd className="rounded-md bg-gold-300/15 px-2 py-0.5 text-current!">F12</Kbd>
+      <Kbd className="rounded-md bg-white/15 px-2 py-0.5 text-current!">F12</Kbd>
     </button>
   </section>
 );

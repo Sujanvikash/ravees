@@ -15,7 +15,7 @@ const quickAmounts = (due) => {
 };
 
 const field =
-  'flex items-center gap-2 rounded-xl border-2 border-line-strong px-4 focus-within:border-pine-700';
+  'flex items-center gap-2 rounded-xl border-2 border-line-strong px-4 focus-within:border-evergreen-800';
 
 /** Takes the payment for the bill. Enter completes the sale once the amount is enough. */
 const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComplete }) => {
@@ -51,7 +51,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
         <div className="flex flex-[1_1_340px] flex-col gap-4.5 p-6">
           <div>
             <div className="text-xs font-semibold tracking-[0.08em] text-ink-2 uppercase">Amount due</div>
-            <div className="font-mono text-[40px] font-semibold tracking-tight text-pine-950">{inr(due)}</div>
+            <div className="font-mono text-[40px] font-semibold tracking-tight text-ink">{inr(due)}</div>
           </div>
 
           <PaymentMethods value={method} onChange={onMethod} compact />
@@ -81,7 +81,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
                     key={v}
                     type="button"
                     onClick={() => setTendered(String(v))}
-                    className="h-11 rounded-[10px] border border-line font-mono text-sm font-medium hover:border-pine-700"
+                    className="h-11 rounded-[10px] border border-line font-mono text-sm font-medium hover:border-evergreen-800"
                   >
                     {i === 0 ? 'Exact' : inrWhole(v)}
                   </button>
@@ -89,7 +89,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
               </div>
               <div
                 className={`flex items-center justify-between rounded-xl px-4 py-3.5 ${
-                  change >= 0 ? 'bg-gold-50 text-pine-950' : 'bg-ruby-50 text-ruby-ink'
+                  change >= 0 ? 'bg-evergreen-50 text-ink' : 'bg-ruby-50 text-ruby-ink'
                 }`}
               >
                 <span className="text-sm font-semibold">{change >= 0 ? 'Change to return' : 'Still to collect'}</span>
@@ -160,7 +160,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
         <div className="flex flex-[1_1_260px] flex-col gap-3.5 border-l border-line bg-mist-2 p-6">
           <div className="text-[13px] font-semibold text-ink-2">Receipt</div>
           <label className="flex items-center gap-2.5 text-sm">
-            <input type="checkbox" checked={print} onChange={(e) => setPrint(e.target.checked)} className="size-4.5 accent-pine-700" />
+            <input type="checkbox" checked={print} onChange={(e) => setPrint(e.target.checked)} className="size-4.5 accent-evergreen-800" />
             Print receipt
           </label>
           <div className="h-px bg-line" />
@@ -182,7 +182,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
           <button
             type="submit"
             disabled={!valid}
-            className="inline-flex h-14 items-center justify-center gap-2.5 rounded-xl bg-pine-950 text-base font-bold text-gold-300 hover:bg-pine-900 disabled:bg-line disabled:text-ink-3"
+            className="inline-flex h-14 items-center justify-center gap-2.5 rounded-xl bg-evergreen-800 text-base font-bold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3"
           >
             <Check size={18} strokeWidth={2.4} />
             Complete sale <Kbd className="text-current!">Enter</Kbd>

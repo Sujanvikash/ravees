@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
  */
 const Dialog = ({ id, title, subtitle, onClose, size = 'max-w-3xl', children }) => (
   <div
-    className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto bg-pine-950/55 px-4 pt-16 pb-6 print:hidden"
+    className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto bg-ink/50 px-4 pt-16 pb-6 print:hidden"
     onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
   >
     <div

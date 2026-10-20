@@ -15,16 +15,13 @@
   --color-ink-2: #4a5a51; /* secondary text */
   --color-ink-3: #5f6d65; /* hints and captions (still 4.5:1 on white) */
 
-  /* brand: the logo's evergreen and gold */
-  --color-pine-950: #0a2117; /* top bar, primary buttons (the logo's own background) */
-  --color-pine-900: #12392a; /* primary button hover */
-  --color-pine-700: #1d5a3c; /* codes, focus rings, selected states */
-  --color-pine-50: #eaf2ec; /* selected fill */
-  --color-gold-300: #e5c77f; /* gold text on pine */
-  --color-gold-500: #c49a45; /* focus outline */
-  --color-gold-800: #6e4e12; /* gold text on light gold */
-  --color-gold-100: #f3e3bc; /* "just scanned" tag */
-  --color-gold-50: #fbf4e2; /* last scanned row, change to return */
+  /* brand: the logo's evergreen band and red wordmark */
+  --color-evergreen-900: #0f4a1d; /* primary button hover */
+  --color-evergreen-800: #175c26; /* the logo's green: primary buttons, codes, selected states, focus */
+  --color-evergreen-50: #ebf4ed; /* selected fill, last scanned row, change to return */
+  --color-raave-red: #ed1c24; /* the logo's red: thin accents only, too light for small text */
+  --color-raave-red-ink: #b8141b; /* red text on white or on raave-red-50 */
+  --color-raave-red-50: #fdecec; /* "just scanned" tag, held-bills count */
 
   /* status */
   --color-ok: #1d7a46;
@@ -38,7 +35,7 @@
 
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
-  --font-display: "Montserrat", ui-sans-serif, sans-serif;
+  --font-display: "Libre Baskerville", Georgia, "Times New Roman", serif; /* close to the logo's EVERGREEN lettering */
 }
 
 @layer base {
@@ -49,7 +46,7 @@
     cursor: pointer;
   }
   :focus-visible {
-    outline: 2px solid var(--color-gold-500);
+    outline: 2px solid var(--color-evergreen-800);
     outline-offset: 2px;
   }
   input:focus-visible {

@@ -18,9 +18,9 @@ const DoneDialog = ({ sale, onReprint, onNewBill }) => (
         <span className="font-mono">{sale.billNo}</span> · {inr(sale.totals.payable)} · {methodLabel(sale.payment.method)}
       </div>
       {sale.payment.change > 0 && (
-        <div className="mt-2.5 w-full rounded-xl bg-gold-50 p-4">
-          <div className="text-[13px] font-semibold text-gold-800">Give change</div>
-          <div className="font-mono text-[34px] font-semibold text-pine-950">{inr(sale.payment.change)}</div>
+        <div className="mt-2.5 w-full rounded-xl bg-evergreen-50 p-4">
+          <div className="text-[13px] font-semibold text-evergreen-800">Give change</div>
+          <div className="font-mono text-[34px] font-semibold text-ink">{inr(sale.payment.change)}</div>
         </div>
       )}
       <div className="mt-3.5 grid w-full grid-cols-2 gap-2.5">
@@ -35,7 +35,7 @@ const DoneDialog = ({ sale, onReprint, onNewBill }) => (
           type="button"
           autoFocus
           onClick={onNewBill}
-          className="h-12 rounded-xl bg-pine-950 text-sm font-bold text-gold-300 hover:bg-pine-900"
+          className="h-12 rounded-xl bg-evergreen-800 text-sm font-bold text-white hover:bg-evergreen-900"
         >
           New bill <Kbd className="text-current!">Enter</Kbd>
         </button>

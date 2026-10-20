@@ -27,7 +27,7 @@ const HeldDialog = ({ held, onRecall, onDiscard, onClose }) => (
               type="button"
               autoFocus={i === held.length - 1}
               onClick={() => onRecall(h.id)}
-              className="h-10 rounded-[10px] bg-pine-950 px-4 text-[13px] font-bold text-gold-300 hover:bg-pine-900"
+              className="h-10 rounded-[10px] bg-evergreen-800 px-4 text-[13px] font-bold text-white hover:bg-evergreen-900"
             >
               Recall
             </button>

@@ -11,7 +11,7 @@ const CustomerCard = ({ inputRef, phone, onPhone }) => (
     </div>
     <label
       htmlFor="customer-phone"
-      className="flex h-11.5 cursor-text items-center gap-2.5 rounded-[10px] border border-line-strong px-3.5 focus-within:border-pine-700"
+      className="flex h-11.5 cursor-text items-center gap-2.5 rounded-[10px] border border-line-strong px-3.5 focus-within:border-evergreen-800"
     >
       <Phone size={18} className="text-ink-2" aria-hidden="true" />
       <span className="sr-only">Customer mobile number</span>
