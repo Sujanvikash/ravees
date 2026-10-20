@@ -4,6 +4,7 @@
  */
 export const STORE = {
   name: "Raave's Evergreen",
+  tagline: 'Christmas Tree & Decoration · Since 1997',
   showroom: 'Chennai · Egmore',
   address: ['No. 14, Pantheon Road, Egmore,', 'Chennai, Tamil Nadu - 600008'],
   phone: '+91 98407 88950',

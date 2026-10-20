@@ -27,7 +27,8 @@ const Receipt = ({ sale }) => {
   return (
     <div className="hidden font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
-        <div className="font-display text-[14px] font-semibold tracking-[0.2em] uppercase">{STORE.name}</div>
+        <div className="font-display text-[15px] font-bold tracking-[0.14em] uppercase">{STORE.name}</div>
+        <div className="mb-0.5">{STORE.tagline}</div>
         {STORE.address.map((a) => (
           <div key={a}>{a}</div>
         ))}

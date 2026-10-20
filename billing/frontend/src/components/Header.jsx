@@ -1,5 +1,5 @@
 import { MapPin } from 'lucide-react';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo.svg';
 import { STORE } from '../config.js';
 import { SEASON } from '../lib/catalogue.js';
 
