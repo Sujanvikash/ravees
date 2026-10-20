@@ -1,112 +1,114 @@
 import { Minus, Plus, ScanBarcode, X } from 'lucide-react';
 import { inr } from '../lib/money.js';
+import Kbd from './Kbd.jsx';
 
-const cell = 'border-t border-line-soft px-3 py-2';
-const head = 'sticky top-0 z-[1] bg-mist-2 py-2 font-semibold';
-const stepper = 'inline-flex size-8 items-center justify-center rounded-lg bg-mist text-ink hover:bg-line';
+const stepButton = 'inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist hover:text-ink';
+// Phones stack each line (name, then qty and amount); from sm up it is one row of four columns.
+const cols = 'sm:grid sm:grid-cols-[minmax(0,1fr)_auto_7.5rem_2rem] sm:items-center sm:gap-4';
 
 /**
- * The lines of the current bill: code, product, price (with the MRP struck through on offers), qty, amount.
- * It fills the space left in its card and scrolls inside it, with the column headings pinned.
+ * The lines of the current bill. It fills the space left in the bill area and scrolls inside it, with
+ * the column labels pinned. The last scanned line is highlighted.
  */
 const BillTable = ({ lines, lastCode, onQty }) => {
   if (!lines.length) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-8 text-center">
-        <span className="flex size-14 items-center justify-center rounded-full bg-evergreen-50 text-evergreen-800">
-          <ScanBarcode size={26} strokeWidth={1.8} aria-hidden="true" />
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
+        <span className="flex size-12 items-center justify-center rounded-2xl border border-line bg-surface text-ink-2 shadow-[0_1px_2px_rgba(9,9,11,0.05)]">
+          <ScanBarcode size={22} strokeWidth={1.8} aria-hidden="true" />
         </span>
-        <div className="text-base font-bold">Scan an item to start the bill</div>
-        <div className="max-w-105 text-[13px] text-ink-3">
-          Point the scanner at a tag, or type a product code like TR0278 and press Enter.
+        <div>
+          <div className="text-[15px] font-semibold">Ready to scan</div>
+          <div className="mt-1 max-w-80 text-[13px] text-ink-3">
+            Scan a product tag, or type a code like TR0278 and press Enter.
+          </div>
+        </div>
+        <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-ink-3">
+          <span className="inline-flex items-center gap-1.5"><Kbd>F9</Kbd> Held bills</span>
+          <span className="inline-flex items-center gap-1.5"><Kbd>F4</Kbd> Customer</span>
+          <span className="inline-flex items-center gap-1.5"><Kbd>F12</Kbd> Pay</span>
         </div>
       </div>
     );
   }
 
   return (
-    // relative: keeps the absolutely positioned sr-only header inside the scroll box.
-    <div className="relative min-h-0 flex-1 overflow-auto">
-      <table className="w-full min-w-180 border-collapse">
-        <thead>
-          <tr className="text-[11px] tracking-[0.06em] text-ink-2 uppercase">
-            <th scope="col" className={`${head} w-10 pl-4 text-left`}>#</th>
-            <th scope="col" className={`${head} w-22 px-3 text-left`}>Code</th>
-            <th scope="col" className={`${head} px-3 text-left`}>Product</th>
-            <th scope="col" className={`${head} w-32 px-3 text-right`}>Price</th>
-            <th scope="col" className={`${head} w-34 px-3 text-center`}>Qty</th>
-            <th scope="col" className={`${head} w-30 px-3 text-right`}>Amount</th>
-            <th scope="col" className={`${head} w-12 pr-4`}>
-              <span className="sr-only">Remove</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {lines.map((line, i) => {
-            const { product: p } = line;
-            const isLast = p.code === lastCode;
-            const off = p.offer ? Math.round((1 - p.offer / p.mrp) * 100) : 0;
-            return (
-              <tr key={p.code} className={isLast ? 'bg-evergreen-50' : 'hover:bg-mist-2'}>
-                <td className={`${cell} pl-4 font-mono text-xs text-ink-3`}>{i + 1}</td>
-                <td className={`${cell} font-mono text-[13px] font-semibold text-evergreen-800`}>{p.code}</td>
-                <td className={cell}>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="text-sm font-semibold">{p.name}</span>
-                    {isLast && (
-                      <span className="rounded-full bg-raave-red-50 px-1.5 py-px text-[10px] font-bold tracking-wide text-raave-red-ink">
-                        JUST SCANNED
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-ink-3">{p.dept}</div>
-                </td>
-                <td className={`${cell} text-right font-mono`}>
-                  <div className="text-[13px]">{inr(line.price)}</div>
+    <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+      <div className={`${cols} sticky top-0 z-1 hidden bg-surface/95 px-3 py-2 text-xs text-ink-3 backdrop-blur`}>
+        <span>Item</span>
+        <span className="w-28 text-center">Qty</span>
+        <span className="text-right">Amount</span>
+        <span />
+      </div>
+      <ul aria-label="Bill items" className="flex flex-col gap-0.5">
+        {lines.map((line) => {
+          const { product: p } = line;
+          const isLast = p.code === lastCode;
+          const off = p.offer ? Math.round((1 - p.offer / p.mrp) * 100) : 0;
+          return (
+            <li
+              key={p.code}
+              className={`${cols} group relative isolate flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-3 py-2 ${isLast ? 'bg-evergreen-50' : 'hover:bg-mist-2'}`}
+            >
+              {isLast && (
+                // Keyed on the qty so the flash replays when the same product is scanned again; it is its own
+                // layer so the row (and a qty being typed) is never remounted.
+                <span key={line.qty} aria-hidden="true" className="absolute inset-0 -z-10 animate-flash rounded-xl bg-evergreen-100 opacity-0" />
+              )}
+              <div className="min-w-0 basis-full sm:basis-auto">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
+                  <span className="truncate text-sm font-medium">{p.name}</span>
+                  {isLast && <span className="shrink-0 text-[11px] font-medium text-evergreen-800">Just scanned</span>}
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-3 tabular-nums">
+                  <span>{p.dept}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{inr(line.price)} each</span>
                   {p.offer > 0 && (
-                    <div className="text-[11px] whitespace-nowrap text-ink-3">
-                      <s>{inr(p.mrp)}</s> <span className="font-semibold text-ok">−{off}%</span>
-                    </div>
+                    <>
+                      <s className="text-ink-3/80">{inr(p.mrp)}</s>
+                      <span className="rounded bg-ok-50 px-1 font-medium text-ok-ink">−{off}%</span>
+                    </>
                   )}
-                </td>
-                <td className={cell}>
-                  <div className="flex items-center justify-center gap-1">
-                    <button type="button" className={stepper} onClick={() => onQty(p.code, line.qty - 1)} aria-label={`One less ${p.name}`}>
-                      <Minus size={15} strokeWidth={2.2} />
-                    </button>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      aria-label={`Quantity of ${p.name}`}
-                      value={line.qty}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => {
-                        const qty = parseInt(e.target.value.replace(/\D/g, ''), 10);
-                        if (qty > 0) onQty(p.code, qty);
-                      }}
-                      className="w-10 rounded-md bg-transparent text-center font-mono text-[15px] font-semibold focus:bg-mist"
-                    />
-                    <button type="button" className={stepper} onClick={() => onQty(p.code, line.qty + 1)} aria-label={`One more ${p.name}`}>
-                      <Plus size={15} strokeWidth={2.2} />
-                    </button>
-                  </div>
-                </td>
-                <td className={`${cell} text-right font-mono text-sm font-semibold`}>{inr(line.amount)}</td>
-                <td className={`${cell} pr-4 text-right`}>
-                  <button
-                    type="button"
-                    onClick={() => onQty(p.code, 0)}
-                    aria-label={`Remove ${p.name}`}
-                    className="inline-flex size-8 items-center justify-center rounded-lg text-ruby hover:bg-ruby-50"
-                  >
-                    <X size={16} />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </div>
+              </div>
+
+              <div className="flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line bg-surface">
+                <button type="button" className={stepButton} onClick={() => onQty(p.code, line.qty - 1)} aria-label={`One less ${p.name}`}>
+                  <Minus size={14} strokeWidth={2.2} />
+                </button>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label={`Quantity of ${p.name}`}
+                  value={line.qty}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const qty = parseInt(e.target.value.replace(/\D/g, ''), 10);
+                    if (qty > 0) onQty(p.code, qty);
+                  }}
+                  className="h-full min-w-0 flex-1 border-x border-line bg-transparent text-center text-sm font-medium tabular-nums focus:bg-mist"
+                />
+                <button type="button" className={stepButton} onClick={() => onQty(p.code, line.qty + 1)} aria-label={`One more ${p.name}`}>
+                  <Plus size={14} strokeWidth={2.2} />
+                </button>
+              </div>
+
+              <div className="ml-auto text-right text-sm font-semibold tabular-nums sm:ml-0">{inr(line.amount)}</div>
+
+              <button
+                type="button"
+                onClick={() => onQty(p.code, 0)}
+                aria-label={`Remove ${p.name}`}
+                className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 opacity-60 group-hover:opacity-100 hover:bg-ruby-50 hover:text-ruby focus-visible:opacity-100"
+              >
+                <X size={15} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };

@@ -1,38 +1,51 @@
-import { MapPin } from 'lucide-react';
+import { ChevronRight, HardDrive } from 'lucide-react';
 import logo from '../assets/logo.svg';
 import { STORE } from '../config.js';
 import { SEASON } from '../lib/catalogue.js';
+import { inrWhole } from '../lib/money.js';
 
 const dateTime = new Intl.DateTimeFormat('en-IN', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
-  year: 'numeric',
   hour: 'numeric',
   minute: '2-digit',
 });
 
-const pill = 'rounded-full bg-mist px-2.5 py-1 text-xs text-ink-2';
+const Sep = () => <ChevronRight size={14} className="text-line-strong" aria-hidden="true" />;
 
-// White, like the logo's own background, with the logo's green band as the bottom rule.
-const Header = ({ now }) => (
-  <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b-[3px] border-evergreen-800 bg-surface px-4 py-1.5">
-    <div className="flex items-center gap-4">
-      <img src={logo} alt={`${STORE.name} · Christmas Tree & Decoration`} className="block h-11 w-auto" />
-      <span className="h-8 w-px bg-line" aria-hidden="true" />
-      <span className="font-display text-[13px] font-bold tracking-[0.18em] text-evergreen-800">BILLING</span>
+/** The slim top bar: logo, where this counter is, today's takings, the season and the clock. */
+const Header = ({ now, todayCount, todayTotal }) => (
+  <header className="flex h-14 shrink-0 items-center justify-between gap-6 border-b border-line bg-surface px-5">
+    <div className="flex min-w-0 items-center gap-3 text-[13px]">
+      <img src={logo} alt={`${STORE.name} · Christmas Tree & Decoration`} className="block h-9 w-auto" />
+      <span className="ml-1 h-5 w-px bg-line" aria-hidden="true" />
+      <nav aria-label="Counter" className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap">
+        <span className="font-semibold text-ink">Billing</span>
+        <Sep />
+        <span className="text-ink-2">{STORE.showroom}</span>
+        <Sep />
+        <span className="text-ink-2">{STORE.counter}</span>
+      </nav>
     </div>
-    <div className="flex flex-wrap items-center gap-2.5">
-      <span className={`inline-flex items-center gap-2 ${pill}`}>
-        <MapPin size={15} className="text-evergreen-800" aria-hidden="true" />
-        {STORE.showroom}
+
+    <div className="hidden items-center gap-4 text-[13px] whitespace-nowrap text-ink-3 md:flex">
+      <span>
+        Today <span className="font-medium text-ink tabular-nums">{inrWhole(todayTotal)}</span> · {todayCount}{' '}
+        {todayCount === 1 ? 'bill' : 'bills'}
       </span>
-      <span className={pill}>{STORE.counter}</span>
-      <span className="rounded-full border border-raave-red px-2.5 py-0.5 text-xs font-semibold tracking-wide text-raave-red-ink">
+      <span
+        className="hidden items-center gap-1.5 lg:inline-flex"
+        title="There is no billing server yet: bills are kept in this browser"
+      >
+        <HardDrive size={14} aria-hidden="true" /> Saved on this computer
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-ink-2">
+        <span className="size-1.5 rounded-full bg-raave-red" aria-hidden="true" />
         Season {SEASON}
       </span>
-      <time dateTime={now.toISOString()} className="px-1 text-xs text-ink-2">
-        {dateTime.format(now).replace(' at ', ' · ')}
+      <time dateTime={now.toISOString()} className="tabular-nums">
+        {dateTime.format(now).replace(' at ', ', ')}
       </time>
     </div>
   </header>

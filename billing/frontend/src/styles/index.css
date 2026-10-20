@@ -1,46 +1,73 @@
 @import "tailwindcss";
 
 @theme {
-  /* page and surfaces */
-  --color-ground: #f3f5f2; /* the page behind the cards */
-  --color-surface: #ffffff; /* cards, dialogs */
-  --color-mist: #f1f4f2; /* quiet fills: steppers, key hints, segmented controls */
-  --color-mist-2: #f7f9f7; /* table header, side panels */
-  --color-line: #e2e7e3; /* card borders, dividers */
-  --color-line-soft: #eef1ef; /* row separators */
-  --color-line-strong: #cbd5ce; /* input borders */
+  /* neutrals (zinc): the app is mostly white and grey, so the brand colours carry the meaning */
+  --color-ground: #fafafa; /* the page */
+  --color-surface: #ffffff; /* panels, dialogs, inputs */
+  --color-mist: #f4f4f5; /* quiet fills: segmented controls, steppers, hover */
+  --color-mist-2: #fafafa; /* subtle fill inside white panels */
+  --color-line: #e4e4e7; /* borders and dividers */
+  --color-line-soft: #f1f1f3; /* row separators */
+  --color-line-strong: #d4d4d8; /* input borders */
 
   /* text */
-  --color-ink: #102019;
-  --color-ink-2: #4a5a51; /* secondary text */
-  --color-ink-3: #5f6d65; /* hints and captions (still 4.5:1 on white) */
+  --color-ink: #09090b;
+  --color-ink-2: #3f3f46; /* secondary text */
+  --color-ink-3: #71717a; /* hints and captions (4.8:1 on white) */
 
   /* brand: the logo's evergreen band and red wordmark */
   --color-evergreen-900: #0f4a1d; /* primary button hover */
-  --color-evergreen-800: #175c26; /* the logo's green: primary buttons, codes, selected states, focus */
-  --color-evergreen-50: #ebf4ed; /* selected fill, last scanned row, change to return */
-  --color-raave-red: #ed1c24; /* the logo's red: thin accents only, too light for small text */
+  --color-evergreen-800: #175c26; /* the logo's green: the primary action, selection, focus */
+  --color-evergreen-100: #d7eadb; /* "just scanned" flash */
+  --color-evergreen-50: #eef6f0; /* selected fill, last scanned row, change to return */
+  --color-raave-red: #ed1c24; /* the logo's red: dots and hairlines only, too light for small text */
   --color-raave-red-ink: #b8141b; /* red text on white or on raave-red-50 */
-  --color-raave-red-50: #fdecec; /* "just scanned" tag, held-bills count */
+  --color-raave-red-50: #fdecec;
 
   /* status */
-  --color-ok: #1d7a46;
-  --color-ok-ink: #17663a;
-  --color-ok-50: #e3f1e8;
-  --color-warn-ink: #8a5300;
-  --color-warn-50: #fdf1dc;
-  --color-ruby: #b42318;
-  --color-ruby-ink: #a0261b;
-  --color-ruby-50: #fdecea;
+  --color-ok: #15803d;
+  --color-ok-ink: #166534;
+  --color-ok-50: #ecfdf3;
+  --color-warn-ink: #92400e;
+  --color-warn-50: #fffbeb;
+  --color-ruby: #dc2626;
+  --color-ruby-ink: #b91c1c;
+  --color-ruby-50: #fef2f2;
 
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
-  --font-display: "Libre Baskerville", Georgia, "Times New Roman", serif; /* close to the logo's EVERGREEN lettering */
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", monospace;
+  --font-display: "Libre Baskerville", Georgia, "Times New Roman", serif; /* the receipt's shop name */
+
+  --animate-flash: flash 1.2s ease-out forwards;
+  --animate-pop: pop 160ms ease-out;
+  --animate-rise: rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes flash {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.985);
+    }
+  }
 }
 
 @layer base {
   body {
     @apply bg-ground font-sans text-sm text-ink antialiased print:bg-white;
+    font-feature-settings: "cv11", "ss01";
   }
   button:not(:disabled) {
     cursor: pointer;
@@ -51,6 +78,15 @@
   }
   input:focus-visible {
     outline: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
   }
 }
 

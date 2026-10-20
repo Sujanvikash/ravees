@@ -1,24 +1,24 @@
 import { X } from 'lucide-react';
 
 /**
- * The modal shell every dialog uses: dimmed backdrop, a white card, a title row with a close button.
+ * The modal shell every dialog uses: a blurred backdrop, a white panel, a title row with a close button.
  * Esc is handled by the app's keyboard shortcuts, so it is not wired here.
  */
 const Dialog = ({ id, title, subtitle, onClose, size = 'max-w-3xl', children }) => (
   <div
-    className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto bg-ink/50 px-4 pt-16 pb-6 print:hidden"
+    className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto bg-zinc-950/30 px-4 pt-[8vh] pb-6 backdrop-blur-[3px] print:hidden"
     onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
   >
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={`${id}-title`}
-      className={`w-full ${size} overflow-hidden rounded-[20px] bg-surface shadow-[0_30px_80px_rgba(10,33,23,0.35)]`}
+      className={`w-full ${size} animate-rise overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_24px_60px_-12px_rgba(9,9,11,0.25)]`}
     >
       {title && (
-        <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-5">
+        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4">
           <div>
-            <h2 id={`${id}-title`} className="text-xl font-bold">
+            <h2 id={`${id}-title`} className="text-lg font-semibold tracking-tight">
               {title}
             </h2>
             {subtitle && <div className="mt-0.5 text-[13px] text-ink-3">{subtitle}</div>}
@@ -28,9 +28,9 @@ const Dialog = ({ id, title, subtitle, onClose, size = 'max-w-3xl', children }) 
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="inline-flex size-10 items-center justify-center rounded-[10px] bg-mist text-ink hover:bg-line"
+              className="-mr-2 inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-mist hover:text-ink"
             >
-              <X size={18} />
+              <X size={17} />
             </button>
           )}
         </div>

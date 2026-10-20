@@ -43,12 +43,12 @@ There is no billing backend yet, so:
 | Path | What it is |
 |---|---|
 | `src/App.jsx` | the screen: state, shortcuts, hold/recall, completing a sale, printing |
-| `src/components/` | ScanBar, BillTable, CustomerCard, SummaryCard, PaymentDialog, DoneDialog, HeldDialog, Receipt, Header, ShortcutBar, plus the shared Dialog, PaymentMethods and Kbd |
+| `src/components/` | Header (top bar), ScanBar, BillTable (the bill's lines), OrderPanel (customer, totals, Collect), PaymentDialog, DoneDialog, HeldDialog, Receipt, plus the shared Dialog, PaymentMethods and Kbd |
 | `src/lib/catalogue.js` | product lookup by code or barcode, and search |
 | `src/lib/bill.js` | totals, GST split, bill numbers (`CHN/26-27/00001`) |
 | `src/lib/money.js` | ₹ formatting with Indian digit grouping |
 | `src/hooks/useBill.js` | the current bill (items and last scanned), kept in localStorage |
-| `src/styles/index.css` | the Tailwind theme: the logo's evergreen green and red, on a light background |
+| `src/styles/index.css` | the Tailwind theme: neutral greys with the logo's green for the main action and its red for small accents; Geist type; the scan flash and dialog animations |
 
 ## Not done yet
 

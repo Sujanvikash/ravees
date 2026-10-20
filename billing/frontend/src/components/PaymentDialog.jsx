@@ -15,7 +15,26 @@ const quickAmounts = (due) => {
 };
 
 const field =
-  'flex items-center gap-2 rounded-xl border-2 border-line-strong px-4 focus-within:border-evergreen-800';
+  'flex items-center gap-2 rounded-xl border border-line bg-surface px-4 transition-shadow focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_4px_rgba(23,92,38,0.10)]';
+const label = 'mb-1.5 block text-[13px] font-medium text-ink-2';
+
+/** An on/off switch with its label, for "Print receipt". */
+const Switch = ({ checked, onChange, children }) => (
+  <label className="inline-flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-2 select-none">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? 'bg-evergreen-800' : 'bg-line-strong'}`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-4' : ''}`}
+      />
+    </button>
+    {children}
+  </label>
+);
 
 /** Takes the payment for the bill. Enter completes the sale once the amount is enough. */
 const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComplete }) => {
@@ -46,77 +65,84 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
   };
 
   return (
-    <Dialog id="pay" title="Collect payment" subtitle={`${billNo} · ${countLabel(bill)}`} onClose={onBack}>
-      <form onSubmit={submit} className="flex flex-wrap">
-        <div className="flex flex-[1_1_340px] flex-col gap-4.5 p-6">
-          <div>
-            <div className="text-xs font-semibold tracking-[0.08em] text-ink-2 uppercase">Amount due</div>
-            <div className="font-mono text-[40px] font-semibold tracking-tight text-ink">{inr(due)}</div>
+    <Dialog id="pay" title="Collect payment" subtitle={`${billNo} · ${countLabel(bill)}`} onClose={onBack} size="max-w-[34rem]">
+      <form onSubmit={submit}>
+        <div className="flex flex-col gap-5 px-6 pb-6">
+          <div className="rounded-2xl bg-mist-2 px-5 py-4 ring-1 ring-line-soft">
+            <div className="text-[13px] text-ink-3">Amount due</div>
+            <div className="mt-0.5 text-[44px] leading-tight font-semibold tracking-tight tabular-nums">{inr(due)}</div>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-3">
+              <span>{customerLabel(phone)}</span>
+              {bill.savings > 0 && <span className="text-ok-ink">Customer saves {inr(bill.savings)}</span>}
+              <span>GST {inr(bill.tax)} included</span>
+            </div>
           </div>
 
           <PaymentMethods value={method} onChange={onMethod} />
 
           {method === 'cash' && (
             <div className="flex flex-col gap-3">
-              <label htmlFor="tendered" className="text-[13px] font-semibold text-ink-2">
-                Cash received
-              </label>
-              <div className={`${field} h-14`}>
-                <span className="font-mono text-[22px] text-ink-2">₹</span>
-                <input
-                  id="tendered"
-                  type="text"
-                  inputMode="decimal"
-                  autoFocus
-                  autoComplete="off"
-                  value={tendered}
-                  onChange={(e) => setTendered(e.target.value)}
-                  placeholder={String(due)}
-                  className="min-w-0 flex-1 bg-transparent font-mono text-2xl font-semibold placeholder:text-ink-3"
-                />
+              <div>
+                <label htmlFor="tendered" className={label}>
+                  Cash received
+                </label>
+                <div className={`${field} h-14`}>
+                  <span className="text-xl text-ink-3">₹</span>
+                  <input
+                    id="tendered"
+                    type="text"
+                    inputMode="decimal"
+                    autoFocus
+                    autoComplete="off"
+                    value={tendered}
+                    onChange={(e) => setTendered(e.target.value)}
+                    placeholder={String(due)}
+                    className="min-w-0 flex-1 bg-transparent text-2xl font-semibold tabular-nums placeholder:font-normal placeholder:text-ink-3/70"
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {quickAmounts(due).map((v, i) => (
                   <button
                     key={v}
                     type="button"
                     onClick={() => setTendered(String(v))}
-                    className="h-11 rounded-[10px] border border-line font-mono text-sm font-medium hover:border-evergreen-800"
+                    className="h-8 rounded-full border border-line px-3.5 text-[13px] font-medium tabular-nums transition-colors hover:border-ink-3 hover:bg-mist"
                   >
                     {i === 0 ? 'Exact' : inrWhole(v)}
                   </button>
                 ))}
               </div>
               <div
-                className={`flex items-center justify-between rounded-xl px-4 py-3.5 ${
-                  change >= 0 ? 'bg-evergreen-50 text-ink' : 'bg-ruby-50 text-ruby-ink'
+                className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                  change >= 0 ? 'bg-evergreen-50 text-evergreen-900' : 'bg-ruby-50 text-ruby-ink'
                 }`}
               >
-                <span className="text-sm font-semibold">{change >= 0 ? 'Change to return' : 'Still to collect'}</span>
-                <span className="font-mono text-[26px] font-semibold">{inr(Math.abs(change))}</span>
+                <span className="text-[13px] font-medium">{change >= 0 ? 'Change to return' : 'Still to collect'}</span>
+                <span className="text-2xl font-semibold tabular-nums">{inr(Math.abs(change))}</span>
               </div>
             </div>
           )}
 
           {method === 'upi' && (
-            <div className="rounded-xl border border-dashed border-line-strong p-4 text-sm text-ink-2">
-              <div className="font-bold text-ink">Ask the customer to pay {inr(due)} by UPI</div>
+            <div className="rounded-xl border border-dashed border-line-strong p-4 text-[13px] text-ink-2">
+              <div className="font-medium text-ink">Ask the customer to pay {inr(due)} by UPI</div>
               <div className="mt-1">
                 UPI ID: <span className="font-mono text-ink">{STORE.upiId || 'not set yet (src/config.js)'}</span>
               </div>
-              <div className="mt-1">Complete the sale once the payment shows as received.</div>
+              <div className="mt-1 text-ink-3">Complete the sale once the payment shows as received.</div>
             </div>
           )}
 
           {method === 'card' && (
-            <div className="flex flex-col gap-2.5">
-              <div className="text-sm text-ink-2">
+            <div>
+              <p className="mb-3 text-[13px] text-ink-2">
                 Ask the customer to tap or insert their card on the card machine, then enter the approval code.
-              </div>
-              <label htmlFor="approval" className="text-[13px] font-semibold text-ink-2">
-                Approval code (optional)
+              </p>
+              <label htmlFor="approval" className={label}>
+                Approval code <span className="font-normal text-ink-3">(optional)</span>
               </label>
-              <div className={`${field} h-13`}>
+              <div className={`${field} h-12`}>
                 <input
                   id="approval"
                   type="text"
@@ -125,7 +151,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
                   value={approval}
                   onChange={(e) => setApproval(e.target.value)}
                   placeholder="e.g. 4F7K21"
-                  className="min-w-0 flex-1 bg-transparent font-mono text-lg placeholder:text-ink-3"
+                  className="min-w-0 flex-1 bg-transparent font-mono text-base placeholder:text-ink-3/70"
                 />
               </div>
             </div>
@@ -133,67 +159,53 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
 
           {method === 'split' && (
             <div className="flex flex-col gap-2.5">
-              <label htmlFor="split-cash" className="text-[13px] font-semibold text-ink-2">
-                Cash part
-              </label>
-              <div className={`${field} h-13`}>
-                <span className="font-mono text-lg text-ink-2">₹</span>
-                <input
-                  id="split-cash"
-                  type="text"
-                  inputMode="decimal"
-                  autoFocus
-                  autoComplete="off"
-                  value={splitCash}
-                  onChange={(e) => setSplitCash(e.target.value)}
-                  className="min-w-0 flex-1 bg-transparent font-mono text-lg"
-                />
+              <div>
+                <label htmlFor="split-cash" className={label}>
+                  Cash part
+                </label>
+                <div className={`${field} h-12`}>
+                  <span className="text-lg text-ink-3">₹</span>
+                  <input
+                    id="split-cash"
+                    type="text"
+                    inputMode="decimal"
+                    autoFocus
+                    autoComplete="off"
+                    value={splitCash}
+                    onChange={(e) => setSplitCash(e.target.value)}
+                    className="min-w-0 flex-1 bg-transparent text-lg font-medium tabular-nums"
+                  />
+                </div>
               </div>
-              <div className="flex justify-between rounded-[10px] border border-line px-3.5 py-3 text-sm text-ink-2">
+              <div className="flex justify-between rounded-xl bg-mist-2 px-4 py-3 text-[13px] text-ink-2 ring-1 ring-line-soft">
                 <span>UPI / card for the rest</span>
-                <span className="font-mono text-ink">{inr(Math.max(due - cashPart, 0))}</span>
+                <span className="font-medium text-ink tabular-nums">{inr(Math.max(due - cashPart, 0))}</span>
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex flex-[1_1_260px] flex-col gap-3.5 border-l border-line bg-mist-2 p-6">
-          <div className="text-[13px] font-semibold text-ink-2">Receipt</div>
-          <label className="flex items-center gap-2.5 text-sm">
-            <input type="checkbox" checked={print} onChange={(e) => setPrint(e.target.checked)} className="size-4.5 accent-evergreen-800" />
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-mist-2 px-6 py-4">
+          <Switch checked={print} onChange={setPrint}>
             Print receipt
-          </label>
-          <div className="h-px bg-line" />
-          <div className="flex flex-col gap-2 text-[13px] text-ink-2">
-            <div className="flex justify-between">
-              <span>Customer</span>
-              <span className="text-ink">{customerLabel(phone)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Customer saved</span>
-              <span className="font-mono text-ok">{inr(bill.savings)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>GST included</span>
-              <span className="font-mono text-ink">{inr(bill.tax)}</span>
-            </div>
+          </Switch>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex h-10 items-center gap-2 rounded-xl px-3.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink"
+            >
+              Back <Kbd>Esc</Kbd>
+            </button>
+            <button
+              type="submit"
+              disabled={!valid}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3 disabled:shadow-none"
+            >
+              <Check size={16} strokeWidth={2.4} />
+              Complete sale <Kbd tone="dark">Enter</Kbd>
+            </button>
           </div>
-          <div className="flex-1" />
-          <button
-            type="submit"
-            disabled={!valid}
-            className="inline-flex h-14 items-center justify-center gap-2.5 rounded-xl bg-evergreen-800 text-base font-bold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3"
-          >
-            <Check size={18} strokeWidth={2.4} />
-            Complete sale <Kbd className="text-current!">Enter</Kbd>
-          </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="h-11 rounded-xl border border-line bg-surface text-sm font-semibold hover:bg-mist"
-          >
-            Back to bill <Kbd>Esc</Kbd>
-          </button>
         </div>
       </form>
     </Dialog>

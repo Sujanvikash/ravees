@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ScanBarcode } from 'lucide-react';
+import { CircleAlert, CircleCheck, ScanBarcode, TriangleAlert } from 'lucide-react';
 import { SEASON, SEASON_COUNT, PRODUCTS, findProduct, searchProducts } from '../lib/catalogue.js';
 import { priceOf } from '../lib/bill.js';
 import { inr } from '../lib/money.js';
+import Kbd from './Kbd.jsx';
 
-const NOTICE_TONE = {
-  ok: 'bg-ok-50 text-ok-ink',
-  warn: 'bg-warn-50 text-warn-ink',
-  error: 'bg-ruby-50 text-ruby-ink',
+const NOTICE = {
+  ok: { Icon: CircleCheck, className: 'text-ok-ink' },
+  warn: { Icon: TriangleAlert, className: 'text-warn-ink' },
+  error: { Icon: CircleAlert, className: 'text-ruby-ink' },
 };
 
 /**
@@ -50,40 +51,38 @@ const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }
     { on: seasonOnly, label: `Season ${SEASON}`, pick: () => onSeasonOnly(true), disabled: SEASON_COUNT === 0 },
     { on: !seasonOnly, label: 'All products', pick: () => onSeasonOnly(false) },
   ];
+  const tone = notice && NOTICE[notice.tone];
 
   return (
-    <section className="relative rounded-xl border border-line bg-surface p-3">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <label
-          htmlFor="scan"
-          className="flex h-12 min-w-0 flex-[1_1_360px] cursor-text items-center gap-3 rounded-lg border-2 border-line-strong px-3.5 focus-within:border-evergreen-800 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.16)]"
-        >
-          <ScanBarcode size={24} strokeWidth={1.8} className="text-evergreen-800" aria-hidden="true" />
-          <span className="sr-only">Scan barcode or search product</span>
-          <input
-            id="scan"
-            ref={inputRef}
-            type="text"
-            autoComplete="off"
-            autoFocus
-            role="combobox"
-            aria-expanded={matches.length > 0}
-            aria-controls="scan-matches"
-            aria-activedescendant={matches.length ? `match-${active}` : undefined}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setActive(0);
-              onNotice(null);
-            }}
-            onKeyDown={onKeyDown}
-            placeholder="Scan barcode, or type a product code or name…"
-            className="min-w-0 flex-1 bg-transparent text-lg font-medium placeholder:text-ink-3"
-          />
-          <span className="rounded-md bg-mist px-2 py-1 font-mono text-[11px] whitespace-nowrap text-ink-2">Enter ↵</span>
-        </label>
-
-        <div role="group" aria-label="Product range" className="inline-flex gap-1 rounded-lg bg-mist p-1">
+    <div className="relative">
+      <label
+        htmlFor="scan"
+        className="flex h-14 cursor-text items-center gap-3 rounded-2xl border border-line bg-surface pr-2 pl-4 shadow-[0_1px_2px_rgba(9,9,11,0.04)] transition-shadow focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_4px_rgba(23,92,38,0.10)]"
+      >
+        <ScanBarcode size={20} strokeWidth={1.8} className="shrink-0 text-ink-3" aria-hidden="true" />
+        <span className="sr-only">Scan barcode or search product</span>
+        <input
+          id="scan"
+          ref={inputRef}
+          type="text"
+          autoComplete="off"
+          autoFocus
+          role="combobox"
+          aria-expanded={matches.length > 0}
+          aria-controls="scan-matches"
+          aria-activedescendant={matches.length ? `match-${active}` : undefined}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActive(0);
+            onNotice(null);
+          }}
+          onKeyDown={onKeyDown}
+          placeholder="Scan a barcode, or search by code or name"
+          className="min-w-0 flex-1 bg-transparent text-base placeholder:text-ink-3"
+        />
+        <Kbd className="hidden sm:inline-flex">F2</Kbd>
+        <div role="group" aria-label="Product range" className="hidden shrink-0 gap-0.5 rounded-xl bg-mist p-0.5 sm:flex">
           {scopes.map((s) => (
             <button
               key={s.label}
@@ -92,34 +91,34 @@ const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }
               onClick={s.pick}
               disabled={s.disabled}
               title={s.disabled ? `No products are marked “In Season ${SEASON}” yet` : undefined}
-              className={`h-9 rounded-md px-3 text-[13px] font-semibold disabled:opacity-50 ${
-                s.on ? 'bg-surface text-ink shadow-[0_1px_3px_rgba(10,33,23,0.16)]' : 'text-ink-2'
+              className={`h-8 rounded-[10px] px-2.5 text-xs font-medium whitespace-nowrap transition-colors disabled:opacity-40 ${
+                s.on ? 'bg-surface text-ink shadow-[0_1px_2px_rgba(9,9,11,0.08)]' : 'text-ink-3 enabled:hover:text-ink'
               }`}
             >
               {s.label}
             </button>
           ))}
         </div>
-      </div>
+      </label>
 
-      <div className="mt-2 flex min-h-5 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-3">
-        <span>
-          {seasonOnly
-            ? `Searching ${SEASON_COUNT.toLocaleString('en-IN')} Season ${SEASON} products`
-            : `Searching all ${PRODUCTS.length.toLocaleString('en-IN')} products`}
-        </span>
-        {notice && (
-          <span role="status" className={`rounded-full px-2 py-px font-semibold ${NOTICE_TONE[notice.tone]}`}>
+      <div className="mt-2 flex h-5 items-center gap-3 px-1 text-xs text-ink-3">
+        {tone ? (
+          <span role="status" key={notice.text} className={`inline-flex animate-pop items-center gap-1.5 font-medium ${tone.className}`}>
+            <tone.Icon size={14} aria-hidden="true" />
             {notice.text}
+          </span>
+        ) : (
+          <span>
+            {seasonOnly
+              ? `${SEASON_COUNT.toLocaleString('en-IN')} Season ${SEASON} products`
+              : `${PRODUCTS.length.toLocaleString('en-IN')} products`}{' '}
+            · ↑ ↓ to choose a match, Enter to add
           </span>
         )}
       </div>
 
       {matches.length > 0 && (
-        <div className="absolute inset-x-3 top-16 z-10 overflow-hidden rounded-lg border border-line bg-surface shadow-[0_18px_40px_rgba(10,33,23,0.14)]">
-          <div className="border-b border-line-soft px-3.5 py-2 text-xs text-ink-3">
-            {matches.length} {matches.length === 1 ? 'match' : 'matches'} · ↑ ↓ to choose, Enter to add
-          </div>
+        <div className="absolute inset-x-0 top-15 z-10 animate-pop overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">
           <ul id="scan-matches" role="listbox" aria-label="Matching products">
             {matches.map((p, i) => (
               <li
@@ -130,20 +129,22 @@ const ScanBar = ({ inputRef, seasonOnly, onSeasonOnly, onAdd, notice, onNotice }
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => add(p)}
                 onMouseEnter={() => setActive(i)}
-                className={`grid cursor-pointer grid-cols-[88px_minmax(0,1fr)_130px_100px] items-center gap-3 border-b border-mist px-3.5 py-2 ${
-                  i === active ? 'bg-evergreen-50' : ''
+                className={`grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-lg px-3 py-2 ${
+                  i === active ? 'bg-mist' : ''
                 }`}
               >
-                <span className="font-mono text-[13px] font-semibold text-evergreen-800">{p.code}</span>
-                <span className="truncate text-sm font-semibold">{p.name}</span>
-                <span className="text-xs text-ink-3">{p.dept}</span>
-                <span className="text-right font-mono text-sm">{inr(priceOf(p))}</span>
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
+                  <span className="truncate text-sm font-medium">{p.name}</span>
+                  <span className="hidden truncate text-xs text-ink-3 sm:inline">{p.dept}</span>
+                </span>
+                <span className="text-sm tabular-nums">{inr(priceOf(p))}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
-    </section>
+    </div>
   );
 };
 
