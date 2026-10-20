@@ -11,7 +11,7 @@ const SHORTCUTS = [
 
 /** The keyboard shortcuts, and today's count and takings at this counter. */
 const ShortcutBar = ({ todayCount, todayTotal }) => (
-  <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 border-t border-line bg-surface px-6 py-3 text-xs text-ink-2">
+  <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-1.5 text-[11px] text-ink-2">
     <div className="flex flex-wrap gap-x-4.5 gap-y-2">
       {SHORTCUTS.map(([key, label]) => (
         <span key={key}>

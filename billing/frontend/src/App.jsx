@@ -19,7 +19,7 @@ import { SEASON, SEASON_COUNT } from './lib/catalogue.js';
 import { customerLabel } from './lib/customer.js';
 
 const toolButton =
-  'inline-flex h-10 items-center gap-2 rounded-[10px] border border-line px-3.5 text-[13px] font-semibold hover:bg-mist disabled:opacity-50';
+  'inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-[13px] font-semibold hover:bg-mist disabled:opacity-50';
 
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
 
@@ -156,11 +156,13 @@ const App = () => {
 
   return (
     <>
-      <div className="flex min-h-screen flex-col print:hidden">
+      {/* On a counter monitor (lg and up) the screen is exactly the window's height: only the bill list
+          scrolls. Narrower windows stack the panels and scroll as a normal page. */}
+      <div className="flex min-h-screen flex-col lg:h-dvh lg:min-h-0 lg:overflow-hidden print:hidden">
         <Header now={now} />
 
-        <div className="flex flex-1 flex-wrap items-start gap-5 px-6 py-5">
-          <main className="flex min-w-0 flex-[999_1_640px] flex-col gap-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:flex-row lg:gap-4 lg:px-4">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
             <ScanBar
               inputRef={scanRef}
               seasonOnly={seasonOnly}
@@ -170,10 +172,10 @@ const App = () => {
               onNotice={setNotice}
             />
 
-            <section className="overflow-hidden rounded-2xl border border-line bg-surface">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
-                <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
-                  <h1 className="text-lg font-bold">Current bill</h1>
+            <section className="flex min-h-72 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface lg:min-h-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h1 className="text-base font-bold">Current bill</h1>
                   <span className="font-mono text-[13px] text-ink-2">{billNo}</span>
                   <span className="text-[13px] text-ink-3">{countLabel(totals)}</span>
                 </div>
@@ -196,7 +198,7 @@ const App = () => {
             </section>
           </main>
 
-          <aside className="flex max-w-110 flex-[1_1_360px] flex-col gap-4">
+          <aside className="flex min-h-0 w-full flex-col gap-3 lg:w-90 xl:w-100">
             <CustomerCard inputRef={phoneRef} phone={phone} onPhone={setPhone} />
             <SummaryCard bill={totals} method={method} onMethod={setMethod} onCollect={openPay} />
           </aside>

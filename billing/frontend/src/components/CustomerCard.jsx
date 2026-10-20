@@ -4,16 +4,18 @@ import Kbd from './Kbd.jsx';
 
 /** Optional customer mobile number, for WhatsApp receipts and, later, the customer's history. */
 const CustomerCard = ({ inputRef, phone, onPhone }) => (
-  <section className="rounded-2xl border border-line bg-surface px-5 py-4.5">
-    <div className="mb-3 flex items-center justify-between">
-      <h2 className="text-[15px] font-bold">Customer</h2>
-      <Kbd>F4</Kbd>
+  <section className="rounded-xl border border-line bg-surface p-3">
+    <div className="mb-1.5 flex items-baseline justify-between gap-2">
+      <h2 className="text-sm font-bold">Customer</h2>
+      <span className="truncate text-[11px] text-ink-3">
+        {phoneDigits(phone).length === 10 ? 'Saved with this bill' : 'Walk-in · optional'} <Kbd>F4</Kbd>
+      </span>
     </div>
     <label
       htmlFor="customer-phone"
-      className="flex h-11.5 cursor-text items-center gap-2.5 rounded-[10px] border border-line-strong px-3.5 focus-within:border-evergreen-800"
+      className="flex h-10 cursor-text items-center gap-2 rounded-lg border border-line-strong px-3 focus-within:border-evergreen-800"
     >
-      <Phone size={18} className="text-ink-2" aria-hidden="true" />
+      <Phone size={16} className="text-ink-2" aria-hidden="true" />
       <span className="sr-only">Customer mobile number</span>
       <input
         id="customer-phone"
@@ -23,15 +25,10 @@ const CustomerCard = ({ inputRef, phone, onPhone }) => (
         autoComplete="off"
         value={phone}
         onChange={(e) => onPhone(e.target.value)}
-        placeholder="Mobile number (optional)"
-        className="min-w-0 flex-1 bg-transparent text-[15px] placeholder:text-ink-3"
+        placeholder="Mobile number, for a WhatsApp receipt"
+        className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
       />
     </label>
-    <div className="mt-2.5 text-[13px] text-ink-3">
-      {phoneDigits(phone).length === 10
-        ? 'Saved with this bill'
-        : 'Walk-in customer · add a number for a WhatsApp receipt'}
-    </div>
   </section>
 );
 

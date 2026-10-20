@@ -54,7 +54,7 @@ const PaymentDialog = ({ bill, billNo, method, onMethod, phone, onBack, onComple
             <div className="font-mono text-[40px] font-semibold tracking-tight text-ink">{inr(due)}</div>
           </div>
 
-          <PaymentMethods value={method} onChange={onMethod} compact />
+          <PaymentMethods value={method} onChange={onMethod} />
 
           {method === 'cash' && (
             <div className="flex flex-col gap-3">
