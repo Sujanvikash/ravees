@@ -1,11 +1,12 @@
 import { ChevronRight, Menu } from 'lucide-react';
+import HeaderStatus from './HeaderStatus.jsx';
 
 /**
  * The slim bar at the top of every page: the menu button (small screens), a breadcrumb of where you are,
- * and whatever the page puts on the right.
+ * whatever the page puts on the right, then the shared status: today's takings, to-dos, season, date and time.
  */
 const PageHeader = ({ crumbs, onMenu, children }) => (
-  <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-line bg-surface px-4 lg:px-5">
+  <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b glass-bar px-4 lg:px-6">
     <div className="flex min-w-0 items-center gap-2">
       <button
         type="button"
@@ -15,7 +16,7 @@ const PageHeader = ({ crumbs, onMenu, children }) => (
       >
         <Menu size={18} />
       </button>
-      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[13px] whitespace-nowrap">
+      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 overflow-hidden text-sm whitespace-nowrap">
         {crumbs.map((c, i) => (
           <span key={c} className="flex items-center gap-1.5">
             {i > 0 && <ChevronRight size={14} className="text-line-strong" aria-hidden="true" />}
@@ -24,7 +25,10 @@ const PageHeader = ({ crumbs, onMenu, children }) => (
         ))}
       </nav>
     </div>
-    <div className="flex min-w-0 items-center gap-4 text-[13px] whitespace-nowrap text-ink-3">{children}</div>
+    <div className="flex min-w-0 items-center gap-4 text-[13px] whitespace-nowrap text-ink-3">
+      {children}
+      <HeaderStatus />
+    </div>
   </header>
 );
 

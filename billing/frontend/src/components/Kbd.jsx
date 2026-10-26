@@ -1,6 +1,6 @@
 const TONES = {
   light: 'border-line bg-surface text-ink-3 shadow-[0_1px_0_rgba(9,9,11,0.06)]',
-  dark: 'border-white/20 bg-white/10 text-white/85',
+  dark: 'border-[rgb(255_255_255/0.2)] bg-[rgb(255_255_255/0.1)] text-[rgb(255_255_255/0.85)]',
 };
 
 /** A keycap-style shortcut hint, e.g. <Kbd>F12</Kbd>; tone="dark" on green buttons. */

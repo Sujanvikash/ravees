@@ -41,6 +41,19 @@
   --animate-flash: flash 1.2s ease-out forwards;
   --animate-pop: pop 160ms ease-out;
   --animate-rise: rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-twinkle: twinkle 3.6s ease-in-out infinite;
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
 
   @keyframes flash {
     from {
@@ -65,8 +78,15 @@
 }
 
 @layer base {
+  /* The festive backdrop sits behind every screen, softened by a light wash; panels frost over it. */
+  html {
+    background:
+      linear-gradient(rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.3)),
+      url("/background.jpg") center / cover fixed,
+      var(--color-ground);
+  }
   body {
-    @apply bg-ground font-sans text-sm text-ink antialiased print:bg-white;
+    @apply font-sans text-sm text-ink antialiased print:bg-white;
     font-feature-settings: "cv11", "ss01";
   }
   button:not(:disabled) {
@@ -78,6 +98,49 @@
   }
   input:focus-visible {
     outline: none;
+  }
+}
+
+/* Frosted glass. glass: cards and panels; glass-bar: the top bar; glass-heavy: the menu, more blurred so
+   the decorations behind it read as soft colour. Dialogs, inputs and dropdowns stay solid white. */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.84);
+  border-color: rgb(228 228 231 / 0.9);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: 0 1px 2px rgb(9 9 11 / 0.06), 0 10px 28px -14px rgb(9 9 11 / 0.22);
+}
+/* The logo's green (#175c26), solid, with a soft shine from the top: the inventory figures, the current page
+   in the menu, selected filters. */
+@utility brand-gradient {
+  background-color: var(--color-evergreen-800);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.04) 50%, rgb(0 0 0 / 0.08) 100%);
+  /* the bright top edge goes in Tailwind's inset-shadow slot, so a shadow-* class on the same element adds to it */
+  --tw-inset-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
+  color: #fff;
+}
+
+/* A list row under the mouse: a clear pale green, so you can see which row you are on. */
+@utility row-hover {
+  &:hover {
+    background-color: rgb(217 236 222 / 0.95);
+  }
+}
+
+@utility glass-bar {
+  background-color: rgb(255 255 255 / 0.5);
+  border-color: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(16px) saturate(160%);
+}
+@utility glass-heavy {
+  background-color: rgb(255 255 255 / 0.55);
+  border-color: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(32px) saturate(170%);
+}
+
+@media print {
+  html {
+    background: none;
   }
 }
 
@@ -94,4 +157,82 @@
 @page {
   size: 80mm auto;
   margin: 3mm;
+}
+
+/* A printed quotation is an A4 page (see components/QuotationPrint.jsx). */
+@page quote {
+  size: A4;
+  margin: 14mm;
+}
+
+/* ---------- Themes ----------
+   The admin picks one in Settings; App.jsx puts it on <html> as data-theme (classic | light | dark) and, for
+   Light, data-wash (light | lighter | lightest). Classic is everything above. These rules are outside any
+   layer on purpose, so they win over the utility classes. */
+
+/* Light: the photo washed close to white, whiter frosted panels */
+html[data-theme="light"] {
+  --wash: 0.62;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 40%, rgb(255 255 255 / calc(var(--wash) + 0.12)), transparent 75%),
+    linear-gradient(rgb(255 255 255 / var(--wash)), rgb(255 255 255 / var(--wash))),
+    url("/background.jpg") center / cover fixed,
+    var(--color-ground);
+}
+html[data-theme="light"][data-wash="light"] { --wash: 0.45; }
+html[data-theme="light"][data-wash="lightest"] { --wash: 0.78; }
+html[data-theme="light"] .glass { background-color: rgb(255 255 255 / 0.9); border-color: #fff; }
+html[data-theme="light"] .glass-bar { background-color: rgb(255 255 255 / 0.66); border-color: rgb(255 255 255 / 0.9); }
+html[data-theme="light"] .glass-heavy { background-color: rgb(255 255 255 / 0.74); border-color: rgb(255 255 255 / 0.9); }
+
+/* Dark: the photo dimmed far back, dark frosted panels, the logo green as the accent */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-white: #1c211d; /* plain "white" fills (inputs, hovers) become a dark surface; white text is pinned below */
+  --color-ground: #0e120f;
+  --color-surface: #1a1f1b;
+  --color-mist: #262c27;
+  --color-mist-2: #20251f;
+  --color-line: #343b35;
+  --color-line-soft: #2a302b;
+  --color-line-strong: #4a524b;
+  --color-ink: #f2f3f0;
+  --color-ink-2: #c8ccc6;
+  --color-ink-3: #9aa199;
+  --color-evergreen-100: #24492d;
+  --color-evergreen-50: #1d3624;
+  --color-raave-red-ink: #fca5a5;
+  --color-raave-red-50: #3a1618;
+  --color-ok-ink: #86efac;
+  --color-ok-50: #13301d;
+  --color-warn-ink: #fcd34d;
+  --color-warn-50: #3a2b0e;
+  --color-ruby-ink: #fca5a5;
+  --color-ruby-50: #3a1616;
+  background:
+    linear-gradient(rgb(9 13 10 / 0.8), rgb(9 13 10 / 0.86)),
+    url("/background.jpg") center / cover fixed,
+    #0e120f;
+}
+html[data-theme="dark"] .text-white { color: #fff; }
+html[data-theme="dark"] .text-evergreen-800,
+html[data-theme="dark"] .text-evergreen-900 { color: #8fd6a1; }
+html[data-theme="dark"] .glass { background-color: rgb(28 33 29 / 0.84); border-color: rgb(255 255 255 / 0.07); }
+html[data-theme="dark"] .glass-bar { background-color: rgb(18 23 19 / 0.72); border-color: rgb(255 255 255 / 0.06); }
+html[data-theme="dark"] .glass-heavy { background-color: rgb(16 20 17 / 0.8); border-color: rgb(255 255 255 / 0.06); }
+html[data-theme="dark"] .row-hover:hover { background-color: rgb(46 92 58 / 0.55); }
+html[data-theme="dark"] .brand-logo { background: #fffdf8; border-radius: 8px; padding: 3px 6px; }
+/* the login postcards stay paper in every theme: dark text, logo-green drawings, light rules */
+html[data-theme="dark"] .bg-\[\#fffdf8\] { color: var(--color-surface); }
+html[data-theme="dark"] .bg-\[\#fffdf8\] .text-evergreen-800 { color: #175c26; }
+html[data-theme="dark"] .bg-\[\#fffdf8\] .text-ink-3 { color: #71717a; }
+html[data-theme="dark"] .bg-\[\#fffdf8\] .border-line { border-color: #e4e4e7; }
+
+/* printing is always black on white, whatever the theme */
+@media print {
+  html[data-theme] {
+    --color-white: #fff;
+    --color-ink: #09090b;
+    background: none;
+  }
 }

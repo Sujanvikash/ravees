@@ -71,7 +71,7 @@ const OrderPanel = ({
   // Enter in either field tries to collect, which points at whatever is still missing.
   const collectOnEnter = (e) => e.key === 'Enter' && onCollect();
   return (
-    <aside className="flex min-h-0 flex-col border-t border-line bg-surface lg:w-96 lg:border-t-0 lg:border-l xl:w-104">
+    <aside className="flex min-h-0 flex-col border-t glass lg:w-96 lg:border-t-0 lg:border-l xl:w-104">
       <section aria-labelledby="customer-heading" className="border-b border-line-soft p-5">
         <div className="mb-2 flex items-center justify-between">
           <h2 id="customer-heading" className="text-[13px] font-medium">
@@ -123,7 +123,7 @@ const OrderPanel = ({
         </div>
       </section>
 
-      <section className="border-t border-line-soft bg-mist-2 p-5">
+      <section className="border-t border-line-soft bg-white/40 p-5">
         <div className="flex items-end justify-between gap-3">
           <div className="text-[13px] text-ink-3">
             <div className="font-medium text-ink-2">Total</div>

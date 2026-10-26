@@ -56,7 +56,7 @@ const HeldDialog = ({ held, onRecall, onDiscard, onClose }) => {
               key={h.id}
               onMouseEnter={() => setOpenId(h.id)}
               onFocus={() => setOpenId(h.id)}
-              className={`rounded-xl px-4 py-3 transition-colors ${open ? 'bg-mist-2 ring-1 ring-line' : 'hover:bg-mist-2'}`}
+              className={`rounded-xl px-4 py-3 transition-colors ${open ? 'bg-mist-2 ring-1 ring-line' : 'row-hover'}`}
             >
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
