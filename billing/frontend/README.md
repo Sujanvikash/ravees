@@ -18,14 +18,30 @@ npm run lint
 
 These are **demo logins**. Only SHA-256 hashes are kept in `src/lib/auth.js`, but anyone with the app's code can get in. Real logins come with the billing backend.
 
+The admin can set a new password for any login, or put it back to the default, under **Logins** in the menu. Showroom logins cannot change passwords. Like everything else for now, a changed password is kept in this browser, so it only applies on the computer where the admin set it.
+
+## Quotations
+
+**Quotations** (under Selling) work like the billing counter but end in a saved quotation instead of a payment. A quotation never changes stock or the sales figures. It is numbered per showroom (`QT-CHN/26-27/00001`), has a customer name (mobile optional), a validity of 7, 15 or 30 days and an optional note. It prints on A4 with a large diagonal QUOTATION watermark, "NOT A BILL · NOT A TAX INVOICE", and a boxed notice that no payment is to be made against it. **Bill this** loads a saved quotation's items into the billing counter when the customer buys. The admin sees every showroom's quotations (under Reports) and, in **Settings**, can turn printing quotations on or off.
+
+## The season list
+
+Which products are "Season 2026" starts from the product Excel. The admin can change it in Inventory: the **In season** tick box on each row (use "All products" and search to find older products). Changes are kept on top of the Excel's list, so billing search, the season filter, purchase-order suggestions and low-stock all follow them.
+
 ## How stock moves
 
-Stock only goes up through a **purchase order**, and only goes down through a **sale**.
+Stock goes up through a **purchase order** or an **Excel stock import**, and only goes down through a **sale**.
 
 1. **Showroom requests stock** (Purchase orders → Request stock). Products can be searched or scanned, added with **Add low stock** (season products at 5 units or fewer, topped up to 10), or imported from an Excel. The request goes to the admin.
-2. **Admin reviews** (Purchase orders → To review → Review & send). The admin can change quantities, set purchase rates, add or remove products, or import the supplier's Excel. It is then **sent to the showroom**, or rejected with a reason. The admin can also raise an order for any showroom directly.
+2. **Admin reviews** (Purchase orders → To review → Review & send). The admin can change quantities, set purchase rates, add or remove products, or import the supplier's Excel. It is then **approved and sent to the showroom**, or rejected with a reason. Only showrooms raise orders; the admin reviews them.
 3. **Showroom counts it in** when the goods arrive (Purchase orders → To count in → Count in). Counting starts from the sent quantities, or **Count with scanner** starts at zero and each scan adds one. What is counted is added to stock, and any shortfall or extra is kept on the order with a note.
 4. **Billing** takes sold items off that showroom's stock. The counter shows stock on every line and warns when a bill goes beyond what is in stock, but still lets it through.
+
+**Excel stock import** (Inventory → Import stock) adds stock straight from a sheet, for opening stock or goods that came without a purchase order. It uses the same Excel format as purchases. A showroom imports into its own stock; the admin picks the showroom. The window shows each product's stock now and after, and nothing changes until it is confirmed.
+
+**Shop products** (Inventory → New product) are for items without a barcode. The showroom enters the name, category, MRP, offer and cost price, GST and HSN, and the code is made from its bill prefix and a running number (`CHN-0001`, `BLR-0001`…), so two showrooms never create the same code. Units already in the shop can be entered too, and show in the history as "New product". The product can then be billed by typing its code, and found in search, purchase orders and imports. "Shop-added" in Inventory lists them, with who added each.
+
+**History** (Inventory → History) is the audit trail of stock coming in: every import and every purchase order counted in, with when, which showroom, who added it, and the file or order number. Each entry opens to list its products. The admin sees all showrooms; a showroom sees its own. Imported units are counted in the Received column.
 
 The menu shows a red badge when something needs doing: requests to review for the admin, deliveries to count in for a showroom.
 
@@ -43,6 +59,12 @@ There is no billing backend yet, so **everything is kept in this browser's local
 | `billing-sales` | completed sales from every showroom, each with its showroom and each line's cost price |
 | `billing-stock` | `{ showroom: { code: units } }` |
 | `billing-orders` | purchase orders and their history |
+| `billing-stock-imports` | Excel stock imports: `{ id, at, by, username, location, file, lines }`, kept for the history |
+| `billing-shop-products` | products the showrooms added themselves: catalogue fields plus `shop: { location, by, at }` |
+| `billing-quotes` | saved quotations |
+| `billing-settings` | the admin's settings: `{ quotePrint }` |
+| `billing-season-edits` | the admin's changes to the season list: `{ code: true/false }` |
+| `billing-passwords` | passwords the admin has changed: `{ login: { hash, at } }` (logins not listed use the default) |
 | `billing-current-<showroom>`, `billing-held-<showroom>`, `billing-seq-<showroom>` | the bill in progress, held bills and the next bill number, per showroom |
 | `billing-session` | who is signed in |
 
