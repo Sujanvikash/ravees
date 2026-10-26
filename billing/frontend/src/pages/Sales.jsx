@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import { ChevronDown, ReceiptText } from 'lucide-react';
 import { LocationPicker, PeriodTabs, SearchBox } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import StatTile from '../components/StatTile.jsx';
+import SummaryStrip from '../components/SummaryStrip.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
@@ -43,30 +43,42 @@ const Sales = ({ session, onMenu }) => {
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader crumbs={[shop ? `${shop.city} · ${shop.area}` : 'All showrooms', 'Sales']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 p-4 lg:p-6">
+        <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
           <div className="flex flex-wrap items-center gap-2">
             <PeriodTabs value={period} onChange={setPeriod} />
             {admin && <LocationPicker value={location} onChange={setLocation} />}
-            <SearchBox value={query} onChange={setQuery} placeholder="Bill number, customer or mobile" />
           </div>
 
-          <div className={`grid grid-cols-2 gap-3 ${admin ? 'lg:grid-cols-6' : 'lg:grid-cols-4'}`}>
-            <StatTile label="Sales" value={inrWhole(sum.total)} note="incl. GST" />
-            <StatTile label="Bills" value={sum.bills.toLocaleString('en-IN')} note={`${sum.units.toLocaleString('en-IN')} units sold`} />
-            <StatTile label="Average bill" value={inrWhole(sum.average)} />
-            <StatTile label="GST collected" value={inrWhole(sum.tax)} />
-            {admin && <StatTile label="Purchase cost" value={inrWhole(sum.cost)} note="at cost price" />}
-            {admin && (
-              <StatTile
-                label="Gross profit"
-                value={inrWhole(sum.profit)}
-                note={`${(sum.margin * 100).toFixed(1)}% margin on sales excl. GST`}
-                tone={sum.profit >= 0 ? 'good' : 'bad'}
-              />
-            )}
-          </div>
+          <SummaryStrip
+            figures={[
+              { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: 'incl. GST' },
+              { label: 'Bills', value: sum.bills.toLocaleString('en-IN'), note: `${sum.units.toLocaleString('en-IN')} units sold` },
+              { label: 'Average bill', value: inrWhole(sum.average) },
+              { label: 'GST collected', value: inrWhole(sum.tax) },
+              ...(admin
+                ? [
+                    { label: 'Purchase cost', value: inrWhole(sum.cost), note: 'at cost price' },
+                    {
+                      label: 'Gross profit',
+                      value: inrWhole(sum.profit),
+                      note: `${(sum.margin * 100).toFixed(1)}% margin excl. GST`,
+                      tone: sum.profit < 0 ? 'bad' : undefined,
+                    },
+                  ]
+                : []),
+            ]}
+          />
 
-          <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(9,9,11,0.04)]">
+          <section className="overflow-clip rounded-2xl border glass">
+            <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5">
+              <span className="text-[13px] text-ink-3">
+                {rows.length.toLocaleString('en-IN')} {rows.length === 1 ? 'bill' : 'bills'}
+                {q && ' matching'}
+              </span>
+              <div className="flex flex-1 justify-end">
+                <SearchBox value={query} onChange={setQuery} placeholder="Bill number, customer or mobile" />
+              </div>
+            </div>
             {rows.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
                 <ReceiptText size={22} className="text-ink-3" aria-hidden="true" />
@@ -74,20 +86,21 @@ const Sales = ({ session, onMenu }) => {
                 <div className="text-[13px] text-ink-3">Completed sales from the billing counter show up here.</div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              // the page scrolls as one and the column headings stick; below xl the table scrolls in its own box
+              <div className="max-h-[70dvh] overflow-auto xl:max-h-none xl:overflow-visible">
                 <table className="w-full min-w-[56rem] text-[13px]">
-                  <thead>
+                  <thead className="sticky top-0 z-1 bg-white/95 shadow-[0_1px_0_var(--color-line-soft)] backdrop-blur">
                     <tr className="border-b border-line-soft text-left text-xs text-ink-3">
                       <th scope="col" className="w-8 py-2.5 pl-4" />
-                      <th scope="col" className="py-2.5 pr-3 font-medium">Bill</th>
-                      <th scope="col" className="py-2.5 pr-3 font-medium">Date</th>
-                      {admin && <th scope="col" className="py-2.5 pr-3 font-medium">Showroom</th>}
-                      <th scope="col" className="py-2.5 pr-3 font-medium">Customer</th>
-                      <th scope="col" className="py-2.5 pr-3 text-right font-medium">Items</th>
-                      <th scope="col" className="py-2.5 pr-3 font-medium">Payment</th>
-                      <th scope="col" className="py-2.5 pr-3 text-right font-medium">Amount</th>
-                      {admin && <th scope="col" className="py-2.5 pr-3 text-right font-medium">Cost</th>}
-                      {admin && <th scope="col" className="py-2.5 pr-4 text-right font-medium">Profit</th>}
+                      <th scope="col" className="py-1.5 pr-3 font-medium">Bill</th>
+                      <th scope="col" className="py-1.5 pr-3 font-medium">Date</th>
+                      {admin && <th scope="col" className="py-1.5 pr-3 font-medium">Showroom</th>}
+                      <th scope="col" className="py-1.5 pr-3 font-medium">Customer</th>
+                      <th scope="col" className="py-1.5 pr-3 text-right font-medium">Items</th>
+                      <th scope="col" className="py-1.5 pr-3 font-medium">Payment</th>
+                      <th scope="col" className="py-1.5 pr-3 text-right font-medium">Amount</th>
+                      {admin && <th scope="col" className="py-1.5 pr-3 text-right font-medium">Cost</th>}
+                      {admin && <th scope="col" className="py-1.5 pr-4 text-right font-medium">Profit</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -97,7 +110,7 @@ const Sales = ({ session, onMenu }) => {
                       const cost = saleCost(s);
                       return (
                         <Fragment key={id}>
-                          <tr className={`border-b border-line-soft tabular-nums ${isOpen ? 'bg-mist-2' : 'hover:bg-mist-2'}`}>
+                          <tr className={`border-b border-line-soft tabular-nums ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
                             <td className="py-2.5 pl-4">
                               <button
                                 type="button"
@@ -109,22 +122,22 @@ const Sales = ({ session, onMenu }) => {
                                 <ChevronDown size={15} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                               </button>
                             </td>
-                            <td className="py-2.5 pr-3 font-mono text-xs">
+                            <td className="py-1.5 pr-3 font-mono text-xs">
                               {s.billNo}
                               {s.demo && <span className="ml-2 rounded bg-warn-50 px-1 font-sans text-[10px] font-medium text-warn-ink">DEMO</span>}
                             </td>
-                            <td className="py-2.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(s.at))}</td>
-                            {admin && <td className="py-2.5 pr-3 text-ink-2">{locationById(s.location)?.city ?? '—'}</td>}
-                            <td className="py-2.5 pr-3">
+                            <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(s.at))}</td>
+                            {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(s.location)?.city ?? '—'}</td>}
+                            <td className="py-1.5 pr-3">
                               <div className="font-medium">{s.name || 'Walk-in'}</div>
                               {s.phone && <div className="text-xs text-ink-3">{formatMobile(s.phone)}</div>}
                             </td>
-                            <td className="py-2.5 pr-3 text-right">{s.totals.qty}</td>
-                            <td className="py-2.5 pr-3 text-ink-2">{methodLabel(s.payment.method)}</td>
-                            <td className="py-2.5 pr-3 text-right font-semibold">{inr(s.totals.payable)}</td>
-                            {admin && <td className="py-2.5 pr-3 text-right text-ink-2">{inr(cost)}</td>}
+                            <td className="py-1.5 pr-3 text-right">{s.totals.qty}</td>
+                            <td className="py-1.5 pr-3 text-ink-2">{methodLabel(s.payment.method)}</td>
+                            <td className="py-1.5 pr-3 text-right font-semibold">{inr(s.totals.payable)}</td>
+                            {admin && <td className="py-1.5 pr-3 text-right text-ink-2">{inr(cost)}</td>}
                             {admin && (
-                              <td className={`py-2.5 pr-4 text-right font-medium ${s.totals.taxable - cost >= 0 ? 'text-ok-ink' : 'text-ruby-ink'}`}>
+                              <td className={`py-1.5 pr-4 text-right font-medium ${s.totals.taxable - cost >= 0 ? 'text-ok-ink' : 'text-ruby-ink'}`}>
                                 {inr(s.totals.taxable - cost)}
                               </td>
                             )}

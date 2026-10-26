@@ -3,7 +3,7 @@ import { ClipboardList, FlaskConical, LayoutDashboard } from 'lucide-react';
 import DayChart from '../components/DayChart.jsx';
 import { LocationPicker, PeriodTabs } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import StatTile from '../components/StatTile.jsx';
+import SummaryStrip from '../components/SummaryStrip.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { makeDemoSales } from '../lib/demo.js';
@@ -15,7 +15,7 @@ import { byLocation, byMethod, filterSales, periodStart, salesByDay, summarize, 
 const CHART_DAYS = { today: 7, '7d': 7, '30d': 30, all: 30 };
 
 const Card = ({ title, note, children, className = '' }) => (
-  <section className={`rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgba(9,9,11,0.04)] ${className}`}>
+  <section className={`rounded-2xl border glass p-4 ${className}`}>
     <div className="mb-4 flex items-baseline justify-between gap-3">
       <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
       {note && <span className="text-xs text-ink-3">{note}</span>}
@@ -70,7 +70,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader crumbs={[location ? locationById(location).city : 'All showrooms', 'Dashboard']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 p-4 lg:p-6">
+        <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
           <div className="flex flex-wrap items-center gap-2">
             <PeriodTabs value={period} onChange={setPeriod} />
             <LocationPicker value={location} onChange={setLocation} />
@@ -113,7 +113,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
           )}
 
           {sales.length === 0 ? (
-            <section className="flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface px-6 py-16 text-center">
+            <section className="flex flex-col items-center gap-3 rounded-2xl border glass px-6 py-16 text-center">
               <LayoutDashboard size={22} className="text-ink-3" aria-hidden="true" />
               <div className="text-[15px] font-semibold">No sales yet</div>
               <p className="max-w-md text-[13px] text-ink-3">
@@ -130,15 +130,17 @@ const Dashboard = ({ onMenu, onNavigate }) => {
             </section>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-                <StatTile hero label="Sales" value={inrWhole(sum.total)} note={`${sum.bills.toLocaleString('en-IN')} bills · incl. GST`} />
-                <StatTile label="Gross profit" value={inrWhole(sum.profit)} note={`${pct(sum.margin)} margin`} tone={sum.profit >= 0 ? 'good' : 'bad'} />
-                <StatTile label="Purchase cost" value={inrWhole(sum.cost)} note="of the goods sold" />
-                <StatTile label="GST collected" value={inrWhole(sum.tax)} />
-                <StatTile label="Stock received" value={inrWhole(receivedValue)} note={`${receivedUnits.toLocaleString('en-IN')} units counted in`} />
-              </div>
+              <SummaryStrip
+                figures={[
+                  { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: `${sum.bills.toLocaleString('en-IN')} bills · incl. GST` },
+                  { label: 'Gross profit', value: inrWhole(sum.profit), note: `${pct(sum.margin)} margin`, tone: sum.profit < 0 ? 'bad' : undefined },
+                  { label: 'Purchase cost', value: inrWhole(sum.cost), note: 'of the goods sold' },
+                  { label: 'GST collected', value: inrWhole(sum.tax) },
+                  { label: 'Stock received', value: inrWhole(receivedValue), note: `${receivedUnits.toLocaleString('en-IN')} units counted in` },
+                ]}
+              />
 
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
                 <Card title="Sales by day" note={`last ${CHART_DAYS[period]} days · incl. GST`}>
                   <DayChart data={days} />
                 </Card>
@@ -183,12 +185,12 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                           key={s.location.id}
                           className={`border-t border-line-soft ${location === s.location.id ? 'bg-evergreen-50' : ''}`}
                         >
-                          <td className="py-2.5 pr-3">
+                          <td className="py-1.5 pr-3">
                             <button type="button" onClick={() => setLocation(location === s.location.id ? null : s.location.id)} className="font-medium hover:underline">
                               {s.location.city}
                             </button>
                           </td>
-                          <td className="py-2.5 pr-4">
+                          <td className="py-1.5 pr-4">
                             <div className="flex items-center gap-3">
                               <span className="w-24 shrink-0 font-medium">{inrWhole(s.total)}</span>
                               <Bar value={s.total} max={maxShop} />
@@ -224,11 +226,11 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                       <tbody>
                         {products.map((p) => (
                           <tr key={p.code} className="border-t border-line-soft">
-                            <td className="py-2.5 pr-3">
+                            <td className="py-1.5 pr-3">
                               <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
                               {p.name}
                             </td>
-                            <td className="py-2.5 pr-4">
+                            <td className="py-1.5 pr-4">
                               <div className="flex items-center gap-3">
                                 <span className="w-24 shrink-0 font-medium">{inrWhole(p.total)}</span>
                                 <Bar value={p.total} max={maxProduct} />
