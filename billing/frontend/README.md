@@ -22,7 +22,7 @@ The admin can set a new password for any login, or put it back to the default, u
 
 ## Quotations
 
-**Quotations** (under Selling) work like the billing counter but end in a saved quotation instead of a payment. A quotation never changes stock or the sales figures. It is numbered per showroom (`QT-CHN/26-27/00001`), has a customer name (mobile optional), a validity of 7, 15 or 30 days and an optional note. It prints on A4 with a large diagonal QUOTATION watermark, "NOT A BILL · NOT A TAX INVOICE", and a boxed notice that no payment is to be made against it. **Bill this** loads a saved quotation's items into the billing counter when the customer buys. The admin sees every showroom's quotations (under Reports) and, in **Settings**, can turn printing quotations on or off.
+**Quotations** (under Selling) work like the billing counter but end in a saved quotation instead of a payment. A quotation never changes stock or the sales figures. It is numbered per showroom (`QT-CHN/26-27/00001`), needs the customer's name and mobile number, a validity of 7, 15 or 30 days and an optional note. It prints on A4 with a large diagonal QUOTATION watermark, "NOT A BILL · NOT A TAX INVOICE", and a boxed notice that no payment is to be made against it. **Bill this** loads a saved quotation's items into the billing counter when the customer buys. The admin sees every showroom's quotations (under Reports) and, in **Settings**, can turn printing quotations on or off.
 
 ## The season list
 
@@ -49,6 +49,7 @@ The menu shows a red badge when something needs doing: requests to review for th
 
 - `public/purchase-template.xlsx` is a blank template (also linked from the app).
 - `billing/backend/seed/sample-purchase-2026.xlsx` is a sample with the 25 season products, for testing.
+- `billing/backend/seed/opening-stock-2026/` has one sample opening-stock file per showroom (all 25 season products, a few left out as out of stock). Import each in Inventory → Import stock, choosing that showroom.
 
 ## Data
 
