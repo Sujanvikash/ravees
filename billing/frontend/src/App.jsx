@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar.jsx';
 import { SessionContext } from './context/SessionContext.jsx';
 import { useStore } from './context/StoreContext.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
+import { signOut } from './lib/auth.js';
+import { loadCatalogue } from './lib/catalogue.js';
 import { NAV } from './lib/nav.js';
 import { ordersNeedingAction } from './lib/orders.js';
 import Counter from './pages/Counter.jsx';
@@ -77,9 +79,61 @@ const Shell = ({ session, onSignOut }) => {
   );
 };
 
+/** Loads the product catalogue from the server before the app opens; says so if the server can't be reached. */
+const CatalogueGate = ({ children, onSignOut }) => {
+  const [state, setState] = useState({ loading: true, error: '' });
+  const fetchIt = () =>
+    loadCatalogue().then(
+      () => setState({ loading: false, error: '' }),
+      (err) => setState({ loading: false, error: err.message }),
+    );
+  const load = () => {
+    setState({ loading: true, error: '' });
+    fetchIt();
+  };
+  useEffect(() => {
+    fetchIt();
+  }, []);
+
+  if (!state.loading && !state.error) return children;
+  return (
+    <main className="flex min-h-dvh items-center justify-center p-6">
+      <div className="w-full max-w-sm rounded-2xl border glass p-6 text-center">
+        {state.loading ? (
+          <p className="text-[13px] text-ink-3">Loading products…</p>
+        ) : (
+          <>
+            <p className="text-[15px] font-semibold">Couldn’t load the products</p>
+            <p className="mt-1 text-[13px] text-ink-3">{state.error}</p>
+            <div className="mt-4 flex justify-center gap-2">
+              <button type="button" onClick={onSignOut} className="h-9 rounded-xl px-3.5 text-[13px] font-medium text-ink-2 hover:bg-mist">
+                Sign out
+              </button>
+              <button type="button" onClick={load} className="h-9 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900">
+                Try again
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </main>
+  );
+};
+
 const App = () => {
   const [session, setSession] = useLocalStorage('billing-session', null);
   const { settings } = useStore();
+  const leave = () => {
+    signOut();
+    setSession(null);
+  };
+
+  // The server ended the session (expired, or the admin changed this login's password): back to sign-in.
+  useEffect(() => {
+    const onSignedOut = () => setSession(null);
+    window.addEventListener('billing-signed-out', onSignedOut);
+    return () => window.removeEventListener('billing-signed-out', onSignedOut);
+  }, [setSession]);
 
   // The admin's theme (Settings → Appearance) goes on <html>; index.css styles each one.
   useEffect(() => {
@@ -92,7 +146,13 @@ const App = () => {
     <>
       {/* on the sign-in screen the snow falls in front; inside the app it stays behind the panels */}
       {(session ? settings.effectWhere === 'everywhere' : true) && <Backdrop effect={settings.effect} amount={settings.snow} front={!session} />}
-      {session ? <Shell key={session.username} session={session} onSignOut={() => setSession(null)} /> : <Login onSignedIn={setSession} />}
+      {session ? (
+        <CatalogueGate key={session.username} onSignOut={leave}>
+          <Shell key={session.username} session={session} onSignOut={leave} />
+        </CatalogueGate>
+      ) : (
+        <Login onSignedIn={setSession} />
+      )}
     </>
   );
 };

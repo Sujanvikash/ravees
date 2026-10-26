@@ -31,6 +31,7 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
   const [location, setLocation] = useState(admin ? (defaultLocation ?? LOCATIONS[0].id) : session.location);
   const [form, setForm] = useState({ name: '', dept: '', mrp: '', offer: '', cost: '', gst: '18', hsn: '', qty: '' });
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const shop = locationById(location);
   const code = nextShopCode(shop.billPrefix);
 
@@ -41,7 +42,7 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
 
   const sameName = form.name.trim().length > 2 && PRODUCTS.find((p) => p.name.toLowerCase() === form.name.trim().toLowerCase());
 
-  const save = (e) => {
+  const save = async (e) => {
     e.preventDefault();
     const mrp = money(form.mrp);
     const offer = money(form.offer);
@@ -56,20 +57,24 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
 
     const at = new Date().toISOString();
     const by = admin ? 'Admin' : shop.city; // same as purchase order history
-    const product = addShopProduct({
-      code,
-      name: form.name.trim().replace(/\s+/g, ' '),
-      type: 'Product',
-      dept: form.dept,
-      barcode: '',
-      hsn: form.hsn.trim(),
-      mrp,
-      offer: offer ?? mrp,
-      cost: cost ?? 0,
-      gst: Number(form.gst),
-      inSeason: true,
-      shop: { location, by, at },
-    });
+    let product;
+    setBusy(true);
+    try {
+      // the server gives it its code (the next free one for this showroom)
+      product = await addShopProduct({
+        location,
+        name: form.name.trim().replace(/\s+/g, ' '),
+        dept: form.dept,
+        hsn: form.hsn.trim(),
+        mrp,
+        offer: offer ?? mrp,
+        cost: cost ?? 0,
+        gst: Number(form.gst),
+      });
+    } catch (err) {
+      setBusy(false);
+      return setError(err.message);
+    }
     if (qty > 0) {
       importStock({
         id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -96,7 +101,7 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
             <div className="leading-tight">
               <div className="font-mono text-base font-semibold text-evergreen-900">{code}</div>
               <div className="text-xs text-ink-3">
-                Product code for {shop.city}. Write it on the item or its tag, and type it at the billing counter.
+                Next product code for {shop.city}; confirmed when you add it. Write it on the item or its tag, and type it at the billing counter.
               </div>
             </div>
           </div>
@@ -163,10 +168,11 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
             Cancel
           </button>
           <button
+            disabled={busy}
             type="submit"
             className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900"
           >
-            <Tag size={15} aria-hidden="true" /> Add {code}
+            <Tag size={15} aria-hidden="true" /> {busy ? 'Adding…' : 'Add product'}
           </button>
         </div>
       </form>

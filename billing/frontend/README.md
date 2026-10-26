@@ -16,7 +16,7 @@ npm run lint
 | Chennai, Bengaluru, Goa, Mumbai, Pune | `chennai@2026`, `bengaluru@2026`, `goa@2026`, `mumbai@2026`, `pune@2026` | Billing, its own sales, its own inventory, its own purchase orders |
 | Admin | `admin@2026` | Dashboard, all sales with purchase cost and profit, every showroom's inventory, all purchase orders |
 
-These are **demo logins**. Only SHA-256 hashes are kept in `src/lib/auth.js`, but anyone with the app's code can get in. Real logins come with the billing backend.
+Logins are checked by the billing API (`billing/backend`), which keeps the passwords hashed. A new password set by the admin works on every computer straight away.
 
 The admin can set a new password for any login, or put it back to the default, under **Logins** in the menu. Showroom logins cannot change passwords. Like everything else for now, a changed password is kept in this browser, so it only applies on the computer where the admin set it.
 
@@ -53,7 +53,9 @@ The menu shows a red badge when something needs doing: requests to review for th
 
 ## Data
 
-There is no billing backend yet, so **everything is kept in this browser's localStorage, per computer**. The admin therefore only sees sales and orders made on the same computer. All reads and writes go through `src/context/StoreContext.jsx`, which is the one place the backend will replace.
+**Logins and the product catalogue** (including the season list and the showrooms' own products) come from the billing API, so they are the same on every computer. The API's address is `VITE_API_URL` (see `.env.example`; default `http://localhost:8000`).
+
+**Everything else is still kept in this browser's localStorage, per computer**: sales, stock, purchase orders, quotations and settings. The admin therefore only sees sales and orders made on the same computer until those move to the API too. They all go through `src/context/StoreContext.jsx`.
 
 | Key | What it holds |
 |---|---|
@@ -61,11 +63,8 @@ There is no billing backend yet, so **everything is kept in this browser's local
 | `billing-stock` | `{ showroom: { code: units } }` |
 | `billing-orders` | purchase orders and their history |
 | `billing-stock-imports` | Excel stock imports: `{ id, at, by, username, location, file, lines }`, kept for the history |
-| `billing-shop-products` | products the showrooms added themselves: catalogue fields plus `shop: { location, by, at }` |
 | `billing-quotes` | saved quotations |
 | `billing-settings` | the admin's settings: `{ quotePrint }` |
-| `billing-season-edits` | the admin's changes to the season list: `{ code: true/false }` |
-| `billing-passwords` | passwords the admin has changed: `{ login: { hash, at } }` (logins not listed use the default) |
 | `billing-current-<showroom>`, `billing-held-<showroom>`, `billing-seq-<showroom>` | the bill in progress, held bills and the next bill number, per showroom |
 | `billing-session` | who is signed in |
 
@@ -102,7 +101,8 @@ There is no billing backend yet, so **everything is kept in this browser's local
 | `src/lib/orders.js` | purchase-order statuses, numbering, on-order and received counts |
 | `src/lib/purchaseFile.js` | reading a purchase Excel into order lines |
 | `src/lib/reports.js` | totals, cost, profit, by day, by showroom, top products, payment methods |
-| `src/lib/auth.js` | the demo logins |
+| `src/lib/auth.js` | sign-in through the API |
+| `src/lib/api.js` | calls to the billing API, with the login token |
 | `src/lib/bill.js`, `catalogue.js`, `customer.js`, `money.js`, `payment.js`, `demo.js` | bill totals and numbers, product lookup, customer checks, ₹ formatting, payment methods, demo sales |
 | `src/styles/index.css` | the Tailwind theme: neutral greys with the logo's green for the main action and its red for small accents; Geist type; animations |
 

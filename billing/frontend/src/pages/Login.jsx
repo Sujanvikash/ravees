@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, FlaskConical, LockKeyhole, ShieldCheck, Store } from 'lucide-react';
 import logo from '../assets/logo.svg';
 import { Landmark } from '../components/Landmarks.jsx';
 import { BRAND, locationById } from '../config.js';
-import { ACCOUNTS, signIn } from '../lib/auth.js';
+import { useLocalStorage } from '../hooks/useLocalStorage.js';
+import { ACCOUNTS, DEMO_ACCOUNTS, signIn, signInDemo } from '../lib/auth.js';
 
 const SHOWROOMS = ACCOUNTS.filter((a) => a.role === 'location');
 const ADMIN = ACCOUNTS.find((a) => a.role === 'admin');
@@ -40,6 +41,19 @@ const Login = ({ onSignedIn }) => {
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [demo, setDemo] = useLocalStorage('billing-demo-mode', false);
+  const [demoError, setDemoError] = useState('');
+
+  const tryDemo = async (a) => {
+    setBusy(true);
+    setDemoError('');
+    try {
+      onSignedIn(await signInDemo(a.username));
+    } catch (err) {
+      setBusy(false);
+      setDemoError(err.message);
+    }
+  };
 
   const pick = (a) => {
     setAccount(a);
@@ -51,12 +65,12 @@ const Login = ({ onSignedIn }) => {
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
-    const session = await signIn(account.username, password);
-    setBusy(false);
-    if (session) onSignedIn(session);
-    else {
-      setError('That password is not right for this login.');
-      setPassword('');
+    try {
+      onSignedIn(await signIn(account.username, password));
+    } catch (err) {
+      setBusy(false);
+      setError(err.message);
+      if (err.status === 401) setPassword('');
     }
   };
 
@@ -64,11 +78,63 @@ const Login = ({ onSignedIn }) => {
   const card = 'rounded-2xl border glass p-6 shadow-[0_12px_40px_-12px_rgba(9,9,11,0.18)] sm:p-7';
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+    <main className="relative flex min-h-dvh items-center justify-center px-4 py-10">
+      {/* the Demo switch: when on, only the two demo logins show, and they need no password */}
+      {!account && (
+        <label className="absolute top-4 right-4 z-10 inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-white/80 py-1 pr-1.5 pl-3 text-[13px] font-medium text-ink-2 backdrop-blur">
+          <FlaskConical size={14} aria-hidden="true" /> Demo
+          <button
+            type="button"
+            role="switch"
+            aria-checked={demo}
+            aria-label="Demo logins"
+            onClick={() => {
+              setDemo(!demo);
+              setDemoError('');
+            }}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${demo ? 'brand-gradient' : 'bg-line-strong'}`}
+          >
+            <span className={`inline-block size-4 rounded-full bg-[#fff] shadow transition-transform ${demo ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+          </button>
+        </label>
+      )}
       <div className={`w-full ${account ? 'max-w-lg' : 'max-w-6xl'}`}>
         <img src={logo} alt={BRAND.name} className="brand-logo mx-auto h-16 w-auto" />
 
-        {!account ? (
+        {!account && demo ? (
+          <div key="demo" className="mt-8 flex animate-rise flex-col items-center">
+            <h1 className="text-center font-display text-[28px] text-balance text-evergreen-900 sm:text-[34px]">Try the demo</h1>
+            <p className="mt-1 text-center text-[13px] text-ink-3">No password needed. Demo store works as the Chennai showroom.</p>
+            <div className="mt-8 grid w-full max-w-lg gap-3 sm:grid-cols-2">
+              {DEMO_ACCOUNTS.map((a) => {
+                const Icon = a.role === 'admin' ? ShieldCheck : Store;
+                return (
+                  <button
+                    key={a.username}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => tryDemo(a)}
+                    className="group flex items-center gap-3 rounded-2xl border glass p-4 text-left transition hover:-translate-y-0.5 hover:border-evergreen-800/40 disabled:opacity-60"
+                  >
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-evergreen-50 text-evergreen-800">
+                      <Icon size={20} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1 leading-tight">
+                      <span className="block text-[15px] font-semibold">{a.label}</span>
+                      <span className="block text-xs text-ink-3">{a.role === 'admin' ? 'All showrooms, reports and orders' : 'Billing, stock and orders'}</span>
+                    </span>
+                    <ArrowRight size={16} className="text-evergreen-800 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  </button>
+                );
+              })}
+            </div>
+            {demoError && (
+              <p role="alert" className="mt-3 text-center text-xs font-medium text-ruby-ink">
+                {demoError}
+              </p>
+            )}
+          </div>
+        ) : !account ? (
           <div key="pick" className="mt-8 flex animate-rise flex-col items-center">
             <h1 className="text-center font-display text-[28px] text-balance text-evergreen-900 sm:text-[34px]">Choose your showroom</h1>
 
@@ -165,7 +231,6 @@ const Login = ({ onSignedIn }) => {
           </form>
         )}
 
-        <p className="mt-4 text-center text-xs text-ink-3">Demo build: logins are checked in this browser until the billing server is ready.</p>
       </div>
     </main>
   );

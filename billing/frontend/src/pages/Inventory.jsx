@@ -260,7 +260,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                             <input
                               type="checkbox"
                               checked={p.inSeason}
-                              onChange={(e) => setInSeason(p.code, e.target.checked)}
+                              onChange={(e) => setInSeason(p.code, e.target.checked).catch((err) => setFlash({ text: err.message, history: false }))}
                               aria-label={`${p.name} in Season ${SEASON}`}
                               className="size-4 cursor-pointer accent-evergreen-800"
                             />

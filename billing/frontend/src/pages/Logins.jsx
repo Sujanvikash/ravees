@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, KeyRound, LockKeyhole, RotateCcw, ShieldCheck, Store } from 'lucide-react';
 import Dialog from '../components/Dialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { locationById } from '../config.js';
-import { useLocalStorage } from '../hooks/useLocalStorage.js';
-import { ACCOUNTS, MIN_PASSWORD, PASSWORDS_KEY, passwordEntry } from '../lib/auth.js';
+import { api } from '../lib/api.js';
+import { ACCOUNTS, MIN_PASSWORD } from '../lib/auth.js';
 
 const when = (iso) =>
   new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -52,11 +52,15 @@ const SetPasswordDialog = ({ account, onClose, onSave }) => {
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (password.length < MIN_PASSWORD) return setError(`Use at least ${MIN_PASSWORD} characters.`);
     if (password !== confirm) return setError('The two passwords do not match.');
-    onSave(password);
+    try {
+      await onSave(password);
+    } catch (err) {
+      setError(err.message);
+    }
   };
   const edit = (set) => (v) => {
     set(v);
@@ -98,23 +102,36 @@ const SetPasswordDialog = ({ account, onClose, onSave }) => {
  * way back to the default. Showroom logins cannot change passwords themselves.
  */
 const Logins = ({ onMenu }) => {
-  const [changed, setChanged] = useLocalStorage(PASSWORDS_KEY, {});
+  const [changed, setChanged] = useState({}); // { [username]: { at } } for logins whose password was changed
+  const [loadError, setLoadError] = useState('');
   const [editing, setEditing] = useState(null);
   const [notice, setNotice] = useState('');
 
-  const save = async (password) => {
-    const entry = await passwordEntry(editing.username, password);
-    setChanged((prev) => ({ ...prev, [editing.username]: entry }));
-    setNotice(`Password changed for ${editing.label}.`);
-    setEditing(null);
-  };
-  const restore = (account) => {
+  const keep = (users) => setChanged(Object.fromEntries(users.filter((u) => u.passwordChangedAt).map((u) => [u.username, { at: u.passwordChangedAt }])));
+  const update = (u) =>
     setChanged((prev) => {
       const next = { ...prev };
-      delete next[account.username];
+      if (u.passwordChangedAt) next[u.username] = { at: u.passwordChangedAt };
+      else delete next[u.username];
       return next;
     });
-    setNotice(`${account.label} is back to its default password.`);
+
+  useEffect(() => {
+    api('/users').then(keep, (err) => setLoadError(err.message));
+  }, []);
+
+  const save = async (password) => {
+    update(await api(`/users/${editing.username}/password`, { method: 'PUT', body: { password } }));
+    setNotice(`Password changed for ${editing.label}. Anyone signed in as ${editing.label} has to sign in again.`);
+    setEditing(null);
+  };
+  const restore = async (account) => {
+    try {
+      update(await api(`/users/${account.username}/password/reset`, { method: 'POST' }));
+      setNotice(`${account.label} is back to its default password.`);
+    } catch (err) {
+      setNotice(err.message);
+    }
   };
 
   return (
@@ -124,9 +141,15 @@ const Logins = ({ onMenu }) => {
         <div className="mx-auto flex max-w-4xl flex-col gap-4 p-3 lg:px-5 lg:py-4">
           <div>
             <p className="text-[13px] text-ink-3">
-              Only the admin can change passwords. Until the billing server is ready, a new password works only in this browser on this computer.
+              Only the admin can change passwords. A new password works on every computer straight away.
             </p>
           </div>
+
+          {loadError && (
+            <p role="alert" className="rounded-xl bg-ruby-50 px-3.5 py-2.5 text-[13px] font-medium text-ruby-ink">
+              {loadError}
+            </p>
+          )}
 
           {notice && (
             <p role="status" className="animate-pop rounded-xl bg-ok-50 px-3.5 py-2.5 text-[13px] font-medium text-ok-ink">

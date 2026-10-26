@@ -1,0 +1,37 @@
+[project]
+name = "billing-api"
+version = "0.1.0"
+description = "Billing API for the Raave's Evergreen showrooms"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.20.1",
+    "argon2-cffi>=25.1.0",
+    "fastapi>=0.162.0",
+    "openpyxl>=3.1.5",
+    "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.16.1",
+    "pyjwt>=2.15.1",
+    "python-dotenv>=1.2.4",
+    "sqlalchemy>=2",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.2",
+]
+
+[tool.ruff]
+line-length = 120
+# the one-off cleaning script from before the backend; left as it was
+extend-exclude = ["seed/clean_products.py"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# show why tests were skipped (the API tests, when no test database is set up)
+addopts = "-rs"

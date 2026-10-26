@@ -3,6 +3,7 @@ import { LogOut, PanelLeft, ShieldCheck, Store, X } from 'lucide-react';
 import logo from '../assets/logo.svg';
 import { BRAND, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
+import { isDemo } from '../lib/auth.js';
 import { NAV } from '../lib/nav.js';
 import Kbd from './Kbd.jsx';
 
@@ -136,7 +137,12 @@ const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobi
               {session.role === 'admin' ? <ShieldCheck size={16} aria-hidden="true" /> : <Store size={16} aria-hidden="true" />}
             </span>
             <span className={`min-w-0 leading-tight ${rail ? 'lg:sr-only' : ''}`}>
-              <span className="block truncate text-[13px] font-medium">{shop ? shop.city : 'Admin'}</span>
+              <span className="flex items-center gap-1.5 truncate text-[13px] font-medium">
+                {shop ? shop.city : 'Admin'}
+                {isDemo(session) && (
+                  <span className="rounded-full bg-warn-50 px-1.5 py-px text-[10px] font-semibold tracking-wide text-warn-ink uppercase">Demo</span>
+                )}
+              </span>
               <span className="block truncate text-xs text-ink-3">{shop ? shop.area : 'All showrooms'}</span>
             </span>
             {rail && <Tip label={who} />}
