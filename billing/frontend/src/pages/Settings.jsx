@@ -124,6 +124,7 @@ const Settings = ({ onMenu }) => {
                   label="Snow amount"
                   options={[
                     { id: 'light', label: 'Light' },
+                    { id: 'medium', label: 'Medium' },
                     { id: 'heavy', label: 'Heavy' },
                     { id: 'blizzard', label: 'Blizzard' },
                   ]}

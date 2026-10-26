@@ -21,7 +21,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage.js';
 const StoreContext = createContext(null);
 
 /** quotePrint: showrooms may print quotations. theme: classic | light | dark; wash (Light): light | lighter |
- *  lightest; effect: none | snow | glow | both; snow: light | heavy | blizzard; effectWhere: everywhere |
+ *  lightest; effect: none | snow | glow | both; snow: light | medium | heavy | blizzard; effectWhere: everywhere |
  *  signin; strip (Light): green | white; nav: solid | soft. */
 export const DEFAULT_SETTINGS = {
   quotePrint: true,

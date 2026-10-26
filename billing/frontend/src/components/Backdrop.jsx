@@ -11,6 +11,7 @@ const GLOWS = [
 // How much snow: window area per flake, flake size, fall speed and sideways wind.
 const AMOUNT = {
   light: { per: 22000, r: [1.2, 2.6], speed: [0.25, 0.55], wind: 0.3, gust: 0 },
+  medium: { per: 9000, r: [1.3, 3.2], speed: [0.45, 1], wind: 0.45, gust: 0.15 },
   heavy: { per: 3200, r: [1.4, 4], speed: [0.7, 1.6], wind: 0.6, gust: 0.3 },
   blizzard: { per: 1100, r: [1.4, 5.5], speed: [1.4, 3.2], wind: 1.2, gust: 1.4 },
 };
