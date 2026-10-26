@@ -15,16 +15,13 @@ import { useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { billNumber, buildBill, countLabel } from '../lib/bill.js';
-import { SEASON, SEASON_COUNT } from '../lib/catalogue.js';
+import { SEASON, seasonCount } from '../lib/catalogue.js';
 import { customerLabel, isValidMobile, isValidName, phoneDigits } from '../lib/customer.js';
-import { inrWhole } from '../lib/money.js';
 
 const toolButton =
   'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 transition-colors enabled:hover:bg-mist enabled:hover:text-ink disabled:opacity-40';
 
-const sameDay = (a, b) => a.toDateString() === b.toDateString();
 
-const clock = new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
 /**
  * One showroom's billing counter. The bill in progress, held bills and the bill-number sequence are kept
@@ -34,11 +31,9 @@ const Counter = ({ location, onMenu }) => {
   const shop = locationById(location);
   const now = useClock();
   const bill = useBill(location);
-  const { sales, recordSale, stockOf } = useStore();
+  const { recordSale, stockOf } = useStore();
   const [held, setHeld] = useLocalStorage(`billing-held-${location}`, []);
   const [seq, setSeq] = useLocalStorage(`billing-seq-${location}`, 1);
-  const [seasonPref, setSeasonPref] = useLocalStorage('billing-season-only', true);
-  const seasonOnly = seasonPref && SEASON_COUNT > 0;
 
   // The customer: mobile number and name are both required to bill (F12 / Collect checks them).
   const [phone, setPhone] = useState('');
@@ -64,14 +59,12 @@ const Counter = ({ location, onMenu }) => {
     if (printJob) window.print();
   }, [printJob]);
 
-  const today = sales.filter((s) => s.location === location && sameDay(new Date(s.at), now));
-  const todayTotal = today.reduce((sum, s) => sum + s.totals.payable, 0);
 
   const addProduct = (product) => {
     const qty = (bill.items.find((it) => it.code === product.code)?.qty ?? 0) + 1;
     bill.add(product.code);
     const available = inStock(product.code);
-    const outOfSeason = SEASON_COUNT > 0 && !product.inSeason;
+    const outOfSeason = seasonCount() > 0 && !product.inSeason;
     const warning =
       qty > available
         ? ` · only ${Math.max(available, 0)} in stock at ${shop.city}`
@@ -206,33 +199,19 @@ const Counter = ({ location, onMenu }) => {
       {/* On a counter monitor (lg and up) the counter fills the window: only the bill list scrolls.
           Narrower windows stack the order panel under the bill and scroll as a normal page. */}
       <div className="flex min-h-0 flex-1 flex-col print:hidden">
-        <PageHeader crumbs={[`${shop.city} · ${shop.area}`, 'Billing']} onMenu={onMenu}>
-          <span className="hidden md:inline">
-            Today <span className="font-medium text-ink">{inrWhole(todayTotal)}</span> · {today.length}{' '}
-            {today.length === 1 ? 'bill' : 'bills'}
-          </span>
-          <span className="hidden items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs font-medium text-ink-2 sm:inline-flex">
-            <span className="size-1.5 rounded-full bg-raave-red" aria-hidden="true" />
-            Season {SEASON}
-          </span>
-          <time dateTime={now.toISOString()} className="hidden tabular-nums lg:inline">
-            {clock.format(now).replace(' at ', ', ')}
-          </time>
-        </PageHeader>
+        <PageHeader crumbs={[`${shop.city} · ${shop.area}`, 'Billing']} onMenu={onMenu} />
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <section aria-label="Bill" className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 p-4 lg:p-5">
+          <section aria-label="Bill" className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-3 lg:p-4">
             <ScanBar
               inputRef={scanRef}
-              seasonOnly={seasonOnly}
-              onSeasonOnly={setSeasonPref}
               onAdd={addProduct}
               notice={notice}
               onNotice={setNotice}
               inStock={inStock}
             />
 
-            <section className="flex min-h-72 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(9,9,11,0.04)] lg:min-h-0">
+            <section className="flex min-h-72 flex-1 flex-col overflow-hidden rounded-2xl border glass lg:min-h-0">
               <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-4 pb-2">
                 <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                   <h1 className="text-[15px] font-semibold tracking-tight">Current bill</h1>
