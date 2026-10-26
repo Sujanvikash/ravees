@@ -5,7 +5,9 @@ import { LOCATIONS } from '../config.js';
  * plus one admin. Only SHA-256 hashes of "username:password" are stored here, but anyone with the app's
  * code can still get in, so this is not real security. The backend replaces it with server-side logins.
  *
- * Default passwords are "<username>@2026" (chennai@2026 … admin@2026); see README.
+ * Default passwords are "<username>@2026" (chennai@2026 … admin@2026); see README. The admin can set a new
+ * password for any login on the Logins page; those hashes are kept in localStorage under PASSWORDS_KEY
+ * ({ [username]: { hash, at } }) and win over the defaults, so they only apply on the computer they were set on.
  */
 const HASHES = {
   chennai: 'a1ce0061ed3d1910c3b000de99e4a318a2625c8a7e22b8afbb43d685ddef434f',
@@ -27,10 +29,27 @@ const sha256 = async (text) => {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 };
 
+export const PASSWORDS_KEY = 'billing-passwords';
+export const MIN_PASSWORD = 6;
+
+const changedPasswords = () => {
+  try {
+    return JSON.parse(window.localStorage.getItem(PASSWORDS_KEY)) ?? {};
+  } catch {
+    return {};
+  }
+};
+
+/** The stored entry for a new password: its hash and when it was set. */
+export const passwordEntry = async (username, password) => ({
+  hash: await sha256(`${username}:${password}`),
+  at: new Date().toISOString(),
+});
+
 /** Checks a username and password. Returns the session ({ username, role, location }) or null. */
 export const signIn = async (username, password) => {
   const account = ACCOUNTS.find((a) => a.username === username);
   if (!account || !password) return null;
-  const ok = (await sha256(`${username}:${password}`)) === HASHES[username];
+  const ok = (await sha256(`${username}:${password}`)) === (changedPasswords()[username]?.hash ?? HASHES[username]);
   return ok ? { username: account.username, role: account.role, location: account.location } : null;
 };
