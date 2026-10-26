@@ -248,14 +248,15 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const save = (andPrint) => {
     if (!totals.count) return setError('Add at least one product.');
     if (!isValidName(name)) return setError('Enter the customer’s name.');
-    if (phone.trim() && !isValidMobile(phone)) return setError('That mobile number doesn’t look right (10 digits).');
+    if (!phone.trim()) return setError('Enter the customer’s mobile number.');
+    if (!isValidMobile(phone)) return setError('That mobile number doesn’t look right (10 digits).');
     const quote = {
       quoteNo,
       at: new Date().toISOString(),
       location,
       by: shop.city,
       name: name.trim(),
-      phone: phone.trim() ? phoneDigits(phone) : '',
+      phone: phoneDigits(phone),
       validUntil: validUntil(days),
       note: note.trim(),
       lines: totals.lines.map((l) => ({ code: l.code, name: l.product.name, qty: l.qty, price: l.price, mrp: l.product.mrp })),
@@ -341,7 +342,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
           </label>
           <label className={field}>
             <Phone size={15} className="text-ink-3" aria-hidden="true" />
-            <span className="sr-only">Mobile number (optional)</span>
+            <span className="sr-only">Mobile number (required)</span>
             <input
               type="tel"
               inputMode="numeric"
@@ -350,9 +351,12 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
                 setPhone(e.target.value);
                 setError('');
               }}
-              placeholder="Mobile number (optional)"
+              placeholder="Mobile number"
               className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
             />
+            <span className="text-xs text-ruby-ink" aria-hidden="true">
+              *
+            </span>
           </label>
         </div>
 

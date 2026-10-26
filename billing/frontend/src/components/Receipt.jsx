@@ -1,3 +1,4 @@
+import logo from '../assets/logo.svg';
 import { BRAND, locationById } from '../config.js';
 import { countLabel, gstLines } from '../lib/bill.js';
 import { formatMobile } from '../lib/customer.js';
@@ -22,15 +23,15 @@ const Line = ({ label, value, className = '' }) => (
 
 const rule = 'border-t border-dashed border-black pt-1.5';
 
-/** The 80mm thermal tax invoice. Hidden on screen; it is the only thing that prints. */
+/** The 80mm thermal tax invoice, headed by the logo. Hidden on screen; it is the only thing that prints. */
 const Receipt = ({ sale }) => {
   const { totals, payment } = sale;
   const shop = locationById(sale.location) ?? {};
   return (
     <div className="hidden font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
-        <div className="font-display text-[15px] font-bold tracking-[0.14em] uppercase">{BRAND.name}</div>
-        <div className="mb-0.5">{BRAND.tagline}</div>
+        {/* the logo carries the name, "Christmas Tree & Decoration" and "Since 1997" */}
+        <img src={logo} alt={BRAND.name} className="mb-1.5 w-[46mm] [print-color-adjust:exact]" />
         {(shop.address ?? []).map((a) => (
           <div key={a}>{a}</div>
         ))}
