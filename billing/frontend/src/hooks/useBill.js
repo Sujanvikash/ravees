@@ -30,10 +30,13 @@ const reducer = (state, action) => {
 
 /**
  * The bill being rung up at one showroom: items ({ code, qty }) and the last scanned code. It is kept in
- * localStorage under that showroom's key, so a refresh or a power cut mid-bill doesn't lose it.
+ * localStorage under that showroom's key, so a refresh or a power cut mid-bill doesn't lose it. `kind`
+ * keeps a separate list for the quotation being written ('quote').
  */
-export const useBill = (location) => {
-  const [state, setState] = useLocalStorage(`billing-current-${location}`, EMPTY);
+export const billKey = (location, kind = 'current') => `billing-${kind}-${location}`;
+
+export const useBill = (location, kind = 'current') => {
+  const [state, setState] = useLocalStorage(billKey(location, kind), EMPTY);
   const dispatch = (action) => setState((prev) => reducer(prev, action));
 
   return {

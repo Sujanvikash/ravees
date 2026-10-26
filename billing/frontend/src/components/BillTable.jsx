@@ -10,7 +10,7 @@ const cols = 'sm:grid sm:grid-cols-[minmax(0,1fr)_auto_7.5rem_2rem] sm:items-cen
  * The lines of the current bill. It fills the space left in the bill area and scrolls inside it, with
  * the column labels pinned. The last scanned line is highlighted.
  */
-const BillTable = ({ lines, lastCode, onQty, inStock }) => {
+const BillTable = ({ lines, lastCode, onQty, inStock, shortcuts = true }) => {
   if (!lines.length) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
@@ -23,18 +23,20 @@ const BillTable = ({ lines, lastCode, onQty, inStock }) => {
             Scan a product tag, or type a code like TR0278 and press Enter.
           </div>
         </div>
-        <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-ink-3">
-          <span className="inline-flex items-center gap-1.5"><Kbd>F9</Kbd> Held bills</span>
-          <span className="inline-flex items-center gap-1.5"><Kbd>F4</Kbd> Customer</span>
-          <span className="inline-flex items-center gap-1.5"><Kbd>F12</Kbd> Pay</span>
-        </div>
+        {shortcuts && (
+          <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-ink-3">
+            <span className="inline-flex items-center gap-1.5"><Kbd>F9</Kbd> Held bills</span>
+            <span className="inline-flex items-center gap-1.5"><Kbd>F4</Kbd> Customer</span>
+            <span className="inline-flex items-center gap-1.5"><Kbd>F12</Kbd> Pay</span>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-      <div className={`${cols} sticky top-0 z-1 hidden bg-surface/95 px-3 py-2 text-xs text-ink-3 backdrop-blur`}>
+      <div className={`${cols} sticky top-0 z-1 hidden bg-white/80 px-3 py-2 text-xs text-ink-3 backdrop-blur`}>
         <span>Item</span>
         <span className="w-28 text-center">Qty</span>
         <span className="text-right">Amount</span>
@@ -50,7 +52,7 @@ const BillTable = ({ lines, lastCode, onQty, inStock }) => {
           return (
             <li
               key={p.code}
-              className={`${cols} group relative isolate flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-3 py-2 ${isLast ? 'bg-evergreen-50' : 'hover:bg-mist-2'}`}
+              className={`${cols} group relative isolate flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-3 py-2 ${isLast ? 'bg-evergreen-50' : 'row-hover'}`}
             >
               {isLast && (
                 // Keyed on the qty so the flash replays when the same product is scanned again; it is its own
