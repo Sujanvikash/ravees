@@ -14,7 +14,7 @@ import { locationById } from '../config.js';
  */
 export const STATUS = {
   requested: { label: 'Requested', className: 'bg-warn-50 text-warn-ink' },
-  sent: { label: 'Sent to showroom', className: 'bg-evergreen-50 text-evergreen-900' },
+  sent: { label: 'On the way', className: 'bg-evergreen-50 text-evergreen-900' },
   received: { label: 'Received', className: 'bg-mist text-ink-2' },
   rejected: { label: 'Rejected', className: 'bg-ruby-50 text-ruby-ink' },
   cancelled: { label: 'Cancelled', className: 'bg-mist text-ink-3' },

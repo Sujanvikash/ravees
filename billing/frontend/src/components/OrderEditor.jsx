@@ -8,23 +8,24 @@ import { inr } from '../lib/money.js';
 import { orderQty, orderValue } from '../lib/orders.js';
 import { parsePurchaseRows } from '../lib/purchaseFile.js';
 import Dialog from './Dialog.jsx';
-import { LocationPicker } from './Filters.jsx';
 
 const LOW = 5; // matches Inventory's low-stock line
 const RESTOCK_TO = 10; // "Add low stock" suggests topping each item up to this many units
 
 /**
- * Raise, edit or send a purchase order. A showroom requests stock (quantities only); the admin also sets
- * the purchase rate, can pick the showroom, and either sends it or rejects a request. Lines can be typed in,
- * picked from a search, suggested from low stock, or imported from a purchase Excel.
+ * Request stock, or review a request. A showroom requests stock (quantities only); the admin reviews it,
+ * sets the purchase rate, and approves and sends it or rejects it. Lines can be picked from the product list
+ * (shown as soon as the search box is clicked: this season's products, lowest stock first), searched,
+ * suggested from low stock, or imported from a purchase Excel.
  */
 const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
   const admin = session.role === 'admin';
   const { stockOf } = useStore();
-  const [location, setLocation] = useState(order.location);
+  const location = order.location;
   const [lines, setLines] = useState(order.lines);
   const [note, setNote] = useState('');
   const [query, setQuery] = useState('');
+  const [browsing, setBrowsing] = useState(false); // search box focused: show the product list
   const [importInfo, setImportInfo] = useState(null);
   const [rejecting, setRejecting] = useState(false);
   const fileRef = useRef(null);
@@ -32,6 +33,15 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
   const existing = Boolean(order.number);
 
   const matches = useMemo(() => searchProducts(query, { limit: 6 }), [query]);
+  // Before anything is typed: this season's products not on the order yet, lowest stock first.
+  const browse = useMemo(
+    () =>
+      PRODUCTS.filter((p) => p.inSeason && !lines.some((l) => l.code === p.code))
+        .map((p) => ({ p, stock: stockOf(location, p.code) }))
+        .sort((a, b) => a.stock - b.stock || a.p.name.localeCompare(b.p.name)),
+    [lines, location, stockOf],
+  );
+  const list = query.trim() ? matches.map((p) => ({ p, stock: stockOf(location, p.code) })) : browsing ? browse : [];
 
   const addLines = (incoming) =>
     setLines((prev) => {
@@ -65,24 +75,15 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
   const setQty = (code, qty) => setLines((prev) => (qty > 0 ? prev.map((l) => (l.code === code ? { ...l, qty } : l)) : prev.filter((l) => l.code !== code)));
   const setRate = (code, rate) => setLines((prev) => prev.map((l) => (l.code === code ? { ...l, rate } : l)));
 
-  const title = admin ? (existing ? `Review ${order.number}` : 'New purchase order') : existing ? `Edit request ${order.number}` : 'Request stock';
+  const title = admin ? `Review ${order.number}` : existing ? `Edit request ${order.number}` : 'Request stock';
   const subtitle = admin
-    ? existing
-      ? `Requested by ${shop.city}. Adjust it, then send it to the showroom to count in.`
-      : 'Choose the showroom; it counts the goods in when they arrive.'
+    ? `Requested by ${shop.city}. Adjust it if needed, then approve it: the goods go to ${shop.city}, who count them in.`
     : 'The admin reviews your request and sends it back as a purchase order.';
-  const action = admin ? `Send to ${shop.city}` : existing ? 'Update request' : 'Send request to admin';
+  const action = admin ? 'Approve & send' : existing ? 'Update request' : 'Send request to admin';
 
   return (
     <Dialog id="order" title={title} subtitle={subtitle} onClose={onClose} size="max-w-4xl">
       <div className="flex flex-col gap-4 border-t border-line-soft px-6 pt-4 pb-5">
-        {admin && !existing && (
-          <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
-            <span>For</span>
-            <LocationPicker value={location} onChange={setLocation} all={false} />
-          </div>
-        )}
-
         <div className="flex flex-wrap items-start gap-2">
           <div className="relative min-w-64 flex-1">
             <label className="flex h-10 items-center gap-2 rounded-xl border border-line px-3 transition-shadow focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]">
@@ -91,6 +92,8 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setBrowsing(true)}
+                onBlur={() => setBrowsing(false)}
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter') return;
                   e.preventDefault();
@@ -104,12 +107,19 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                 className="min-w-0 flex-1 bg-transparent text-[13px] placeholder:text-ink-3"
               />
             </label>
-            {matches.length > 0 && (
-              <ul className="absolute inset-x-0 top-11 z-10 animate-pop rounded-xl border border-line bg-surface p-1 shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">
-                {matches.map((p) => (
+            {list.length > 0 && (
+              <ul className="absolute inset-x-0 top-11 z-10 max-h-80 animate-pop overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">
+                {!query.trim() && (
+                  <li className="px-3 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-ink-3 uppercase">
+                    Season products at {shop.city} · lowest stock first
+                  </li>
+                )}
+                {list.map(({ p, stock }) => (
                   <li key={p.code}>
                     <button
                       type="button"
+                      // keep the search box focused, so the list stays open for the next product
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         addLines([lineFor(p)]);
                         setQuery('');
@@ -118,7 +128,7 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                     >
                       <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
                       <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
-                      <span className="text-xs text-ink-3 tabular-nums">{stockOf(location, p.code)} in stock</span>
+                      <span className={`text-xs tabular-nums ${stock <= 0 ? 'text-ruby-ink' : stock <= LOW ? 'text-warn-ink' : 'text-ink-3'}`}>{stock} in stock</span>
                     </button>
                   </li>
                 ))}
