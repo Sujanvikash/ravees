@@ -3,7 +3,7 @@ Passwords and tokens, as plain functions with no web framework or database in th
 
 Passwords are hashed with Argon2id (argon2-cffi's defaults). Login tokens are JWTs signed with HS256; `iat` is
 kept to the microsecond so a token issued a moment before a password change is told apart from one issued a
-moment after it.
+moment after it. A demo token carries `demo: true`, and every request made with it works on the demo data.
 """
 
 from dataclasses import dataclass
@@ -54,14 +54,23 @@ class TokenClaims:
     role: str
     issued_at: float  # seconds since the epoch, with microseconds
     expires_at: float
+    demo: bool = False
 
 
 def create_access_token(
-    subject: str, role: str, *, secret: str, lifetime: timedelta, now: datetime | None = None
+    subject: str,
+    role: str,
+    *,
+    secret: str,
+    lifetime: timedelta,
+    demo: bool = False,
+    now: datetime | None = None,
 ) -> str:
-    """A signed token for a login: sub (username), role, iat and exp."""
+    """A signed token for a login: sub (username), role, iat and exp, and demo for a demo login."""
     now = now or datetime.now(UTC)
     claims = {'sub': subject, 'role': role, 'iat': now.timestamp(), 'exp': int((now + lifetime).timestamp())}
+    if demo:
+        claims['demo'] = True
     return jwt.encode(claims, secret, algorithm=JWT_ALGORITHM)
 
 
@@ -78,4 +87,5 @@ def decode_access_token(token: str, *, secret: str) -> TokenClaims:
         role=str(claims.get('role', '')),
         issued_at=float(claims['iat']),
         expires_at=float(claims['exp']),
+        demo=claims.get('demo') is True,
     )

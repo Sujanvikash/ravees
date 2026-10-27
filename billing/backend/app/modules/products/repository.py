@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from itertools import batched
 
 from sqlalchemy import func, select
@@ -48,3 +48,11 @@ def count(session: Session, *, in_season_only: bool = False) -> int:
     if in_season_only:
         stmt = stmt.where(Product.in_season)
     return session.scalar(stmt) or 0
+
+
+def by_codes(session: Session, codes: Iterable[str]) -> dict[str, Product]:
+    """The products with these codes (upper case), by code. Codes not in the catalogue are left out."""
+    wanted = {c.strip().upper() for c in codes}
+    if not wanted:
+        return {}
+    return {p.code: p for p in session.scalars(select(Product).where(Product.code.in_(wanted)))}

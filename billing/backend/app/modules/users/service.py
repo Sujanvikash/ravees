@@ -3,7 +3,8 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.core import security
-from app.core.errors import InvalidInput, NotFound
+from app.core.database import is_demo
+from app.core.errors import Forbidden, InvalidInput, NotFound
 from app.modules.locations.constants import ADMIN_USERNAME, LOGIN_ORDER, SHOWROOM_IDS
 
 from . import repository
@@ -11,6 +12,7 @@ from .models import Role, User
 
 MIN_PASSWORD = 6
 MAX_PASSWORD = 128
+DEMO_PASSWORDS = 'Passwords can’t be changed in the demo: its logins don’t use them.'
 
 
 def _login_position(user: User) -> int:
@@ -32,6 +34,8 @@ def get_login(session: Session, username: str) -> User:
 def set_password(session: Session, username: str, password: str) -> User:
     """A new password for a login. Tokens issued before now stop working, so anyone signed in as it is signed
     out on every computer."""
+    if is_demo(session):
+        raise Forbidden(DEMO_PASSWORDS)
     if len(password) < MIN_PASSWORD:
         raise InvalidInput(f'Use at least {MIN_PASSWORD} characters.')
     if len(password) > MAX_PASSWORD:
@@ -45,6 +49,8 @@ def set_password(session: Session, username: str, password: str) -> User:
 
 def reset_password(session: Session, username: str) -> User:
     """Puts a login back to its default password (username@2026)."""
+    if is_demo(session):
+        raise Forbidden(DEMO_PASSWORDS)
     user = get_login(session, username)
     user.password_hash = security.hash_password(security.default_password(username))
     user.password_changed_at = None

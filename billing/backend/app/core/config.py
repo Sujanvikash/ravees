@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     login_max_failures: int = Field(default=10, ge=1)
     login_window_minutes: int = Field(default=15, ge=1)
 
+    # the Demo switch on the sign-in screen: the same logins on sample data, no password
+    demo_enabled: bool = True
+
     @field_validator('jwt_secret')
     @classmethod
     def _long_enough(cls, value: SecretStr) -> SecretStr:

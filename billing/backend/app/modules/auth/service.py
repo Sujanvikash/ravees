@@ -3,17 +3,20 @@ from dataclasses import dataclass
 from datetime import timedelta
 from functools import cache
 
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.core import security
 from app.core.config import Settings
-from app.core.errors import TooManyRequests, Unauthorized
+from app.core.database import is_demo
+from app.core.errors import NotFound, ServiceUnavailable, TooManyRequests, Unauthorized
 from app.modules.users import repository as users
 from app.modules.users.models import User
 
 from .throttling import LoginThrottle
 
 WRONG_PASSWORD = 'That password is not right for this login.'
+DEMO_NOT_READY = 'The demo isn’t set up on this server yet. Run: uv run python -m app.cli demo'
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,12 +32,13 @@ def _dummy_hash() -> str:
     return security.hash_password('no-such-login')
 
 
-def issue_token(user: User, settings: Settings) -> str:
+def issue_token(user: User, settings: Settings, *, demo: bool = False) -> str:
     return security.create_access_token(
         user.username,
         user.role,
         secret=settings.jwt_secret.get_secret_value(),
         lifetime=timedelta(hours=settings.token_hours),
+        demo=demo,
     )
 
 
@@ -67,6 +71,21 @@ def login(
     return LoginResult(token=issue_token(user, settings), user=user)
 
 
+def demo_login(session: Session, settings: Settings, username: str) -> LoginResult:
+    """Signs in to one of the demo's logins (the same showrooms and admin, on the demo data). No password: the
+    demo holds only sample data. `session` must be a demo session."""
+    if not settings.demo_enabled:
+        raise NotFound('The demo is switched off on this server.')
+    try:
+        user = users.get(session, username.strip().lower())
+    except ProgrammingError:  # the demo schema hasn't been made yet
+        session.rollback()
+        raise ServiceUnavailable(DEMO_NOT_READY) from None
+    if user is None:
+        raise ServiceUnavailable(DEMO_NOT_READY) if not users.list_all(session) else NotFound(f'No demo login {username}.')
+    return LoginResult(token=issue_token(user, settings, demo=True), user=user)
+
+
 def user_from_token(session: Session, settings: Settings, token: str) -> User:
     """The login a token belongs to. Raises Unauthorized if the token is invalid or expired, the login is gone,
     or its password was changed after the token was issued."""
@@ -74,7 +93,13 @@ def user_from_token(session: Session, settings: Settings, token: str) -> User:
         claims = security.decode_access_token(token, secret=settings.jwt_secret.get_secret_value())
     except security.TokenError:
         raise Unauthorized() from None
-    user = users.get(session, claims.subject)
+    if claims.demo != is_demo(session) or (claims.demo and not settings.demo_enabled):
+        raise Unauthorized()
+    try:
+        user = users.get(session, claims.subject)
+    except ProgrammingError:  # a demo token after the demo was taken away
+        session.rollback()
+        raise Unauthorized() from None
     if user is None:
         raise Unauthorized()
     if user.password_changed_at and claims.issued_at < user.password_changed_at.timestamp():
