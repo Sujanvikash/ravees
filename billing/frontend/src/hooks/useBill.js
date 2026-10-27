@@ -1,3 +1,4 @@
+import { useSession } from '../context/SessionContext.jsx';
 import { useLocalStorage } from './useLocalStorage.js';
 
 const EMPTY = { items: [], lastCode: null };
@@ -31,12 +32,13 @@ const reducer = (state, action) => {
 /**
  * The bill being rung up at one showroom: items ({ code, qty }) and the last scanned code. It is kept in
  * localStorage under that showroom's key, so a refresh or a power cut mid-bill doesn't lose it. `kind`
- * keeps a separate list for the quotation being written ('quote').
+ * keeps a separate list for the quotation being written ('quote'). The demo keeps its own, apart from the real ones.
  */
-export const billKey = (location, kind = 'current') => `billing-${kind}-${location}`;
+export const billKey = (location, kind = 'current', demo = false) => `billing-${demo ? 'demo-' : ''}${kind}-${location}`;
 
 export const useBill = (location, kind = 'current') => {
-  const [state, setState] = useLocalStorage(billKey(location, kind), EMPTY);
+  const demo = Boolean(useSession()?.demo);
+  const [state, setState] = useLocalStorage(billKey(location, kind, demo), EMPTY);
   const dispatch = (action) => setState((prev) => reducer(prev, action));
 
   return {

@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { ChevronRight, FileSpreadsheet, History, PackageCheck, Tag } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, History, PackageCheck, PackageMinus, Tag, Undo2 } from 'lucide-react';
 import { locationById } from '../config.js';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -8,7 +8,11 @@ const KIND = {
   import: { label: 'Excel import', Icon: FileSpreadsheet, className: 'bg-evergreen-50 text-evergreen-900' },
   product: { label: 'New product', Icon: Tag, className: 'bg-warn-50 text-warn-ink' },
   order: { label: 'Purchase order', Icon: PackageCheck, className: 'bg-mist text-ink-2' },
+  'customer-return': { label: 'Customer return', Icon: Undo2, className: 'bg-ok-50 text-ok-ink' },
+  'sent-back': { label: 'Sent to admin', Icon: PackageMinus, className: 'bg-ruby-50 text-ruby-ink' },
 };
+
+const signed = (sign, n) => `${sign < 0 ? '−' : '+'}${n.toLocaleString('en-IN')}`;
 
 /**
  * The audit trail of stock coming in (see lib/stockLog.js): when, which showroom, who added it, how, and the
@@ -21,7 +25,7 @@ const StockHistory = ({ entries, showShop }) => {
     return (
       <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center lg:flex-1">
         <History size={22} className="text-ink-3" aria-hidden="true" />
-        <div className="text-[15px] font-semibold">No stock added yet</div>
+        <div className="text-[15px] font-semibold">No stock movements yet</div>
         <div className="text-[13px] text-ink-3">Excel imports and purchase orders counted in are listed here, with who added them.</div>
       </div>
     );
@@ -38,7 +42,7 @@ const StockHistory = ({ entries, showShop }) => {
             <th scope="col" className="py-1.5 pr-3 font-medium">How</th>
             <th scope="col" className="py-1.5 pr-3 font-medium">File, order or code</th>
             <th scope="col" className="py-1.5 pr-3 text-right font-medium">Products</th>
-            <th scope="col" className="py-1.5 pr-4 text-right font-medium">Units added</th>
+            <th scope="col" className="py-1.5 pr-4 text-right font-medium">Units in / out</th>
           </tr>
         </thead>
         <tbody>
@@ -71,7 +75,7 @@ const StockHistory = ({ entries, showShop }) => {
                     {e.ref}
                   </td>
                   <td className="py-1.5 pr-3 text-right text-ink-2">{e.lines.length}</td>
-                  <td className="py-1.5 pr-4 text-right font-semibold text-ok-ink">+{e.units.toLocaleString('en-IN')}</td>
+                  <td className={`py-1.5 pr-4 text-right font-semibold ${e.sign < 0 ? 'text-ruby-ink' : 'text-ok-ink'}`}>{signed(e.sign, e.units)}</td>
                 </tr>
                 {isOpen && (
                   <tr className="border-b border-line-soft bg-mist-2">
@@ -82,7 +86,7 @@ const StockHistory = ({ entries, showShop }) => {
                           <li key={l.code} className="flex items-baseline gap-2 text-xs">
                             <span className="font-mono text-ink-3">{l.code}</span>
                             <span className="min-w-0 flex-1 truncate">{l.name}</span>
-                            <span className="font-semibold text-ok-ink">+{l.qty}</span>
+                            <span className={`font-semibold ${e.sign < 0 ? 'text-ruby-ink' : 'text-ok-ink'}`}>{signed(e.sign, l.qty)}</span>
                           </li>
                         ))}
                       </ul>

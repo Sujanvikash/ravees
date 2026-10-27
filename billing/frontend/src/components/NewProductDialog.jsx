@@ -55,8 +55,6 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
     if (cost !== null && !(cost >= 0)) return setError('The cost price must be a number.');
     if (!Number.isInteger(qty) || qty < 0) return setError('Units in the shop must be a whole number.');
 
-    const at = new Date().toISOString();
-    const by = admin ? 'Admin' : shop.city; // same as purchase order history
     let product;
     setBusy(true);
     try {
@@ -76,16 +74,12 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
       return setError(err.message);
     }
     if (qty > 0) {
-      importStock({
-        id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        at,
-        by,
-        username: session.username,
-        location,
-        file: 'New product',
-        source: 'new-product',
-        lines: [{ code: product.code, name: product.name, qty, rate: product.cost }],
-      });
+      try {
+        await importStock({ location, file: 'New product', source: 'new-product', lines: [{ code: product.code, qty, rate: product.cost }] });
+      } catch (err) {
+        setBusy(false);
+        return setError(`${product.code} was added, but its ${qty} units weren’t: ${err.message} Add them with Import stock.`);
+      }
     }
     onDone(product, qty);
   };

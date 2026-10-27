@@ -13,17 +13,8 @@ export const ACCOUNTS = [
   { username: 'admin', label: 'Admin', role: 'admin', location: null },
 ];
 
-/**
- * Demo logins, for people trying the app out: no password, signed in with one click when the Demo switch on the
- * sign-in screen is on. Demo admin sees everything the admin does; Demo store works as the Chennai showroom.
- * Both use the real data, and the server stops them changing passwords.
- */
-export const DEMO_ACCOUNTS = [
-  { username: 'demo-admin', label: 'Demo admin', role: 'admin', location: null, demo: true },
-  { username: 'demo-store', label: 'Demo store', role: 'location', location: 'chennai', demo: true },
-];
-
-export const isDemo = (session) => Boolean(session?.username?.startsWith('demo-'));
+/** A demo session works on the demo's own sample data, never on the real sales, stock or orders. */
+export const isDemo = (session) => Boolean(session?.demo);
 
 export const MIN_PASSWORD = 6;
 
@@ -35,7 +26,7 @@ export const signIn = async (username, password) => {
   return session;
 };
 
-/** Signs in to a demo login (no password). */
+/** Signs in to the demo as one of the same logins (a showroom or the admin), with no password. */
 export const signInDemo = async (username) => {
   const { token, session } = await api('/auth/demo', { method: 'POST', body: { username } });
   setToken(token);

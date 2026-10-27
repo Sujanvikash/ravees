@@ -1,6 +1,8 @@
-import { Palette, Printer } from 'lucide-react';
+import { useState } from 'react';
+import { FlaskConical, Palette, Printer, Undo2 } from 'lucide-react';
 import { Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 
 /** An on/off switch with its label and explanation. */
@@ -40,17 +42,37 @@ const Choice = ({ label, hint, options, value, onChange }) => (
   </div>
 );
 
-/** Admin only: the app's look, and switches that change what the showrooms can do. */
+/** Admin only: the app's look, and switches that change what the showrooms can do. They are kept on the server,
+ * so they apply on every computer; a change that the server refuses is put back. In the demo, the demo admin can
+ * also start the demo's sample data again from scratch. */
 const Settings = ({ onMenu }) => {
-  const { settings, setSetting } = useStore();
+  const { settings, setSetting: save, resetDemo } = useStore();
+  const demo = Boolean(useSession()?.demo);
+  const [error, setError] = useState('');
+  const [resetting, setResetting] = useState('');
+  const setSetting = (key, value) => {
+    setError('');
+    save(key, value).catch((e) => setError(`Not saved: ${e.message}`));
+  };
+  const reset = async () => {
+    setResetting('Building a fresh month of sample data…');
+    try {
+      setResetting(await resetDemo());
+    } catch (e) {
+      setResetting(`Couldn’t reset the demo: ${e.message}`);
+    }
+  };
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader crumbs={['Admin', 'Settings']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 p-3 lg:px-5 lg:py-4">
-          <p className="text-[13px] text-ink-3">
-            Until the billing server is ready, these settings are kept in this browser, so they apply on this computer only.
-          </p>
+          <p className="text-[13px] text-ink-3">These settings are saved on the billing server and apply to every showroom and computer.</p>
+          {error && (
+            <p role="alert" className="text-xs font-medium text-ruby-ink">
+              {error}
+            </p>
+          )}
           <section className="overflow-hidden rounded-2xl border glass">
             <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
               <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
@@ -157,6 +179,52 @@ const Settings = ({ onMenu }) => {
               onChange={(v) => setSetting('quotePrint', v)}
             />
           </section>
+
+          <section className="overflow-hidden rounded-2xl border glass">
+            <div className="flex items-start gap-4 px-5 pt-4">
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+                <Undo2 size={17} aria-hidden="true" />
+              </span>
+              <div>
+                <div className="text-[14px] font-semibold">Returns and exchanges</div>
+                <p className="mt-0.5 text-[13px] text-ink-3">
+                  How long after a sale the showroom can take items back against the bill. A return is refunded in cash, also
+                  for bills paid by UPI or card. An exchange takes the returned value off the new bill; if the new bill is
+                  smaller, the rest is refunded in cash. Each one gets a credit note.
+                </p>
+              </div>
+            </div>
+            <Choice
+              label="Return window"
+              options={[
+                { id: 0, label: 'Off' },
+                { id: 7, label: '7 days' },
+                { id: 15, label: '15 days' },
+                { id: 30, label: '30 days' },
+              ]}
+              value={settings.returnDays}
+              onChange={(v) => setSetting('returnDays', v)}
+            />
+          </section>
+
+          {demo && (
+            <section className="flex items-start gap-4 overflow-hidden rounded-2xl border glass px-5 py-4">
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-warn-50 text-warn-ink">
+                <FlaskConical size={17} aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-semibold">Demo data</div>
+                <p className="mt-0.5 text-[13px] text-ink-3">
+                  Throws away everything done in the demo and builds a fresh month of sample sales, returns, stock, orders,
+                  quotations and cash closes for all five showrooms. The real data is never touched.
+                </p>
+                {resetting && <p className="mt-2 text-[13px] font-medium text-ink-2">{resetting}</p>}
+              </div>
+              <button type="button" onClick={reset} disabled={resetting.endsWith('…')} className="h-9 shrink-0 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:opacity-60">
+                Reset demo
+              </button>
+            </section>
+          )}
         </div>
       </div>
     </div>

@@ -9,16 +9,18 @@ npm run build     # production build to dist/
 npm run lint
 ```
 
-## Logins (demo)
+## Logins
 
 | Login | Password | Sees |
 |---|---|---|
-| Chennai, Bengaluru, Goa, Mumbai, Pune | `chennai@2026`, `bengaluru@2026`, `goa@2026`, `mumbai@2026`, `pune@2026` | Billing, its own sales, its own inventory, its own purchase orders |
-| Admin | `admin@2026` | Dashboard, all sales with purchase cost and profit, every showroom's inventory, all purchase orders |
+| Chennai, Bengaluru, Goa, Mumbai, Pune | `chennai@2026`, `bengaluru@2026`, `goa@2026`, `mumbai@2026`, `pune@2026` | Billing, returns, its own sales, inventory, purchase orders and cash close |
+| Admin | `admin@2026` | Dashboard, all sales with purchase cost and profit, every showroom's inventory, all purchase orders, every cash close |
 
-Logins are checked by the billing API (`billing/backend`), which keeps the passwords hashed. A new password set by the admin works on every computer straight away.
+Logins are checked by the billing API (`billing/backend`), which keeps the passwords hashed. The admin can set a new password for any login, or put it back to the default, under **Logins**; it works on every computer straight away. Showroom logins cannot change passwords.
 
-The admin can set a new password for any login, or put it back to the default, under **Logins** in the menu. Showroom logins cannot change passwords. Like everything else for now, a changed password is kept in this browser, so it only applies on the computer where the admin set it.
+## Demo
+
+The **Demo** switch at the top right of the sign-in screen shows the same five showrooms and the admin. One click signs in, with no password, to the **demo**: its own copy of everything (a separate schema in the database) filled with a month of sample sales, returns, stock, purchase orders in every state, quotations, stock sent back and cash closes. Nothing done in the demo touches the real data, and the menu shows a DEMO tag. The demo admin can start it again from scratch under **Settings → Demo data → Reset demo**. On the server it is built by `python -m app.cli demo` (and by `seed` the first time).
 
 ## Quotations
 
@@ -51,31 +53,45 @@ The menu shows a red badge when something needs doing: requests to review for th
 - `billing/backend/seed/sample-purchase-2026.xlsx` is a sample with the 25 season products, for testing.
 - `billing/backend/seed/opening-stock-2026/` has one sample opening-stock file per showroom (all 25 season products, a few left out as out of stock). Import each in Inventory → Import stock, choosing that showroom.
 
+## Returns and exchanges
+
+At the counter, **Return / exchange** finds the original bill (scan or type the bill number, or search by mobile or name). Pick what comes back. Only items on that bill, and not returned already, can come back, within the admin's return window (**Settings**: off, 7, 15 or 30 days; 15 by default).
+
+- **Refund:** the items go back into stock and their value is **refunded in cash**, whatever the bill was paid with. A UPI or card payment is refunded in cash too. A **credit note** (`CN-CHN/26-27/00001`) is saved and can be printed (black and white, 80mm) for the customer to sign.
+- **Exchange:** the returned value becomes a credit on the bill at the counter. Scan what the customer takes instead and collect as usual: the credit comes off first. If the new bill is bigger, the customer pays the rest by any method; if it is smaller, the difference is refunded in cash. The return and the new bill are saved together, and the receipt shows the credit note number.
+
+The refunded value is the price paid on the original bill, rounded to the rupee. Sales show **Returns** and **net sales**; the cash close counts cash refunds.
+
+## Cash close
+
+Each showroom closes its day under **Cash close**. It counts the drawer note by note (or types the total), confirms the opening float (filled in from what was kept at the last close) and how much stays in the drawer for tomorrow. The server works out what should be there:
+
+  expected = opening float + cash from bills (cash, and the cash part of split payments) − cash refunds
+  difference = counted − expected (below 0: short, above 0: over)
+
+A note is asked for when it doesn't balance. The admin's **Cash check** lists every close with its difference, the month's short and over totals, and which showrooms haven't closed today. The dashboard shows the last week's days that didn't balance.
+
+## Stock sent back to the admin
+
+From **Inventory → Send back to admin**, a showroom sends items back: at the end of the season, when another showroom needs them, or when damaged. Stock returns **only go to the admin**. The units leave the showroom's stock when it sends them (it can't send more than it has). The admin sees them under Inventory as on their way and **counts them in** when they arrive; any shortfall is kept on the return. They show in the inventory history as "Sent to admin", numbered `SR-CHN-0001`.
+
+## Sell-through and the sales report
+
+**Sales** shows a battery for each showroom (the admin sees all five): units sold so far this season against units sold plus units still in stock. Returned units count as back in stock. **Export to Excel** downloads the sales report for the chosen period and showroom from the server: a summary per showroom (with cost, profit and margin for the admin), every bill with how it was paid, every item, the returns and the cash closes.
+
+## Printing
+
+The bill and the credit note print on the 80mm thermal roll, **black and white only**, and every bill ends with a Christmas wish. The same bill always gets the same wish. A quotation prints on A4, black and white, with a QUOTATION watermark. If it is sent to the narrow receipt printer, it prints only "QUOTATION · NOT A BILL · print this on A4", so it can never pass for a bill. **Quotation** at the counter loads a saved quotation into the bill (at today's prices) when the customer buys.
+
 ## Data
 
-**Logins and the product catalogue** (including the season list and the showrooms' own products) come from the billing API, so they are the same on every computer. The API's address is `VITE_API_URL` (see `.env.example`; default `http://localhost:8000`).
+Everything comes from the billing API (`VITE_API_URL`, see `.env.example`; default `http://localhost:8000/api/v1`): logins, the catalogue, sales, returns, stock, purchase orders, quotations, stock returns, cash closes and the admin's settings. It is the same on every computer. `src/context/StoreContext.jsx` loads it all after sign-in, refreshes it every 30 seconds and when the window comes back into focus, and sends every change to the server first. Bill, quotation, credit-note and order numbers are given by the server; the number shown while billing is the next one it will most likely give.
 
-**Everything else is still kept in this browser's localStorage, per computer**: sales, stock, purchase orders, quotations and settings. The admin therefore only sees sales and orders made on the same computer until those move to the API too. They all go through `src/context/StoreContext.jsx`.
+Only what belongs to one counter stays in the browser: `billing-current-<showroom>` (the bill in progress), `billing-held-<showroom>` (held bills), `billing-quote-<showroom>` (the quotation being written), `billing-session` and `billing-token` (who is signed in), and `billing-settings` (the last settings seen, so the theme is right before the server answers). The demo keeps its own (`billing-demo-…`).
 
-| Key | What it holds |
-|---|---|
-| `billing-sales` | completed sales from every showroom, each with its showroom and each line's cost price |
-| `billing-stock` | `{ showroom: { code: units } }` |
-| `billing-orders` | purchase orders and their history |
-| `billing-stock-imports` | Excel stock imports: `{ id, at, by, username, location, file, lines }`, kept for the history |
-| `billing-quotes` | saved quotations |
-| `billing-settings` | the admin's settings: `{ quotePrint }` |
-| `billing-current-<showroom>`, `billing-held-<showroom>`, `billing-seq-<showroom>` | the bill in progress, held bills and the next bill number, per showroom |
-| `billing-session` | who is signed in |
+A bill, return or import carries an id made at the counter, so if the connection drops and it is sent again, the server saves it once. If the server can't be reached, the bill stays on the counter with a message, and Collect can be pressed again.
 
-- **Products** come from `src/data/products.json`, generated from the Excel files in `billing/backend/seed/`:
-  ```bash
-  cd billing/backend/seed
-  python export_products.py products-clean.xlsx ../../frontend/src/data/products.json
-  ```
-  Re-run it after editing `products-clean.xlsx`. The **In Season 2026** column is `Y` for 25 sample products for now; mark the real season list there. The JSON includes the cost price for the admin's figures. Showroom logins never display it, but until the backend exists anyone with browser developer tools could read it.
-- **Showrooms** (address, phone, GSTIN, UPI ID, bill prefix) are in `src/config.js`. GSTIN and UPI ID are blank and must be filled in before real use. Bills are numbered per showroom, like `CHN/26-27/00001` and `BLR/26-27/00001`.
-- **Demo sales:** the admin dashboard can add a month of sample sales across all showrooms, to preview the charts. They are marked DEMO, use bill numbers from 90001, don't touch stock, and **Remove** deletes them.
+- **Showrooms** (address, phone, GSTIN, UPI ID, bill prefix) are in `src/config.js`. GSTIN and UPI ID are blank and must be filled in before real use.
 
 ## Figures
 
@@ -94,22 +110,17 @@ The menu shows a red badge when something needs doing: requests to review for th
 
 | Path | What it is |
 |---|---|
-| `src/App.jsx` | sign-in, then the shell: menu and the current page |
-| `src/pages/` | Login, Counter (billing), Sales, Inventory, PurchaseOrders, Dashboard (admin) |
-| `src/components/` | Sidebar, PageHeader, ScanBar, BillTable, OrderPanel, PaymentDialog, DoneDialog, HeldDialog, OrderEditor, CountInDialog, DayChart, StatTile, Filters, Receipt, plus Dialog, PaymentMethods and Kbd |
-| `src/context/StoreContext.jsx` | sales, stock and purchase orders: the data layer the backend will replace |
-| `src/lib/orders.js` | purchase-order statuses, numbering, on-order and received counts |
-| `src/lib/purchaseFile.js` | reading a purchase Excel into order lines |
-| `src/lib/reports.js` | totals, cost, profit, by day, by showroom, top products, payment methods |
-| `src/lib/auth.js` | sign-in through the API |
-| `src/lib/api.js` | calls to the billing API, with the login token |
-| `src/lib/bill.js`, `catalogue.js`, `customer.js`, `money.js`, `payment.js`, `demo.js` | bill totals and numbers, product lookup, customer checks, ₹ formatting, payment methods, demo sales |
-| `src/styles/index.css` | the Tailwind theme: neutral greys with the logo's green for the main action and its red for small accents; Geist type; animations |
+| `src/App.jsx` | sign-in, then the shell: menu and the current page, inside the store for that login |
+| `src/pages/` | Login, Counter (billing, returns, exchanges), Quotations, Sales, CashClose, Inventory, PurchaseOrders, Dashboard, Logins, Settings |
+| `src/components/` | Sidebar, ScanBar, BillTable, OrderPanel, PaymentDialog, DoneDialog, HeldDialog, QuotePickerDialog, ReturnDialog, OrderEditor, CountInDialog, SendBackDialog, SellThrough, CashDifferences, Receipt, CreditNotePrint, QuotationPrint and more |
+| `src/context/StoreContext.jsx` | every record from the API, kept fresh, and every change sent to it |
+| `src/lib/api.js`, `auth.js`, `uid.js` | calls to the API with the login token, file downloads, sign-in (and the demo's), ids for retries |
+| `src/lib/bill.js`, `orders.js`, `reports.js`, `stockLog.js`, `cash.js` | bill totals and numbers, purchase-order statuses, report figures, the inventory history, cash differences |
+| `src/styles/index.css` | the Tailwind theme, and the print rules for the bill, credit note and quotation |
 
 ## Not done yet
 
-- **The billing backend:** central logins, sales, stock and orders shared by all five showrooms and the admin. Until then, each computer only has its own data.
-- Bill numbers don't restart on 1 April.
 - HSN codes are almost all blank in the product data, and the receipt doesn't print them yet.
-- No returns, exchanges, bill discount, stock transfers between showrooms, or editing of product prices in the app.
+- No bill discount, direct transfers between showrooms (they go through the admin: send back, then a purchase order), or editing of product prices in the app.
 - UPI is confirmed by hand. There is no QR code or payment-gateway check.
+- The counter needs the server to save a bill: there is no offline queue yet.

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Boxes, CircleCheck, FileSpreadsheet, PackagePlus, Tag } from 'lucide-react';
+import { Boxes, CircleCheck, FileSpreadsheet, PackageCheck, PackagePlus, Tag, Undo2 } from 'lucide-react';
+import CountInDialog from '../components/CountInDialog.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
 import ImportStockDialog from '../components/ImportStockDialog.jsx';
 import NewProductDialog from '../components/NewProductDialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import SendBackDialog from '../components/SendBackDialog.jsx';
 import StockSummary from '../components/StockSummary.jsx';
 import StockHistory from '../components/StockHistory.jsx';
 import { LOCATIONS, locationById } from '../config.js';
@@ -46,8 +48,11 @@ const Status = ({ qty }) =>
  */
 const Inventory = ({ session, intent, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { stock, sales, orders, imports } = useStore();
+  const { stock, sales, orders, imports, returns, stockReturns, receiveStockBack } = useStore();
+  const [sendingBack, setSendingBack] = useState(false);
+  const [countingBack, setCountingBack] = useState(null); // a stock return the admin is counting in
   const [location, setLocation] = useState(admin ? null : session.location);
+  const incoming = stockReturns.filter((r) => r.status === 'sent' && (!location || r.location === location));
   const [tab, setTab] = useState(intent?.tab ?? 'stock');
   const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -62,7 +67,9 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
   // (sent, not counted yet) and requested.
   const moved = useMemo(() => {
     const sold = {};
-    for (const s of sales) if (!s.demo) for (const l of s.lines) (sold[s.location] ??= {})[l.code] = (sold[s.location]?.[l.code] ?? 0) + l.qty;
+    for (const s of sales) for (const l of s.lines) (sold[s.location] ??= {})[l.code] = (sold[s.location]?.[l.code] ?? 0) + l.qty;
+    // what customers brought back no longer counts as sold
+    for (const r of returns) for (const l of r.lines) (sold[r.location] ??= {})[l.code] = (sold[r.location]?.[l.code] ?? 0) - l.qty;
     const per = (fn) => Object.fromEntries(LOCATIONS.map((l) => [l.id, fn(l.id)]));
     return {
       sold,
@@ -74,9 +81,9 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
       onOrder: per((id) => pendingByProduct(orders, id, 'sent')),
       requested: per((id) => pendingByProduct(orders, id, 'requested')),
     };
-  }, [orders, sales, imports]);
+  }, [orders, sales, imports, returns]);
 
-  const log = useMemo(() => stockLog(orders, imports, location), [orders, imports, location]);
+  const log = useMemo(() => stockLog(orders, imports, location, { returns, stockReturns }), [orders, imports, location, returns, stockReturns]);
 
   const imported = (record) => {
     setImporting(false);
@@ -167,6 +174,18 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                 {!admin && (
                   <button
                     type="button"
+                    onClick={() => {
+                      setSendingBack(true);
+                      setFlash(null);
+                    }}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 shadow-[0_1px_2px_rgba(9,9,11,0.06)] hover:border-evergreen-800/50 hover:bg-evergreen-50"
+                  >
+                    <Undo2 size={15} aria-hidden="true" /> Send back to admin
+                  </button>
+                )}
+                {!admin && (
+                  <button
+                    type="button"
                     onClick={() => onNavigate('orders')}
                     className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-evergreen-800 px-3.5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900"
                   >
@@ -186,6 +205,29 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                 </button>
               )}
             </p>
+          )}
+
+          {admin && incoming.length > 0 && (
+            <section className="rounded-2xl border border-warn-ink/20 bg-warn-50 px-4 py-3 text-[13px] text-warn-ink">
+              <div className="font-semibold">
+                {incoming.length} stock {incoming.length === 1 ? 'return' : 'returns'} on the way back from the showrooms
+              </div>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {incoming.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center gap-3">
+                    <span className="font-mono text-xs">{r.number}</span>
+                    <span className="font-medium">{locationById(r.location)?.city}</span>
+                    <span>
+                      {r.lines.reduce((t, l) => t + l.qty, 0)} units · {r.reason.replace(/-/g, ' ')}
+                      {r.note ? ` · ${r.note}` : ''}
+                    </span>
+                    <button type="button" onClick={() => setCountingBack(r)} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900">
+                      <PackageCheck size={14} aria-hidden="true" /> Count in
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           {tab === 'stock' && (
@@ -316,6 +358,32 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
 
       {adding && <NewProductDialog session={session} defaultLocation={location} onClose={() => setAdding(false)} onDone={added} />}
       {importing && <ImportStockDialog session={session} defaultLocation={location} onClose={() => setImporting(false)} onDone={imported} />}
+      {sendingBack && (
+        <SendBackDialog
+          location={session.location}
+          onClose={() => setSendingBack(false)}
+          onDone={(r) => {
+            setSendingBack(false);
+            setFlash({ text: `${r.number} sent to the admin: ${orderQty(r.lines).toLocaleString('en-IN')} units taken off your stock.`, history: true });
+          }}
+        />
+      )}
+      {countingBack && (
+        <CountInDialog
+          order={countingBack}
+          subtitle={`Stock sent back by ${locationById(countingBack.location)?.city}. Count what arrived; any shortfall is kept on the return.`}
+          onClose={() => setCountingBack(null)}
+          onConfirm={async (counted, note) => {
+            try {
+              await receiveStockBack(countingBack.id, counted, note);
+              setFlash({ text: `${countingBack.number} counted in: ${orderQty(counted).toLocaleString('en-IN')} units back with the admin.`, history: false });
+            } catch (err) {
+              setFlash({ text: `Not saved: ${err.message}`, history: false });
+            }
+            setCountingBack(null);
+          }}
+        />
+      )}
     </div>
   );
 };

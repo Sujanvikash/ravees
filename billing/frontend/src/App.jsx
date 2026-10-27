@@ -2,12 +2,13 @@ import { useEffect, useEffectEvent, useState } from 'react';
 import Backdrop from './components/Backdrop.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import { SessionContext } from './context/SessionContext.jsx';
-import { useStore } from './context/StoreContext.jsx';
+import { StoreProvider, useStore } from './context/StoreContext.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { signOut } from './lib/auth.js';
 import { loadCatalogue } from './lib/catalogue.js';
 import { NAV } from './lib/nav.js';
 import { ordersNeedingAction } from './lib/orders.js';
+import CashClose from './pages/CashClose.jsx';
 import Counter from './pages/Counter.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Inventory from './pages/Inventory.jsx';
@@ -70,6 +71,7 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'sales' && <Sales {...props} />}
           {page === 'inventory' && <Inventory {...props} />}
           {page === 'orders' && <PurchaseOrders {...props} />}
+          {page === 'cash' && <CashClose key={session.username} {...props} />}
           {page === 'logins' && session.role === 'admin' && <Logins {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}
           {page === 'settings' && session.role === 'admin' && <Settings {...props} />}
@@ -79,11 +81,13 @@ const Shell = ({ session, onSignOut }) => {
   );
 };
 
-/** Loads the product catalogue from the server before the app opens; says so if the server can't be reached. */
+/** Loads the product catalogue and the showrooms' records from the server before the app opens; says so if the
+ * server can't be reached. */
 const CatalogueGate = ({ children, onSignOut }) => {
+  const { load: loadStore } = useStore();
   const [state, setState] = useState({ loading: true, error: '' });
   const fetchIt = () =>
-    loadCatalogue().then(
+    Promise.all([loadCatalogue(), loadStore()]).then(
       () => setState({ loading: false, error: '' }),
       (err) => setState({ loading: false, error: err.message }),
     );
@@ -91,8 +95,9 @@ const CatalogueGate = ({ children, onSignOut }) => {
     setState({ loading: true, error: '' });
     fetchIt();
   };
+  const firstLoad = useEffectEvent(fetchIt);
   useEffect(() => {
-    fetchIt();
+    firstLoad();
   }, []);
 
   if (!state.loading && !state.error) return children;
@@ -100,7 +105,7 @@ const CatalogueGate = ({ children, onSignOut }) => {
     <main className="flex min-h-dvh items-center justify-center p-6">
       <div className="w-full max-w-sm rounded-2xl border glass p-6 text-center">
         {state.loading ? (
-          <p className="text-[13px] text-ink-3">Loading products…</p>
+          <p className="text-[13px] text-ink-3">Loading products and sales…</p>
         ) : (
           <>
             <p className="text-[15px] font-semibold">Couldn’t load the products</p>
@@ -120,8 +125,8 @@ const CatalogueGate = ({ children, onSignOut }) => {
   );
 };
 
-const App = () => {
-  const [session, setSession] = useLocalStorage('billing-session', null);
+/** The screens, around the signed-in login's records (or the sign-in screen). */
+const Screens = ({ session, setSession }) => {
   const { settings } = useStore();
   const leave = () => {
     signOut();
@@ -154,6 +159,15 @@ const App = () => {
         <Login onSignedIn={setSession} />
       )}
     </>
+  );
+};
+
+const App = () => {
+  const [session, setSession] = useLocalStorage('billing-session', null);
+  return (
+    <StoreProvider key={session ? `${session.demo ? 'demo-' : ''}${session.username}` : 'signed-out'} session={session}>
+      <Screens session={session} setSession={setSession} />
+    </StoreProvider>
   );
 };
 

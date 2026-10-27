@@ -10,7 +10,7 @@ import { Segmented } from './Filters.jsx';
  * any that differ), or switch to scanner counting: everything starts at 0 and each scan adds one. What is
  * counted is what goes into stock; differences are kept on the order.
  */
-const CountInDialog = ({ order, onClose, onConfirm }) => {
+const CountInDialog = ({ order, onClose, onConfirm, subtitle = 'Check the delivery against the order. What you count is added to stock.' }) => {
   const sent = Object.fromEntries(order.lines.map((l) => [l.code, l.qty]));
   const [mode, setMode] = useState('sent');
   const [counted, setCounted] = useState(sent);
@@ -43,7 +43,7 @@ const CountInDialog = ({ order, onClose, onConfirm }) => {
     <Dialog
       id="countin"
       title={`Count in ${order.number}`}
-      subtitle="Check the delivery against the order. What you count is added to stock."
+      subtitle={subtitle}
       onClose={onClose}
       size="max-w-3xl"
     >

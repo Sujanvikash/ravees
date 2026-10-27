@@ -4,8 +4,9 @@ import { methodLabel } from '../lib/payment.js';
 import Dialog from './Dialog.jsx';
 import Kbd from './Kbd.jsx';
 
-/** After the sale: the change to hand back, a reprint, and Enter for the next bill. */
-const DoneDialog = ({ sale, onReprint, onNewBill }) => (
+/** After the sale: the change (or, after an exchange, the cash refund) to hand back, a reprint, and Enter for the
+ *  next bill. */
+const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => (
   <Dialog id="done" size="max-w-sm">
     <div className="flex flex-col items-center px-6 pt-7 pb-6 text-center">
       <div className="flex size-12 items-center justify-center rounded-full bg-evergreen-800 text-white shadow-[0_0_0_6px_var(--color-evergreen-50)]">
@@ -17,6 +18,13 @@ const DoneDialog = ({ sale, onReprint, onNewBill }) => (
       <div className="mt-0.5 text-[13px] text-ink-3 tabular-nums">
         {inr(sale.totals.payable)} · {methodLabel(sale.payment.method)} · <span className="font-mono text-xs">{sale.billNo}</span>
       </div>
+
+      {refund > 0 && (
+        <div className="mt-5 w-full rounded-2xl bg-evergreen-50 px-4 py-3.5">
+          <div className="text-[13px] font-medium text-evergreen-900">Refund in cash (exchange)</div>
+          <div className="text-[34px] leading-tight font-semibold tracking-tight text-evergreen-900 tabular-nums">{inr(refund)}</div>
+        </div>
+      )}
 
       {sale.payment.change > 0 && (
         <div className="mt-5 w-full rounded-2xl bg-evergreen-50 px-4 py-3.5">

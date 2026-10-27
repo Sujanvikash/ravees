@@ -23,7 +23,23 @@ const Line = ({ label, value, className = '' }) => (
 
 const rule = 'border-t border-dashed border-black pt-1.5';
 
-/** The 80mm thermal tax invoice, headed by the logo. Hidden on screen; it is the only thing that prints. */
+// A Christmas wish at the foot of every bill.
+const WISHES = [
+  'May your tree shine bright and your home be full of joy this Christmas.',
+  'Wishing you warm lights, sweet carols and a season of peace.',
+  'May every ornament you hang carry a happy memory. Merry Christmas!',
+  'Here’s to twinkling lights, full tables and the people you love.',
+  'May the magic of Christmas fill your home and stay all year.',
+  'Thank you for making us part of your celebrations. Joy to your world!',
+  'Wishing you a sparkling Christmas and a bright New Year.',
+  'May your days be merry, your evenings glow, and your tree stand tall.',
+];
+
+/** The same bill always gets the same wish, so a reprint matches the first copy. */
+const wishFor = (billNo = '') => WISHES[[...billNo].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % WISHES.length];
+
+/** The 80mm thermal tax invoice, headed by the logo. Hidden on screen; it is the only thing that prints, in black
+ *  and white only. */
 const Receipt = ({ sale }) => {
   const { totals, payment } = sale;
   const shop = locationById(sale.location) ?? {};
@@ -31,7 +47,7 @@ const Receipt = ({ sale }) => {
     <div className="hidden font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
         {/* the logo carries the name, "Christmas Tree & Decoration" and "Since 1997" */}
-        <img src={logo} alt={BRAND.name} className="mb-1.5 w-[46mm] [print-color-adjust:exact]" />
+        <img src={logo} alt={BRAND.name} className="print-ink mb-1.5 w-[46mm]" />
         {(shop.address ?? []).map((a) => (
           <div key={a}>{a}</div>
         ))}
@@ -76,7 +92,10 @@ const Receipt = ({ sale }) => {
       ))}
 
       <div className={`mt-2 ${rule}`}>
-        {payment.split ? (
+        {payment.credit > 0 && (
+          <Line label={`Exchange credit ${payment.creditNote ?? ''}`.trim()} value={amount(-payment.credit)} className="font-bold" />
+        )}
+        {payment.method === 'credit' ? null : payment.split ? (
           <>
             <Line label="Paid · Cash" value={amount(payment.split.cash)} />
             <Line label="Paid · UPI / card" value={amount(payment.split.upi)} />
@@ -92,6 +111,14 @@ const Receipt = ({ sale }) => {
         <div className="font-bold">Thank you &amp; Merry Christmas!</div>
         {BRAND.receiptNote && <div>{BRAND.receiptNote}</div>}
         {BRAND.email && <div>{BRAND.email}</div>}
+      </div>
+
+      <div className="mt-2 border-y border-black py-1.5 text-center">
+        <div className="tracking-[0.3em]" aria-hidden="true">
+          * * * * *
+        </div>
+        <div className="mt-1 font-display text-[12px] italic">{wishFor(sale.billNo)}</div>
+        <div className="mt-1 text-[10px] font-bold tracking-[0.2em]">SEASON&rsquo;S GREETINGS</div>
       </div>
     </div>
   );

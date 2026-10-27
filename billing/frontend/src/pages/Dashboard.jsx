@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { ClipboardList, FlaskConical, LayoutDashboard } from 'lucide-react';
+import { ClipboardList, LayoutDashboard } from 'lucide-react';
+import CashDifferences from '../components/CashDifferences.jsx';
 import DayChart from '../components/DayChart.jsx';
 import { LocationPicker, PeriodTabs } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
-import { makeDemoSales } from '../lib/demo.js';
 import { inr, inrWhole } from '../lib/money.js';
 import { orderQty } from '../lib/orders.js';
 import { METHODS } from '../lib/payment.js';
@@ -38,7 +38,7 @@ const pct = (n) => `${(n * 100).toFixed(1)}%`;
  * counted in, sales by day, by showroom, top products and payment methods, for a period and showroom.
  */
 const Dashboard = ({ onMenu, onNavigate }) => {
-  const { sales, orders, addDemoSales, removeDemoSales } = useStore();
+  const { sales, orders, returns, closes } = useStore();
   const [period, setPeriod] = useState('30d');
   const [location, setLocation] = useState(null);
   const now = useMemo(() => new Date(), []);
@@ -49,8 +49,8 @@ const Dashboard = ({ onMenu, onNavigate }) => {
   const shops = byLocation(filterSales(sales, { period, now }));
   const products = topProducts(scoped);
   const methods = byMethod(scoped);
-  const demoCount = sales.filter((s) => s.demo).length;
   const toReview = orders.filter((o) => o.status === 'requested').length;
+  const returnsTotal = filterSales(returns, { location, period, now }).reduce((t, r) => t + r.amount, 0);
 
   const from = periodStart(period, now);
   const received = orders.filter(
@@ -74,26 +74,15 @@ const Dashboard = ({ onMenu, onNavigate }) => {
           <div className="flex flex-wrap items-center gap-2">
             <PeriodTabs value={period} onChange={setPeriod} />
             <LocationPicker value={location} onChange={setLocation} />
-            {demoCount > 0 ? (
-              <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-warn-50 px-3 py-1 text-xs text-warn-ink">
-                <FlaskConical size={13} aria-hidden="true" /> Includes {demoCount.toLocaleString('en-IN')} demo sales
-                <button type="button" onClick={removeDemoSales} className="font-semibold underline underline-offset-2 hover:no-underline">
-                  Remove
-                </button>
+            {returnsTotal > 0 && (
+              <span className="ml-auto text-xs text-ink-3">
+                Returns this period: <span className="font-semibold text-ink-2 tabular-nums">{inrWhole(returnsTotal)}</span> · net sales{' '}
+                <span className="font-semibold text-ink-2 tabular-nums">{inrWhole(sum.total - returnsTotal)}</span>
               </span>
-            ) : (
-              sales.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => addDemoSales(makeDemoSales(30, now))}
-                  title="Adds a month of sample sales, marked as demo; they don't touch stock and can be removed"
-                  className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-ink-3 hover:bg-mist hover:text-ink"
-                >
-                  <FlaskConical size={13} aria-hidden="true" /> Add demo sales
-                </button>
-              )
             )}
           </div>
+
+          <CashDifferences closes={closes} location={location} onOpen={() => onNavigate('cash')} />
 
           {toReview > 0 && (
             <button
@@ -117,16 +106,9 @@ const Dashboard = ({ onMenu, onNavigate }) => {
               <LayoutDashboard size={22} className="text-ink-3" aria-hidden="true" />
               <div className="text-[15px] font-semibold">No sales yet</div>
               <p className="max-w-md text-[13px] text-ink-3">
-                Bills from the five showroom counters show up here. To preview the dashboard first, add a month of sample
-                sales; they are marked as demo, don't touch stock, and can be removed in one click.
+                Bills from the five showroom counters show up here as they are made. To see the dashboard with a month of
+                sample sales, sign out and turn on Demo on the sign-in screen.
               </p>
-              <button
-                type="button"
-                onClick={() => addDemoSales(makeDemoSales(30, now))}
-                className="mt-1 inline-flex h-10 items-center gap-2 rounded-xl border border-line px-4 text-[13px] font-semibold text-ink-2 hover:bg-mist hover:text-ink"
-              >
-                <FlaskConical size={15} aria-hidden="true" /> Add demo sales
-              </button>
             </section>
           ) : (
             <>

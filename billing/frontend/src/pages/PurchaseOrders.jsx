@@ -7,7 +7,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { inr } from '../lib/money.js';
-import { newOrder, orderQty, orderValue, STATUS, withHistory } from '../lib/orders.js';
+import { orderQty, orderValue, STATUS } from '../lib/orders.js';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
@@ -47,8 +47,7 @@ const quiet = 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px
  */
 const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const by = admin ? 'Admin' : locationById(session.location).city;
-  const { orders, saveOrder, receiveOrder } = useStore();
+  const { orders, requestOrder, updateOrder, sendOrder, rejectOrder, cancelOrder, receiveOrder } = useStore();
   const [tab, setTab] = useState(TABS[session.role][0].id);
   const [location, setLocation] = useState(admin ? null : session.location);
   const [editing, setEditing] = useState(null); // an order (new ones have no number yet)
@@ -66,31 +65,45 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
     setCounting(null);
   };
 
-  const save = ({ location: loc, lines, note }) => {
-    const base = editing.number ? editing : newOrder(orders, loc);
-    const order = { ...base, location: loc, lines, note: note || base.note || '', status: admin ? 'sent' : 'requested' };
-    const action = admin ? 'sent' : editing.number ? 'updated' : 'requested';
-    saveOrder(withHistory(order, by, action, note));
-    done(admin ? `${order.number} approved and sent to ${locationById(loc).city}.` : `${order.number} sent to the admin.`);
-    setTab(admin ? 'sent' : 'requested');
+  // Each step goes to the server, which numbers the order and checks it may move on; its answer is what shows.
+  const attempt = async (step) => {
+    try {
+      await step();
+    } catch (err) {
+      setFlash(`Not saved: ${err.message}`);
+    }
   };
 
-  const reject = (reason) => {
-    saveOrder(withHistory({ ...editing, status: 'rejected' }, by, 'rejected', reason));
-    done(`${editing.number} rejected.`);
-  };
+  const save = ({ location: loc, lines, note }) =>
+    attempt(async () => {
+      const body = { lines: lines.map((l) => ({ code: l.code, qty: l.qty, rate: l.rate })), note };
+      const order = !editing.number
+        ? await requestOrder({ ...body, location: loc })
+        : admin
+          ? await sendOrder(editing.id, body)
+          : await updateOrder(editing.id, body);
+      done(admin ? `${order.number} approved and sent to ${locationById(order.location).city}.` : `${order.number} sent to the admin.`);
+      setTab(admin ? 'sent' : 'requested');
+    });
 
-  const cancel = (o) => {
-    saveOrder(withHistory({ ...o, status: 'cancelled' }, by, 'cancelled'));
-    setFlash(`${o.number} cancelled.`);
-  };
+  const reject = (reason) =>
+    attempt(async () => {
+      await rejectOrder(editing.id, reason);
+      done(`${editing.number} rejected.`);
+    });
 
-  const receive = (counted, note) => {
-    const order = withHistory({ ...counting, status: 'received', counted }, by, 'received', note);
-    receiveOrder(order, counted);
-    done(`${counting.number} counted in: ${orderQty(counted).toLocaleString('en-IN')} units added to stock.`);
-    setTab('received');
-  };
+  const cancel = (o) =>
+    attempt(async () => {
+      await cancelOrder(o.id);
+      setFlash(`${o.number} cancelled.`);
+    });
+
+  const receive = (counted, note) =>
+    attempt(async () => {
+      await receiveOrder(counting.id, counted, note);
+      done(`${counting.number} counted in: ${orderQty(counted).toLocaleString('en-IN')} units added to stock.`);
+      setTab('received');
+    });
 
   const shop = locationById(session.location);
 

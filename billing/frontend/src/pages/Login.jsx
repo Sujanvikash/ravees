@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, FlaskConical, LockKeyhole, ShieldCheck, Store } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, FlaskConical, LockKeyhole, ShieldCheck } from 'lucide-react';
 import logo from '../assets/logo.svg';
 import { Landmark } from '../components/Landmarks.jsx';
 import { BRAND, locationById } from '../config.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
-import { ACCOUNTS, DEMO_ACCOUNTS, signIn, signInDemo } from '../lib/auth.js';
+import { ACCOUNTS, signIn, signInDemo } from '../lib/auth.js';
 
 const SHOWROOMS = ACCOUNTS.filter((a) => a.role === 'location');
 const ADMIN = ACCOUNTS.find((a) => a.role === 'admin');
@@ -34,7 +34,9 @@ const Postcard = ({ account, index, onPick }) => {
   );
 };
 
-/** Choose a login first, then type its password. A showroom bills and sees its own figures; the admin sees all. */
+/** Choose a login first, then type its password. A showroom bills and sees its own figures; the admin sees all.
+ * With the Demo switch on, the same logins open the demo (sample data, kept apart from the real data) in one
+ * click, with no password. */
 const Login = ({ onSignedIn }) => {
   const [account, setAccount] = useState(null);
   const [password, setPassword] = useState('');
@@ -56,6 +58,7 @@ const Login = ({ onSignedIn }) => {
   };
 
   const pick = (a) => {
+    if (demo) return tryDemo(a);
     setAccount(a);
     setPassword('');
     setError('');
@@ -79,7 +82,7 @@ const Login = ({ onSignedIn }) => {
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center px-4 py-10">
-      {/* the Demo switch: when on, only the two demo logins show, and they need no password */}
+      {/* the Demo switch: when on, the same logins open the demo, with no password */}
       {!account && (
         <label className="absolute top-4 right-4 z-10 inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-white/80 py-1 pr-1.5 pl-3 text-[13px] font-medium text-ink-2 backdrop-blur">
           <FlaskConical size={14} aria-hidden="true" /> Demo
@@ -87,7 +90,7 @@ const Login = ({ onSignedIn }) => {
             type="button"
             role="switch"
             aria-checked={demo}
-            aria-label="Demo logins"
+            aria-label="Demo"
             onClick={() => {
               setDemo(!demo);
               setDemoError('');
@@ -101,42 +104,21 @@ const Login = ({ onSignedIn }) => {
       <div className={`w-full ${account ? 'max-w-lg' : 'max-w-6xl'}`}>
         <img src={logo} alt={BRAND.name} className="brand-logo mx-auto h-16 w-auto" />
 
-        {!account && demo ? (
-          <div key="demo" className="mt-8 flex animate-rise flex-col items-center">
-            <h1 className="text-center font-display text-[28px] text-balance text-evergreen-900 sm:text-[34px]">Try the demo</h1>
-            <p className="mt-1 text-center text-[13px] text-ink-3">No password needed. Demo store works as the Chennai showroom.</p>
-            <div className="mt-8 grid w-full max-w-lg gap-3 sm:grid-cols-2">
-              {DEMO_ACCOUNTS.map((a) => {
-                const Icon = a.role === 'admin' ? ShieldCheck : Store;
-                return (
-                  <button
-                    key={a.username}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => tryDemo(a)}
-                    className="group flex items-center gap-3 rounded-2xl border glass p-4 text-left transition hover:-translate-y-0.5 hover:border-evergreen-800/40 disabled:opacity-60"
-                  >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-evergreen-50 text-evergreen-800">
-                      <Icon size={20} aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1 leading-tight">
-                      <span className="block text-[15px] font-semibold">{a.label}</span>
-                      <span className="block text-xs text-ink-3">{a.role === 'admin' ? 'All showrooms, reports and orders' : 'Billing, stock and orders'}</span>
-                    </span>
-                    <ArrowRight size={16} className="text-evergreen-800 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                  </button>
-                );
-              })}
-            </div>
+        {!account ? (
+          <div key="pick" className="mt-8 flex animate-rise flex-col items-center">
+            <h1 className="text-center font-display text-[28px] text-balance text-evergreen-900 sm:text-[34px]">
+              {demo ? 'Try the demo' : 'Choose your showroom'}
+            </h1>
+            {demo && (
+              <p className="mt-1 max-w-md text-center text-[13px] text-balance text-ink-3">
+                The same five showrooms and the admin, on sample data. No password needed, and nothing you do here touches the real sales or stock.
+              </p>
+            )}
             {demoError && (
               <p role="alert" className="mt-3 text-center text-xs font-medium text-ruby-ink">
                 {demoError}
               </p>
             )}
-          </div>
-        ) : !account ? (
-          <div key="pick" className="mt-8 flex animate-rise flex-col items-center">
-            <h1 className="text-center font-display text-[28px] text-balance text-evergreen-900 sm:text-[34px]">Choose your showroom</h1>
 
             <div className="mt-8 grid w-full grid-cols-2 gap-3 sm:mt-10 sm:flex sm:flex-wrap sm:justify-center sm:gap-6">
               {SHOWROOMS.map((a, i) => (
@@ -149,7 +131,7 @@ const Login = ({ onSignedIn }) => {
               onClick={() => pick(ADMIN)}
               className="group mt-10 inline-flex h-10 items-center gap-2 rounded-full border border-evergreen-800/20 bg-white/70 px-4 text-sm font-semibold text-evergreen-900 backdrop-blur transition hover:border-evergreen-800/40 hover:bg-white"
             >
-              <ShieldCheck size={16} aria-hidden="true" /> Admin sign-in
+              <ShieldCheck size={16} aria-hidden="true" /> {demo ? 'Demo admin' : 'Admin sign-in'}
               <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
             </button>
           </div>

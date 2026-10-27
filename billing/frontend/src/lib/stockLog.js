@@ -1,12 +1,13 @@
 import { findProduct } from './catalogue.js';
 
 /**
- * Every time stock was added, newest first, for the inventory history: Excel imports, opening stock of a
- * showroom's new product, and purchase orders counted in. Each entry: { id, at, by, location,
- * kind: 'import' | 'product' | 'order', ref, lines: [{ code, name, qty }],
- * units, note }. Pass a location for one showroom, or null for all.
+ * Every time stock moved other than by a sale, newest first, for the inventory history: Excel imports, opening
+ * stock of a showroom's new product, purchase orders counted in and customer returns (in), and stock sent back to
+ * the admin (out). Each entry: { id, at, by, location, kind: 'import' | 'product' | 'order' | 'customer-return' |
+ * 'sent-back', ref, lines: [{ code, name, qty }], units, sign: 1 | -1, note }. Pass a location for one showroom,
+ * or null for all.
  */
-export const stockLog = (orders, imports, location) => {
+export const stockLog = (orders, imports, location, { returns = [], stockReturns = [] } = {}) => {
   const nameOf = (code, fallback) => fallback ?? findProduct(code)?.name ?? code;
   const entries = [];
 
@@ -24,5 +25,18 @@ export const stockLog = (orders, imports, location) => {
     entries.push({ id: o.id, at: done?.at ?? o.updatedAt, by: done?.by ?? '', location: o.location, kind: 'order', ref: o.number, lines, note: done?.note ?? '' });
   }
 
-  return entries.map((e) => ({ ...e, units: e.lines.reduce((s, l) => s + l.qty, 0) })).sort((a, b) => new Date(b.at) - new Date(a.at));
+  for (const r of returns) {
+    if (location && r.location !== location) continue;
+    entries.push({ id: r.id, at: r.at, by: r.by, location: r.location, kind: 'customer-return', ref: `${r.returnNo} · ${r.billNo}`, lines: r.lines, note: r.reason ?? '' });
+  }
+
+  for (const r of stockReturns) {
+    if (location && r.location !== location) continue;
+    const got = r.status === 'received' ? ` · admin counted ${(r.counted ?? []).reduce((s, l) => s + l.qty, 0)}` : ' · on its way';
+    entries.push({ id: r.id, at: r.createdAt, by: r.history?.[0]?.by ?? '', location: r.location, kind: 'sent-back', ref: r.number, lines: r.lines, note: `${r.note || ''}${got}`.replace(/^ · /, ''), sign: -1 });
+  }
+
+  return entries
+    .map((e) => ({ sign: 1, ...e, units: e.lines.reduce((s, l) => s + l.qty, 0) }))
+    .sort((a, b) => new Date(b.at) - new Date(a.at));
 };

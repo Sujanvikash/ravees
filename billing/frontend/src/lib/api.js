@@ -54,11 +54,33 @@ export const api = async (path, { method = 'GET', body } = {}) => {
   const data = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {
     // a wrong password at sign-in is a 401 too, but not a reason to sign out
-    if (res.status === 401 && path !== '/auth/login') {
+    if (res.status === 401 && !path.startsWith('/auth/')) {
       setToken(null);
       window.dispatchEvent(new Event('billing-signed-out'));
     }
     throw new ApiError(message(data, res.status), res.status);
   }
   return data;
+};
+
+/** Downloads a file the API makes (e.g. the sales report) and saves it under the name the server gives it. */
+export const download = async (path, fallbackName) => {
+  const token = getToken();
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError('Can’t reach the billing server. Check the connection and try again.', 0);
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new ApiError(message(data, res.status), res.status);
+  }
+  const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = Object.assign(document.createElement('a'), { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };

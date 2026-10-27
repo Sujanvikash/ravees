@@ -165,6 +165,26 @@
   margin: 14mm;
 }
 
+/* Bills and quotations print in pure black and white: the logo is thresholded to black ink on white paper,
+   whatever its colours. */
+.print-ink {
+  filter: grayscale(1) contrast(12);
+}
+
+/* A quotation sent to a narrow (receipt) printer must never pass for a bill: the real page is hidden and only a
+   blunt notice prints. Its content shows on A4 only. */
+.quote-narrow {
+  display: none;
+}
+@media print and (max-width: 120mm) {
+  .quote-page {
+    display: none !important;
+  }
+  .quote-narrow {
+    display: block !important;
+  }
+}
+
 /* ---------- Themes ----------
    The admin picks one in Settings; App.jsx puts it on <html> as data-theme (classic | light | dark) and, for
    Light, data-wash (light | lighter | lightest). Classic is everything above. These rules are outside any

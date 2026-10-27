@@ -1,25 +1,31 @@
 import { Fragment, useMemo, useState } from 'react';
-import { ChevronDown, ReceiptText } from 'lucide-react';
+import { ChevronDown, FileSpreadsheet, ReceiptText } from 'lucide-react';
 import { LocationPicker, PeriodTabs, SearchBox } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import SellThrough from '../components/SellThrough.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
-import { locationById } from '../config.js';
+import { LOCATIONS, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
 import { methodLabel } from '../lib/payment.js';
-import { filterSales, saleCost, summarize } from '../lib/reports.js';
+import { filterSales, periodStart, saleCost, summarize } from '../lib/reports.js';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const PAGE = 100;
 
+/** A date as YYYY-MM-DD in India, for the report's days. */
+const istDay = (d) => new Date(d.getTime() + 5.5 * 3600_000).toISOString().slice(0, 10);
+
 /**
  * Completed bills. A showroom sees only its own; the admin sees every showroom and, on top, the purchase
- * cost and gross profit of each bill.
+ * cost and gross profit of each bill. Returns come off the sales as net sales. Export to Excel downloads the
+ * period's report (summary, bills, items, returns and cash closes) from the server.
  */
 const Sales = ({ session, onMenu }) => {
   const admin = session.role === 'admin';
-  const { sales } = useStore();
+  const { sales, returns, stock, downloadSalesReport } = useStore();
+  const [exporting, setExporting] = useState('');
   const [period, setPeriod] = useState('30d');
   const [location, setLocation] = useState(admin ? null : session.location);
   const [query, setQuery] = useState('');
@@ -36,8 +42,32 @@ const Sales = ({ session, onMenu }) => {
     [scoped, q],
   );
   const sum = summarize(scoped);
+  const returned = filterSales(returns, { location, period }).reduce((t, r) => t + r.amount, 0);
+  const exportExcel = async () => {
+    setExporting('busy');
+    const from = periodStart(period, new Date());
+    try {
+      await downloadSalesReport({ location, since: from ? istDay(from) : undefined, until: istDay(new Date()) });
+      setExporting('');
+    } catch (err) {
+      setExporting(err.message);
+    }
+  };
   const shop = locationById(session.location);
   const cols = admin ? 10 : 8;
+
+  // Sell-through per showroom, season to date: units sold against units sold plus units still in stock.
+  const sellThrough = useMemo(() => {
+    const shops = admin ? LOCATIONS.map((l) => l.id) : [session.location];
+    return shops.map((id) => ({
+      location: id,
+      // returned units are back in stock, so they no longer count as sold
+      sold:
+        sales.filter((s) => s.location === id).reduce((n, s) => n + s.lines.reduce((m, l) => m + l.qty, 0), 0) -
+        returns.filter((r) => r.location === id).reduce((n, r) => n + r.lines.reduce((m, l) => m + l.qty, 0), 0),
+      inStock: Object.values(stock[id] ?? {}).reduce((n, q) => n + Math.max(q, 0), 0),
+    }));
+  }, [admin, session.location, sales, returns, stock]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -47,12 +77,26 @@ const Sales = ({ session, onMenu }) => {
           <div className="flex flex-wrap items-center gap-2">
             <PeriodTabs value={period} onChange={setPeriod} />
             {admin && <LocationPicker value={location} onChange={setLocation} />}
+            <button
+              type="button"
+              onClick={exportExcel}
+              disabled={exporting === 'busy'}
+              className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 hover:border-evergreen-800/50 hover:bg-evergreen-50 disabled:opacity-60"
+            >
+              <FileSpreadsheet size={15} aria-hidden="true" /> {exporting === 'busy' ? 'Preparing…' : 'Export to Excel'}
+            </button>
           </div>
+          {exporting && exporting !== 'busy' && (
+            <p role="alert" className="text-xs font-medium text-ruby-ink">
+              Couldn’t export: {exporting}
+            </p>
+          )}
 
           <SummaryStrip
             figures={[
               { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: 'incl. GST' },
               { label: 'Bills', value: sum.bills.toLocaleString('en-IN'), note: `${sum.units.toLocaleString('en-IN')} units sold` },
+              { label: 'Returns', value: inrWhole(returned), note: `net sales ${inrWhole(sum.total - returned)}` },
               { label: 'Average bill', value: inrWhole(sum.average) },
               { label: 'GST collected', value: inrWhole(sum.tax) },
               ...(admin
@@ -68,6 +112,14 @@ const Sales = ({ session, onMenu }) => {
                 : []),
             ]}
           />
+
+          {/* ---- Sell-through: how much of each showroom's stock has sold ---- */}
+          <section aria-label="Sell-through" className={`grid gap-3 ${admin ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'sm:max-w-sm'}`}>
+            {sellThrough.map((r) => (
+              <SellThrough key={r.location} location={r.location} sold={r.sold} inStock={r.inStock} />
+            ))}
+          </section>
+          {/* ---- end sell-through ---- */}
 
           <section className="overflow-clip rounded-2xl border glass">
             <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5">

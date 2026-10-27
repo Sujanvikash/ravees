@@ -9,10 +9,10 @@ import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
-import { useLocalStorage } from '../hooks/useLocalStorage.js';
-import { billNumber, buildBill, countLabel, gstLines } from '../lib/bill.js';
+import { billNumber, buildBill, countLabel, gstLines, nextSeq } from '../lib/bill.js';
 import { customerLabel, isValidMobile, isValidName, phoneDigits } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
+import { newId } from '../lib/uid.js';
 
 const VALIDITY = [
   { id: 7, label: '7 days' },
@@ -30,14 +30,6 @@ const Row = ({ label, value, className = 'text-ink-2' }) => (
     <span className="tabular-nums">{value}</span>
   </div>
 );
-
-/** The end of the last valid day, `days` from now. */
-const validUntil = (days) => {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  d.setHours(23, 59, 59, 999);
-  return d.toISOString();
-};
 
 /**
  * Quotations: like the billing counter, but it ends in a saved quotation instead of a payment. A quotation
@@ -74,7 +66,7 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
 
   // Load a quotation's items into this showroom's billing counter, unless a bill is already in progress there.
   const billIt = (quote) => {
-    const key = billKey(quote.location);
+    const key = billKey(quote.location, 'current', session.demo);
     const current = (() => {
       try {
         return JSON.parse(window.localStorage.getItem(key));
@@ -135,8 +127,8 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                 location={session.location}
                 stockOf={stockOf}
                 canPrint={canPrint}
-                onSave={(quote, andPrint) => {
-                  saveQuote(quote);
+                onSave={async (body, andPrint) => {
+                  const quote = await saveQuote(body);
                   setFlash({ tone: 'ok', text: `${quote.quoteNo} saved for ${quote.name}.` });
                   if (andPrint) print(quote);
                 }}
@@ -233,7 +225,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const shop = locationById(location);
   const now = useClock();
   const draft = useBill(location, 'quote');
-  const [seq, setSeq] = useLocalStorage(`billing-quote-seq-${location}`, 1);
+  const { quotes } = useStore();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [days, setDays] = useState(7);
@@ -243,43 +235,42 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const scanRef = useRef(null);
 
   const totals = useMemo(() => buildBill(draft.items), [draft.items]);
-  const quoteNo = billNumber(`QT-${shop.billPrefix}`, seq, now);
+  const prefix = `QT-${shop.billPrefix}`;
+  const quoteNo = billNumber(prefix, nextSeq(quotes.map((x) => ({ billNo: x.quoteNo })), prefix, now), now);
 
-  const save = (andPrint) => {
+  // the server prices it and gives it its number; saving the same id again keeps one
+  const id = useRef(newId());
+  const [busy, setBusy] = useState(false);
+  const save = async (andPrint) => {
     if (!totals.count) return setError('Add at least one product.');
     if (!isValidName(name)) return setError('Enter the customer’s name.');
     if (!phone.trim()) return setError('Enter the customer’s mobile number.');
     if (!isValidMobile(phone)) return setError('That mobile number doesn’t look right (10 digits).');
-    const quote = {
-      quoteNo,
-      at: new Date().toISOString(),
-      location,
-      by: shop.city,
-      name: name.trim(),
-      phone: phoneDigits(phone),
-      validUntil: validUntil(days),
-      note: note.trim(),
-      lines: totals.lines.map((l) => ({ code: l.code, name: l.product.name, qty: l.qty, price: l.price, mrp: l.product.mrp })),
-      totals: {
-        count: totals.count,
-        qty: totals.qty,
-        mrpTotal: totals.mrpTotal,
-        savings: totals.savings,
-        taxable: totals.taxable,
-        tax: totals.tax,
-        gstRows: totals.gstRows,
-        roundOff: totals.roundOff,
-        payable: totals.payable,
-      },
-    };
-    setSeq(seq + 1);
+    setBusy(true);
+    try {
+      await onSave(
+        {
+          id: id.current,
+          lines: totals.lines.map((l) => ({ code: l.code, qty: l.qty })),
+          name: name.trim(),
+          phone: phoneDigits(phone),
+          validDays: days,
+          note: note.trim(),
+        },
+        andPrint,
+      );
+    } catch (err) {
+      setBusy(false);
+      return setError(err.message);
+    }
+    setBusy(false);
+    id.current = newId();
     draft.clear();
     setName('');
     setPhone('');
     setNote('');
     setDays(7);
     setError('');
-    onSave(quote, andPrint);
   };
 
   const primary =
@@ -399,11 +390,11 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
             </p>
           )}
           <div className="flex gap-2">
-            <button type="button" onClick={() => save(false)} disabled={!totals.count} className={canPrint ? secondary : primary}>
+            <button type="button" onClick={() => save(false)} disabled={!totals.count || busy} className={canPrint ? secondary : primary}>
               <Save size={16} aria-hidden="true" /> Save
             </button>
             {canPrint && (
-              <button type="button" onClick={() => save(true)} disabled={!totals.count} className={primary}>
+              <button type="button" onClick={() => save(true)} disabled={!totals.count || busy} className={primary}>
                 <Printer size={16} aria-hidden="true" /> Save &amp; print
               </button>
             )}

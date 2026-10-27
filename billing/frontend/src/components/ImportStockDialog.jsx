@@ -36,18 +36,18 @@ const ImportStockDialog = ({ session, defaultLocation, onClose, onDone }) => {
   const lines = file?.lines ?? [];
   const units = orderQty(lines);
 
-  const confirm = () => {
-    const record = {
-      id: `imp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      at: new Date().toISOString(),
-      by: admin ? 'Admin' : shop.city, // same as purchase order history
-      username: session.username,
-      location,
-      file: file.name,
-      lines: lines.map((l) => ({ code: l.code, name: l.name, qty: l.qty, rate: l.rate })),
-    };
-    importStock(record);
-    onDone(record);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const confirm = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const record = await importStock({ location, file: file.name, lines: lines.map((l) => ({ code: l.code, qty: l.qty, rate: l.rate })) });
+      onDone(record);
+    } catch (err) {
+      setSaving(false);
+      setSaveError(err.message);
+    }
   };
 
   return (
@@ -134,6 +134,11 @@ const ImportStockDialog = ({ session, defaultLocation, onClose, onDone }) => {
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-mist-2 px-6 py-4">
         <div className="text-[13px] text-ink-3 tabular-nums">
           {lines.length} products · {units.toLocaleString('en-IN')} units
+          {saveError && (
+            <p role="alert" className="mt-1 text-xs font-medium text-ruby-ink">
+              {saveError}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={onClose} className="h-10 rounded-xl px-3.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink">
@@ -142,7 +147,7 @@ const ImportStockDialog = ({ session, defaultLocation, onClose, onDone }) => {
           <button
             type="button"
             onClick={confirm}
-            disabled={!lines.length}
+            disabled={!lines.length || saving}
             className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3 disabled:shadow-none"
           >
             <PackageCheck size={15} aria-hidden="true" /> Add {units ? `${units.toLocaleString('en-IN')} units ` : ''}to {shop.city} stock
