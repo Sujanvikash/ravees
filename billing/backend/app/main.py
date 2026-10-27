@@ -13,8 +13,18 @@ from app import db_models  # noqa: F401  (registers every table on Base.metadata
 from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.modules.auth.router import router as auth_router
+from app.modules.cash.router import router as cash_router
+from app.modules.demo.router import router as demo_router
+from app.modules.orders.router import router as orders_router
 from app.modules.products.router import router as products_router
+from app.modules.quotes.router import router as quotes_router
+from app.modules.reports.router import router as reports_router
+from app.modules.returns.router import router as returns_router
+from app.modules.sales.router import router as sales_router
+from app.modules.stock.router import router as stock_router
 from app.modules.system.router import router as system_router
+from app.modules.system.router import settings_router
+from app.modules.transfers.router import router as transfers_router
 from app.modules.users.router import router as users_router
 
 API_TITLE = "Raave's Evergreen billing API"
@@ -43,11 +53,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=settings.cors_origins,
         allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
         allow_headers=['Authorization', 'Content-Type'],
+        expose_headers=['Content-Disposition'],  # the file name of a downloaded report
     )
     register_exception_handlers(app)
 
     api = APIRouter(prefix=settings.api_prefix)
-    for router in (auth_router, users_router, products_router):
+    routers = (
+        auth_router,
+        users_router,
+        products_router,
+        sales_router,
+        returns_router,
+        stock_router,
+        transfers_router,
+        orders_router,
+        quotes_router,
+        cash_router,
+        reports_router,
+        settings_router,
+        demo_router,
+    )
+    for router in routers:
         api.include_router(router)
     app.include_router(api)
     app.include_router(system_router)

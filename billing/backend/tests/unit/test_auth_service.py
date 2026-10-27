@@ -17,6 +17,7 @@ class FakeSession:
     def __init__(self, *users: User) -> None:
         self.users = {u.username: u for u in users}
         self.commits = 0
+        self.info = {'demo': False}
 
     def get(self, _model: type, key: str) -> User | None:
         return self.users.get(key)

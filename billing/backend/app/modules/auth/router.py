@@ -14,9 +14,7 @@ router = APIRouter(prefix='/auth', tags=['auth'])
     '/login',
     responses={401: {'description': 'Wrong username or password'}, 429: {'description': 'Too many wrong passwords'}},
 )
-def login(
-    body: LoginIn, request: Request, session: LiveSession, settings: AppSettings, throttle: Throttle
-) -> LoginOut:
+def login(body: LoginIn, request: Request, session: LiveSession, settings: AppSettings, throttle: Throttle) -> LoginOut:
     """Checks a username and password. Returns a token (send it as Authorization: Bearer ...) and the session."""
     client = request.client.host if request.client else 'unknown'
     result = service.login(session, settings, throttle, body.username, body.password, client)

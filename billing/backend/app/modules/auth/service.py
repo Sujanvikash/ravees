@@ -82,7 +82,11 @@ def demo_login(session: Session, settings: Settings, username: str) -> LoginResu
         session.rollback()
         raise ServiceUnavailable(DEMO_NOT_READY) from None
     if user is None:
-        raise ServiceUnavailable(DEMO_NOT_READY) if not users.list_all(session) else NotFound(f'No demo login {username}.')
+        raise (
+            ServiceUnavailable(DEMO_NOT_READY)
+            if not users.list_all(session)
+            else NotFound(f'No demo login {username}.')
+        )
     return LoginResult(token=issue_token(user, settings, demo=True), user=user)
 
 

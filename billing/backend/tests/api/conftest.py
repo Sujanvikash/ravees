@@ -8,11 +8,12 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
 from app.cli import seed
 from app.core.config import get_settings
-from app.core.database import get_engine
+from app.core.database import DEMO_SCHEMA, get_engine
 from app.db_models import Base
 from app.main import create_app
 from app.modules.auth.throttling import get_login_throttle
@@ -38,6 +39,8 @@ def database() -> Iterator[None]:
     seed()
     yield
     Base.metadata.drop_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text(f'DROP SCHEMA IF EXISTS {DEMO_SCHEMA} CASCADE'))  # made by the demo tests
     engine.dispose()
 
 

@@ -11,6 +11,8 @@ from .models import NumberSeries
 BILL = 'bill'
 QUOTE = 'quote'
 ORDER = 'order'
+RETURN = 'return'
+STOCK_RETURN = 'stock-return'
 
 
 def take_next(session: Session, location_id: str, kind: str, period: str = '') -> int:
@@ -49,3 +51,16 @@ def next_order_no(session: Session, location_id: str) -> str:
     """PO-CHN-0007: the showroom's prefix and its running order count."""
     seq = take_next(session, location_id, ORDER)
     return f'PO-{_prefix(session, location_id)}-{seq:04d}'
+
+
+def next_return_no(session: Session, location_id: str, at: datetime) -> str:
+    """CN-CHN/26-27/00003: a credit note for goods a customer brought back, numbered per financial year."""
+    year = financial_year(at)
+    seq = take_next(session, location_id, RETURN, year)
+    return f'CN-{_prefix(session, location_id)}/{year}/{seq:05d}'
+
+
+def next_stock_return_no(session: Session, location_id: str) -> str:
+    """SR-CHN-0002: stock a showroom sends back to the admin."""
+    seq = take_next(session, location_id, STOCK_RETURN)
+    return f'SR-{_prefix(session, location_id)}-{seq:04d}'

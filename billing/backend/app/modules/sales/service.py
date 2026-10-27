@@ -35,24 +35,60 @@ def list_sales(
     return session.scalars(stmt).all()
 
 
-def _payment(payment: PaymentIn, payable: Decimal) -> dict:
-    """The payment as kept on the sale, checked against the amount due."""
-    due = float(payable)
+def _payment(payment: PaymentIn, payable: Decimal, credit: Decimal = Decimal(0)) -> dict:
+    """The payment as kept on the sale, checked against the amount due. `credit` is the value of goods brought
+    back in an exchange; it comes off the amount due first, and if it covers the whole bill nothing is paid."""
+    used = min(credit, payable)
+    due = payable - used
+    extra = {'credit': float(used)} if used else {}
+    if due <= 0:
+        return {
+            'method': 'credit',
+            'received': 0,
+            'change': 0,
+            'approval': '',
+            'split': None,
+            'print': payment.print,
+            **extra,
+        }
     if payment.method == 'cash':
         received = Decimal(str(payment.received))
-        if received < payable:
+        if received < due:
             raise InvalidInput('The cash received is less than the amount due.')
-        return {'method': 'cash', 'received': float(received), 'change': float(received - payable),
-                'approval': '', 'split': None, 'print': payment.print}  # fmt: skip
+        return {
+            'method': 'cash',
+            'received': float(received),
+            'change': float(received - due),
+            'approval': '',
+            'split': None,
+            'print': payment.print,
+            **extra,
+        }
     split = None
     if payment.method == 'split':
         parts = payment.split
-        if not parts or parts.cash <= 0 or parts.upi <= 0 or abs(parts.cash + parts.upi - due) > 0.005:
+        if not parts or parts.cash <= 0 or parts.upi <= 0 or abs(parts.cash + parts.upi - float(due)) > 0.005:
             raise InvalidInput('The cash and UPI parts must both be more than ₹0 and add up to the amount due.')
-        split = {'cash': parts.cash, 'upi': due - parts.cash}
+        split = {'cash': parts.cash, 'upi': float(due) - parts.cash}
     approval = payment.approval.strip() if payment.method == 'card' else ''
-    return {'method': payment.method, 'received': due, 'change': 0, 'approval': approval, 'split': split,
-            'print': payment.print}  # fmt: skip
+    return {
+        'method': payment.method,
+        'received': float(due),
+        'change': 0,
+        'approval': approval,
+        'split': split,
+        'print': payment.print,
+        **extra,
+    }
+
+
+def cash_in(payment: dict) -> Decimal:
+    """Cash this sale put in the drawer: cash handed over less change, or the cash part of a split."""
+    if payment.get('method') == 'cash':
+        return Decimal(str(payment.get('received', 0))) - Decimal(str(payment.get('change', 0)))
+    if payment.get('method') == 'split' and payment.get('split'):
+        return Decimal(str(payment['split'].get('cash', 0)))
+    return Decimal(0)
 
 
 def _existing(session: Session, user: User, data: SaleIn) -> Sale | None:
@@ -62,10 +98,22 @@ def _existing(session: Session, user: User, data: SaleIn) -> Sale | None:
     return sale
 
 
-def create_sale(session: Session, user: User, data: SaleIn, *, at: datetime | None = None) -> Sale:
+def create_sale(
+    session: Session,
+    user: User,
+    data: SaleIn,
+    *,
+    at: datetime | None = None,
+    credit: Decimal = Decimal(0),
+    credit_note: str = '',
+    commit: bool = True,
+) -> Sale:
     """Saves a bill from a showroom's counter: priced from the catalogue, numbered with the showroom's next bill
     number, and its items taken off the showroom's stock, all in one transaction. A bill whose id is already
-    saved is returned as it was, so a retry never bills twice."""
+    saved is returned as it was, so a retry never bills twice.
+
+    An exchange passes the returned goods' value as `credit` (and its credit note number), and commit=False so
+    the return and the new bill are saved together."""
     if user.is_admin or not user.location_id:
         raise Forbidden(ADMIN_CANNOT_BILL)
     if existing := _existing(session, user, data):
@@ -78,7 +126,9 @@ def create_sale(session: Session, user: User, data: SaleIn, *, at: datetime | No
     catalogue = products.by_codes(session, (line.code for line in data.lines))
     lines = bill.bill_lines(((line.code, line.qty) for line in data.lines), catalogue)
     totals = bill.totals(lines)
-    payment = _payment(data.payment, Decimal(str(totals['payable'])))
+    payment = _payment(data.payment, Decimal(str(totals['payable'])), credit)
+    if credit_note:
+        payment['creditNote'] = credit_note
 
     at = at or clock.now()
     bill_no, _ = numbering.next_bill_no(session, user.location_id, at)
@@ -108,6 +158,9 @@ def create_sale(session: Session, user: User, data: SaleIn, *, at: datetime | No
     )
     session.add(sale)
     stock.adjust(session, user.location_id, {line.code: -line.qty for line in lines})
+    if not commit:
+        session.flush()
+        return sale
     try:
         session.commit()
     except IntegrityError:

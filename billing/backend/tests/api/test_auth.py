@@ -10,13 +10,18 @@ def test_health(client):
 def test_login_and_me(client):
     r = client.post('/auth/login', json={'username': 'Chennai', 'password': 'chennai@2026'})
     assert r.status_code == 200
-    assert r.json()['session'] == {'username': 'chennai', 'role': 'location', 'location': 'chennai'}
+    assert r.json()['session'] == {'username': 'chennai', 'role': 'location', 'location': 'chennai', 'demo': False}
     me = client.get('/auth/me', headers={'Authorization': f'Bearer {r.json()["token"]}'})
-    assert me.json() == {'username': 'chennai', 'role': 'location', 'location': 'chennai'}
+    assert me.json() == {'username': 'chennai', 'role': 'location', 'location': 'chennai', 'demo': False}
 
 
 def test_admin_session(client, admin):
-    assert client.get('/auth/me', headers=admin).json() == {'username': 'admin', 'role': 'admin', 'location': None}
+    assert client.get('/auth/me', headers=admin).json() == {
+        'username': 'admin',
+        'role': 'admin',
+        'location': None,
+        'demo': False,
+    }
 
 
 def test_wrong_password_and_no_token(client):

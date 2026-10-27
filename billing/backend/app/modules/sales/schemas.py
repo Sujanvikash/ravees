@@ -32,7 +32,7 @@ def check_customer(name: str, phone: str) -> tuple[str, str]:
 
 
 def customer_label(phone: str, name: str) -> str:
-    """"Priya · +91 98407 88950", as the frontend's customerLabel."""
+    """ "Priya · +91 98407 88950", as the frontend's customerLabel."""
     parts = [name, f'+91 {phone[:5]} {phone[5:]}' if len(phone) == 10 else '']
     return ' · '.join(p for p in parts if p) or 'Walk-in'
 
