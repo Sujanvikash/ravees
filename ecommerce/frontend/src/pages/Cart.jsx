@@ -22,12 +22,12 @@ const Cart = () => {
         <Eyebrow>
           ✦ YOUR CART ✦
         </Eyebrow>
-        <PageTitle className="mb-8">
+        <PageTitle className="mb-5">
           Review Your Selection
         </PageTitle>
 
         {cart.length === 0 ? (
-          <div className={`${cardClass('panel')} flex flex-col items-center gap-4 px-6 py-20 text-center`}>
+          <div className={`${cardClass('panel')} flex flex-col items-center gap-4 px-6 py-12 text-center`}>
             <div className="relative isolate h-42.5 w-[min(250px,100%)]">
               <Decoration src={luxuryGiftBoxes} className="inset-0" />
             </div>
@@ -81,7 +81,7 @@ const Cart = () => {
               ))}
             </div>
 
-            <div className="mt-8 flex flex-col gap-5 rounded-2xl border border-gold-400/30 bg-shade p-6 md:p-8">
+            <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-gold-400/30 bg-shade p-6 md:p-8">
               <div className="flex justify-between text-[0.92rem] text-text-secondary">
                 <span>Items in list</span>
                 <span className="font-mono text-white">{totalCount}</span>

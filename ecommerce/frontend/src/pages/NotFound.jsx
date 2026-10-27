@@ -8,7 +8,7 @@ import PageTitle from '../components/PageTitle.jsx';
 
 const NotFound = () => {
   return (
-    <section className="relative z-20 flex min-h-[70vh] items-center justify-center overflow-hidden bg-bg-primary px-6 py-25">
+    <section className="relative z-20 flex min-h-[70vh] items-center justify-center overflow-hidden bg-bg-primary px-6 py-16">
       <Aurora />
       {/* Scattered ornaments behind the message: the ones that "wandered off". */}
       <Decoration

@@ -182,7 +182,7 @@ const Checkout = () => {
   ].filter(Boolean);
 
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-6 pb-16 md:pt-9 md:pb-24">
+    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
       <PageBackdrop src={checkoutBg} fade="frame" align="center" />
       <Container>
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2 xl:grid-cols-[0.72fr_1.28fr_1fr]">

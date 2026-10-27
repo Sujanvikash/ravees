@@ -28,6 +28,8 @@ const FEET_RIGHT = 85; // right edge of the boots (same in either facing, since 
 const REACH_RIGHT = 119; // right-most drawn point in either facing (the sack when facing left)
 const BUTTON_INSET = 4; // px his boots sit inside the Add button's right edge
 const WALK_SPEED = 600; // px per second
+// Heading for a card at least this far away, he leaps there with a somersault instead of walking.
+const FLIP_MIN_DIST = 80; // px
 const STEP = 0.16; // seconds per quarter of a walk cycle
 // Pointer must rest on a card this long before Santa walks over (avoids chasing quick fly-bys).
 const HOVER_DELAY_MS = 210;
@@ -104,6 +106,7 @@ const SantaLayer = ({ onOpenCart }) => {
 
   const rootRef = useRef(null);
   const flipRef = useRef(null);
+  const spinRef = useRef(null); // the somersault turns this wrapper (flipRef keeps left/right facing)
   const mouthRef = useRef(null);
   const miniRef = useRef(null);
   const badgeRef = useRef(null);
@@ -160,7 +163,8 @@ const SantaLayer = ({ onOpenCart }) => {
   useEffect(() => {
     const root = rootRef.current;
     const flip = flipRef.current;
-    if (!root || !flip) return undefined;
+    const spin = spinRef.current;
+    if (!root || !flip || !spin) return undefined;
 
     const rm = reducedMotion();
     const UNIT = size / 120;
@@ -280,7 +284,7 @@ const SantaLayer = ({ onOpenCart }) => {
     swing(bob, "y", [1.5, -1.5, 1.5, 0]);
 
     let walking = false;
-    let walkTween, settleTween, turnHome;
+    let walkTween, settleTween, turnHome, spinTween;
     let afterWalk = null; // a reaction waiting for him to stop walking
     const whenFree = (fn) => {
       if (walking) afterWalk = fn;
@@ -434,6 +438,8 @@ const SantaLayer = ({ onOpenCart }) => {
       walkTween?.kill();
       settleTween?.kill();
       turnHome?.kill();
+      spinTween?.kill();
+      gsap.set(spin, { rotation: 0 });
       afterWalk = null;
       // About to walk: the walk cycle takes over legs, back arm, sack and bob.
       stopAction(dist >= 4 && !rm ? NON_WALK_PARTS : ACTION_PARTS);
@@ -442,6 +448,12 @@ const SantaLayer = ({ onOpenCart }) => {
       if (rm || dist < 4) {
         gsap.set(root, t0);
         arrive();
+        return;
+      }
+
+      // Off to a card that isn't right beside him: a leap with a somersault.
+      if (anchorRef.current && dist >= FLIP_MIN_DIST) {
+        flipTo(sx, sy, dist);
         return;
       }
 
@@ -465,6 +477,48 @@ const SantaLayer = ({ onOpenCart }) => {
           arrive();
         },
       });
+    };
+
+    // A crouch, then an arc through the air with one full forward roll (in the direction he's heading),
+    // landing on the card's Add button. Like the walk, the arc re-aims every frame at a card that moves.
+    const flipTo = (sx, sy, dist) => {
+      walking = true;
+      walkCycle.pause();
+      const dir = target().x < sx ? -1 : 1;
+      const height = gsap.utils.clamp(70, 150, 50 + dist * 0.2);
+      const duration = gsap.utils.clamp(0.65, 1.05, 0.45 + dist / 1400);
+      const crouch = 0.12;
+
+      gsap.fromTo(bob, { scaleX: 1, scaleY: 1 }, { scaleX: 1.08, scaleY: 0.86, duration: crouch, ease: "power2.in", yoyo: true, repeat: 1 });
+      // Legs tucked and arms out while he's in the air.
+      gsap.to([legB, legF], { rotation: (i) => (i ? -28 : 28), duration: 0.18, delay: crouch, ease: "power2.out" });
+      gsap.to(armB, { rotation: 120, duration: 0.2, delay: crouch, ease: "back.out(2)" });
+
+      const p = { t: 0 };
+      walkTween = gsap.to(p, {
+        t: 1,
+        delay: crouch,
+        duration,
+        ease: "none",
+        onUpdate: () => {
+          const t = target();
+          const k = gsap.parseEase("power1.inOut")(p.t);
+          gsap.set(root, { x: sx + (t.x - sx) * k, y: sy + (t.y - sy) * p.t - height * 4 * p.t * (1 - p.t) });
+        },
+        onComplete: () => {
+          walking = false;
+          gsap.set(spin, { rotation: 0 });
+          settleTween = gsap.to(limbs, { rotation: 0, y: 0, duration: 0.2, ease: "power2.out" });
+          gsap.to(armB, { rotation: 0, duration: 0.25, ease: "power2.out" });
+          arrive();
+        },
+      });
+      // The roll finishes just before touchdown, so he lands upright.
+      spinTween = gsap.fromTo(
+        spin,
+        { rotation: 0 },
+        { rotation: 360 * dir, duration: duration * 0.8, delay: crouch + duration * 0.08, ease: "power1.inOut" },
+      );
     };
 
     const hoverCard = (anchorEl) => {
@@ -797,8 +851,8 @@ const SantaLayer = ({ onOpenCart }) => {
       walkCycle.kill();
       blinkCall?.kill();
       action?.kill();
-      [walkTween, settleTween, turnHome].forEach((t) => t?.kill());
-      gsap.killTweensOf([root, flip, ...root.querySelectorAll("[class^='s-']")]);
+      [walkTween, settleTween, turnHome, spinTween].forEach((t) => t?.kill());
+      gsap.killTweensOf([root, flip, spin, ...root.querySelectorAll("[class^='s-']")]);
       clones.forEach((c) => c.remove());
       api.current = {};
       unregister();
@@ -929,30 +983,33 @@ const SantaLayer = ({ onOpenCart }) => {
             aria-label={cartLabel}
             className="pointer-events-auto block h-full w-full cursor-pointer rounded-xl border-0 bg-transparent p-0 transition-transform duration-200 hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400"
           >
-            <div
-              ref={flipRef}
-              className="relative h-full w-full drop-shadow-[0_6px_10px_--alpha(var(--color-black)/45%)]"
-              style={{
-                transform: "scaleX(var(--face, 1))",
-                transformOrigin: `${(FEET_CX / 120) * 100}% 50%`,
-              }}
-            >
-              <SantaFigure mouthRef={mouthRef} lite={lite} outfit={season.scarf ? "scarf" : null} />
+            {/* Spins for the somersault, around the middle of his body. */}
+            <div ref={spinRef} className="h-full w-full" style={{ transformOrigin: "54% 62%" }}>
+              <div
+                ref={flipRef}
+                className="relative h-full w-full drop-shadow-[0_6px_10px_--alpha(var(--color-black)/45%)]"
+                style={{
+                  transform: "scaleX(var(--face, 1))",
+                  transformOrigin: `${(FEET_CX / 120) * 100}% 50%`,
+                }}
+              >
+                <SantaFigure mouthRef={mouthRef} lite={lite} outfit={season.scarf ? "scarf" : null} />
 
-              {/* Cart count on the sack; counter-flipped so the digits never mirror. */}
-              {count > 0 && (
-                <span
-                  className="absolute"
-                  style={{ left: "6%", top: "28%", transform: "scaleX(var(--face, 1))" }}
-                >
+                {/* Cart count on the sack; counter-flipped so the digits never mirror. */}
+                {count > 0 && (
                   <span
-                    ref={badgeRef}
-                    className="flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[0.6rem] font-bold text-on-gold shadow-[0_2px_6px_--alpha(var(--color-black)/50%)]"
+                    className="absolute"
+                    style={{ left: "6%", top: "28%", transform: "scaleX(var(--face, 1))" }}
                   >
-                    {count}
+                    <span
+                      ref={badgeRef}
+                      className="flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[0.6rem] font-bold text-on-gold shadow-[0_2px_6px_--alpha(var(--color-black)/50%)]"
+                    >
+                      {count}
+                    </span>
                   </span>
-                </span>
-              )}
+                )}
+              </div>
             </div>
           </button>
         </div>

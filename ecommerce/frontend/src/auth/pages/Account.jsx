@@ -41,11 +41,11 @@ const Account = () => {
         <Eyebrow>
           ✦ MY ACCOUNT ✦
         </Eyebrow>
-        <PageTitle className="mb-8">
+        <PageTitle className="mb-5">
           Welcome, {session.name.split(' ')[0]}
         </PageTitle>
 
-        <div className={`${cardClass('panel')} mb-8 flex flex-col gap-4 p-6 md:p-8`}>
+        <div className={`${cardClass('panel')} mb-5 flex flex-col gap-4 p-6 md:p-8`}>
           <div className="flex items-center gap-3">
             <User size={18} strokeWidth={2} className="shrink-0 text-gold-400" />
             <span className="text-[0.95rem] text-white">{session.name}</span>

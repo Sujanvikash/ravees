@@ -52,7 +52,7 @@ const About = () => {
               </p>
             </Reveal>
 
-            <div className="mt-9 grid max-w-[44rem] grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-6 grid max-w-[44rem] grid-cols-2 gap-3 sm:grid-cols-4">
               {STATS.map(({ value, suffix, word, label }, i) => (
                 <Reveal
                   key={label}

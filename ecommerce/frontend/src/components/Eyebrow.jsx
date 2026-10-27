@@ -2,7 +2,7 @@
 const Eyebrow = ({ className = '', children }) => {
   return (
     <span
-      className={`mb-3 inline-block font-mono text-[0.72rem] uppercase tracking-[0.28em] text-gold-400 ${className}`}
+      className={`mb-1.5 inline-block font-mono text-[0.66rem] uppercase tracking-[0.22em] text-gold-400 ${className}`}
     >
       {children}
     </span>

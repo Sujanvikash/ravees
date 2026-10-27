@@ -10,7 +10,7 @@ const SectionHeading = ({ eyebrow, title, subtitle, centered = true, flourishes 
   return (
     <Reveal
       // Wide enough for the title plus its flourishes on one line; the subtitle keeps its own reading width.
-      className={`${centered ? 'mx-auto mb-12 max-w-260 text-center' : 'mb-8'} ${className}`.trim()}
+      className={`${centered ? 'mx-auto mb-7 max-w-260 text-center' : 'mb-5'} ${className}`.trim()}
     >
       {eyebrow && (
         <Eyebrow>
@@ -18,14 +18,14 @@ const SectionHeading = ({ eyebrow, title, subtitle, centered = true, flourishes 
         </Eyebrow>
       )}
       {title && (
-        <div className={`mb-3.5 flex items-center gap-4 ${centered ? 'justify-center' : ''}`}>
+        <div className={`mb-2 flex items-center gap-4 ${centered ? 'justify-center' : ''}`}>
           {flourishes && centered && <Flourish side="left" className="hidden sm:block" />}
           <PageTitle as="h2" size="lg">{title}</PageTitle>
           {flourishes && <Flourish side="right" className="hidden sm:block" />}
         </div>
       )}
       {subtitle && (
-        <p className={`text-[1.05rem] leading-[1.7] text-text-secondary ${centered ? 'mx-auto max-w-195' : ''}`}>{subtitle}</p>
+        <p className={`text-[0.95rem] leading-[1.6] text-text-secondary ${centered ? 'mx-auto max-w-195' : ''}`}>{subtitle}</p>
       )}
     </Reveal>
   );

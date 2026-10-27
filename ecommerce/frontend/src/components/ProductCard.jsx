@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart } from 'lucide-react';
-import PriceTag from './PriceTag.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
@@ -13,7 +12,7 @@ const ACTION_CIRCLE =
 
 /**
  * Product card: a cream card topped by a full-width square photo, a stock badge, the category in gold,
- * the name, the price slot ("Enquire for Price") and one full-width "Add to Cart".
+ * the name and one full-width "Add to Cart".
  * The photo and the name open the product page.
  */
 const ProductCard = ({ product, onQuickView }) => {
@@ -45,7 +44,7 @@ const ProductCard = ({ product, onQuickView }) => {
     <div
       onMouseEnter={() => hoverCard(addBtnRef.current)}
       onMouseLeave={leaveCard}
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-cream-200 bg-cream-50 shadow-[0_12px_30px_--alpha(var(--color-black)/35%)] transition-all duration-300 ease-premium hover:-translate-y-1.5 hover:shadow-[0_22px_44px_--alpha(var(--color-black)/50%),0_0_24px_--alpha(var(--color-gold-400)/18%)]"
+      className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-cream-200 bg-cream-50 shadow-[0_12px_30px_--alpha(var(--color-black)/35%)] transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-[0_22px_44px_--alpha(var(--color-black)/50%),0_0_24px_--alpha(var(--color-gold-400)/18%)]"
     >
       <Link
         ref={photoRef}
@@ -101,28 +100,26 @@ const ProductCard = ({ product, onQuickView }) => {
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col p-2.5 pt-3">
-        <span className="mb-1 min-w-0 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-gold-ink sm:text-[0.64rem] sm:tracking-[0.12em]">
+      <div className="flex flex-1 flex-col p-2 pt-2">
+        <span className="mb-0.5 min-w-0 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-gold-ink sm:text-[0.66rem]">
           {product.categoryLabel}
         </span>
 
-        <h3 className="mb-1.5 font-serif text-[0.88rem] font-semibold leading-[1.3] text-ink sm:text-[0.92rem]">
+        <h3 className="mb-2 font-sans text-[0.82rem] font-semibold leading-[1.3] text-ink sm:text-[0.86rem]">
           <Link to={`/product/${product.id}`} onClick={openQuickView} className="no-underline transition-colors hover:text-gold-ink">
             {product.name}
           </Link>
         </h3>
-
-        <PriceTag size="sm" compact tone="light" className="mt-auto mb-2" />
 
         <button
           ref={addBtnRef}
           type="button"
           onClick={handleAdd}
           title="Add to cart"
-          className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-forest px-2.5 py-1.5 text-[0.76rem] font-semibold text-cream-50 transition-colors duration-200 hover:bg-forest-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:text-[0.8rem]"
+          className="mt-auto inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md bg-forest px-2 py-1 text-[0.74rem] font-semibold text-cream-50 transition-colors duration-200 hover:bg-forest-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:text-[0.76rem]"
         >
           Add to Cart
-          <ShoppingCart size={14} strokeWidth={2} aria-hidden="true" />
+          <ShoppingCart size={13} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
     </div>

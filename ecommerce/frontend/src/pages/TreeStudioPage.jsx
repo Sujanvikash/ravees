@@ -161,7 +161,7 @@ const TreeStudioPage = () => {
   );
 
   return (
-    <section className="relative z-20 bg-bg-primary pt-3 pb-16 md:pt-5 md:pb-24">
+    <section className="relative z-20 bg-bg-primary pt-3 pb-10 md:pt-5 md:pb-14">
       <Aurora />
       <Container>
         <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-10">

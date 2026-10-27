@@ -33,10 +33,10 @@ const Contact = () => {
   const { celebrate } = useSanta();
 
   return (
-    <section className="relative isolate z-20 overflow-x-clip bg-bg-darker pt-10 pb-16 md:pt-14 md:pb-24">
+    <section className="relative isolate z-20 overflow-x-clip bg-bg-darker pt-6 pb-10 md:pt-8 md:pb-14">
       <PageBackdrop src={contactBg} fade="left" />
       <Container>
-        <div className="grid items-start gap-10 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
+        <div className="grid items-start gap-7 lg:grid-cols-[1fr_1.05fr] lg:gap-10">
           <div>
             <Reveal>
               <Eyebrow>✦ CONCIERGE SUPPORT ✦</Eyebrow>

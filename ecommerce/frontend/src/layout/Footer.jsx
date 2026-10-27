@@ -67,7 +67,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="relative z-20 overflow-hidden border-t border-gold-400/15 bg-bg-deepest pt-12 pb-8">
+    <footer className="relative z-20 overflow-hidden border-t border-gold-400/15 bg-bg-deepest pt-8 pb-6">
       {/* The pine-and-ribbon background: dark in the middle (behind the text), branches framing both sides.
           Wide screens (columns in one row): drawn as two halves, the left one pinned left and the right one
           pinned right, each the footer's full height, so both sets of branches show whole at any width (the
@@ -94,27 +94,19 @@ const Footer = () => {
 
       {/* Narrower than the page width (Container), so the branches at the sides frame the columns. */}
       <div className="relative mx-auto max-w-300 px-6">
-        {/* Top ornament: the emblem between two short gold rules. */}
-        <div aria-hidden="true" className="mb-10 flex items-center justify-center gap-4 md:mb-14">
+        {/* Top ornament: the logo's R mark between two short gold rules. */}
+        <div aria-hidden="true" className="mb-6 flex items-center justify-center gap-4 md:mb-8">
           <span className="h-px w-16 bg-linear-to-r from-transparent to-gold-400/70 sm:w-28" />
-          <Logo size={34} className="drop-shadow-[0_0_8px_--alpha(var(--color-gold-400)/40%)]" />
+          <Logo mark height={34} />
           <span className="h-px w-16 bg-linear-to-l from-transparent to-gold-400/70 sm:w-28" />
         </div>
 
         {/* Phones: the brand and the newsletter span the width, with the two link lists side by side
             between them, so the footer isn't one long column. Tablets: a 2×2 grid. Wide screens: one row. */}
-        <div className="mb-10 grid grid-cols-2 gap-x-6 gap-y-10 md:mb-12 md:gap-10 xl:grid-cols-[1.35fr_0.85fr_1.15fr_1.5fr] xl:gap-0">
+        <div className="mb-6 grid grid-cols-2 gap-x-6 gap-y-6 md:mb-8 md:gap-8 xl:grid-cols-[1.35fr_0.85fr_1.15fr_1.5fr] xl:gap-0">
           <div className="col-span-2 md:col-span-1 xl:pr-12">
-            {/* The brand logo (assets/logo.svg) at a readable size: the emblem over its wordmark and tagline. */}
-            <div className="mb-6 inline-flex flex-col items-center">
-              <Logo size={64} className="mb-3 drop-shadow-[0_0_10px_--alpha(var(--color-gold-400)/40%)]" />
-              <span className="bg-[linear-gradient(135deg,var(--color-gold-100)_0%,var(--color-gold-400)_35%,var(--color-gold-550)_70%,var(--color-gold-250)_100%)] bg-clip-text font-serif text-[1.15rem] font-semibold leading-none tracking-[0.2em] whitespace-nowrap text-transparent">
-                RAAVE&apos;S EVERGREEN
-              </span>
-              <span className="mt-2 text-[0.6rem] leading-none tracking-[0.24em] whitespace-nowrap text-text-tagline">
-                EUROPEAN STANDARD SINCE 1998
-              </span>
-            </div>
+            {/* The brand logo (assets/logo.svg) at a readable size. */}
+            <Logo height={84} className="mb-6" />
             <p className="mb-6 max-w-[360px] text-[0.9rem] leading-[1.75] text-text-secondary">
               India&apos;s largest importer of European-standard artificial Christmas trees, cluster lights,
               and luxury holiday decor. Celebrating 27 glorious years in India.

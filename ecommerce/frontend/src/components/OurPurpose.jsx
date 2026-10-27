@@ -31,7 +31,14 @@ const PURPOSE = [
 const OurPurpose = () => {
   return (
     <section aria-labelledby="purpose-title" className="relative z-20 isolate overflow-hidden bg-cream-100 text-ink">
-      <Decoration side src={pineCornerCutout} fade="right" className="top-0 right-0 h-[340px] w-[230px]" imgClassName="object-top-left" />
+      {/* Only where the space beside the content column is wide enough to hold it, so it never covers the text. */}
+      <Decoration
+        side="hidden min-[1840px]:block"
+        src={pineCornerCutout}
+        fade="right"
+        className="top-0 right-0 h-[300px] w-[min(230px,calc((100vw-1360px)/2))]"
+        imgClassName="object-top-left"
+      />
 
       <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="relative h-[280px] sm:h-[380px] lg:h-auto lg:min-h-[500px]">
@@ -44,16 +51,16 @@ const OurPurpose = () => {
           />
         </div>
 
-        <div className="relative px-6 py-14 sm:px-10 lg:py-20 lg:pr-16 xl:pr-24">
+        <div className="relative px-6 py-9 sm:px-10 lg:py-12 lg:pr-16 xl:pr-24">
           <Reveal className="max-w-[780px]">
-            <div className="mb-10 flex items-center gap-4">
+            <div className="mb-6 flex items-center gap-4">
               <h2 id="purpose-title" className="font-serif text-[2rem] font-bold leading-[1.2] tracking-[0.03em] text-ink sm:text-[2.4rem]">
                 Our Purpose
               </h2>
               <Flourish tone="light" className="hidden sm:block" />
             </div>
 
-            <div className="relative grid gap-10 md:grid-cols-3 md:gap-8">
+            <div className="relative grid gap-6 md:grid-cols-3 md:gap-8">
               {/* thin gold line joining the three icon discs (centre of the first to centre of the last) */}
               <span
                 aria-hidden="true"

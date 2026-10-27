@@ -36,7 +36,7 @@ const LoginForm = () => {
       onSubmit={handleSubmit}
       header={
         <div className="flex flex-col items-center gap-2">
-          <Logo size={44} glow={16} />
+          <Logo height={64} className="mb-1" />
           <h1 className="font-serif text-[1.3rem] font-bold tracking-[0.14em] text-white">
             RAAVE&apos;S ADMIN
           </h1>

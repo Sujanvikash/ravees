@@ -11,13 +11,9 @@ import { useWishlist } from '../context/WishlistContext.jsx';
 import Container from '../components/Container.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
-import Decoration from '../components/Decoration.jsx';
-import { pineBranchLeft, pineBranchRight } from '../assets/decorations';
+import HangingOrnaments from '../components/HangingOrnaments.jsx';
 import PageTitle from '../components/PageTitle.jsx';
 import { sectionClass } from '../components/sectionClass.js';
-
-// Pine branches on both top corners of the shop header, in the space beside the content column.
-const SIDE_BRANCH = 'top-0 h-[330px] w-[min(440px,calc((100vw-1360px)/2+160px))]';
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
@@ -66,15 +62,15 @@ const Shop = () => {
   return (
     <section className={sectionClass('listing')}>
       <Aurora />
-      <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-top-left" />
-      <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-top-right" />
+      <HangingOrnaments side="left" />
+      <HangingOrnaments side="right" />
       <Container>
-        <div className="mb-9">
+        <div className="mb-4">
           <Eyebrow>
             ✦ 2026 SIGNATURE COLLECTION ✦
           </Eyebrow>
           {/* Title and controls share one line (centred on each other); they stack when the screen is too narrow. */}
-          <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
             <PageTitle size="lg">
               European Standard Masterpieces
             </PageTitle>

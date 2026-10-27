@@ -23,7 +23,7 @@ const AdminSidebar = () => {
   return (
     <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-gold-400/15 bg-bg-deepest p-5 lg:flex">
       <div className="mb-8 flex items-center gap-2.5">
-        <Logo size={30} />
+        <Logo mark height={30} />
         <div className="flex flex-col">
           <span className="font-serif text-[0.92rem] font-bold tracking-[0.12em] text-white">RAAVE&apos;S</span>
           <span className="font-mono text-[0.58rem] tracking-[0.2em] text-gold-400">ADMIN CONSOLE</span>

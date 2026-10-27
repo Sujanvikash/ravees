@@ -9,9 +9,9 @@
  * Usage: className={sectionClass('panel')}. Pages with their own spacing write the classes out.
  */
 const VARIANTS = {
-  listing: 'pt-6 pb-16 md:pt-9 md:pb-25',
-  panel: 'py-16 md:py-25',
-  centered: 'flex min-h-[60vh] items-center justify-center px-6 py-25',
+  listing: 'pt-4 pb-10 md:pt-6 md:pb-14',
+  panel: 'py-10 md:py-14',
+  centered: 'flex min-h-[60vh] items-center justify-center px-6 py-16',
 };
 
 export const sectionClass = (variant) => `relative z-20 bg-bg-primary ${VARIANTS[variant]}`;

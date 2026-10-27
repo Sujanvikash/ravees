@@ -89,10 +89,10 @@ const ProductDetail = () => {
   const half = Math.ceil(rows.length / 2);
 
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-5 pb-12 md:pt-8 md:pb-20">
+    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
       <PageBackdrop src={productBg} fade="frame" align="center" className="h-[1150px]" />
       <Container>
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-12">
+        <div className="grid gap-7 lg:grid-cols-[1fr_1.1fr] lg:gap-10">
           {/* Gallery */}
           <div>
             <Link
@@ -188,11 +188,6 @@ const ProductDetail = () => {
               </div>
             )}
 
-            <div>
-              <h2 className="font-quote text-[1.6rem] font-semibold text-gold-200">Price on request</h2>
-              <p className="mt-1 text-[0.85rem] text-text-secondary">Contact us for pricing, bulk enquiries, and project orders.</p>
-            </div>
-
             {/* Like the product cards: pointing at the buttons sends Santa to stand on the quote button, and the
                 product flies from the photo into his sack (his speech bubble replaces the toast). */}
             <div
@@ -246,14 +241,14 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {PROMISES.map(({ Icon, title, body }) => (
             <FeatureItem key={title} variant="card" Icon={Icon} title={title} body={body} className={`${cardClass('tile')} px-5 py-4`} />
           ))}
         </div>
 
         {related.length > 0 && (
-          <div className="mt-20">
+          <div className="mt-12">
             <PageTitle as="h2" size="xs" className="mb-7">
               More from {product.categoryLabel}
             </PageTitle>

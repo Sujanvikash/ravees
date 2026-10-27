@@ -17,24 +17,18 @@ import Aurora from '../components/Aurora.jsx';
 import CountUp from '../components/CountUp.jsx';
 import GlowBorder from '../components/GlowBorder.jsx';
 import Decoration from '../components/Decoration.jsx';
+import HangingOrnaments from '../components/HangingOrnaments.jsx';
 import Flourish from '../components/Flourish.jsx';
 import OurPurpose from '../components/OurPurpose.jsx';
 import PageTitle from '../components/PageTitle.jsx';
 import FeatureItem from '../components/FeatureItem.jsx';
-import {
-  festiveLanternGlow,
-  goldenReindeerCutout,
-  heroTreeGlow,
-  pineBranchLeft,
-  pineBranchRight,
-  pineCrateBaubles,
-} from '../assets/decorations';
+import { goldenReindeerCutout, heroTreeGlow } from '../assets/decorations';
 import { cardClass } from '../components/cardClass.js';
 
-// Side decorations fill the space beside the 1360px content column (plus a little overlap, faded).
-const SIDE_BRANCH = 'top-0 h-[330px] w-[min(440px,calc((100vw-1360px)/2+160px))]';
-// Tall standing pictures (reindeer, lantern) beside the testimonials.
-const SIDE_STANDING = 'top-10 h-[340px] w-[min(260px,calc((100vw-1360px)/2+40px))]';
+// The standing reindeer beside the testimonials: exactly the space beside the 1360px content column, so it
+// never covers a card, and only from 1700px wide, where that space can hold it.
+const SIDE_STANDING = 'top-6 h-[300px] w-[min(240px,calc((100vw-1360px)/2))]';
+const SIDE_STANDING_FROM = 'hidden min-[1700px]:block';
 
 // Hero loads separately so the rest of the homepage can paint first.
 const CinematicHero = lazy(() => import('../components/CinematicHero'));
@@ -68,7 +62,7 @@ const Home = () => {
         picks.push(match);
       }
     }
-    return picks.slice(0, 5);
+    return picks.slice(0, 6);
   }, []);
 
   return (
@@ -78,7 +72,7 @@ const Home = () => {
       </Suspense>
 
       {/* Trust strip: one slim row of promises, then a shortcut into the catalogue */}
-      <section className="relative z-20 border-t border-b border-gold-400/15 bg-[linear-gradient(180deg,var(--color-bg-darker)_0%,var(--color-bg-primary)_100%)] py-5">
+      <section className="relative z-20 border-t border-b border-gold-400/15 bg-[linear-gradient(180deg,var(--color-bg-darker)_0%,var(--color-bg-primary)_100%)] py-3">
         <Container>
           <Reveal className="grid grid-cols-2 items-center gap-x-3 gap-y-3.5 sm:gap-x-4 sm:gap-y-5 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] lg:gap-0">
             {TRUST_ITEMS.map(({ Icon, title, body }) => (
@@ -99,16 +93,16 @@ const Home = () => {
         </Container>
       </section>
 
-      {/* Shop by category, then the featured collection: one band, so the Aurora and pine branches
+      {/* Shop by category, then the featured collection: one band, so the Aurora and ornaments
           cover both without a seam between them */}
-      <section className="relative z-20 bg-bg-primary pt-12 pb-16 md:pt-20 md:pb-20">
+      <section className="relative z-20 bg-bg-primary pt-8 pb-10 md:pt-10 md:pb-14">
         <Aurora />
-        <Decoration side src={pineBranchLeft} fade="left" className={`left-0 ${SIDE_BRANCH}`} imgClassName="object-top-left" />
-        <Decoration side src={pineBranchRight} fade="right" className={`right-0 ${SIDE_BRANCH}`} imgClassName="object-top-right" />
+        <HangingOrnaments side="left" />
+        <HangingOrnaments side="right" />
         <Container>
-          <ShopByCategory className="mb-14 md:mb-20" />
+          <ShopByCategory className="mb-8 md:mb-10" />
 
-          <Reveal className="mb-9 flex flex-wrap items-end justify-between gap-5">
+          <Reveal className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <Eyebrow>
                 ✦ 2026 SIGNATURE COLLECTION ✦
@@ -131,25 +125,20 @@ const Home = () => {
       </section>
 
       {/* Tree Studio teaser */}
-      <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-16 md:py-20">
-        <Decoration
-          side
-          src={pineCrateBaubles}
-          className="top-1/2 right-0 h-[320px] w-[min(420px,calc((100vw-1360px)/2+120px))] -translate-y-1/2"
-        />
+      <section className="relative z-20 border-t border-b border-gold-400/15 bg-bg-darker py-10 md:py-12">
         <Container>
           <Reveal>
             <GlowBorder>
-              <div className="relative isolate grid items-center gap-10 overflow-hidden rounded-[calc(1.5rem-1px)] bg-[radial-gradient(circle_at_center,#0a291c_0%,#041009_100%)] p-8 md:p-14 lg:grid-cols-[1.4fr_1fr]">
+              <div className="relative isolate grid items-center gap-7 overflow-hidden rounded-[calc(1.5rem-1px)] bg-[radial-gradient(circle_at_center,#0a291c_0%,#041009_100%)] p-6 md:p-9 lg:grid-cols-[1.4fr_1fr]">
                 <Decoration src={heroTreeGlow} fade="under" opacity={0.32} className="inset-y-0 left-0 w-[58%]" />
                 <div>
-                  <span className="mb-3 inline-block font-mono text-[0.68rem] uppercase tracking-[0.22em] text-gold-400">
+                  <span className="mb-1.5 inline-block font-mono text-[0.66rem] uppercase tracking-[0.22em] text-gold-400">
                     ✦ INTERACTIVE TREE STUDIO ✦
                   </span>
-                  <PageTitle as="h2" size="sm" className="mb-4">
+                  <PageTitle as="h2" size="sm" className="mb-2">
                     Design Your Tree, Piece By Piece
                   </PageTitle>
-                  <p className="mb-6 text-[1.02rem] leading-[1.8] text-text-secondary">
+                  <p className="mb-5 text-[0.95rem] leading-[1.65] text-text-secondary">
                     Pick a tree, layer on cluster lights, baubles and a topper, then send the whole build to our
                     concierge as a single quote request. Our stylists confirm pricing and reserve your pieces.
                   </p>
@@ -158,10 +147,10 @@ const Home = () => {
                     Open Tree Studio
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-2 gap-3">
                   {STUDIO_STATS.map(({ value, label }) => (
-                    <div key={label} className={`${cardClass('tile')} p-5`}>
-                      <CountUp value={value} className="block font-serif text-[2rem] font-bold text-gold-300" />
+                    <div key={label} className={`${cardClass('tile')} px-4 py-3`}>
+                      <CountUp value={value} className="block font-serif text-[1.7rem] font-bold text-gold-300" />
                       <span className="text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">{label}</span>
                     </div>
                   ))}
@@ -176,27 +165,27 @@ const Home = () => {
       <OurPurpose />
 
       {/* Testimonials teaser */}
-      <section className="relative z-20 bg-bg-primary py-16 md:py-20">
+      <section className="relative z-20 bg-bg-primary py-10 md:py-14">
         <Aurora />
+        <HangingOrnaments side="left" />
         {/* A cut-out, so no edge fade: contained (antlers and hooves stay whole) and standing on the bottom edge. */}
         <Decoration
-          side
+          side={SIDE_STANDING_FROM}
           src={goldenReindeerCutout}
           fade="none"
           className={`right-0 ${SIDE_STANDING}`}
           imgClassName="object-contain! object-bottom!"
         />
-        <Decoration side src={festiveLanternGlow} className={`left-0 ${SIDE_STANDING}`} />
         <Container>
           <SectionHeading eyebrow="✦ TESTIMONIALS ✦" title="Loved Across Generations" />
-          <div className="grid gap-7 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
               <Reveal key={t.author} delay={i} className="h-full">
                 <TestimonialCard testimonial={t} />
               </Reveal>
             ))}
           </div>
-          <div className="mt-8 text-center md:mt-10">
+          <div className="mt-5 text-center md:mt-6">
             <Link
               to="/testimonials"
               className="text-[0.88rem] text-gold-300 underline-offset-4 transition-colors hover:text-white hover:underline"

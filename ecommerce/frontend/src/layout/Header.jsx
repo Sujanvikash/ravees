@@ -114,22 +114,9 @@ const Header = ({ onOpenCart }) => {
           className="flex min-w-0 items-center no-underline max-xl:mr-auto xl:min-w-fit xl:shrink-0"
           onClick={() => setMobileMenuOpen(false)}
         >
-          {/* The brand logo (assets/logo.svg) laid out side by side for the header: its emblem, then the
-              wordmark in the logo's gold gradient and its tagline. */}
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <Logo
-              size="1em"
-              className="shrink-0 text-[28px] drop-shadow-[0_0_8px_--alpha(var(--color-gold-400)/40%)] sm:text-[34px]"
-            />
-            <div className="flex min-w-0 flex-col sm:self-stretch sm:justify-between">
-              <span className="whitespace-nowrap bg-[linear-gradient(135deg,var(--color-gold-100)_0%,var(--color-gold-400)_35%,var(--color-gold-550)_70%,var(--color-gold-250)_100%)] bg-clip-text font-serif text-[clamp(0.72rem,3.4vw,0.9rem)] font-semibold leading-[1.1] tracking-[0.16em] text-transparent sm:text-[1.25rem] sm:leading-none sm:tracking-[0.12em]">
-                RAAVE&apos;S EVERGREEN
-              </span>
-              <span className="hidden text-[0.6rem] font-normal leading-none tracking-[0.14em] text-text-tagline sm:block">
-                EUROPEAN STANDARD SINCE 1998
-              </span>
-            </div>
-          </div>
+          {/* The brand logo (assets/logo.svg) on its white plate; it carries the name, so no wordmark beside it. */}
+          <Logo height={36} className="sm:hidden" />
+          <Logo height={44} className="max-sm:hidden" />
         </Link>
 
         <nav className="hidden items-center gap-5 xl:flex 2xl:gap-7">

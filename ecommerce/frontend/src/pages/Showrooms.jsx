@@ -38,20 +38,20 @@ const Showrooms = () => {
   };
 
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-darker pt-3 pb-16 md:pt-5 md:pb-24">
+    <section className="relative isolate z-20 overflow-hidden bg-bg-darker pt-3 pb-10 md:pt-5 md:pb-14">
       {/* The storefront backdrop: the centred heading sits in its dark middle, the shop front to the right. */}
       <PageBackdrop src={showroomsBg} fade="center" />
       <Container>
         <SectionHeading
           flourishes={false}
-          className="mb-8!"
+          className="mb-5!"
           eyebrow="✦ 5 FLAGSHIP DESTINATIONS ✦"
           title="Visit Our Experience Showrooms"
           subtitle="Walk through 10,000+ sq.ft of European winter wonder. Touch the foliage, explore lighting displays, and consult with our master holiday stylists."
         />
 
         <Reveal>
-          <div ref={rowRef} className="relative isolate mb-8 flex flex-wrap justify-center gap-3">
+          <div ref={rowRef} className="relative isolate mb-5 flex flex-wrap justify-center gap-3">
             <span
               aria-hidden="true"
               className={`absolute -z-10 rounded-full border ${CHIP_ACTIVE} ${CHIP_GLOW} transition-[left,top,width,height] duration-500 ease-premium ${

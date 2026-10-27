@@ -126,14 +126,6 @@ const QuickViewModal = ({ product, onClose }) => {
               </div>
             )}
 
-            <div className="flex gap-3 border-t border-gold-400/15 pt-4">
-              <FileText size={20} strokeWidth={1.5} className="mt-0.5 shrink-0 text-gold-400" aria-hidden="true" />
-              <div>
-                <span className="font-mono text-[0.78rem] uppercase tracking-[0.18em] text-gold-300">Quote on request</span>
-                <p className="mt-1 text-[0.84rem] text-text-secondary">Contact us for pricing, bulk enquiries, and project orders.</p>
-              </div>
-            </div>
-
             <div className="grid gap-3 sm:grid-cols-2">
               <Button
                 onClick={() => {

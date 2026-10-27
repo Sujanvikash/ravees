@@ -82,6 +82,9 @@
   --animate-slide-in: slide-in 0.55s var(--ease-premium) backwards;
   /* A chosen option giving a small springy nudge. */
   --animate-select: select 0.4s var(--ease-spring);
+  /* Hanging ornaments beside the content (HangingOrnaments): a slow sway, and sparkles that twinkle. */
+  --animate-sway: sway 7s ease-in-out infinite alternate;
+  --animate-twinkle: twinkle 3.4s ease-in-out infinite;
 
   @keyframes page-in {
     from {
@@ -97,6 +100,25 @@
   @keyframes select {
     40% {
       scale: 1.04;
+    }
+  }
+  @keyframes sway {
+    from {
+      rotate: -3deg;
+    }
+    to {
+      rotate: 3deg;
+    }
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.25;
+      scale: 0.75;
+    }
+    50% {
+      opacity: 1;
+      scale: 1;
     }
   }
   @keyframes pop {
@@ -252,6 +274,7 @@
   /* Scroll areas inside the page (cart drawer, modals) keep a thin gold scrollbar. */
   ::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     background: var(--color-bg-primary);

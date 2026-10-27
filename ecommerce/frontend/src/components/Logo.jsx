@@ -1,56 +1,31 @@
-import { useId } from 'react';
-
-// Literal class names so Tailwind can detect them.
-const GLOW = {
-  16: 'drop-shadow-[0_0_16px_--alpha(var(--color-gold-400)/40%)]',
-  20: 'drop-shadow-[0_0_20px_--alpha(var(--color-gold-400)/40%)]',
-};
+import logo from '../assets/logo.svg';
+import logoMark from '../assets/logo-mark.svg';
 
 /**
- * The brand emblem: the star and three-tier tree from src/assets/logo.svg (same shapes, cropped to the mark,
- * without the wordmark), so it can sit beside text at icon size. The full logo with its wordmark is
- * assets/logo.svg (also served as /logo.svg).
+ * The brand logo, the same artwork the billing app prints (src/assets/logo.svg, also served as /logo.svg):
+ * "Raave's" in red over the green EVERGREEN band, "Christmas Tree & Decoration" and "Since 1997".
+ * Its colours are the brand's own and never follow the theme. The lower lines have no background of
+ * their own, so the full logo always sits on a white plate, like the shop sign.
  *
- * size   width and height (a number in px, or a CSS length such as "1em")
+ * mark    the red R on its white tile (src/assets/logo-mark.svg, also the favicon), for small places
+ *         where the full logo can't be read
+ * height  the full logo's height (plate included), or the mark's width and height, in px
  */
-const Logo = ({ size = 30, className = '', glow }) => {
-  // Each emblem on the page needs its own gradient id.
-  const gold = `logo-gold-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
-  const fill = `url(#${gold})`;
+const Logo = ({ mark = false, height = 44, className = '' }) => {
+  if (mark) {
+    return (
+      <img src={logoMark} alt="" aria-hidden="true" width={height} height={height} className={`block ${className}`.trim()} />
+    );
+  }
 
   return (
-    <svg
-      viewBox="160 44 180 196"
-      width={size}
-      height={size}
-      aria-hidden="true"
-      focusable="false"
-      className={`${GLOW[glow] ?? ''} ${className}`.trim()}
+    // The plate's padding grows with the logo, so the margin round the artwork looks the same at every size.
+    <span
+      style={{ height, padding: `${Math.round(height * 0.09)}px ${Math.round(height * 0.14)}px` }}
+      className={`inline-flex shrink-0 items-center rounded-md bg-white shadow-[0_2px_10px_rgb(0_0_0/0.3)] ${className}`.trim()}
     >
-      {/* Colours come from index.css (style, not attributes: SVG presentation attributes can't read var()). */}
-      <defs>
-        <linearGradient id={gold} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: 'var(--color-gold-100)' }} />
-          <stop offset="35%" style={{ stopColor: 'var(--color-gold-400)' }} />
-          <stop offset="70%" style={{ stopColor: 'var(--color-gold-550)' }} />
-          <stop offset="100%" style={{ stopColor: 'var(--color-gold-250)' }} />
-        </linearGradient>
-      </defs>
-      <g transform="translate(0, 10)">
-        {/* star topper */}
-        <polygon points="250,42 256,60 275,60 260,72 265,90 250,79 235,90 240,72 225,60 244,60" fill={fill} />
-        {/* outer tier */}
-        <path d="M 250,98 Q 285,170 330,225 C 310,215 285,200 250,212 C 215,200 190,215 170,225 Q 215,170 250,98 Z" fill={fill} />
-        {/* middle tier: dark cut, then gold */}
-        <path d="M 250,140 Q 278,185 305,225 C 285,218 268,212 250,220 C 232,212 215,218 195,225 Q 222,185 250,140 Z" style={{ fill: 'var(--color-surface)' }} />
-        <path d="M 250,145 Q 275,188 300,224 C 282,216 266,210 250,218 C 234,210 218,216 200,224 Q 225,188 250,145 Z" fill={fill} />
-        {/* inner tier: dark cut, then gold */}
-        <path d="M 250,175 Q 268,205 285,224 C 272,220 260,216 250,221 C 240,216 228,220 215,224 Q 232,205 250,175 Z" style={{ fill: 'var(--color-surface)' }} />
-        <path d="M 250,180 Q 266,206 280,224 C 270,219 260,216 250,220 C 240,216 230,219 220,224 Q 234,206 250,180 Z" fill={fill} />
-        {/* central spine */}
-        <line x1="250" y1="98" x2="250" y2="218" stroke={fill} strokeWidth="1.5" opacity="0.6" />
-      </g>
-    </svg>
+      <img src={logo} alt="Raave's Evergreen, Christmas Tree & Decoration, since 1997" className="block h-full w-auto" />
+    </span>
   );
 };
 
