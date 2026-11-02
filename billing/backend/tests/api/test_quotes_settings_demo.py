@@ -36,31 +36,37 @@ def test_quotation(client, chennai, admin):
 
 
 def test_settings(client, chennai, admin):
-    s = client.get('/settings').json()  # open to the sign-in screen
+    s = client.get('/settings').json()  # open to the sign-in screen (the global defaults)
     assert s['quotePrint'] is True and s['theme'] in {'classic', 'light', 'dark'} and s['returnDays'] in {0, 7, 15, 30}
-    assert s['font'] in {'normal', 'large', 'larger'}
-    # a showroom may change its own appearance, but not a business switch
-    assert client.patch('/settings', json={'quotePrint': False}, headers=chennai).status_code == 403
-    chennai_view = client.patch('/settings', json={'theme': 'dark', 'font': 'large'}, headers=chennai)
-    assert chennai_view.status_code == 200 and chennai_view.json()['theme'] == 'dark' and chennai_view.json()['font'] == 'large'
-    # the showroom's own appearance doesn't change the admin's (global) view
-    assert client.get('/settings', headers=admin).json()['theme'] == s['theme']
+    assert s['font'] in {'normal', 'large', 'larger'} and s['lang'] == 'en' and s['composition'] is True
+
+    # a showroom may change only its own appearance — not the language, the bill details or a business switch
+    for forbidden in ({'quotePrint': False}, {'lang': 'ta'}, {'storeName': 'X'}, {'composition': False}):
+        assert client.patch('/settings', json=forbidden, headers=chennai).status_code == 403
+    mine = client.patch('/settings', json={'theme': 'dark', 'font': 'large'}, headers=chennai)
+    assert mine.status_code == 200 and mine.json()['theme'] == 'dark' and mine.json()['font'] == 'large'
     assert client.get('/settings', headers=chennai).json()['theme'] == 'dark'
+    assert client.get('/settings').json()['theme'] == s['theme']  # the sign-in / global view is unaffected
     client.patch('/settings', json={'theme': s['theme'], 'font': 'normal'}, headers=chennai)  # put it back
 
-    # every store is a composition dealer by default
-    assert s['composition'] is True
-    # a showroom fills in its own bill details (store-level, not the admin's)
-    shop = client.patch('/settings', json={'storeName': 'SPARKLE CHRISTMAS', 'composition': False}, headers=chennai)
-    assert shop.status_code == 200 and shop.json()['storeName'] == 'SPARKLE CHRISTMAS' and shop.json()['composition'] is False
-    assert client.get('/settings', headers=admin).json()['storeName'] == ''  # the admin's own view is unaffected
-    client.patch('/settings', json={'storeName': '', 'composition': True}, headers=chennai)
+    # the admin's own appearance is personal — it doesn't change everyone's
+    assert client.patch('/settings', json={'theme': 'dark'}, headers=admin).json()['theme'] == 'dark'
+    assert client.get('/settings').json()['theme'] == s['theme']  # global still the default
+    client.patch('/settings', json={'theme': s['theme']}, headers=admin)
+
+    # the admin sets the language (global, every screen) and a showroom's bill details (per location)
+    assert client.patch('/settings', json={'lang': 'ta'}, headers=admin).json()['lang'] == 'ta'
+    assert client.get('/settings', headers=chennai).json()['lang'] == 'ta'
+    client.patch('/settings', json={'lang': 'en'}, headers=admin)
+    client.patch('/settings', json={'storeName': 'SPARKLE CHRISTMAS'}, headers=admin, params={'location': 'chennai'})
+    assert client.get('/settings', headers=chennai).json()['storeName'] == 'SPARKLE CHRISTMAS'  # the shop sees it
+    client.patch('/settings', json={'storeName': ''}, headers=admin, params={'location': 'chennai'})
 
     assert client.patch('/settings', json={'theme': 'pink'}, headers=admin).status_code == 422
     assert client.patch('/settings', json={'nope': 1}, headers=admin).status_code == 422
-    changed = client.patch('/settings', json={'theme': 'dark', 'quotePrint': False}, headers=admin).json()
-    assert changed['theme'] == 'dark' and changed['quotePrint'] is False and changed['nav'] == s['nav']
-    client.patch('/settings', json={'theme': s['theme'], 'quotePrint': True}, headers=admin)
+    changed = client.patch('/settings', json={'quotePrint': False}, headers=admin).json()
+    assert changed['quotePrint'] is False and changed['nav'] == s['nav']
+    client.patch('/settings', json={'quotePrint': True}, headers=admin)
 
 
 @pytest.fixture(scope='module')

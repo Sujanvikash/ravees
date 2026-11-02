@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import { FlaskConical, Palette, Percent, Phone, Printer, Store, Undo2, User } from 'lucide-react';
+import { FlaskConical, Languages, Palette, Percent, Phone, Printer, Store, Undo2, User } from 'lucide-react';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { LOCATIONS } from '../config.js';
@@ -178,8 +178,8 @@ const Settings = ({ onMenu }) => {
         <div className="mx-auto flex max-w-3xl flex-col gap-3 p-3 lg:px-5 lg:py-4">
           <p className="text-[13px] text-ink-3">
             {admin
-              ? 'Saved on the billing server. The business switches apply everywhere; the appearance below is the default each showroom starts from and can change for its own screens.'
-              : 'The look of your showroom’s screens — theme and text size. Saved on the server for your showroom; the admin sets the defaults.'}
+              ? 'Saved on the billing server. The appearance below is your own screen only. The language, each showroom’s bill details and the business switches are set here and apply to the showrooms.'
+              : 'The look of your own screen — theme and text size. Saved on the server for you.'}
           </p>
           {error && (
             <p role="alert" className="text-xs font-medium text-ruby-ink">
@@ -193,24 +193,10 @@ const Settings = ({ onMenu }) => {
               </span>
               <div>
                 <div className="text-[14px] font-semibold">Appearance</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  {admin
-                    ? 'The default look for every screen, including sign-in. Each showroom can change it for its own screens. Changes show straight away.'
-                    : 'Theme and text size for your showroom’s screens. Changes show straight away.'}
-                </p>
+                <p className="mt-0.5 text-[13px] text-ink-3">Theme and text size for your own screen. Changes show straight away.</p>
               </div>
             </div>
             <div className="divide-y divide-line-soft">
-              <Choice
-                label="Language"
-                hint="Tamil shows the same words in Tamil script (not translated); numbers and codes stay as they are"
-                options={[
-                  { id: 'en', label: 'English' },
-                  { id: 'ta', label: 'தமிழ் · Tamil' },
-                ]}
-                value={settings.lang}
-                onChange={(v) => setSetting('lang', v)}
-              />
               <Choice
                 label="Text size"
                 hint="Make everything on screen bigger — for the counter monitor"
@@ -307,22 +293,50 @@ const Settings = ({ onMenu }) => {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border glass">
-            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
-                <Store size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-[14px] font-semibold">Shop on the bill</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  {admin
-                    ? 'Each showroom’s own details, printed at the top of its bills. Pick a showroom to set its name, address, GSTIN and footer. A blank field falls back to the built-in details.'
-                    : 'Your shop’s own details, printed at the top of every bill. A blank field falls back to the built-in showroom details. A composition dealer bills a “Bill of Supply” with no GST shown — only purchase orders and returns carry GST.'}
-                </p>
+          {admin && (
+            <section className="overflow-hidden rounded-2xl border glass">
+              <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+                  <Languages size={17} aria-hidden="true" />
+                </span>
+                <div>
+                  <div className="text-[14px] font-semibold">Language</div>
+                  <p className="mt-0.5 text-[13px] text-ink-3">
+                    For every showroom’s screens and printed bills. Tamil shows the same words in Tamil script (not
+                    translated); numbers, ₹ amounts and codes stay as they are.
+                  </p>
+                </div>
               </div>
-            </div>
-            {admin ? <AdminStoreDetails /> : <ShopFields values={settings} onSave={setSetting} />}
-          </section>
+              <Choice
+                label="Language"
+                options={[
+                  { id: 'en', label: 'English' },
+                  { id: 'ta', label: 'தமிழ் · Tamil' },
+                ]}
+                value={settings.lang}
+                onChange={(v) => setSetting('lang', v)}
+              />
+            </section>
+          )}
+
+          {admin && (
+            <section className="overflow-hidden rounded-2xl border glass">
+              <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+                  <Store size={17} aria-hidden="true" />
+                </span>
+                <div>
+                  <div className="text-[14px] font-semibold">Shop on the bill</div>
+                  <p className="mt-0.5 text-[13px] text-ink-3">
+                    Each showroom’s own details, printed at the top of its bills. Pick a showroom to set its name,
+                    address, GSTIN, footer and whether it bills as a composition dealer (a “Bill of Supply” with no GST
+                    shown). A blank field falls back to the built-in details.
+                  </p>
+                </div>
+              </div>
+              <AdminStoreDetails />
+            </section>
+          )}
 
           {admin && (
             <>
