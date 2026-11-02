@@ -20,7 +20,7 @@ def get_settings(session: DbSession, user: OptionalUser, location: str | None = 
     if user and not user.is_admin:
         loc = user.location_id
     elif user and user.is_admin:
-        loc = location or settings.ADMIN_KEY  # the admin's own appearance, or a given showroom's
+        loc = location
     else:
         loc = None
     return settings.get(session, loc)

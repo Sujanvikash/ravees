@@ -24,15 +24,11 @@ from app.modules.users.models import User
 from . import repository
 
 KEY = 'ui'
-ADMIN_KEY = 'admin'  # the admin's own appearance lives under ui:admin, so it doesn't change everyone's
 
-# A showroom (and the admin, for its own screen) may change only APPEARANCE. The STORE details printed on the
-# bill, the language, and the business switches are admin-only; the admin sets a showroom's STORE details per
-# location. Both APPEARANCE and STORE are laid over the global defaults for a location (OVERLAY), so a showroom
-# still *sees* (and prints) the details the admin set for it, even though it can't change them.
-APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'effect_where', 'strip', 'nav', 'font'})
+# appearance a showroom sets for itself; its own details printed on the bill; everything else is admin-only
+APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'effect_where', 'strip', 'nav', 'font', 'lang'})
 STORE = frozenset({'store_name', 'store_address', 'store_phone', 'gstin', 'bill_footer', 'composition'})
-OVERLAY = APPEARANCE | STORE
+SELF_EDITABLE = APPEARANCE | STORE
 
 
 class AppSettingsOut(ApiModel):
@@ -112,7 +108,7 @@ def get(session: Session, location: str | None = None) -> AppSettingsOut:
     values = _load(session, KEY)
     if location:
         overrides = _load(session, _loc_key(location))
-        for name in OVERLAY:
+        for name in SELF_EDITABLE:
             if name in overrides:
                 values[name] = overrides[name]
     # a saved value that is no longer allowed falls back to its default
@@ -137,33 +133,20 @@ def _save_overrides(session: Session, location: str, changes: dict) -> AppSettin
 
 
 def update(session: Session, patch: AppSettingsPatch, *, user: User, location: str | None = None) -> AppSettingsOut:
-    """Who may change what:
-    - a showroom: only its own appearance and bill details (saved under its location);
-    - the admin with a `location`: that showroom's own appearance and bill details;
-    - the admin with no location: its own appearance (saved under ui:admin, so it doesn't change everyone's),
-      and the global switches — the business settings and the language — which do apply to everyone.
-    """
+    """The admin changes the global settings (business switches and the appearance/bill-detail defaults), or —
+    with a `location` — a particular showroom's own appearance and bill details. A showroom changes only its
+    own; a business switch from a showroom, or anything but a showroom's own fields, is refused."""
     changes = patch.model_dump(exclude_none=True, by_alias=False)
     if user.is_admin and location:
-        if any(name not in OVERLAY for name in changes):
+        if any(name not in SELF_EDITABLE for name in changes):
             raise Forbidden('Only a showroom’s own appearance and bill details can be set per store.')
         return _save_overrides(session, location, changes)
-    if not user.is_admin:
-        if any(name not in APPEARANCE for name in changes):
-            raise Forbidden('Only the admin can change these settings.')
-        return _save_overrides(session, user.location_id, changes)
-    # the admin, no location: its own appearance goes to ui:admin, the rest (business + language) is global
-    if any(name in STORE for name in changes):
-        raise Forbidden('Pick a showroom to set its bill details.')
-    personal = {name: value for name, value in changes.items() if name in APPEARANCE}
-    global_ = {name: value for name, value in changes.items() if name not in APPEARANCE}
-    if personal:
-        overrides = _load(session, _loc_key(ADMIN_KEY))
-        overrides.update(personal)
-        repository.set_value(session, _loc_key(ADMIN_KEY), json.dumps(overrides))
-    if global_:
+    if user.is_admin or not user.location_id:
         current = _load(session, KEY)
-        current.update(global_)
+        current.update(changes)
         repository.set_value(session, KEY, json.dumps(current))
-    session.commit()
-    return get(session, ADMIN_KEY)
+        session.commit()
+        return get(session)
+    if any(name not in SELF_EDITABLE for name in changes):
+        raise Forbidden('Only the admin can change these settings.')
+    return _save_overrides(session, user.location_id, changes)
