@@ -78,8 +78,15 @@ export const setInSeason = async (code, on) => {
   }
 };
 
-/** A scanned barcode or typed product code → its product, or undefined. */
-export const findProduct = (key) => byKey.get(String(key).trim().toUpperCase());
+/** A scanned barcode or typed product code → its product, or undefined. Labels are printed as `<code>.<tag>`
+ *  (e.g. LL064.CHEG, LL031.RAV), so when the whole scan matches nothing we retry with the part before the
+ *  first dot — the plain code. No product code contains a dot, so this only ever helps, never mis-hits. */
+export const findProduct = (key) => {
+  const k = String(key).trim().toUpperCase();
+  if (byKey.has(k)) return byKey.get(k);
+  const dot = k.indexOf('.');
+  return dot > 0 ? byKey.get(k.slice(0, dot)) : undefined;
+};
 
 /** Products for typed text: codes that start with it first, then names that contain every typed word. */
 export const searchProducts = (query, { seasonOnly = false, limit = 8 } = {}) => {
