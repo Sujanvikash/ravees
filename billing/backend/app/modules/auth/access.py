@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import InvalidInput
 from app.modules.locations import repository as locations
+from app.modules.locations.constants import WAREHOUSE_ID
 from app.modules.locations.models import Location
 from app.modules.users.models import User
 
@@ -18,9 +19,12 @@ def visible_location(user: User, location: str | None = None) -> str | None:
     return user.location_id
 
 
-def acting_location(session: Session, user: User, location: str | None = None) -> Location:
-    """The showroom this login is acting for: its own, or the one the admin names (InvalidInput if none)."""
+def acting_location(session: Session, user: User, location: str | None = None, *, warehouse: bool = False) -> Location:
+    """The showroom this login is acting for: its own, or the one the admin names (InvalidInput if none). With
+    warehouse=True the admin may also name its own stock, the warehouse."""
     location_id = location if user.is_admin else user.location_id
+    if location_id == WAREHOUSE_ID and not (warehouse and user.is_admin):
+        location_id = None
     found = locations.get(session, location_id) if location_id else None
     if not found:
         raise InvalidInput('Choose the showroom.')

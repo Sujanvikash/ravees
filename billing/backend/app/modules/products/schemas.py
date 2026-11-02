@@ -28,6 +28,8 @@ class NewProductIn(ApiModel):
     cost: MoneyIn | None = Field(default=None, ge=0)  # 0 if left out
     gst: Decimal = Decimal(18)
     hsn: str = Field(default='', max_length=16)
+    # the maker's barcode when the item has one (e.g. leftover stock from an older season scanned at the counter)
+    barcode: str = Field(default='', max_length=64)
 
     @field_validator('name', mode='before')
     @classmethod

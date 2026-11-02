@@ -21,12 +21,15 @@ def phone_digits(phone: str) -> str:
     return re.sub(r'\D', '', phone)[-10:]
 
 
-def check_customer(name: str, phone: str) -> tuple[str, str]:
-    """The customer's name and mobile as stored. Both are required on a bill and a quotation."""
+def check_customer(name: str, phone: str, *, require_name: bool = True, require_mobile: bool = True) -> tuple[str, str]:
+    """The customer's name and mobile as stored. A quotation needs both; a bill asks for whichever the admin
+    has turned on (require_name / require_mobile). A value that is given is still checked even when it is not
+    required, so a mistyped name or number is never saved."""
     name = ' '.join(name.split())
-    if len(re.sub(r'[^\w]|[\d_]', '', name)) < 2:
+    if (require_name or name) and len(re.sub(r'[^\w]|[\d_]', '', name)) < 2:
         raise ValueError('Enter the customer’s name.')
-    if not _MOBILE.match(re.sub(r'\D', '', phone)):
+    digits = re.sub(r'\D', '', phone)
+    if (require_mobile or digits) and not _MOBILE.match(digits):
         raise ValueError('Enter a valid 10-digit mobile number.')
     return name, phone_digits(phone)
 

@@ -10,6 +10,7 @@ import { NAV } from './lib/nav.js';
 import { ordersNeedingAction } from './lib/orders.js';
 import CashClose from './pages/CashClose.jsx';
 import Counter from './pages/Counter.jsx';
+import Customers from './pages/Customers.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Inventory from './pages/Inventory.jsx';
 import Login from './pages/Login.jsx';
@@ -18,13 +19,14 @@ import PurchaseOrders from './pages/PurchaseOrders.jsx';
 import Quotations from './pages/Quotations.jsx';
 import Sales from './pages/Sales.jsx';
 import Settings from './pages/Settings.jsx';
+import StockReturns from './pages/StockReturns.jsx';
 
 /**
  * Sign-in, then the app: a collapsible menu on the left and the chosen page. A showroom login opens on its
- * billing counter, the admin on the dashboard; each remembers the last page it was on.
+ * billing counter, the admin on the dashboard. A reload keeps the page it was on; signing in again starts at home.
  */
 const Shell = ({ session, onSignOut }) => {
-  const { orders } = useStore();
+  const { orders, stockReturns } = useStore();
   const items = NAV[session.role];
   const [saved, setPage] = useLocalStorage(`billing-page-${session.username}`, items[0].id);
   const page = items.some((i) => i.id === saved) ? saved : items[0].id;
@@ -58,7 +60,7 @@ const Shell = ({ session, onSignOut }) => {
           session={session}
           page={page}
           onPage={(id) => navigate(id)}
-          badges={{ orders: ordersNeedingAction(orders, session) }}
+          badges={{ orders: ordersNeedingAction(orders, session), returns: session.role === 'admin' ? stockReturns.filter((r) => r.status === 'sent').length : 0 }}
           collapsed={collapsed}
           onToggle={() => setCollapsed(!collapsed)}
           mobileOpen={menuOpen}
@@ -69,8 +71,10 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'counter' && <Counter key={session.location} location={session.location} {...props} />}
           {page === 'dashboard' && <Dashboard {...props} />}
           {page === 'sales' && <Sales {...props} />}
+          {page === 'customers' && <Customers key={session.username} {...props} />}
           {page === 'inventory' && <Inventory {...props} />}
           {page === 'orders' && <PurchaseOrders {...props} />}
+          {page === 'returns' && <StockReturns {...props} />}
           {page === 'cash' && <CashClose key={session.username} {...props} />}
           {page === 'logins' && session.role === 'admin' && <Logins {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}
@@ -156,7 +160,17 @@ const Screens = ({ session, setSession }) => {
           <Shell key={session.username} session={session} onSignOut={leave} />
         </CatalogueGate>
       ) : (
-        <Login onSignedIn={setSession} />
+        <Login
+          onSignedIn={(next) => {
+            // every sign-in opens on the home page (billing or dashboard), not where the last session left off
+            try {
+              window.localStorage.removeItem(`billing-page-${next.username}`);
+            } catch {
+              // ignore storage failures (private browsing, etc.)
+            }
+            setSession(next);
+          }}
+        />
       )}
     </>
   );

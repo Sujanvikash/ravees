@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import InvalidInput, NotFound
 from app.modules.locations import repository as locations
+from app.modules.locations.constants import SHOWROOM_IDS
 from app.modules.system import repository as app_settings
 from app.modules.users.models import User
 
@@ -39,11 +40,12 @@ def set_in_season(session: Session, code: str, in_season: bool) -> Product:
 
 
 def add_shop_product(session: Session, user: User, data: NewProductIn) -> Product:
-    """A showroom's own product (an item without a barcode), in season straight away. Its code is the showroom's
+    """A showroom's own product (an item without a barcode, or one whose barcode isn't in the catalogue), in season
+    straight away. Its code is the showroom's
     bill prefix and its next number (CHN-0001 ...), skipping any code already taken, e.g. one typed into the
     Excel by hand."""
     location_id = data.location if user.is_admin else user.location_id
-    location = locations.get(session, location_id) if location_id else None
+    location = locations.get(session, location_id) if location_id in SHOWROOM_IDS else None
     if not location:
         raise InvalidInput('Choose the showroom.')
     offer = data.offer if data.offer is not None else data.mrp
@@ -51,6 +53,9 @@ def add_shop_product(session: Session, user: User, data: NewProductIn) -> Produc
         raise InvalidInput('The offer price can’t be above the MRP.')
     if data.gst not in GST_RATES:
         raise InvalidInput('GST must be 0, 5, 12, 18 or 28%.')
+    barcode = data.barcode.replace(' ', '')
+    if barcode and (taken := repository.by_barcode(session, barcode)):
+        raise InvalidInput(f'That barcode is already on {taken.code} · {taken.name}.')
 
     while True:
         prefix, number = locations.take_next_product_no(session, location.id)
@@ -65,7 +70,7 @@ def add_shop_product(session: Session, user: User, data: NewProductIn) -> Produc
             name=data.name,
             type='Product',
             dept=data.dept,
-            barcode='',
+            barcode=barcode,
             hsn=data.hsn,
             mrp=data.mrp,
             offer=offer,

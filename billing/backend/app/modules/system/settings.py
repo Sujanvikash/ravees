@@ -1,6 +1,6 @@
 """
-The admin's switches (Settings in the app): appearance, whether showrooms may print quotations, and how long
-after a sale its items may be returned or exchanged. Kept as one JSON value in app_settings; anything not saved
+The admin's switches (Settings in the app): appearance, whether showrooms may print quotations, how long after a
+sale its items may be returned or exchanged, and whether GST is shown at all. Kept as one JSON value in app_settings; anything not saved
 yet has its default. The sign-in screen reads them before anyone signs in, so they hold nothing private.
 """
 
@@ -28,6 +28,11 @@ class AppSettingsOut(ApiModel):
     nav: Literal['solid', 'soft'] = 'solid'
     # days after a sale its items can be returned or exchanged; 0 turns returns off
     return_days: Literal[0, 7, 15, 30] = 15
+    # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
+    show_gst: bool = True
+    # whether the counter asks for the customer's name / mobile on a bill (a quotation always needs both)
+    require_name: bool = True
+    require_mobile: bool = True
 
 
 class AppSettingsPatch(ApiModel):
@@ -44,6 +49,9 @@ class AppSettingsPatch(ApiModel):
     strip: Literal['green', 'white'] | None = None
     nav: Literal['solid', 'soft'] | None = None
     return_days: Literal[0, 7, 15, 30] | None = None
+    show_gst: bool | None = None
+    require_name: bool | None = None
+    require_mobile: bool | None = None
 
 
 def get(session: Session) -> AppSettingsOut:

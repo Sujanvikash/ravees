@@ -8,12 +8,12 @@ from app.modules.auth.dependencies import CurrentUser
 from . import service
 from .schemas import StockReturnIn, StockReturnOut, StockReturnReceiveIn
 
-router = APIRouter(prefix='/stock-returns', tags=['stock-returns'])
+router = APIRouter(prefix='/purchase-returns', tags=['purchase-returns'])
 
 
 @router.get('')
 def list_stock_returns(user: CurrentUser, session: DbSession, location: str | None = None) -> list[StockReturnOut]:
-    """Stock sent back to the admin, oldest first: a showroom's own, or for the admin every showroom's."""
+    """Purchase returns to the admin, oldest first: a showroom's own, or for the admin every showroom's."""
     return [StockReturnOut.from_model(r) for r in service.list_returns(session, user, location)]
 
 

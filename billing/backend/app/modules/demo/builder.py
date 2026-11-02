@@ -3,13 +3,14 @@ Builds the demo schema from nothing: the tables, the showrooms and logins, the c
 and a month of sample activity made through the same services the app uses, so every figure adds up:
 
   opening stock   each showroom's sheet in seed/opening-stock-2026, imported 5 weeks ago
-  a delivery      a received purchase order of the season's products per showroom, a month ago
+  admin stock     a supplier delivery into the admin's own stock (the season's products and the showrooms' lines)
+  a delivery      a received purchase order of the season's products per showroom, sent out of the admin stock
   sales           about 30 days of bills, busier towards Christmas, only for what is in stock
   returns         a few returns and one exchange
   cash closes     every past day closed, a few with a small difference
   orders          one of each state: to count in, to review, rejected, cancelled
   quotations      a couple per showroom, one of them expired
-  stock returns   one on its way to the admin, one counted in
+  purchase returns   one on its way to the admin, one counted in
 
 It is made the same way every time (a seeded random generator), relative to now.
 """
@@ -33,7 +34,7 @@ from app.core.database import DEMO_SCHEMA, Base, get_demo_engine, get_engine, ge
 from app.modules.cash import service as cash
 from app.modules.cash.schemas import CloseIn
 from app.modules.locations import repository as locations
-from app.modules.locations.constants import ADMIN_USERNAME, SHOWROOMS
+from app.modules.locations.constants import ADMIN_USERNAME, SHOWROOMS, WAREHOUSE_ID
 from app.modules.orders import service as orders
 from app.modules.orders.schemas import CountedLineIn, OrderEditIn, OrderIn, OrderLineIn, ReceiveIn
 from app.modules.products import repository as products
@@ -57,6 +58,7 @@ from app.modules.users import service as users_service
 OPENING_DIR = BACKEND_DIR / 'seed' / 'opening-stock-2026'
 DAYS = 30
 FLOAT = 2000  # cash kept in each drawer overnight
+SMALL_RETURN = 1500  # the most a sample return refunds
 WEIGHT = {'chennai': 1.4, 'bengaluru': 1.1, 'mumbai': 1.2, 'pune': 0.8, 'goa': 0.6}
 METHODS = ['cash', 'cash', 'upi', 'upi', 'upi', 'card', 'split']
 NAMES = [
@@ -149,6 +151,13 @@ class _Builder:
         self.shops = {sh.id: users.get(session, sh.id) for sh in SHOWROOMS}
         self.counts = {'sales': 0, 'returns': 0, 'orders': 0, 'quotes': 0}
         self.bills: dict[str, list] = {sh.id: [] for sh in SHOWROOMS}
+        # each showroom's customers: a pool of 60, the first ones regulars who come back often, so the Customers
+        # page has repeat buyers; a few shop at two showrooms
+        firsts = [n.split()[0] for n in NAMES]
+        lasts = [n.split()[-1] for n in NAMES]
+        people = [(f'{f} {la}', _mobile(self.rand)) for f in firsts for la in lasts]
+        self.rand.shuffle(people)
+        self.customers = {sh.id: people[i * 50 : i * 50 + 60] for i, sh in enumerate(SHOWROOMS)}
 
     def day(self, ago: int) -> date:
         return self.today - timedelta(days=ago)
@@ -170,16 +179,35 @@ class _Builder:
                     at=_at(self.day(DAYS + 5), self.rand),
                 )
 
+    def stock_admin(self) -> None:
+        """The admin's own stock: plenty of the season's products, and some of everything the showrooms carry, so
+        the purchase orders below can be sent out of it."""
+        codes = {p.code: 250 for p in products.list_all(self.s) if p.in_season}
+        for sh in SHOWROOMS:
+            for code in stock.levels(self.s, sh.id):
+                codes.setdefault(code.code, 60)
+        stock_service.import_stock(
+            self.s,
+            self.admin,
+            StockImportIn(
+                id=uuid.uuid4(),
+                location=WAREHOUSE_ID,
+                file='supplier-delivery-2026.xlsx',
+                lines=[ImportLineIn(code=c, qty=q) for c, q in codes.items()],
+            ),
+            at=_at(self.day(DAYS + 2), self.rand),
+        )
+
     def season_delivery(self) -> None:
         season = [p for p in products.list_all(self.s) if p.in_season]
         for sh in SHOWROOMS:
             user = self.shops[sh.id]
             lines = [OrderLineIn(code=p.code, qty=self.rand.randint(12, 30)) for p in season]
             order = orders.create_order(
-                self.s, user, OrderIn(lines=lines, note='Season stock'), at=_at(self.day(DAYS + 3), self.rand)
+                self.s, user, OrderIn(lines=lines, note='Season stock'), at=_at(self.day(DAYS + 1), self.rand)
             )
             self.counts['orders'] += 1
-            orders.send(self.s, self.admin, order.id, OrderEditIn(lines=lines), at=_at(self.day(DAYS + 2), self.rand))
+            orders.send(self.s, self.admin, order.id, OrderEditIn(lines=lines), at=_at(self.day(DAYS), self.rand))
             counted = [CountedLineIn(code=ln.code, qty=ln.qty) for ln in lines]
             counted[0] = CountedLineIn(code=lines[0].code, qty=max(lines[0].qty - 2, 1))  # a little short
             orders.receive(
@@ -187,7 +215,7 @@ class _Builder:
                 user,
                 order.id,
                 ReceiveIn(counted=counted, note='2 short in the first carton'),
-                at=_at(self.day(DAYS + 1), self.rand),
+                at=_at(self.day(DAYS - 1), self.rand, 8, 9),
             )
 
     def payment(self, payable: float) -> PaymentIn:
@@ -234,8 +262,8 @@ class _Builder:
                         SaleIn(
                             id=uuid.uuid4(),
                             lines=[LineIn(code=c, qty=q) for c, q in items.items()],
-                            phone=_mobile(self.rand),
-                            name=self.rand.choice(NAMES),
+                            phone=(who := self.customer(sh.id))[1],
+                            name=who[0],
                             payment=self.payment(payable),
                         ),
                         at=at,
@@ -243,13 +271,23 @@ class _Builder:
                     self.bills[sh.id].append(sale)
                     self.counts['sales'] += 1
 
+    def customer(self, location: str) -> tuple[str, str]:
+        """A customer of this showroom, regulars more often: the n-th in its pool is picked about 1/(n+3) as often."""
+        pool = self.customers[location]
+        return self.rand.choices(pool, weights=[1 / (i + 3) for i in range(len(pool))])[0]
+
     def take_returns(self) -> None:
         for i, sh in enumerate(SHOWROOMS):
-            recent = [b for b in self.bills[sh.id] if (self.now - b.at).days <= 8]
+            # a small item off a recent bill: a cash refund must fit in what the drawer holds that day
+            recent = [
+                b
+                for b in self.bills[sh.id]
+                if (self.now - b.at).days <= 8 and min(ln.price for ln in b.lines) <= SMALL_RETURN
+            ]
             if not recent:
                 continue
             sale = recent[len(recent) // 2]
-            line = sale.lines[0]
+            line = min(sale.lines, key=lambda ln: ln.price)
             at = min(sale.at + timedelta(days=1, hours=2), self.now - timedelta(minutes=30))
             exchange = None
             if i == 0:  # Chennai: one exchange, for another product in stock
@@ -390,6 +428,7 @@ def build_demo(excel: Path = DEFAULT_EXCEL, *, now: datetime | None = None) -> D
 
         b = _Builder(session, now or clock.now())
         b.opening_stock()
+        b.stock_admin()
         b.season_delivery()
         b.sell()
         b.take_returns()

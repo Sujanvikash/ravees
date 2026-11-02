@@ -1,6 +1,7 @@
 import logo from '../assets/logo.svg';
 import { BRAND, locationById } from '../config.js';
 import { countLabel, gstLines } from '../lib/bill.js';
+import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
 import { amount, inr } from '../lib/money.js';
 import { methodLabel } from '../lib/payment.js';
@@ -43,8 +44,9 @@ const wishFor = (billNo = '') => WISHES[[...billNo].reduce((h, c) => (h * 31 + c
 const Receipt = ({ sale }) => {
   const { totals, payment } = sale;
   const shop = locationById(sale.location) ?? {};
+  const gst = useStore().settings.showGst; // the admin can hide GST everywhere
   return (
-    <div className="hidden font-mono text-[11px] leading-snug text-black print:block">
+    <div data-receipt className="hidden w-[72mm] font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
         {/* the logo carries the name, "Christmas Tree & Decoration" and "Since 1997" */}
         <img src={logo} alt={BRAND.name} className="print-ink mb-1.5 w-[46mm]" />
@@ -52,10 +54,10 @@ const Receipt = ({ sale }) => {
           <div key={a}>{a}</div>
         ))}
         {shop.phone && <div>Ph: {shop.phone}</div>}
-        {shop.gstin && <div>GSTIN: {shop.gstin}</div>}
+        {gst && shop.gstin && <div>GSTIN: {shop.gstin}</div>}
       </div>
 
-      <div className="my-2 border-y border-dashed border-black py-1 text-center font-bold tracking-[0.18em]">TAX INVOICE</div>
+      <div className="my-2 border-y border-dashed border-black py-1 text-center font-bold tracking-[0.18em]">{gst ? 'TAX INVOICE' : 'INVOICE'}</div>
 
       <Line label="Bill" value={sale.billNo} />
       <Line label="Date" value={when.format(new Date(sale.at)).replace(',', '')} />
@@ -85,11 +87,15 @@ const Receipt = ({ sale }) => {
 
       <Line label="TOTAL" value={inr(totals.payable)} className="my-2 border-y border-black py-1 text-[15px] font-bold" />
 
-      <div className="font-bold">GST SUMMARY (incl. in price)</div>
-      <Line label="Taxable value" value={amount(totals.taxable)} />
-      {gstLines(totals.gstRows).map((g) => (
-        <Line key={g.label} label={g.label} value={amount(g.value)} />
-      ))}
+      {gst && (
+        <>
+          <div className="font-bold">GST SUMMARY (incl. in price)</div>
+          <Line label="Taxable value" value={amount(totals.taxable)} />
+          {gstLines(totals.gstRows).map((g) => (
+            <Line key={g.label} label={g.label} value={amount(g.value)} />
+          ))}
+        </>
+      )}
 
       <div className={`mt-2 ${rule}`}>
         {payment.credit > 0 && (

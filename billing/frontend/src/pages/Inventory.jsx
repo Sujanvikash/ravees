@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Boxes, CircleCheck, FileSpreadsheet, PackageCheck, PackagePlus, Tag, Undo2 } from 'lucide-react';
-import CountInDialog from '../components/CountInDialog.jsx';
-import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
+import { Boxes, CircleCheck, FileSpreadsheet, PackagePlus, Tag, Undo2 } from 'lucide-react';
+import AddOwnStockDialog from '../components/AddOwnStockDialog.jsx';
+import { SearchBox, Segmented } from '../components/Filters.jsx';
 import ImportStockDialog from '../components/ImportStockDialog.jsx';
 import NewProductDialog from '../components/NewProductDialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import SendBackDialog from '../components/SendBackDialog.jsx';
 import StockSummary from '../components/StockSummary.jsx';
 import StockHistory from '../components/StockHistory.jsx';
-import { LOCATIONS, locationById } from '../config.js';
+import { STOCK_PLACES, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { useCatalogue } from '../hooks/useCatalogue.js';
 import { priceOf } from '../lib/bill.js';
@@ -17,6 +16,8 @@ import { inr } from '../lib/money.js';
 import { orderQty, pendingByProduct, receivedByProduct } from '../lib/orders.js';
 import { stockLog } from '../lib/stockLog.js';
 import { importedByProduct } from '../lib/stockImports.js';
+import Pager from '../components/Pager.jsx';
+import { usePages } from '../hooks/usePages.js';
 
 const LOW = 5; // at or below this many units counts as low stock
 
@@ -48,9 +49,8 @@ const Status = ({ qty }) =>
  */
 const Inventory = ({ session, intent, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { stock, sales, orders, imports, returns, stockReturns, receiveStockBack } = useStore();
-  const [sendingBack, setSendingBack] = useState(false);
-  const [countingBack, setCountingBack] = useState(null); // a stock return the admin is counting in
+  const { stock, sales, orders, imports, returns, stockReturns } = useStore();
+  const [addingTo, setAddingTo] = useState(null); // one of this showroom's own products, to add units of
   const [location, setLocation] = useState(admin ? null : session.location);
   const incoming = stockReturns.filter((r) => r.status === 'sent' && (!location || r.location === location));
   const [tab, setTab] = useState(intent?.tab ?? 'stock');
@@ -61,27 +61,32 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
   const [view, setView] = useState('all');
   const [scope, setScope] = useState('tracked');
   const [query, setQuery] = useState('');
-  const shops = useMemo(() => (location ? [locationById(location)] : LOCATIONS), [location]);
+  const shops = useMemo(() => (location ? [locationById(location)] : STOCK_PLACES), [location]);
+  const warehouse = location === 'warehouse';
 
   // Per showroom and product: units received (counted in from orders, or imported from Excel), sold, on order
   // (sent, not counted yet) and requested.
   const moved = useMemo(() => {
     const sold = {};
     for (const s of sales) for (const l of s.lines) (sold[s.location] ??= {})[l.code] = (sold[s.location]?.[l.code] ?? 0) + l.qty;
+    // the admin's stock "sells" by sending purchase orders out, and receives what the showrooms send back
+    for (const o of orders) if (o.status === 'sent' || o.status === 'received') for (const l of o.lines) (sold.warehouse ??= {})[l.code] = (sold.warehouse?.[l.code] ?? 0) + l.qty;
     // what customers brought back no longer counts as sold
     for (const r of returns) for (const l of r.lines) (sold[r.location] ??= {})[l.code] = (sold[r.location]?.[l.code] ?? 0) - l.qty;
-    const per = (fn) => Object.fromEntries(LOCATIONS.map((l) => [l.id, fn(l.id)]));
+    const per = (fn) => Object.fromEntries(STOCK_PLACES.map((l) => [l.id, fn(l.id)]));
     return {
       sold,
       received: per((id) => {
         const got = { ...receivedByProduct(orders, id) };
         for (const [code, qty] of Object.entries(importedByProduct(imports, id))) got[code] = (got[code] ?? 0) + qty;
+        if (id === 'warehouse')
+          for (const r of stockReturns) if (r.status === 'received') for (const l of r.counted ?? []) got[l.code] = (got[l.code] ?? 0) + l.qty;
         return got;
       }),
       onOrder: per((id) => pendingByProduct(orders, id, 'sent')),
       requested: per((id) => pendingByProduct(orders, id, 'requested')),
     };
-  }, [orders, sales, imports, returns]);
+  }, [orders, sales, imports, returns, stockReturns]);
 
   const log = useMemo(() => stockLog(orders, imports, location, { returns, stockReturns }), [orders, imports, location, returns, stockReturns]);
 
@@ -119,7 +124,8 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
     });
   }, [products, shops, stock, moved, query, scope, view]);
 
-  const shown = rows.slice(0, 300);
+  const paged = usePages(rows, 50, `${query}|${scope}|${view}|${location}|${tab}`);
+  const shown = paged.rows;
   const unitValue = (p) => (admin ? p.cost ?? 0 : priceOf(p));
   const totals = rows.reduce(
     (t, r) => ({
@@ -148,7 +154,14 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                 <Segmented label="View" options={TABS} value={tab} onChange={setTab} />
-                {admin && <LocationPicker value={location} onChange={setLocation} />}
+                {admin && (
+                  <Segmented
+                    label="Stock at"
+                    options={[{ id: null, label: 'Everywhere' }, ...STOCK_PLACES.map((l) => ({ id: l.id, label: l.id === 'warehouse' ? 'Admin stock' : l.city }))]}
+                    value={location}
+                    onChange={setLocation}
+                  />
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -174,13 +187,10 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                 {!admin && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setSendingBack(true);
-                      setFlash(null);
-                    }}
+                    onClick={() => onNavigate('returns')}
                     className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 shadow-[0_1px_2px_rgba(9,9,11,0.06)] hover:border-evergreen-800/50 hover:bg-evergreen-50"
                   >
-                    <Undo2 size={15} aria-hidden="true" /> Send back to admin
+                    <Undo2 size={15} aria-hidden="true" /> New purchase return
                   </button>
                 )}
                 {!admin && (
@@ -208,26 +218,17 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
           )}
 
           {admin && incoming.length > 0 && (
-            <section className="rounded-2xl border border-warn-ink/20 bg-warn-50 px-4 py-3 text-[13px] text-warn-ink">
-              <div className="font-semibold">
+            <button
+              type="button"
+              onClick={() => onNavigate('returns')}
+              className="flex items-center gap-3 rounded-2xl border border-warn-ink/20 bg-warn-50 px-4 py-3 text-left text-[13px] text-warn-ink hover:border-warn-ink/40"
+            >
+              <Undo2 size={17} aria-hidden="true" />
+              <span className="font-semibold">
                 {incoming.length} stock {incoming.length === 1 ? 'return' : 'returns'} on the way back from the showrooms
-              </div>
-              <ul className="mt-2 flex flex-col gap-1.5">
-                {incoming.map((r) => (
-                  <li key={r.id} className="flex flex-wrap items-center gap-3">
-                    <span className="font-mono text-xs">{r.number}</span>
-                    <span className="font-medium">{locationById(r.location)?.city}</span>
-                    <span>
-                      {r.lines.reduce((t, l) => t + l.qty, 0)} units · {r.reason.replace(/-/g, ' ')}
-                      {r.note ? ` · ${r.note}` : ''}
-                    </span>
-                    <button type="button" onClick={() => setCountingBack(r)} className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900">
-                      <PackageCheck size={14} aria-hidden="true" /> Count in
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
+              </span>
+              <span className="ml-auto font-semibold">Count in →</span>
+            </button>
           )}
 
           {tab === 'stock' && (
@@ -275,7 +276,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                       <th scope="col" className="py-1.5 pr-3 font-medium">Product</th>
                       <th scope="col" className="py-1.5 pr-3 text-right font-medium">{admin ? 'Cost' : 'Price'}</th>
                       {matrix ? (
-                        LOCATIONS.map((l) => (
+                        shops.map((l) => (
                           <th key={l.id} scope="col" className="py-1.5 pr-3 text-right font-medium">
                             {l.city}
                           </th>
@@ -283,7 +284,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                       ) : (
                         <>
                           <th scope="col" className="py-1.5 pr-3 text-right font-medium">Received</th>
-                          <th scope="col" className="py-1.5 pr-3 text-right font-medium">Sold</th>
+                          <th scope="col" className="py-1.5 pr-3 text-right font-medium">{warehouse ? 'Sent out' : 'Sold'}</th>
                           <th scope="col" className="py-1.5 pr-3 text-right font-medium">Requested</th>
                           <th scope="col" className="py-1.5 pr-3 text-right font-medium">On order</th>
                         </>
@@ -314,16 +315,42 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                           <div className="text-xs text-ink-3">
                             {p.dept}
                             {p.shop ? (
-                              <span className="ml-1.5 text-warn-ink">· Added by {p.shop.by}</span>
+                              <>
+                                <span className="ml-1.5 text-warn-ink">· Added by {p.shop.by}</span>
+                                {!admin && p.shop.location === session.location && !warehouse && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAddingTo(p);
+                                      setFlash(null);
+                                    }}
+                                    className="ml-2 font-semibold text-evergreen-800 hover:underline"
+                                  >
+                                    + Add stock
+                                  </button>
+                                )}
+                              </>
                             ) : (
                               p.inSeason && <span className="ml-1.5 text-evergreen-800">· Season {SEASON}</span>
+                            )}
+                            {admin && warehouse && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddingTo(p);
+                                  setFlash(null);
+                                }}
+                                className="ml-2 font-semibold text-evergreen-800 hover:underline"
+                              >
+                                + Add stock
+                              </button>
                             )}
                           </div>
                         </td>
                         <td className="py-1.5 pr-3 text-right text-ink-2">{inr(unitValue(p))}</td>
                         {matrix ? (
                           perShop.map((n, i) => (
-                            <td key={LOCATIONS[i].id} className={`py-1.5 pr-3 text-right ${n <= 0 ? 'text-ink-3' : ''}`}>
+                            <td key={shops[i].id} className={`py-1.5 pr-3 text-right ${n <= 0 ? 'text-ink-3' : ''}`}>
                               {n}
                             </td>
                           ))
@@ -345,11 +372,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                     ))}
                   </tbody>
                 </table>
-                {rows.length > shown.length && (
-                  <p className="border-t border-line-soft p-3 text-center text-xs text-ink-3">
-                    Showing the first {shown.length} of {rows.length.toLocaleString('en-IN')}: search to narrow it down.
-                  </p>
-                )}
+                <Pager {...paged.pager} />
               </div>
             )}
           </section>
@@ -357,30 +380,16 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
       </div>
 
       {adding && <NewProductDialog session={session} defaultLocation={location} onClose={() => setAdding(false)} onDone={added} />}
-      {importing && <ImportStockDialog session={session} defaultLocation={location} onClose={() => setImporting(false)} onDone={imported} />}
-      {sendingBack && (
-        <SendBackDialog
-          location={session.location}
-          onClose={() => setSendingBack(false)}
-          onDone={(r) => {
-            setSendingBack(false);
-            setFlash({ text: `${r.number} sent to the admin: ${orderQty(r.lines).toLocaleString('en-IN')} units taken off your stock.`, history: true });
-          }}
-        />
-      )}
-      {countingBack && (
-        <CountInDialog
-          order={countingBack}
-          subtitle={`Stock sent back by ${locationById(countingBack.location)?.city}. Count what arrived; any shortfall is kept on the return.`}
-          onClose={() => setCountingBack(null)}
-          onConfirm={async (counted, note) => {
-            try {
-              await receiveStockBack(countingBack.id, counted, note);
-              setFlash({ text: `${countingBack.number} counted in: ${orderQty(counted).toLocaleString('en-IN')} units back with the admin.`, history: false });
-            } catch (err) {
-              setFlash({ text: `Not saved: ${err.message}`, history: false });
-            }
-            setCountingBack(null);
+      {importing && <ImportStockDialog session={session} defaultLocation={location ?? 'warehouse'} onClose={() => setImporting(false)} onDone={imported} />}
+      {addingTo && (
+        <AddOwnStockDialog
+          product={addingTo}
+          location={admin ? 'warehouse' : session.location}
+          source={admin ? 'manual' : 'own-product'}
+          onClose={() => setAddingTo(null)}
+          onDone={(product, units) => {
+            setAddingTo(null);
+            setFlash({ text: `${units.toLocaleString('en-IN')} units of ${product.code} · ${product.name} added to stock.`, history: true });
           }}
         />
       )}

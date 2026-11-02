@@ -64,7 +64,14 @@ export const LOCATIONS = [
   },
 ];
 
-export const locationById = (id) => LOCATIONS.find((l) => l.id === id);
+/** The admin's own stock (the warehouse): purchase returns by the showrooms goes in, purchase orders to the
+ *  showrooms come out. Not a showroom: no login, no bills, no cash close. */
+export const WAREHOUSE = { id: 'warehouse', city: 'Admin', area: 'Warehouse', billPrefix: 'ADM', address: [], phone: '', gstin: '', upiId: '' };
+
+/** Every place that holds stock: the admin's first, then the showrooms. */
+export const STOCK_PLACES = [WAREHOUSE, ...LOCATIONS];
+
+export const locationById = (id) => STOCK_PLACES.find((l) => l.id === id);
 
 /** MRP and offer prices already include GST (the usual case for retail MRP), so GST is taken out, not added. */
 export const PRICES_INCLUDE_GST = true;

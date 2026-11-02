@@ -22,7 +22,7 @@ const niceStep = (v) => {
  * Sundays; a dashed line marks the average day. Each column is its own hover and focus target with a
  * tooltip, and the same numbers are in the table under the chart.
  */
-const DayChart = ({ data }) => {
+const DayChart = ({ data, gst = true }) => {
   const [hover, setHover] = useState(null);
   const step = niceStep(Math.max(...data.map((d) => d.total)));
   const max = step * TICKS;
@@ -32,7 +32,7 @@ const DayChart = ({ data }) => {
 
   return (
     <div>
-      <div className="mb-1 pl-15 text-[11px] text-ink-3">₹ per day, incl. GST</div>
+      <div className="mb-1 pl-15 text-[11px] text-ink-3">₹ per day{gst && ', incl. GST'}</div>
       <div className="relative flex gap-3">
         <div className="flex h-56 w-12 flex-col justify-between text-right text-[11px] text-ink-3 tabular-nums" aria-hidden="true">
           {ticks.map((t) => (

@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { readSheet } from 'read-excel-file/browser';
 import { CircleAlert, Download, FileSpreadsheet, PackageCheck } from 'lucide-react';
-import { LOCATIONS, locationById } from '../config.js';
+import { STOCK_PLACES, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { orderQty } from '../lib/orders.js';
 import { parsePurchaseRows } from '../lib/purchaseFile.js';
 import Dialog from './Dialog.jsx';
-import { LocationPicker } from './Filters.jsx';
+import { Segmented } from './Filters.jsx';
 
 /**
  * Adds stock straight from an Excel (opening stock, or goods that came outside a purchase order). Same sheet
@@ -16,7 +16,7 @@ import { LocationPicker } from './Filters.jsx';
 const ImportStockDialog = ({ session, defaultLocation, onClose, onDone }) => {
   const admin = session.role === 'admin';
   const { stockOf, importStock } = useStore();
-  const [location, setLocation] = useState(admin ? (defaultLocation ?? LOCATIONS[0].id) : session.location);
+  const [location, setLocation] = useState(admin ? (defaultLocation ?? STOCK_PLACES[0].id) : session.location);
   const [file, setFile] = useState(null); // { name, lines, problems } | { error }
   const fileRef = useRef(null);
   const shop = locationById(location);
@@ -58,7 +58,14 @@ const ImportStockDialog = ({ session, defaultLocation, onClose, onDone }) => {
       onClose={onClose}
     >
       <div className="flex flex-col gap-4 px-6 pb-5">
-        {admin && <LocationPicker value={location} onChange={setLocation} all={false} />}
+        {admin && (
+          <Segmented
+            label="Stock at"
+            options={STOCK_PLACES.map((l) => ({ id: l.id, label: l.id === 'warehouse' ? 'Admin stock' : l.city }))}
+            value={location}
+            onChange={setLocation}
+          />
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900">

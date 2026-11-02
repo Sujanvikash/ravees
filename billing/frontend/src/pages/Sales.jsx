@@ -2,14 +2,17 @@ import { Fragment, useMemo, useState } from 'react';
 import { ChevronDown, FileSpreadsheet, ReceiptText } from 'lucide-react';
 import { LocationPicker, PeriodTabs, SearchBox } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import SellThrough from '../components/SellThrough.jsx';
+import ProductPerformance from '../components/ProductPerformance.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
-import { LOCATIONS, locationById } from '../config.js';
+import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
 import { methodLabel } from '../lib/payment.js';
 import { filterSales, periodStart, saleCost, summarize } from '../lib/reports.js';
+import Pager from '../components/Pager.jsx';
+import { usePages } from '../hooks/usePages.js';
+import { rowClick } from '../lib/rowClick.js';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const PAGE = 100;
@@ -22,15 +25,16 @@ const istDay = (d) => new Date(d.getTime() + 5.5 * 3600_000).toISOString().slice
  * cost and gross profit of each bill. Returns come off the sales as net sales. Export to Excel downloads the
  * period's report (summary, bills, items, returns and cash closes) from the server.
  */
-const Sales = ({ session, onMenu }) => {
+const Sales = ({ session, intent, onMenu }) => {
   const admin = session.role === 'admin';
-  const { sales, returns, stock, downloadSalesReport } = useStore();
+  const { sales, returns, downloadSalesReport, settings } = useStore();
+  const gst = settings.showGst;
   const [exporting, setExporting] = useState('');
-  const [period, setPeriod] = useState('30d');
-  const [location, setLocation] = useState(admin ? null : session.location);
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(null);
-  const [limit, setLimit] = useState(PAGE);
+  // opened from a customer's bill (intent.bill): that bill, found in all time, opened
+  const [period, setPeriod] = useState(intent?.bill ? 'all' : '30d');
+  const [location, setLocation] = useState(admin ? (intent?.bill?.location ?? null) : session.location);
+  const [query, setQuery] = useState(intent?.bill?.billNo ?? '');
+  const [open, setOpen] = useState(intent?.bill ? `${intent.bill.location}-${intent.bill.billNo}` : null);
 
   const scoped = useMemo(() => filterSales(sales, { location, period }), [sales, location, period]);
   const q = query.trim().toLowerCase();
@@ -41,7 +45,8 @@ const Sales = ({ session, onMenu }) => {
         .sort((a, b) => new Date(b.at) - new Date(a.at)),
     [scoped, q],
   );
-  const sum = summarize(scoped);
+  const sum = summarize(scoped, { gst });
+  const paged = usePages(rows, PAGE, `${period}|${location}|${q}`);
   const returned = filterSales(returns, { location, period }).reduce((t, r) => t + r.amount, 0);
   const exportExcel = async () => {
     setExporting('busy');
@@ -56,18 +61,6 @@ const Sales = ({ session, onMenu }) => {
   const shop = locationById(session.location);
   const cols = admin ? 10 : 8;
 
-  // Sell-through per showroom, season to date: units sold against units sold plus units still in stock.
-  const sellThrough = useMemo(() => {
-    const shops = admin ? LOCATIONS.map((l) => l.id) : [session.location];
-    return shops.map((id) => ({
-      location: id,
-      // returned units are back in stock, so they no longer count as sold
-      sold:
-        sales.filter((s) => s.location === id).reduce((n, s) => n + s.lines.reduce((m, l) => m + l.qty, 0), 0) -
-        returns.filter((r) => r.location === id).reduce((n, r) => n + r.lines.reduce((m, l) => m + l.qty, 0), 0),
-      inStock: Object.values(stock[id] ?? {}).reduce((n, q) => n + Math.max(q, 0), 0),
-    }));
-  }, [admin, session.location, sales, returns, stock]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -94,18 +87,18 @@ const Sales = ({ session, onMenu }) => {
 
           <SummaryStrip
             figures={[
-              { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: 'incl. GST' },
+              { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: gst ? 'incl. GST' : 'selling price' },
               { label: 'Bills', value: sum.bills.toLocaleString('en-IN'), note: `${sum.units.toLocaleString('en-IN')} units sold` },
               { label: 'Returns', value: inrWhole(returned), note: `net sales ${inrWhole(sum.total - returned)}` },
               { label: 'Average bill', value: inrWhole(sum.average) },
-              { label: 'GST collected', value: inrWhole(sum.tax) },
+              ...(gst ? [{ label: 'GST collected', value: inrWhole(sum.tax) }] : []),
               ...(admin
                 ? [
                     { label: 'Purchase cost', value: inrWhole(sum.cost), note: 'at cost price' },
                     {
                       label: 'Gross profit',
                       value: inrWhole(sum.profit),
-                      note: `${(sum.margin * 100).toFixed(1)}% margin excl. GST`,
+                      note: `${(sum.margin * 100).toFixed(1)}% margin${gst ? ' excl. GST' : ''}`,
                       tone: sum.profit < 0 ? 'bad' : undefined,
                     },
                   ]
@@ -113,13 +106,7 @@ const Sales = ({ session, onMenu }) => {
             ]}
           />
 
-          {/* ---- Sell-through: how much of each showroom's stock has sold ---- */}
-          <section aria-label="Sell-through" className={`grid gap-3 ${admin ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'sm:max-w-sm'}`}>
-            {sellThrough.map((r) => (
-              <SellThrough key={r.location} location={r.location} sold={r.sold} inStock={r.inStock} />
-            ))}
-          </section>
-          {/* ---- end sell-through ---- */}
+          <ProductPerformance location={location} />
 
           <section className="overflow-clip rounded-2xl border glass">
             <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5">
@@ -156,13 +143,13 @@ const Sales = ({ session, onMenu }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.slice(0, limit).map((s) => {
+                    {paged.rows.map((s) => {
                       const id = `${s.location}-${s.billNo}`;
                       const isOpen = open === id;
                       const cost = saleCost(s);
                       return (
                         <Fragment key={id}>
-                          <tr className={`border-b border-line-soft tabular-nums ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
+                          <tr onClick={rowClick(() => setOpen(isOpen ? null : id))} className={`cursor-pointer border-b border-line-soft tabular-nums ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
                             <td className="py-2.5 pl-4">
                               <button
                                 type="button"
@@ -189,8 +176,8 @@ const Sales = ({ session, onMenu }) => {
                             <td className="py-1.5 pr-3 text-right font-semibold">{inr(s.totals.payable)}</td>
                             {admin && <td className="py-1.5 pr-3 text-right text-ink-2">{inr(cost)}</td>}
                             {admin && (
-                              <td className={`py-1.5 pr-4 text-right font-medium ${s.totals.taxable - cost >= 0 ? 'text-ok-ink' : 'text-ruby-ink'}`}>
-                                {inr(s.totals.taxable - cost)}
+                              <td className={`py-1.5 pr-4 text-right font-medium ${(gst ? s.totals.taxable : s.totals.payable) - cost >= 0 ? 'text-ok-ink' : 'text-ruby-ink'}`}>
+                                {inr((gst ? s.totals.taxable : s.totals.payable) - cost)}
                               </td>
                             )}
                           </tr>
@@ -218,13 +205,7 @@ const Sales = ({ session, onMenu }) => {
                     })}
                   </tbody>
                 </table>
-                {rows.length > limit && (
-                  <div className="border-t border-line-soft p-3 text-center">
-                    <button type="button" onClick={() => setLimit((n) => n + PAGE)} className="h-8 rounded-lg px-3 text-[13px] font-medium text-ink-2 hover:bg-mist">
-                      Show more ({rows.length - limit} left)
-                    </button>
-                  </div>
-                )}
+                <Pager {...paged.pager} />
               </div>
             )}
           </section>

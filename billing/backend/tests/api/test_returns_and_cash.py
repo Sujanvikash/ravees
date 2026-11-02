@@ -1,7 +1,16 @@
+import json
 import uuid
+from datetime import datetime, time, timedelta
 from io import BytesIO
 
 from openpyxl import load_workbook
+
+from app.core import clock
+from app.core.database import session_scope
+from app.modules.cash import service as cash
+from app.modules.cash.service import AUTO_KEY
+from app.modules.sales.models import Sale
+from app.modules.system import repository as system_repo
 
 from .conftest import login
 from .test_sales import sale, season_code, stock_of
@@ -100,6 +109,50 @@ def test_cash_close(client, admin):
     assert client.get('/cash/day?location=mumbai', headers=admin).json()['closed']['difference'] == -50
 
 
+def test_cash_reopen(client):
+    pune = login(client, 'pune')
+    code = season_code(client, pune)
+    client.post('/sales', json=sale([{'code': code, 'qty': 1}], 'cash', received=100000), headers=pune)
+    body = {'opening': 500, 'counted': 500, 'floatNext': 500, 'denominations': {}, 'note': ''}
+    close_id = client.post('/cash/closes', json=body, headers=pune).json()['id']
+
+    # a showroom can't reopen another showroom's close
+    assert client.delete(f'/cash/closes/{close_id}', headers=login(client, 'bengaluru')).status_code == 403
+    # reopening its own close opens the day again and drops the close
+    r = client.delete(f'/cash/closes/{close_id}', headers=pune)
+    assert r.status_code == 200, r.text
+    assert r.json()['closed'] is None
+    assert all(c['id'] != close_id for c in client.get('/cash/closes', headers=pune).json())
+    # a reopened close is gone for good
+    assert client.delete(f'/cash/closes/{close_id}', headers=pune).status_code == 422
+    # so the day can be counted and closed again
+    assert client.post('/cash/closes', json=body, headers=pune).status_code == 201
+
+
+def test_cash_auto_close(client):
+    goa = login(client, 'goa')
+    code = season_code(client, goa)
+    s = client.post('/sales', json=sale([{'code': code, 'qty': 1}], 'cash', received=100000), headers=goa).json()
+
+    today = cash.today()
+    yesterday = today - timedelta(days=1)
+    # move the bill to yesterday and arm the marker, as if goa billed yesterday and never closed
+    with session_scope() as session:
+        session.get(Sale, uuid.UUID(s['id'])).at = datetime.combine(yesterday, time(12, 0), clock.IST)
+        marker = json.loads(system_repo.get_value(session, AUTO_KEY, '{}'))
+        marker['goa'] = (today - timedelta(days=2)).isoformat()
+        system_repo.set_value(session, AUTO_KEY, json.dumps(marker))
+
+    # reading the cash closes the day that ended without a count
+    closes = client.get('/cash/closes', headers=goa).json()
+    auto = next(c for c in closes if c['location'] == 'goa' and c['day'] == yesterday.isoformat())
+    assert auto['by'] == 'auto' and auto['difference'] == 0 and auto['counted'] == auto['expected']
+    # today is never auto-closed, and reading again doesn't double up
+    assert not any(c['location'] == 'goa' and c['day'] == today.isoformat() for c in closes)
+    again = client.get('/cash/closes', headers=goa).json()
+    assert sum(1 for c in again if c['location'] == 'goa' and c['day'] == yesterday.isoformat()) == 1
+
+
 def test_sales_report_excel(client, admin, chennai):
     r = client.get('/reports/sales.xlsx', headers=admin)
     assert r.status_code == 200 and 'attachment' in r.headers['content-disposition']
@@ -111,3 +164,14 @@ def test_sales_report_excel(client, admin, chennai):
     mine = load_workbook(BytesIO(client.get('/reports/sales.xlsx', headers=chennai).content))
     assert 'Gross profit' not in [c.value for c in mine['Summary'][1]]
     assert {row[2] for row in mine['Bills'].iter_rows(min_row=2, values_only=True)} <= {'Chennai'}
+
+
+def test_report_without_gst(client, admin):
+    client.patch('/settings', json={'showGst': False}, headers=admin)
+    try:
+        wb = load_workbook(BytesIO(client.get('/reports/sales.xlsx', headers=admin).content))
+        for sheet in ('Summary', 'Bills', 'Items'):
+            header = [c.value for c in wb[sheet][1]]
+            assert not {'GST', 'Taxable', 'GST %', 'Sales (incl. GST)'} & set(header), header
+    finally:
+        client.patch('/settings', json={'showGst': True}, headers=admin)

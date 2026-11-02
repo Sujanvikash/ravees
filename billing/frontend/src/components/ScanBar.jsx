@@ -17,7 +17,10 @@ const NOTICE = {
  * Clicking the empty box (or ↓) lists this season's products, in-stock first, before anything is typed; it
  * doesn't open on focus alone, because the cursor waits in this box for the scanner all day.
  */
-const ScanBar = ({ inputRef, onAdd, notice, onNotice, inStock }) => {
+/** A scanned code (digits, maybe letters, no spaces) rather than a typed name. */
+const looksLikeBarcode = (text) => /\d/.test(text) && !/\s/.test(text) && text.length >= 6;
+
+const ScanBar = ({ inputRef, onAdd, onNew, notice, onNotice, inStock }) => {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [browsing, setBrowsing] = useState(false);
@@ -61,7 +64,12 @@ const ScanBar = ({ inputRef, onAdd, notice, onNotice, inStock }) => {
       if (exact) add(exact);
       else if (matches.length) add(matches[Math.min(active, matches.length - 1)]);
       else {
-        onNotice({ tone: 'error', text: `No product with code “${typed}”. Items without a barcode can be added in Inventory → New product.` });
+        const initial = looksLikeBarcode(typed) ? { barcode: typed } : { name: typed };
+        onNotice({
+          tone: 'error',
+          text: `No product with ${initial.barcode ? 'barcode' : 'code or name'} “${typed}”.`,
+          action: onNew && { label: 'Add as new product', run: () => onNew(initial) },
+        });
         setQuery('');
       }
     }
@@ -113,6 +121,15 @@ const ScanBar = ({ inputRef, onAdd, notice, onNotice, inStock }) => {
           <span role="status" key={notice.text} className={`inline-flex animate-pop items-center gap-1.5 font-medium ${tone.className}`}>
             <tone.Icon size={14} aria-hidden="true" />
             {notice.text}
+            {notice.action && (
+              <button
+                type="button"
+                onClick={notice.action.run}
+                className="ml-1 rounded-md bg-evergreen-800 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-evergreen-900"
+              >
+                {notice.action.label}
+              </button>
+            )}
           </span>
         ) : (
           <span>
@@ -120,6 +137,24 @@ const ScanBar = ({ inputRef, onAdd, notice, onNotice, inStock }) => {
           </span>
         )}
       </div>
+
+      {onNew && query.trim().length >= 2 && !matches.length && (
+        <div className="absolute inset-x-0 top-15 z-10 animate-pop rounded-xl border border-line bg-surface p-1 shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              const typed = query.trim();
+              setQuery('');
+              onNew(looksLikeBarcode(typed) ? { barcode: typed } : { name: typed });
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-mist"
+          >
+            <span className="text-ink-3">No product matches.</span>
+            <span className="font-semibold text-evergreen-800">Add “{query.trim()}” as a new product →</span>
+          </button>
+        </div>
+      )}
 
       {matches.length > 0 && (
         <div className="absolute inset-x-0 top-15 z-10 max-h-96 animate-pop overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">

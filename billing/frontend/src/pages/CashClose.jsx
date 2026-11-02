@@ -1,12 +1,16 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
-import { CircleCheck, Wallet } from 'lucide-react';
-import { LocationPicker } from '../components/Filters.jsx';
+import { CircleCheck, RotateCcw, Wallet } from 'lucide-react';
+import CashComparison from '../components/CashComparison.jsx';
+import { LocationPicker, PeriodTabs } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
 import { LOCATIONS, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { differenceLabel, differenceTone } from '../lib/cash.js';
 import { inr, parseAmount } from '../lib/money.js';
+import { filterSales, PERIODS } from '../lib/reports.js';
+import Pager from '../components/Pager.jsx';
+import { usePages } from '../hooks/usePages.js';
 
 const NOTES = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 const dayLabel = new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
@@ -31,8 +35,8 @@ const DayFigures = ({ day, opening }) => (
 );
 
 /** A showroom counts its drawer at the end of the day and closes it; the difference goes to the admin. */
-const CloseForm = ({ onClosed }) => {
-  const { cashDay, closeDay, sales } = useStore();
+const CloseForm = ({ onClosed, onReopened }) => {
+  const { cashDay, closeDay, reopenDay, sales } = useStore();
   const [date, setDate] = useState(todayIST);
   const [day, setDay] = useState(null);
   const [error, setError] = useState('');
@@ -87,6 +91,25 @@ const CloseForm = ({ onClosed }) => {
     }
   };
 
+  const reopen = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      const open = await reopenDay(day.closed.id);
+      setDay(open);
+      setOpening(String(open.opening));
+      setFloatNext(String(open.opening));
+      setCount({});
+      setCounted('');
+      setNote('');
+      onReopened();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!day) return <p className="text-[13px] text-ink-3">{error || 'Loading the day’s cash…'}</p>;
 
   return (
@@ -102,14 +125,34 @@ const CloseForm = ({ onClosed }) => {
 
       {day.closed ? (
         <section className="rounded-2xl border glass p-5">
-          <p className="flex items-center gap-2 text-[15px] font-semibold">
-            <CircleCheck size={17} className="text-ok-ink" aria-hidden="true" /> {dayLabel.format(new Date(day.day))} is closed
-          </p>
-          <p className="mt-1 text-[13px] text-ink-3">
-            Counted {inr(day.closed.counted)} against {inr(day.closed.expected)} expected ·{' '}
-            <span className={`font-semibold ${differenceTone(day.closed.difference)}`}>{differenceLabel(day.closed.difference)}</span> · {inr(day.closed.floatNext)} kept for the next
-            day · closed at {time.format(new Date(day.closed.at))}
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-[15px] font-semibold">
+                <CircleCheck size={17} className="text-ok-ink" aria-hidden="true" /> {dayLabel.format(new Date(day.day))} is closed
+              </p>
+              <p className="mt-1 text-[13px] text-ink-3">
+                Counted {inr(day.closed.counted)} against {inr(day.closed.expected)} expected ·{' '}
+                <span className={`font-semibold ${differenceTone(day.closed.difference)}`}>{differenceLabel(day.closed.difference)}</span> · {inr(day.closed.floatNext)} kept for the
+                next day · closed at {time.format(new Date(day.closed.at))}
+              </p>
+              {day.closed.by === 'auto' && (
+                <p className="mt-1 text-[13px] text-ink-3">Closed automatically at the end of the day — the drawer wasn’t counted. Reopen it to count and close properly.</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={reopen}
+              disabled={busy}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-3 text-[13px] font-semibold text-ink-2 hover:bg-mist disabled:opacity-60"
+            >
+              <RotateCcw size={15} aria-hidden="true" /> Reopen this day
+            </button>
+          </div>
+          {error && (
+            <p role="alert" className="mt-2 text-xs font-medium text-ruby-ink">
+              {error}
+            </p>
+          )}
         </section>
       ) : (
         <form onSubmit={submit} className="grid gap-4 rounded-2xl border glass p-5 lg:grid-cols-[1fr_20rem]">
@@ -177,8 +220,9 @@ const CloseForm = ({ onClosed }) => {
 };
 
 /** Closed days, newest first, with their difference. */
-const ClosesTable = ({ list, showShop }) =>
-  list.length === 0 ? (
+const ClosesTable = ({ list, showShop }) => {
+  const paged = usePages(list, 50, `${list.length}|${showShop}`);
+  return list.length === 0 ? (
     <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
       <Wallet size={22} className="text-ink-3" aria-hidden="true" />
       <div className="text-[15px] font-semibold">No days closed yet</div>
@@ -201,7 +245,7 @@ const ClosesTable = ({ list, showShop }) =>
           </tr>
         </thead>
         <tbody>
-          {list.map((c) => (
+          {paged.rows.map((c) => (
             <tr key={c.id} className="row-hover border-b border-line-soft">
               <td className="py-1.5 pr-3 pl-4 whitespace-nowrap">{dayLabel.format(new Date(c.day))}</td>
               {showShop && <td className="py-1.5 pr-3 font-medium">{locationById(c.location)?.city}</td>}
@@ -218,8 +262,10 @@ const ClosesTable = ({ list, showShop }) =>
           ))}
         </tbody>
       </table>
+      <Pager {...paged.pager} />
     </div>
   );
+};
 
 /**
  * The daily cash close. A showroom counts the cash in its drawer at the end of the day; the server works out what
@@ -228,7 +274,8 @@ const ClosesTable = ({ list, showShop }) =>
  */
 const CashClose = ({ session, onMenu }) => {
   const admin = session.role === 'admin';
-  const { closes } = useStore();
+  const { closes, sales, returns } = useStore();
+  const [period, setPeriod] = useState('30d');
   const [location, setLocation] = useState(admin ? null : session.location);
   const [flash, setFlash] = useState('');
   const list = useMemo(
@@ -237,7 +284,10 @@ const CashClose = ({ session, onMenu }) => {
   );
   const today = todayIST();
   const shop = locationById(session.location);
-  const month = list.filter((c) => (new Date(today) - new Date(c.day)) / 86_400_000 <= 30);
+  // closes in the period: its days are counted back from today, today included
+  const days = PERIODS.find((x) => x.id === period)?.days;
+  const inPeriod = (c) => !days || (new Date(today) - new Date(c.day)) / 86_400_000 < days;
+  const month = list.filter(inPeriod);
   const short = month.filter((c) => c.difference <= -0.5).reduce((t, c) => t + c.difference, 0);
   const over = month.filter((c) => c.difference >= 0.5).reduce((t, c) => t + c.difference, 0);
   const notClosed = LOCATIONS.filter((l) => (!location || l.id === location) && !closes.some((c) => c.location === l.id && c.day === today));
@@ -250,20 +300,22 @@ const CashClose = ({ session, onMenu }) => {
           {admin ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
+                <PeriodTabs value={period} onChange={setPeriod} />
                 <LocationPicker value={location} onChange={setLocation} />
               </div>
               <SummaryStrip
                 figures={[
-                  { label: 'Days closed · last 30 days', value: month.length.toLocaleString('en-IN') },
+                  { label: `Days closed · ${PERIODS.find((x) => x.id === period).label.toLowerCase()}`, value: month.length.toLocaleString('en-IN') },
                   { label: 'Not balanced', value: month.filter((c) => Math.abs(c.difference) >= 0.5).length.toLocaleString('en-IN'), note: 'days with a difference' },
                   { label: 'Cash short', value: inr(-short), tone: short < 0 ? 'bad' : undefined },
                   { label: 'Cash over', value: inr(over) },
                   { label: 'Not closed today', value: notClosed.length ? notClosed.map((l) => l.city).join(', ') : 'All closed' },
                 ]}
               />
+              <CashComparison location={location} sales={filterSales(sales, { period })} returns={filterSales(returns, { period })} closes={closes.filter(inPeriod)} />
             </>
           ) : (
-            <CloseForm onClosed={(c) => setFlash(`Day closed · ${differenceLabel(c.difference)}.`)} />
+            <CloseForm onClosed={(c) => setFlash(`Day closed · ${differenceLabel(c.difference)}.`)} onReopened={() => setFlash('Day reopened — count the drawer and close it again.')} />
           )}
           {flash && (
             <p role="status" className="flex items-center gap-2 rounded-xl bg-ok-50 px-3.5 py-2.5 text-[13px] font-medium text-ok-ink">
@@ -271,8 +323,8 @@ const CashClose = ({ session, onMenu }) => {
             </p>
           )}
           <section className="overflow-clip rounded-2xl border glass">
-            <div className="border-b border-line-soft px-4 py-2.5 text-[13px] text-ink-3">{list.length.toLocaleString('en-IN')} closed days</div>
-            <ClosesTable list={list} showShop={admin && !location} />
+            <div className="border-b border-line-soft px-4 py-2.5 text-[13px] text-ink-3">{(admin ? month : list).length.toLocaleString('en-IN')} closed days</div>
+            <ClosesTable list={admin ? month : list} showShop={admin && !location} />
           </section>
         </div>
       </div>

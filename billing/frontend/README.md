@@ -20,7 +20,7 @@ Logins are checked by the billing API (`billing/backend`), which keeps the passw
 
 ## Demo
 
-The **Demo** switch at the top right of the sign-in screen shows the same five showrooms and the admin. One click signs in, with no password, to the **demo**: its own copy of everything (a separate schema in the database) filled with a month of sample sales, returns, stock, purchase orders in every state, quotations, stock sent back and cash closes. Nothing done in the demo touches the real data, and the menu shows a DEMO tag. The demo admin can start it again from scratch under **Settings → Demo data → Reset demo**. On the server it is built by `python -m app.cli demo` (and by `seed` the first time).
+The **Demo** switch at the top right of the sign-in screen shows the same five showrooms and the admin. One click signs in, with no password, to the **demo**: its own copy of everything (a separate schema in the database) filled with a month of sample sales, returns, stock, purchase orders in every state, quotations, purchase returns and cash closes. Nothing done in the demo touches the real data, and the menu shows a DEMO tag. The demo admin can start it again from scratch under **Settings → Demo data → Reset demo**. On the server it is built by `python -m app.cli demo` (and by `seed` the first time).
 
 ## Quotations
 
@@ -32,12 +32,16 @@ Which products are "Season 2026" starts from the product Excel. The admin can ch
 
 ## How stock moves
 
+**Admin stock.** The admin has its own stock (the warehouse), next to the five showrooms. In Inventory, choose **Admin stock**, or **Everywhere** to see it as the first column. The admin adds to it from an Excel (**Import stock**, which goes to Admin stock by default) or by hand (**+ Add stock** on a product's row when Admin stock is chosen), for any product. Stock the showrooms send back goes into it when the admin counts it in. **Purchase orders come out of it:** when the admin approves and sends one, the sent quantities leave the admin stock. It can't send more than the admin holds; the review screen shows an **Admin stock** column and marks anything short in red. The history shows "Sent to showroom" and "Returned by showroom".
+
 Stock goes up through a **purchase order** or an **Excel stock import**, and only goes down through a **sale**.
 
 1. **Showroom requests stock** (Purchase orders → Request stock). Products can be searched or scanned, added with **Add low stock** (season products at 5 units or fewer, topped up to 10), or imported from an Excel. The request goes to the admin.
 2. **Admin reviews** (Purchase orders → To review → Review & send). The admin can change quantities, set purchase rates, add or remove products, or import the supplier's Excel. It is then **approved and sent to the showroom**, or rejected with a reason. Only showrooms raise orders; the admin reviews them.
 3. **Showroom counts it in** when the goods arrive (Purchase orders → To count in → Count in). Counting starts from the sent quantities, or **Count with scanner** starts at zero and each scan adds one. What is counted is added to stock, and any shortfall or extra is kept on the order with a note.
 4. **Billing** takes sold items off that showroom's stock. The counter shows stock on every line and warns when a bill goes beyond what is in stock, but still lets it through.
+
+**A showroom's own products** (items without a barcode, coded `CHN-0001`…, added with Inventory → New product) get their stock from the showroom itself: the units in the shop when the product is added, and later **+ Add stock** on the product's row in Inventory whenever more come in. This works only for that showroom's own products; catalogue products come in through purchase orders or an Excel import. It shows in the history as "Added by hand".
 
 **Excel stock import** (Inventory → Import stock) adds stock straight from a sheet, for opening stock or goods that came without a purchase order. It uses the same Excel format as purchases. A showroom imports into its own stock; the admin picks the showroom. The window shows each product's stock now and after, and nothing changes until it is confirmed.
 
@@ -69,23 +73,27 @@ Each showroom closes its day under **Cash close**. It counts the drawer note by 
   expected = opening float + cash from bills (cash, and the cash part of split payments) − cash refunds
   difference = counted − expected (below 0: short, above 0: over)
 
-A note is asked for when it doesn't balance. The admin's **Cash check** lists every close with its difference, the month's short and over totals, and which showrooms haven't closed today. The dashboard shows the last week's days that didn't balance.
+A note is asked for when it doesn't balance. The admin's **Cash check** has a period picker (today, 7 days, 30 days, all time). It shows the period's short and over totals and which showrooms haven't closed today. **Showrooms compared** puts all five side by side: total sales as a bar to one scale with the cash part in green, cash sales and their share, UPI and card, cash refunds, short, over, net, and how many closed days didn't balance. Below that, every close with its difference. The bottom of the dashboard shows the last week's days that didn't balance.
 
-## Stock sent back to the admin
+## Purchase returns
 
-From **Inventory → Send back to admin**, a showroom sends items back: at the end of the season, when another showroom needs them, or when damaged. Stock returns **only go to the admin**. The units leave the showroom's stock when it sends them (it can't send more than it has). The admin sees them under Inventory as on their way and **counts them in** when they arrive; any shortfall is kept on the return. They show in the inventory history as "Sent to admin", numbered `SR-CHN-0001`.
+**Purchase returns** (under Stock in the menu, like Purchase orders) is how stock goes back from a showroom, and it **only goes to the admin**: what's left at the end of the season, items another showroom needs, or damaged goods. The showroom picks the products and units (it can't send more than it has) and a reason. The units **leave its stock when it sends them**. The admin sees them under **To receive** (with a count on the menu) and **counts them in** when they arrive; any shortfall is kept on the return with a note. Each return is numbered `PR-CHN-0001`, keeps its history, and shows in the inventory history as "Purchase return".
 
-## Sell-through and the sales report
+## Product performance and the sales report
 
-**Sales** shows a battery for each showroom (the admin sees all five): units sold so far this season against units sold plus units still in stock. Returned units count as back in stock. **Export to Excel** downloads the sales report for the chosen period and showroom from the server: a summary per showroom (with cost, profit and margin for the admin), every bill with how it was paid, every item, the returns and the cash closes.
+**Product performance** (on Sales and on the admin's Dashboard) shows one bar per product, season to date: the green part is units sold, the grey part units still in stock, with the numbers and the share sold. Sort by most sold, slowest or most left, and search by code or name. It follows the showroom picker: one showroom, or all five added together. Returned units count as back in stock. **Export to Excel** downloads the sales report for the chosen period and showroom from the server: a summary per showroom (with cost, profit and margin for the admin), every bill with how it was paid, every item, the returns and the cash closes.
+
+## Customers
+
+**Customers** (under Selling for a showroom, Reports for the admin) lists everyone who has bought, from the bills: one customer per mobile number, with the name from their latest bill. For each: bills, amount spent, returns, net, average bill, first and last visit, a **Repeat** tag for those who came back, and, for the admin, the showrooms they bought at. Sort by top spenders, most recent or most visits; search by name or mobile. Open a customer to see every bill with its items, and anything they brought back. A showroom sees its own customers; the admin sees everyone, or one showroom's.
 
 ## Printing
 
-The bill and the credit note print on the 80mm thermal roll, **black and white only**, and every bill ends with a Christmas wish. The same bill always gets the same wish. A quotation prints on A4, black and white, with a QUOTATION watermark. If it is sent to the narrow receipt printer, it prints only "QUOTATION · NOT A BILL · print this on A4", so it can never pass for a bill. **Quotation** at the counter loads a saved quotation into the bill (at today's prices) when the customer buys.
+The bill and the credit note print on the 80mm thermal (POS) roll, 72mm wide and only as long as the bill (the page length is measured just before printing, in `src/lib/print.js`), **black and white only**, and every bill ends with a Christmas wish. The same bill always gets the same wish. A quotation prints on A4, black and white, with a QUOTATION watermark. If it is sent to the narrow receipt printer, it prints only "QUOTATION · NOT A BILL · print this on A4", so it can never pass for a bill. **Quotation** at the counter loads a saved quotation into the bill (at today's prices) when the customer buys.
 
 ## Data
 
-Everything comes from the billing API (`VITE_API_URL`, see `.env.example`; default `http://localhost:8000/api/v1`): logins, the catalogue, sales, returns, stock, purchase orders, quotations, stock returns, cash closes and the admin's settings. It is the same on every computer. `src/context/StoreContext.jsx` loads it all after sign-in, refreshes it every 30 seconds and when the window comes back into focus, and sends every change to the server first. Bill, quotation, credit-note and order numbers are given by the server; the number shown while billing is the next one it will most likely give.
+Everything comes from the billing API (`VITE_API_URL`, see `.env.example`; default `http://localhost:8000/api/v1`): logins, the catalogue, sales, returns, stock, purchase orders, quotations, purchase returns, cash closes and the admin's settings. It is the same on every computer. `src/context/StoreContext.jsx` loads it all after sign-in, refreshes it every 30 seconds and when the window comes back into focus, and sends every change to the server first. Bill, quotation, credit-note and order numbers are given by the server; the number shown while billing is the next one it will most likely give.
 
 Only what belongs to one counter stays in the browser: `billing-current-<showroom>` (the bill in progress), `billing-held-<showroom>` (held bills), `billing-quote-<showroom>` (the quotation being written), `billing-session` and `billing-token` (who is signed in), and `billing-settings` (the last settings seen, so the theme is right before the server answers). The demo keeps its own (`billing-demo-…`).
 
@@ -95,6 +103,8 @@ A bill, return or import carries an id made at the counter, so if the connection
 
 ## Figures
 
+- **Show GST** (admin's Settings, on by default): when off, GST isn't shown anywhere: no GST summary, taxable value or GSTIN on bills, credit notes and quotations (the bill is headed INVOICE), nothing at the counter or in payment, no GST figures on Sales, the Dashboard or the Excel report, and the new-product form doesn't ask for the rate. Prices are the selling price, unchanged, and gross profit is the selling price less purchase cost. For shops that handle GST outside this app.
+
 - Prices are treated as GST-inclusive (`PRICES_INCLUDE_GST` in `src/config.js`). GST is taken out and split into CGST + SGST.
 - **Purchase cost** is each product's cost price (the old system's D.Rate), captured on the bill when it was sold. **Gross profit** = sales without GST − purchase cost, which assumes cost prices are also without GST. **Margin** = gross profit ÷ sales without GST.
 
@@ -103,6 +113,8 @@ A bill, return or import carries an id made at the counter, so if the connection
 - **Scanner:** a USB barcode scanner types the code and presses Enter, so the scan box needs focus. It has focus on load, after every sale, and whenever F2 is pressed.
 - **Shortcuts:** F2 scan, F4 customer, F8 hold, F9 held bills, F12 pay, Esc closes a dialog, Enter completes the sale and then starts the next bill. F12 opens developer tools in a normal Chrome or Edge window, so run the counter in kiosk or app mode.
 - **Customer:** a mobile number and a name are required on every bill.
+- **Older seasons:** every product in the list can be billed, whatever its season. Leftover stock from earlier years scans and bills as usual; the note just says it is from an earlier season.
+- **Not in the list:** when a scanned barcode or typed name finds nothing, the scan box offers **Add as new product**. The New product screen opens with the barcode (or name) already filled in. Once saved, the product goes onto the bill, and its barcode scans from then on.
 - **Printing:** only the 80mm receipt prints. Set the thermal printer as the default and turn off headers and footers in the print dialog; `--kiosk-printing` skips the dialog.
 - **Menu:** **Collapse** shrinks it to icons (remembered per computer). On small screens it opens from the ☰ button.
 
@@ -112,7 +124,7 @@ A bill, return or import carries an id made at the counter, so if the connection
 |---|---|
 | `src/App.jsx` | sign-in, then the shell: menu and the current page, inside the store for that login |
 | `src/pages/` | Login, Counter (billing, returns, exchanges), Quotations, Sales, CashClose, Inventory, PurchaseOrders, Dashboard, Logins, Settings |
-| `src/components/` | Sidebar, ScanBar, BillTable, OrderPanel, PaymentDialog, DoneDialog, HeldDialog, QuotePickerDialog, ReturnDialog, OrderEditor, CountInDialog, SendBackDialog, SellThrough, CashDifferences, Receipt, CreditNotePrint, QuotationPrint and more |
+| `src/components/` | Sidebar, ScanBar, BillTable, OrderPanel, PaymentDialog, DoneDialog, HeldDialog, QuotePickerDialog, ReturnDialog, OrderEditor, CountInDialog, SendBackDialog, ProductPerformance, CashDifferences, Receipt, CreditNotePrint, QuotationPrint and more |
 | `src/context/StoreContext.jsx` | every record from the API, kept fresh, and every change sent to it |
 | `src/lib/api.js`, `auth.js`, `uid.js` | calls to the API with the login token, file downloads, sign-in (and the demo's), ids for retries |
 | `src/lib/bill.js`, `orders.js`, `reports.js`, `stockLog.js`, `cash.js` | bill totals and numbers, purchase-order statuses, report figures, the inventory history, cash differences |

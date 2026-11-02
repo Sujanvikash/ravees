@@ -9,6 +9,7 @@ from app.core import clock
 from app.core.errors import Conflict, Forbidden, InvalidInput, NotFound
 from app.modules.auth.access import visible_location
 from app.modules.locations import repository as locations
+from app.modules.locations.constants import WAREHOUSE_ID
 from app.modules.numbering import service as numbering
 from app.modules.products import repository as products
 from app.modules.stock import repository as stock
@@ -92,12 +93,12 @@ def send_back(session: Session, user: User, data: StockReturnIn, *, at: datetime
 def receive(
     session: Session, user: User, return_id: uuid.UUID, data: StockReturnReceiveIn, *, at: datetime | None = None
 ) -> StockReturn:
-    """The admin counts a showroom's returned stock in."""
+    """The admin counts a showroom's returned stock in: what arrived goes into the admin's own stock."""
     if not user.is_admin:
         raise Forbidden()
     record = session.get(StockReturn, return_id, with_for_update=True)
     if not record:
-        raise NotFound('No such stock return.')
+        raise NotFound('No such purchase return.')
     if record.status != 'sent':
         raise Conflict(f'{record.number} is already {record.status}.')
     on_it = {line['code'] for line in record.lines}
@@ -110,5 +111,6 @@ def receive(
     record.status = 'received'
     record.counted = [{'code': c, 'qty': q} for c, q in counted.items() if q > 0]
     _log(record, 'Admin', 'received', data.note.strip(), at or clock.now())
+    stock.adjust(session, WAREHOUSE_ID, {c: q for c, q in counted.items() if q > 0})
     session.commit()
     return record

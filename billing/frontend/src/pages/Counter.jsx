@@ -5,6 +5,7 @@ import CreditNotePrint from '../components/CreditNotePrint.jsx';
 import Dialog from '../components/Dialog.jsx';
 import DoneDialog from '../components/DoneDialog.jsx';
 import HeldDialog from '../components/HeldDialog.jsx';
+import NewProductDialog from '../components/NewProductDialog.jsx';
 import Kbd from '../components/Kbd.jsx';
 import OrderPanel from '../components/OrderPanel.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -23,6 +24,7 @@ import { billNumber, buildBill, countLabel, nextSeq } from '../lib/bill.js';
 import { SEASON, seasonCount } from '../lib/catalogue.js';
 import { isValidMobile, isValidName, phoneDigits } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
+import { printReceipt } from '../lib/print.js';
 import { newId } from '../lib/uid.js';
 
 const toolButton =
@@ -43,18 +45,20 @@ const Counter = ({ location, onMenu }) => {
   const now = useClock();
   const session = useSession();
   const bill = useBill(location);
-  const { recordSale, recordReturn, findBill, stockOf, sales, quotes } = useStore();
+  const { recordSale, recordReturn, findBill, stockOf, sales, quotes, settings } = useStore();
   const [held, setHeld] = useLocalStorage(`billing-held-${session?.demo ? 'demo-' : ''}${location}`, []);
   const [exchange, setExchange] = useState(null); // items coming back: { saleId, lines, reason, value, bill }
   const [refunded, setRefunded] = useState(null); // the credit note of a cash refund, for its dialog
   const [printDoc, setPrintDoc] = useState(null); // what prints: { sale } or { note }
   const [busy, setBusy] = useState(false);
+  const [newProduct, setNewProduct] = useState(null); // what was scanned or typed but isn't in the list
   // ids for the bill being paid, so a retry after a dropped connection saves it once; new for every new bill
   const ids = useRef({ sale: newId(), ret: newId() });
 
-  // The customer: mobile number and name are both required to bill (F12 / Collect checks them).
-  const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
+  // The customer: whichever of mobile and name the admin requires is checked on F12 / Collect; either can
+  // be made optional in Settings. A bill sent over from a quotation (Bill this) comes with its customer.
+  const [phone, setPhone] = useState(() => bill.customer?.phone ?? '');
+  const [name, setName] = useState(() => bill.customer?.name ?? '');
   const [phoneError, setPhoneError] = useState('');
   const [nameError, setNameError] = useState('');
   const [method, setMethod] = useState('cash');
@@ -78,7 +82,7 @@ const Counter = ({ location, onMenu }) => {
 
   // Print once the receipt for the sale is on the page.
   useEffect(() => {
-    if (printJob) window.print();
+    if (printJob) printReceipt();
   }, [printJob]);
 
 
@@ -86,14 +90,10 @@ const Counter = ({ location, onMenu }) => {
     const qty = (bill.items.find((it) => it.code === product.code)?.qty ?? 0) + 1;
     bill.add(product.code);
     const available = inStock(product.code);
-    const outOfSeason = seasonCount() > 0 && !product.inSeason;
-    const warning =
-      qty > available
-        ? ` · only ${Math.max(available, 0)} in stock at ${shop.city}`
-        : outOfSeason
-          ? ` · not marked for Season ${SEASON}`
-          : '';
-    setNotice({ tone: warning ? 'warn' : 'ok', text: `Added ${product.name} · qty ${qty}${warning}` });
+    // products from earlier seasons (leftover stock) bill like any other; the note just says so
+    const earlier = seasonCount() > 0 && !product.inSeason ? ` · from an earlier season (not in ${SEASON}’s list)` : '';
+    const short = qty > available ? ` · only ${Math.max(available, 0)} in stock at ${shop.city}` : '';
+    setNotice({ tone: short ? 'warn' : 'ok', text: `Added ${product.name} · qty ${qty}${short}${earlier}` });
   };
 
   const setCustomer = (next = {}) => {
@@ -143,8 +143,16 @@ const Counter = ({ location, onMenu }) => {
       ? ''
       : phone.trim()
         ? 'Enter a valid 10-digit mobile number'
-        : 'Mobile number is required to bill';
-    const nameProblem = isValidName(name) ? '' : name.trim() ? 'Enter the full name' : 'Customer name is required to bill';
+        : settings.requireMobile
+          ? 'Mobile number is required to bill'
+          : '';
+    const nameProblem = isValidName(name)
+      ? ''
+      : name.trim()
+        ? 'Enter the full name'
+        : settings.requireName
+          ? 'Customer name is required to bill'
+          : '';
     setPhoneError(phoneProblem);
     setNameError(nameProblem);
     if (phoneProblem || nameProblem) {
@@ -246,6 +254,10 @@ const Counter = ({ location, onMenu }) => {
             <ScanBar
               inputRef={scanRef}
               onAdd={addProduct}
+              onNew={(initial) => {
+                setNotice(null);
+                setNewProduct(initial);
+              }}
               notice={notice}
               onNotice={setNotice}
               inStock={inStock}
@@ -389,6 +401,23 @@ const Counter = ({ location, onMenu }) => {
             </div>
           </div>
         </Dialog>
+      )}
+
+      {newProduct && (
+        <NewProductDialog
+          session={session}
+          defaultLocation={location}
+          initial={newProduct}
+          onClose={() => {
+            setNewProduct(null);
+            requestAnimationFrame(() => scanRef.current?.focus());
+          }}
+          onDone={(product) => {
+            setNewProduct(null);
+            addProduct(product);
+            requestAnimationFrame(() => scanRef.current?.focus());
+          }}
+        />
       )}
 
       {printDoc?.sale && <Receipt sale={printDoc.sale} />}

@@ -3,7 +3,7 @@ import { api, download } from '../lib/api.js';
 import { newId } from '../lib/uid.js';
 
 /**
- * Sales, returns, stock, purchase orders, quotations, stock sent back, cash closes and the admin's settings, from
+ * Sales, returns, stock, purchase orders, quotations, purchase returns, cash closes and the admin's settings, from
  * the billing API (billing/backend). They are loaded once after sign-in (load), then kept fresh every 30 seconds
  * and when the window comes back into focus, so the admin sees the showrooms' bills as they happen. Every change
  * goes to the server first; what it saves (with its bill or order number) is what shows here.
@@ -26,7 +26,9 @@ const StoreContext = createContext(null);
 
 /** quotePrint: showrooms may print quotations. theme: classic | light | dark; wash (Light): light | lighter |
  *  lightest; effect: none | snow | glow | both; snow: light | medium | heavy | blizzard; effectWhere: everywhere |
- *  signin; strip (Light): green | white; nav: solid | soft; returnDays: 0 (off) | 7 | 15 | 30. */
+ *  signin; strip (Light): green | white; nav: solid | soft; returnDays: 0 (off) | 7 | 15 | 30; showGst: when off, no GST
+ *  is shown anywhere (bills, quotations, figures) and prices are simply the selling price. requireName /
+ *  requireMobile: whether the counter must have each before a bill can be collected (a quotation always needs both). */
 export const DEFAULT_SETTINGS = {
   quotePrint: true,
   theme: 'classic',
@@ -37,6 +39,9 @@ export const DEFAULT_SETTINGS = {
   strip: 'green',
   nav: 'solid',
   returnDays: 15,
+  showGst: true,
+  requireName: true,
+  requireMobile: true,
 };
 
 const REFRESH_MS = 30_000;
@@ -87,7 +92,7 @@ export const StoreProvider = ({ session, children }) => {
       api('/orders'),
       api('/quotes'),
       api('/stock/imports'),
-      api('/stock-returns'),
+      api('/purchase-returns'),
       api('/cash/closes'),
       api('/settings'),
     ]);
@@ -107,7 +112,7 @@ export const StoreProvider = ({ session, children }) => {
         api(`/returns?since=${encodeURIComponent(since)}`),
         api('/stock'),
         api('/orders'),
-        api('/stock-returns'),
+        api('/purchase-returns'),
         api('/cash/closes'),
       ]);
       lastSync.current = started;
@@ -194,13 +199,18 @@ export const StoreProvider = ({ session, children }) => {
 
       /** A showroom sends stock back to the admin: { lines: [{ code, qty }], reason, note }. It leaves stock now. */
       sendStockBack: async (body) =>
-        saved('stockReturns', await api('/stock-returns', { method: 'POST', body: { id: newId(), ...body } }), { stock: true }),
-      /** The admin counts a stock return in. */
+        saved('stockReturns', await api('/purchase-returns', { method: 'POST', body: { id: newId(), ...body } }), { stock: true }),
+      /** The admin counts a purchase return in. */
       receiveStockBack: async (id, counted, note) =>
-        saved('stockReturns', await api(`/stock-returns/${id}/receive`, { method: 'POST', body: { counted, note } })),
+        saved('stockReturns', await api(`/purchase-returns/${id}/receive`, { method: 'POST', body: { counted, note } })),
 
       /** A quotation: { id, lines, name, phone, validDays, note }. Resolves to it with its number. */
       saveQuote: async (quote) => saved('quotes', await api('/quotes', { method: 'POST', body: quote })),
+      /** Deletes a quotation (a showroom its own, the admin any). */
+      deleteQuote: async (id) => {
+        await api(`/quotes/${id}`, { method: 'DELETE' });
+        setData((d) => ({ ...d, quotes: d.quotes.filter((q) => q.id !== id) }));
+      },
 
       /** The day's cash so far for a showroom (the admin names it), and closing the day with the count. */
       cashDay: (location, day) => {
@@ -208,6 +218,13 @@ export const StoreProvider = ({ session, children }) => {
         return api(`/cash/day?${q}`);
       },
       closeDay: async (body) => saved('closes', await api('/cash/closes', { method: 'POST', body })),
+
+      /** Reopens a cash close made by mistake, drops it from the list, and resolves to the day (now open). */
+      reopenDay: async (id) => {
+        const day = await api(`/cash/closes/${id}`, { method: 'DELETE' });
+        setData((d) => ({ ...d, closes: d.closes.filter((c) => c.id !== id) }));
+        return day;
+      },
 
       /** The sales report as an Excel file: { location?, since?, until? } (dates as YYYY-MM-DD). */
       downloadSalesReport: ({ location, since, until } = {}) => {

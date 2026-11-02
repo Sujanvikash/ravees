@@ -10,9 +10,11 @@ import { useStore } from '../context/StoreContext.jsx';
 import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
 import { billNumber, buildBill, countLabel, gstLines, nextSeq } from '../lib/bill.js';
-import { customerLabel, isValidMobile, isValidName, phoneDigits } from '../lib/customer.js';
+import { customerLabel, isValidMobile, isValidName, phoneDigits, typedMobile } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
 import { newId } from '../lib/uid.js';
+import Pager from '../components/Pager.jsx';
+import { usePages } from '../hooks/usePages.js';
 
 const VALIDITY = [
   { id: 7, label: '7 days' },
@@ -40,7 +42,8 @@ const Row = ({ label, value, className = 'text-ink-2' }) => (
  */
 const Quotations = ({ session, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { quotes, saveQuote, stockOf, settings } = useStore();
+  const { quotes, saveQuote, deleteQuote, stockOf, settings } = useStore();
+  const [confirming, setConfirming] = useState(null); // the quotation whose Delete was pressed once
   const canPrint = settings.quotePrint;
   const [tab, setTab] = useState(admin ? 'saved' : 'new');
   const [location, setLocation] = useState(admin ? null : session.location);
@@ -63,6 +66,7 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
   );
   const q = query.trim().toLowerCase();
   const list = mine.filter((x) => !q || `${x.quoteNo} ${x.name} ${x.phone}`.toLowerCase().includes(q));
+  const paged = usePages(list, 50, `${q}|${location}`);
 
   // Load a quotation's items into this showroom's billing counter, unless a bill is already in progress there.
   const billIt = (quote) => {
@@ -78,8 +82,20 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
       setFlash({ tone: 'warn', text: 'There is already a bill in progress at the counter. Finish or hold it first, then try again.' });
       return;
     }
-    window.localStorage.setItem(key, JSON.stringify({ items: quote.lines.map((l) => ({ code: l.code, qty: l.qty })), lastCode: null }));
+    // the items, and the customer's mobile and name, so the counter opens ready to collect
+    const customer = { phone: quote.phone, name: quote.name };
+    window.localStorage.setItem(key, JSON.stringify({ items: quote.lines.map((l) => ({ code: l.code, qty: l.qty })), lastCode: null, customer }));
     onNavigate('counter');
+  };
+
+  const remove = async (quote) => {
+    setConfirming(null);
+    try {
+      await deleteQuote(quote.id);
+      setFlash({ tone: 'ok', text: `${quote.quoteNo} deleted.` });
+    } catch (err) {
+      setFlash({ tone: 'warn', text: `Not deleted: ${err.message}` });
+    }
   };
 
   const crumb = location ? `${locationById(location).city} · ${locationById(location).area}` : 'All showrooms';
@@ -167,7 +183,7 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {list.map((x) => {
+                        {paged.rows.map((x) => {
                           const expired = new Date(x.validUntil) < new Date();
                           return (
                             <tr key={x.quoteNo} className="row-hover border-b border-line-soft">
@@ -192,7 +208,31 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                                       <Printer size={14} aria-hidden="true" /> Print
                                     </button>
                                   )}
-                                  {!admin && (
+                                  {confirming === x.id ? (
+                                    <>
+                                      <button type="button" onClick={() => setConfirming(null)} className="inline-flex h-8 items-center rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-white">
+                                        Keep
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => remove(x)}
+                                        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-ruby-ink px-2.5 text-[13px] font-semibold text-white hover:opacity-90"
+                                      >
+                                        <Trash2 size={14} aria-hidden="true" /> Delete {x.quoteNo}?
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirming(x.id)}
+                                      aria-label={`Delete ${x.quoteNo}`}
+                                      title="Delete this quotation"
+                                      className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby-ink"
+                                    >
+                                      <Trash2 size={14} aria-hidden="true" />
+                                    </button>
+                                  )}
+                                  {!admin && confirming !== x.id && (
                                     <button
                                       type="button"
                                       onClick={() => billIt(x)}
@@ -208,6 +248,7 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                         })}
                       </tbody>
                     </table>
+                    <Pager {...paged.pager} />
                   </div>
                 )}
               </section>
@@ -225,7 +266,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const shop = locationById(location);
   const now = useClock();
   const draft = useBill(location, 'quote');
-  const { quotes } = useStore();
+  const { quotes, settings } = useStore();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [days, setDays] = useState(7);
@@ -338,8 +379,9 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
               type="tel"
               inputMode="numeric"
               value={phone}
+              maxLength={10}
               onChange={(e) => {
-                setPhone(e.target.value);
+                setPhone(typedMobile(e.target.value));
                 setError('');
               }}
               placeholder="Mobile number"
@@ -370,17 +412,15 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
         <div className="flex flex-col gap-2 border-t border-line-soft pt-3 text-[13px]">
           <Row label="MRP total" value={inr(totals.mrpTotal)} />
           <Row label="Offer discount" value={inr(-totals.savings)} className={totals.savings > 0 ? 'text-ok-ink' : 'text-ink-2'} />
-          <Row label="Taxable value" value={inr(totals.taxable)} />
-          {gstLines(totals.gstRows).map((g) => (
-            <Row key={g.label} label={g.label} value={inr(g.value)} />
-          ))}
+          {settings.showGst && <Row label="Taxable value" value={inr(totals.taxable)} />}
+          {settings.showGst && gstLines(totals.gstRows).map((g) => <Row key={g.label} label={g.label} value={inr(g.value)} />)}
         </div>
 
         <div className="mt-auto flex flex-col gap-3 border-t border-line-soft pt-3">
           <div className="flex items-end justify-between gap-3">
             <div className="text-[13px] text-ink-3">
               <div className="font-medium text-ink-2">Quoted total</div>
-              incl. GST · not a bill
+              {settings.showGst ? 'incl. GST · not a bill' : 'not a bill'}
             </div>
             <div className="text-[30px] leading-none font-semibold tracking-tight tabular-nums">{inr(totals.payable)}</div>
           </div>

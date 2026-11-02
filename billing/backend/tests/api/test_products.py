@@ -1,3 +1,8 @@
+import uuid
+
+from .conftest import login
+from .test_sales import season_code, stock_of
+
 PRODUCT_FIELDS = {'code', 'name', 'type', 'dept', 'barcode', 'hsn', 'mrp', 'offer', 'cost', 'gst', 'inSeason', 'shop'}
 WREATH = {'name': 'Handmade  wreath 12 inch', 'dept': 'Wall decoration', 'mrp': 1200, 'offer': 999, 'cost': 400}
 
@@ -67,3 +72,40 @@ def test_shop_product_rules(client, admin, chennai):
     for change in ({'mrp': 0}, {'offer': 0}, {'cost': -1}, {'name': 'x'}, {'dept': ''}):
         assert isinstance(refused({**WREATH, **change}), list)  # FastAPI's field errors
     assert client.post('/products', json=WREATH).status_code == 401
+
+
+def test_a_showroom_adds_stock_for_its_own_products(client, chennai):
+    own = client.post(
+        '/products', json={'name': 'Felt star garland', 'dept': 'Garlands', 'mrp': 300}, headers=chennai
+    ).json()
+    body = {
+        'id': str(uuid.uuid4()),
+        'file': 'Added by hand',
+        'source': 'own-product',
+        'lines': [{'code': own['code'], 'qty': 6}],
+    }
+    r = client.post('/stock/imports', json=body, headers=chennai)
+    assert r.status_code == 201, r.text
+    assert stock_of(client, chennai, 'chennai', own['code']) == 6
+
+    # not for catalogue products, nor another showroom's own
+    other = client.post(
+        '/products', json={'name': 'Goa shell wreath', 'dept': 'Wreaths', 'mrp': 500}, headers=login(client, 'goa')
+    ).json()
+    for code in (season_code(client, chennai), other['code']):
+        r = client.post(
+            '/stock/imports',
+            json={**body, 'id': str(uuid.uuid4()), 'lines': [{'code': code, 'qty': 1}]},
+            headers=chennai,
+        )
+        assert r.status_code == 422 and 'own products' in r.json()['detail']
+
+
+def test_a_new_product_can_keep_its_barcode(client, chennai):
+    body = {'name': 'Old season bauble set', 'dept': 'Ornaments', 'mrp': 450, 'barcode': '8901234567890'}
+    p = client.post('/products', json=body, headers=chennai).json()
+    assert p['barcode'] == '8901234567890' and p['code'].startswith('CHN-')
+    again = client.post('/products', json=body, headers=chennai)
+    assert (
+        again.status_code == 422 and again.json()['detail'] == f'That barcode is already on {p["code"]} · {p["name"]}.'
+    )

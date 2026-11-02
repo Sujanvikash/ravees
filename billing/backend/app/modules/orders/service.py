@@ -9,9 +9,11 @@ from app.core import clock
 from app.core.errors import Conflict, Forbidden, InvalidInput, NotFound
 from app.modules.auth.access import acting_location, by_label, visible_location
 from app.modules.locations import repository as locations
+from app.modules.locations.constants import WAREHOUSE_ID
 from app.modules.numbering import service as numbering
 from app.modules.products import repository as products
 from app.modules.stock import repository as stock
+from app.modules.stock.models import StockLevel
 from app.modules.stock.service import merge_lines
 from app.modules.users.models import User
 
@@ -52,6 +54,28 @@ def _lines(session: Session, lines: Sequence[OrderLineIn]) -> list[dict]:
     return merge_lines(lines, products.by_codes(session, (line.code for line in lines)))
 
 
+def _take_from_warehouse(session: Session, lines: list[dict]) -> None:
+    """Takes an order's lines out of the admin's own stock as it is sent. Refuses, naming each product, if the
+    admin doesn't have enough of it."""
+    wanted = {line['code']: line['qty'] for line in lines}
+    have = {
+        level.code: level.qty
+        for level in session.scalars(
+            select(StockLevel)
+            .where(StockLevel.location_id == WAREHOUSE_ID, StockLevel.code.in_(wanted))
+            .with_for_update()
+        )
+    }
+    short = [
+        f'{code} (have {max(have.get(code, 0), 0)}, sending {qty})'
+        for code, qty in wanted.items()
+        if qty > have.get(code, 0)
+    ]
+    if short:
+        raise InvalidInput(f'Not enough in the admin stock: {", ".join(short)}. Add stock to the admin first.')
+    stock.adjust(session, WAREHOUSE_ID, {code: -qty for code, qty in wanted.items()})
+
+
 def _expect(order: PurchaseOrder, status: Status, action: str) -> None:
     if order.status != status:
         raise Conflict(f'{order.number} is {order.status}, so it can’t be {action}.')
@@ -75,6 +99,8 @@ def create_order(session: Session, user: User, data: OrderIn, *, at: datetime | 
         updated_at=at,
     )
     _log(order, by_label(user, location), 'sent' if user.is_admin else 'requested', note, at)
+    if user.is_admin:
+        _take_from_warehouse(session, order.lines)
     session.add(order)
     session.commit()
     return order
@@ -97,7 +123,8 @@ def update_request(session: Session, user: User, order_id: uuid.UUID, data: Orde
 def send(
     session: Session, user: User, order_id: uuid.UUID, data: OrderEditIn, *, at: datetime | None = None
 ) -> PurchaseOrder:
-    """The admin approves a request, as reviewed (quantities, rates, products), and sends it to the showroom."""
+    """The admin approves a request, as reviewed (quantities, rates, products), and sends it to the showroom. The
+    sent quantities come out of the admin's own stock."""
     if not user.is_admin:
         raise Forbidden()
     order = _get(session, user, order_id)
@@ -107,6 +134,7 @@ def send(
     order.note = note or order.note
     order.status = Status.SENT
     _log(order, 'Admin', 'sent', note, at or clock.now())
+    _take_from_warehouse(session, order.lines)
     session.commit()
     return order
 

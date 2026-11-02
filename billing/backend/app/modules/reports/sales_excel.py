@@ -27,6 +27,7 @@ from app.modules.cash.models import CashClose
 from app.modules.locations.constants import SHOWROOMS
 from app.modules.returns.models import SaleReturn
 from app.modules.sales.models import Sale
+from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
 HEAD = Font(bold=True, color='FFFFFF')
@@ -46,7 +47,24 @@ def _local(at: datetime) -> datetime:
     return at.astimezone(clock.IST).replace(tzinfo=None)  # Excel has no time zones
 
 
-def _sheet(wb: Workbook, title: str, header: Sequence[str], rows: list[list], money: Sequence[str] = ()) -> None:
+# the columns left out when the admin has GST switched off (Settings → Show GST)
+GST_COLUMNS = frozenset({'GST', 'Taxable', 'GST %'})
+
+
+def _without(header: Sequence[str], rows: list[list], drop: frozenset[str]) -> tuple[list[str], list[list]]:
+    keep = [i for i, name in enumerate(header) if name not in drop]
+    return [header[i] for i in keep], [[row[i] for i in keep] for row in rows]
+
+
+def _sheet(
+    wb: Workbook,
+    title: str,
+    header: Sequence[str],
+    rows: list[list],
+    money: Sequence[str] = (),
+    drop: frozenset[str] = frozenset(),
+) -> None:
+    header, rows = _without(header, rows, drop)
     ws = wb.create_sheet(title)
     ws.append(list(header))
     for cell in ws[1]:
@@ -91,6 +109,8 @@ def build(
 ) -> tuple[bytes, str]:
     """The workbook's bytes and a file name such as sales-chennai-2026-11-01-to-2026-11-30.xlsx."""
     admin = user.is_admin
+    gst = app_settings.get(session).show_gst
+    drop = frozenset() if gst else GST_COLUMNS
     location_id = visible_location(user, location)
     start, end = _bounds(since, until)
 
@@ -124,7 +144,7 @@ def build(
         row['bills'] += 1
         row['units'] += t['qty']
         row['sales'] += t['payable']
-        row['taxable'] += t['taxable']
+        row['taxable'] += t['taxable'] if gst else t['payable']
         row['gst'] += t['tax']
         row['cost'] += sum(float(ln.cost) * ln.qty for ln in s.lines)
     for r in returns:
@@ -132,8 +152,9 @@ def build(
         per[r.location_id]['returned_cost'] += sum(
             float(next((ln.cost for ln in r.sale.lines if ln.code == x['code']), 0)) * x['qty'] for x in r.lines
         )
-    header = ['Showroom', 'Bills', 'Units', 'Sales (incl. GST)', 'GST', 'Returns', 'Net sales']
-    money = ['Sales (incl. GST)', 'GST', 'Returns', 'Net sales']
+    sales_label = 'Sales (incl. GST)' if gst else 'Sales'
+    header = ['Showroom', 'Bills', 'Units', sales_label, 'GST', 'Returns', 'Net sales']
+    money = [sales_label, 'GST', 'Returns', 'Net sales']
     if admin:
         header += ['Purchase cost', 'Gross profit', 'Margin %']
         money += ['Purchase cost', 'Gross profit']
@@ -166,7 +187,7 @@ def build(
             )
             total[-1] = round(total[-2] / base * 100, 1) if base else 0
         rows.append(total)
-    _sheet(wb, 'Summary', header, rows, money)
+    _sheet(wb, 'Summary', header, rows, money, drop)
 
     # Bills
     header = [
@@ -219,9 +240,9 @@ def build(
         ]
         if admin:
             cost = sum(float(ln.cost) * ln.qty for ln in s.lines)
-            row += [cost, t['taxable'] - cost]
+            row += [cost, (t['taxable'] if gst else t['payable']) - cost]
         rows.append(row)
-    _sheet(wb, 'Bills', header, rows, money)
+    _sheet(wb, 'Bills', header, rows, money, drop)
 
     # Items
     header = ['Bill no', 'Date', 'Showroom', 'Code', 'Product', 'Qty', 'MRP', 'Price', 'Amount', 'GST %']
@@ -247,7 +268,7 @@ def build(
             if admin:
                 row += [float(ln.cost), float(ln.cost) * ln.qty]
             rows.append(row)
-    _sheet(wb, 'Items', header, rows, money)
+    _sheet(wb, 'Items', header, rows, money, drop)
 
     # Returns
     header = [

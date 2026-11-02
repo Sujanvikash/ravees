@@ -4,6 +4,7 @@ import CashDifferences from '../components/CashDifferences.jsx';
 import DayChart from '../components/DayChart.jsx';
 import { LocationPicker, PeriodTabs } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import ProductPerformance from '../components/ProductPerformance.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
@@ -38,16 +39,17 @@ const pct = (n) => `${(n * 100).toFixed(1)}%`;
  * counted in, sales by day, by showroom, top products and payment methods, for a period and showroom.
  */
 const Dashboard = ({ onMenu, onNavigate }) => {
-  const { sales, orders, returns, closes } = useStore();
+  const { sales, orders, returns, closes, settings } = useStore();
+  const gst = settings.showGst;
   const [period, setPeriod] = useState('30d');
   const [location, setLocation] = useState(null);
   const now = useMemo(() => new Date(), []);
 
   const scoped = useMemo(() => filterSales(sales, { location, period, now }), [sales, location, period, now]);
-  const sum = summarize(scoped);
+  const sum = summarize(scoped, { gst });
   const days = salesByDay(scoped, CHART_DAYS[period], now);
   const shops = byLocation(filterSales(sales, { period, now }));
-  const products = topProducts(scoped);
+  const products = topProducts(scoped, 8, { gst });
   const methods = byMethod(scoped);
   const toReview = orders.filter((o) => o.status === 'requested').length;
   const returnsTotal = filterSales(returns, { location, period, now }).reduce((t, r) => t + r.amount, 0);
@@ -82,8 +84,6 @@ const Dashboard = ({ onMenu, onNavigate }) => {
             )}
           </div>
 
-          <CashDifferences closes={closes} location={location} onOpen={() => onNavigate('cash')} />
-
           {toReview > 0 && (
             <button
               type="button"
@@ -114,17 +114,17 @@ const Dashboard = ({ onMenu, onNavigate }) => {
             <>
               <SummaryStrip
                 figures={[
-                  { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: `${sum.bills.toLocaleString('en-IN')} bills · incl. GST` },
+                  { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: `${sum.bills.toLocaleString('en-IN')} bills${gst ? ' · incl. GST' : ''}` },
                   { label: 'Gross profit', value: inrWhole(sum.profit), note: `${pct(sum.margin)} margin`, tone: sum.profit < 0 ? 'bad' : undefined },
                   { label: 'Purchase cost', value: inrWhole(sum.cost), note: 'of the goods sold' },
-                  { label: 'GST collected', value: inrWhole(sum.tax) },
+                  ...(gst ? [{ label: 'GST collected', value: inrWhole(sum.tax) }] : []),
                   { label: 'Stock received', value: inrWhole(receivedValue), note: `${receivedUnits.toLocaleString('en-IN')} units counted in` },
                 ]}
               />
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-                <Card title="Sales by day" note={`last ${CHART_DAYS[period]} days · incl. GST`}>
-                  <DayChart data={days} />
+                <Card title="Sales by day" note={`last ${CHART_DAYS[period]} days${gst ? ' · incl. GST' : ''}`}>
+                  <DayChart data={days} gst={gst} />
                 </Card>
                 <Card title="Payment methods">
                   <ul className="flex flex-col gap-3.5">
@@ -228,9 +228,15 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                   </div>
                 )}
               </Card>
+              <ProductPerformance location={location} />
+
+              <CashDifferences closes={closes} location={location} onOpen={() => onNavigate('cash')} />
+
               <p className="text-xs text-ink-3">
-                Purchase cost is each product's cost price at the time it was sold. Gross profit = sales without GST − purchase cost,
-                assuming cost prices are also without GST.
+                Purchase cost is each product's cost price at the time it was sold.{' '}
+                {gst
+                  ? 'Gross profit = sales without GST − purchase cost, assuming cost prices are also without GST.'
+                  : 'Gross profit = sales − purchase cost.'}
               </p>
             </>
           )}

@@ -1,5 +1,6 @@
 import logo from '../assets/logo.svg';
 import { BRAND, locationById } from '../config.js';
+import { useStore } from '../context/StoreContext.jsx';
 import { gstLines } from '../lib/bill.js';
 import { formatMobile } from '../lib/customer.js';
 import { amount, inr } from '../lib/money.js';
@@ -44,6 +45,7 @@ const NarrowNotice = () => (
  */
 const QuotationPrint = ({ quote }) => {
   const shop = locationById(quote.location) ?? {};
+  const gst = useStore().settings.showGst;
   const { totals } = quote;
   return (
     <div className="hidden text-[11.5px] leading-normal text-black [page:quote] print:block">
@@ -68,7 +70,7 @@ const QuotationPrint = ({ quote }) => {
                   <div key={a}>{a}</div>
                 ))}
                 {shop.phone && <div>Ph: {shop.phone}</div>}
-                {shop.gstin && <div>GSTIN: {shop.gstin}</div>}
+                {gst && shop.gstin && <div>GSTIN: {shop.gstin}</div>}
                 {BRAND.email && <div>{BRAND.email}</div>}
               </div>
             </div>
@@ -129,16 +131,14 @@ const QuotationPrint = ({ quote }) => {
                 </div>
               )}
               <div>
-                {totals.count} items · {totals.qty} qty. Prices include GST.
+                {totals.count} items · {totals.qty} qty.{gst && ' Prices include GST.'}
               </div>
             </div>
             <div className="w-64">
               <Sum label="MRP total" value={amount(totals.mrpTotal)} />
               {totals.savings > 0 && <Sum label="Offer discount" value={`−${amount(totals.savings)}`} />}
-              <Sum label="Taxable value" value={amount(totals.taxable)} />
-              {gstLines(totals.gstRows).map((g) => (
-                <Sum key={g.label} label={g.label} value={amount(g.value)} />
-              ))}
+              {gst && <Sum label="Taxable value" value={amount(totals.taxable)} />}
+              {gst && gstLines(totals.gstRows).map((g) => <Sum key={g.label} label={g.label} value={amount(g.value)} />)}
               <Sum label="Quoted total" value={inr(totals.payable)} className="mt-1.5 border-y-2 border-black py-1.5 text-[14px] font-bold" />
             </div>
           </div>

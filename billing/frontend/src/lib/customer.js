@@ -1,3 +1,6 @@
+/** What a mobile field keeps while typing: digits only, at most 10. */
+export const typedMobile = (text) => text.replace(/\D/g, '').slice(0, 10);
+
 /** The last 10 digits typed, so "+91 98407-88950" and "9840788950" are the same number. */
 export const phoneDigits = (phone) => phone.replace(/\D/g, '').slice(-10);
 

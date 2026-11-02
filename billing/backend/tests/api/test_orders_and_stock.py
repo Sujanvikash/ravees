@@ -4,6 +4,18 @@ from .conftest import login
 from .test_sales import season_code, stock_of
 
 
+def stock_admin(client, admin, code, qty):
+    """Puts units into the admin's own stock, which purchase orders are sent out of."""
+    body = {
+        'id': str(uuid.uuid4()),
+        'location': 'warehouse',
+        'file': 'By hand',
+        'source': 'manual',
+        'lines': [{'code': code, 'qty': qty}],
+    }
+    assert client.post('/stock/imports', json=body, headers=admin).status_code == 201
+
+
 def test_purchase_order_flow(client, chennai, admin):
     code = season_code(client, chennai, 1)
     before = stock_of(client, chennai, 'chennai', code)
@@ -23,9 +35,12 @@ def test_purchase_order_flow(client, chennai, admin):
         == 403
     )
     assert client.post(f'/orders/{o["id"]}/receive', json={'counted': []}, headers=chennai).status_code == 409
+    stock_admin(client, admin, code, 8)
+    in_admin = stock_of(client, admin, 'warehouse', code)
     sent = client.post(f'/orders/{o["id"]}/send', json={'lines': [{'code': code, 'qty': 8, 'rate': 10}]}, headers=admin)
     assert sent.json()['status'] == 'sent' and sent.json()['lines'][0]['rate'] == 10
     assert stock_of(client, chennai, 'chennai', code) == before  # not until it is counted in
+    assert stock_of(client, admin, 'warehouse', code) == in_admin - 8  # out of the admin's stock as it is sent
 
     # another showroom can't see or count it
     goa = login(client, 'goa')
@@ -47,7 +62,8 @@ def test_reject_and_cancel(client, chennai, admin):
     assert client.post(f'/orders/{b["id"]}/cancel', headers=admin).status_code == 403
     assert client.post(f'/orders/{b["id"]}/cancel', headers=chennai).json()['status'] == 'cancelled'
     assert client.post(f'/orders/{b["id"]}/reject', json={}, headers=admin).status_code == 409
-    # an admin order goes straight out
+    # an admin order goes straight out, from the admin's stock
+    stock_admin(client, admin, code, 1)
     c = client.post('/orders', json={**body, 'location': 'pune'}, headers=admin).json()
     assert c['status'] == 'sent' and c['location'] == 'pune'
 
@@ -86,23 +102,58 @@ def test_stock_goes_back_to_the_admin(client, admin):
     before = stock_of(client, pune, 'pune', code)
 
     too_many = {'id': str(uuid.uuid4()), 'reason': 'end-of-season', 'lines': [{'code': code, 'qty': before + 1}]}
-    assert client.post('/stock-returns', json=too_many, headers=pune).status_code == 422
+    assert client.post('/purchase-returns', json=too_many, headers=pune).status_code == 422
     assert (
-        client.post('/stock-returns', json={**too_many, 'lines': [{'code': code, 'qty': 1}]}, headers=admin).status_code
+        client.post(
+            '/purchase-returns', json={**too_many, 'lines': [{'code': code, 'qty': 1}]}, headers=admin
+        ).status_code
         == 403
     )
 
-    r = client.post('/stock-returns', json={**too_many, 'lines': [{'code': code, 'qty': 3}]}, headers=pune)
+    r = client.post('/purchase-returns', json={**too_many, 'lines': [{'code': code, 'qty': 3}]}, headers=pune)
     assert r.status_code == 201, r.text
     r = r.json()
-    assert r['status'] == 'sent' and r['number'].startswith('SR-PUN-')
+    assert r['status'] == 'sent' and r['number'].startswith('PR-PUN-')
     assert stock_of(client, pune, 'pune', code) == before - 3
 
-    assert client.post(f'/stock-returns/{r["id"]}/receive', json={'counted': []}, headers=pune).status_code == 403
+    assert client.post(f'/purchase-returns/{r["id"]}/receive', json={'counted': []}, headers=pune).status_code == 403
+    in_admin = stock_of(client, admin, 'warehouse', code)
     got = client.post(
-        f'/stock-returns/{r["id"]}/receive',
+        f'/purchase-returns/{r["id"]}/receive',
         json={'counted': [{'code': code, 'qty': 2}], 'note': '1 broken'},
         headers=admin,
     )
     assert got.json()['status'] == 'received' and got.json()['counted'] == [{'code': code, 'qty': 2}]
-    assert client.post(f'/stock-returns/{r["id"]}/receive', json={'counted': []}, headers=admin).status_code == 409
+    assert stock_of(client, admin, 'warehouse', code) == in_admin + 2  # back in the admin's stock
+    assert client.post(f'/purchase-returns/{r["id"]}/receive', json={'counted': []}, headers=admin).status_code == 409
+
+
+def test_admin_stock(client, admin, chennai):
+    code = season_code(client, admin, 4)
+    # the admin adds any product to its own stock; a showroom can't touch it
+    before = stock_of(client, admin, 'warehouse', code)
+    stock_admin(client, admin, code, 5)
+    assert stock_of(client, admin, 'warehouse', code) == before + 5
+    body = {'id': str(uuid.uuid4()), 'location': 'warehouse', 'file': 'x', 'lines': [{'code': code, 'qty': 1}]}
+    client.post('/stock/imports', json=body, headers=chennai)
+    assert stock_of(client, admin, 'warehouse', code) == before + 5
+    assert 'warehouse' not in client.get('/stock', headers=chennai).json()
+
+    # an order can't send more than the admin has
+    have = stock_of(client, admin, 'warehouse', code)
+    o = client.post('/orders', json={'lines': [{'code': code, 'qty': have + 1}]}, headers=chennai).json()
+    r = client.post(f'/orders/{o["id"]}/send', json={'lines': [{'code': code, 'qty': have + 1}]}, headers=admin)
+    assert r.status_code == 422 and 'Not enough in the admin stock' in r.json()['detail']
+    assert next(x for x in client.get('/orders', headers=admin).json() if x['id'] == o['id'])['status'] == 'requested'
+    assert stock_of(client, admin, 'warehouse', code) == have
+
+    # the warehouse is not a showroom: no orders to it, no cash close, no shop products
+    assert (
+        client.post(
+            '/orders', json={'location': 'warehouse', 'lines': [{'code': code, 'qty': 1}]}, headers=admin
+        ).status_code
+        == 422
+    )
+    assert client.get('/cash/day?location=warehouse', headers=admin).status_code == 422
+    new = {'location': 'warehouse', 'name': 'Thing', 'dept': 'Trees', 'mrp': 10}
+    assert client.post('/products', json=new, headers=admin).status_code == 422

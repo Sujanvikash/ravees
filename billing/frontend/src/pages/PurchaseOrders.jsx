@@ -8,6 +8,9 @@ import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { inr } from '../lib/money.js';
 import { orderQty, orderValue, STATUS } from '../lib/orders.js';
+import Pager from '../components/Pager.jsx';
+import { usePages } from '../hooks/usePages.js';
+import { rowClick } from '../lib/rowClick.js';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
@@ -58,6 +61,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const mine = orders.filter((o) => !location || o.location === location);
   const count = (id) => mine.filter((o) => id === 'all' || o.status === id).length;
   const list = mine.filter((o) => tab === 'all' || o.status === tab).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  const paged = usePages(list, 50, `${tab}|${location}`);
 
   const done = (text) => {
     setFlash(text);
@@ -188,11 +192,11 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {list.map((o) => {
+                    {paged.rows.map((o) => {
                       const isOpen = open === o.id;
                       return (
                         <Fragment key={o.id}>
-                          <tr className={`border-b border-line-soft ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
+                          <tr onClick={rowClick(() => setOpen(isOpen ? null : o.id))} className={`cursor-pointer border-b border-line-soft ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
                             <td className="py-2.5 pl-4">
                               <button
                                 type="button"
@@ -287,6 +291,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                     })}
                   </tbody>
                 </table>
+                <Pager {...paged.pager} />
               </div>
             )}
           </section>

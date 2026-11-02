@@ -44,6 +44,7 @@ export const useBill = (location, kind = 'current') => {
   return {
     items: state.items,
     lastCode: state.lastCode,
+    customer: state.customer ?? null, // { phone, name } when the bill came from a quotation
     add: (code) => dispatch({ type: 'add', code }),
     setQty: (code, qty) => dispatch({ type: 'setQty', code, qty }),
     load: (items) => dispatch({ type: 'load', items }),

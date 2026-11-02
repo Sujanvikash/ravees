@@ -24,12 +24,16 @@ const money = (v) => (v === '' ? null : Number(v));
  * A showroom's own product, for items without a barcode. Its code is made from the showroom's bill prefix
  * (CHN-0001…), so codes from different showrooms never clash. Units already in the shop can be entered too;
  * they are added to stock and show in the inventory history as "New product".
+ *
+ * From the billing counter it opens with what was scanned or typed (`initial`: { barcode } or { name }), for an item
+ * that isn't in the product list, e.g. leftover stock whose barcode was never entered. A barcode is kept on the
+ * product, so the next scan finds it.
  */
-const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
+const NewProductDialog = ({ session, defaultLocation, initial = {}, onClose, onDone }) => {
   const admin = session.role === 'admin';
-  const { importStock } = useStore();
+  const { importStock, settings } = useStore();
   const [location, setLocation] = useState(admin ? (defaultLocation ?? LOCATIONS[0].id) : session.location);
-  const [form, setForm] = useState({ name: '', dept: '', mrp: '', offer: '', cost: '', gst: '18', hsn: '', qty: '' });
+  const [form, setForm] = useState({ name: initial.name ?? '', dept: '', mrp: '', offer: '', cost: '', gst: '18', hsn: '', barcode: initial.barcode ?? '', qty: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const shop = locationById(location);
@@ -64,6 +68,7 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
         name: form.name.trim().replace(/\s+/g, ' '),
         dept: form.dept,
         hsn: form.hsn.trim(),
+        barcode: form.barcode.replace(/\s/g, ''),
         mrp,
         offer: offer ?? mrp,
         cost: cost ?? 0,
@@ -118,15 +123,17 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
                 ))}
               </select>
             </Field>
-            <Field id="np-gst" label="GST">
-              <select id="np-gst" value={form.gst} onChange={set('gst')} className={field}>
-                {GST_RATES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}%
-                  </option>
-                ))}
-              </select>
-            </Field>
+            {settings.showGst && (
+              <Field id="np-gst" label="GST">
+                <select id="np-gst" value={form.gst} onChange={set('gst')} className={field}>
+                  {GST_RATES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}%
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -141,7 +148,10 @@ const NewProductDialog = ({ session, defaultLocation, onClose, onDone }) => {
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field id="np-barcode" label="Barcode" hint="if it has one">
+              <input id="np-barcode" value={form.barcode} onChange={set('barcode')} className={`${field} font-mono`} />
+            </Field>
             <Field id="np-hsn" label="HSN code" hint="optional">
               <input id="np-hsn" value={form.hsn} onChange={set('hsn')} className={field} />
             </Field>

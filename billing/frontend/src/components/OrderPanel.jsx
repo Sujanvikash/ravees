@@ -1,6 +1,8 @@
 import { ArrowRight, CircleCheck, Phone, User } from 'lucide-react';
+import { useStore } from '../context/StoreContext.jsx';
 import { countLabel, gstLines } from '../lib/bill.js';
 import { isValidMobile, isValidName } from '../lib/customer.js';
+import { typedMobile } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
 import Kbd from './Kbd.jsx';
 import PaymentMethods from './PaymentMethods.jsx';
@@ -16,11 +18,12 @@ const Row = ({ label, value, className = 'text-ink-2' }) => (
  * The right-hand order panel: customer number, the bill's breakdown, then the total, payment method and
  * Collect pinned at the bottom. On a counter monitor it runs the full height beside the bill.
  */
-/** One required customer input with its icon, a red state and the error message under it. */
-const CustomerField = ({ id, label, Icon, error, inputRef, ...input }) => (
+/** One customer input with its icon, a red state and the error message under it. `required` marks it with a
+ * red asterisk; when the admin has made it optional it shows a muted "optional" instead. */
+const CustomerField = ({ id, label, Icon, error, inputRef, required = true, ...input }) => (
   <div>
     <label htmlFor={id} className="sr-only">
-      {label} (required)
+      {label} {required ? '(required)' : '(optional)'}
     </label>
     <div
       className={`flex h-10 items-center gap-2 rounded-xl border px-3 transition-shadow ${
@@ -34,16 +37,22 @@ const CustomerField = ({ id, label, Icon, error, inputRef, ...input }) => (
         id={id}
         ref={inputRef}
         autoComplete="off"
-        required
+        required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
         placeholder={label}
         className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
         {...input}
       />
-      <span className="text-xs text-ruby-ink" aria-hidden="true">
-        *
-      </span>
+      {required ? (
+        <span className="text-xs text-ruby-ink" aria-hidden="true">
+          *
+        </span>
+      ) : (
+        <span className="text-[11px] text-ink-3" aria-hidden="true">
+          optional
+        </span>
+      )}
     </div>
     {error && (
       <p id={`${id}-error`} role="alert" className="mt-1.5 animate-pop text-xs font-medium text-ruby-ink">
@@ -67,7 +76,13 @@ const OrderPanel = ({
   onMethod,
   onCollect,
 }) => {
-  const ready = isValidMobile(phone) && isValidName(name);
+  const { showGst: gst, requireName, requireMobile } = useStore().settings;
+  // Each field is satisfied when it holds a valid value, or is optional and left blank. A value that is
+  // typed is always checked, so a half-entered number or name still blocks the collect.
+  const phoneOk = isValidMobile(phone) || (!requireMobile && !phone.trim());
+  const nameOk = isValidName(name) || (!requireName && !name.trim());
+  const ready = phoneOk && nameOk;
+  const needed = [requireMobile && 'Mobile', requireName && 'name'].filter(Boolean).join(' and ');
   // Enter in either field tries to collect, which points at whatever is still missing.
   const collectOnEnter = (e) => e.key === 'Enter' && onCollect();
   return (
@@ -79,7 +94,7 @@ const OrderPanel = ({
           </h2>
           <span className="flex items-center gap-1.5 text-xs text-ink-3">
             {ready && <CircleCheck size={13} className="text-ok" aria-hidden="true" />}
-            {ready ? 'Ready' : 'Mobile and name needed'} <Kbd>F4</Kbd>
+            {ready ? 'Ready' : needed ? `${needed} needed` : 'Check the details'} <Kbd>F4</Kbd>
           </span>
         </div>
         <div className="flex flex-col gap-2">
@@ -87,18 +102,21 @@ const OrderPanel = ({
             id="customer-phone"
             label="Mobile number"
             Icon={Phone}
+            required={requireMobile}
             error={phoneError}
             inputRef={phoneRef}
             type="tel"
             inputMode="numeric"
             value={phone}
-            onChange={(e) => onPhone(e.target.value)}
+            maxLength={10}
+            onChange={(e) => onPhone(typedMobile(e.target.value))}
             onKeyDown={collectOnEnter}
           />
           <CustomerField
             id="customer-name"
             label="Customer name"
             Icon={User}
+            required={requireName}
             error={nameError}
             inputRef={nameRef}
             type="text"
@@ -115,10 +133,8 @@ const OrderPanel = ({
           <Row label="MRP total" value={inr(bill.mrpTotal)} />
           <Row label="Offer discount" value={inr(-bill.savings)} className={bill.savings > 0 ? 'text-ok-ink' : 'text-ink-2'} />
           <div className="my-1 h-px bg-line-soft" />
-          <Row label="Taxable value" value={inr(bill.taxable)} />
-          {gstLines(bill.gstRows).map((g) => (
-            <Row key={g.label} label={g.label} value={inr(g.value)} />
-          ))}
+          {gst && <Row label="Taxable value" value={inr(bill.taxable)} />}
+          {gst && gstLines(bill.gstRows).map((g) => <Row key={g.label} label={g.label} value={inr(g.value)} />)}
           <Row label="Round off" value={inr(bill.roundOff)} />
         </div>
       </section>
@@ -127,7 +143,8 @@ const OrderPanel = ({
         <div className="flex items-end justify-between gap-3">
           <div className="text-[13px] text-ink-3">
             <div className="font-medium text-ink-2">Total</div>
-            {countLabel(bill)} · incl. GST
+            {countLabel(bill)}
+            {gst && ' · incl. GST'}
           </div>
           <div className="text-[34px] leading-none font-semibold tracking-tight tabular-nums">{inr(bill.payable)}</div>
         </div>

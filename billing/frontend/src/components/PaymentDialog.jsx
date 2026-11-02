@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
+import { useStore } from '../context/StoreContext.jsx';
 import { countLabel } from '../lib/bill.js';
 import { customerLabel } from '../lib/customer.js';
 import { inr, inrWhole, parseAmount } from '../lib/money.js';
@@ -38,6 +39,7 @@ const Switch = ({ checked, onChange, children }) => (
 /** Takes the payment for the bill. Enter completes the sale once the amount is enough. */
 const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onBack, onComplete }) => {
   const due = bill.payable;
+  const gst = useStore().settings.showGst;
   const [tendered, setTendered] = useState('');
   const [approval, setApproval] = useState('');
   const [splitCash, setSplitCash] = useState('');
@@ -73,7 +75,7 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-3">
               <span>{customerLabel(phone, name)}</span>
               {bill.savings > 0 && <span className="text-ok-ink">Customer saves {inr(bill.savings)}</span>}
-              <span>GST {inr(bill.tax)} included</span>
+              {gst && <span>GST {inr(bill.tax)} included</span>}
             </div>
           </div>
 

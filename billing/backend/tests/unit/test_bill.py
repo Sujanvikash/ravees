@@ -60,3 +60,17 @@ def test_customer_checks():
         with pytest.raises(ValueError):
             check_customer(name, phone)
     assert customer_label('9840788950', 'Priya') == 'Priya · +91 98407 88950'
+
+
+def test_customer_checks_optional_fields():
+    # a bill may leave off the name or the mobile when the admin has turned that field off
+    assert check_customer('', '9840788950', require_name=False) == ('', '9840788950')
+    assert check_customer('Priya', '', require_mobile=False) == ('Priya', '')
+    assert check_customer('', '', require_name=False, require_mobile=False) == ('', '')
+    # but anything actually typed is still checked, optional or not
+    for name, phone, opts in (
+        ('P', '9840788950', {'require_name': False}),
+        ('Priya', '12345', {'require_mobile': False}),
+    ):
+        with pytest.raises(ValueError):
+            check_customer(name, phone, **opts)

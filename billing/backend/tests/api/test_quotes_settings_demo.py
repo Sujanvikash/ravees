@@ -26,6 +26,14 @@ def test_quotation(client, chennai, admin):
     assert client.post('/quotes', json={**body, 'validDays': 9}, headers=chennai).status_code == 422
     assert q['id'] in {x['id'] for x in client.get('/quotes', headers=admin).json()}
 
+    # deleting: not another showroom's, then by its own showroom
+    from .conftest import login
+
+    assert client.delete(f'/quotes/{q["id"]}', headers=login(client, 'goa')).status_code == 404
+    assert client.delete(f'/quotes/{q["id"]}', headers=chennai).status_code == 204
+    assert q['id'] not in {x['id'] for x in client.get('/quotes', headers=admin).json()}
+    assert client.delete(f'/quotes/{q["id"]}', headers=admin).status_code == 404
+
 
 def test_settings(client, chennai, admin):
     s = client.get('/settings').json()  # open to the sign-in screen

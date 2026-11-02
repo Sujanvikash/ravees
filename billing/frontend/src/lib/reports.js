@@ -1,4 +1,5 @@
 import { LOCATIONS } from '../config.js';
+import { findProduct } from './catalogue.js';
 
 /**
  * Figures for the sales screens and the admin dashboard, all computed from the saved sales.
@@ -34,8 +35,9 @@ export const filterSales = (sales, { location = null, period = 'all', now = new 
 
 export const saleCost = (sale) => sale.lines.reduce((sum, l) => sum + (l.cost ?? 0) * l.qty, 0);
 
-/** Totals for a set of sales. */
-export const summarize = (sales) => {
+/** Totals for a set of sales. With gst false (the admin's Show GST switch off), profit and margin are on the
+ *  selling price rather than on the value without GST. */
+export const summarize = (sales, { gst = true } = {}) => {
   let total = 0;
   let taxable = 0;
   let tax = 0;
@@ -50,14 +52,15 @@ export const summarize = (sales) => {
     units += s.totals.qty;
     cost += saleCost(s);
   }
-  const profit = taxable - cost;
+  const base = gst ? taxable : total;
+  const profit = base - cost;
   return {
     total,
     taxable,
     tax,
     cost,
     profit,
-    margin: taxable ? profit / taxable : 0,
+    margin: base ? profit / base : 0,
     bills: sales.length,
     units,
     savings,
@@ -88,11 +91,11 @@ export const byLocation = (sales) =>
   LOCATIONS.map((l) => ({ location: l, ...summarize(sales.filter((s) => s.location === l.id)) }));
 
 /** Products ranked by sales value: units, sales (incl. GST), cost and profit. */
-export const topProducts = (sales, limit = 8) => {
+export const topProducts = (sales, limit = 8, { gst = true } = {}) => {
   const map = new Map();
   for (const s of sales) {
     // Share the bill's GST-free ratio across its lines, so line profit adds up to the bill's.
-    const ratio = s.totals.payable ? s.totals.taxable / s.totals.payable : 1;
+    const ratio = gst && s.totals.payable ? s.totals.taxable / s.totals.payable : 1;
     for (const l of s.lines) {
       const row = map.get(l.code) ?? { code: l.code, name: l.name, units: 0, total: 0, cost: 0, taxable: 0 };
       row.units += l.qty;
@@ -120,4 +123,27 @@ export const byMethod = (sales) => {
     }
   }
   return out;
+};
+
+/**
+ * How each product is doing, season to date: units sold (less what customers brought back) and units still in
+ * stock, for one showroom or all of them. Only products that have stock or have sold are listed.
+ * → [{ code, name, sold, left, share }] with share = sold / (sold + left).
+ */
+export const productSellThrough = (sales, returns, stock, location = null) => {
+  const rows = new Map();
+  const row = (code, name) => {
+    if (!rows.has(code)) rows.set(code, { code, name: name ?? findProduct(code)?.name ?? code, sold: 0, left: 0 });
+    return rows.get(code);
+  };
+  for (const s of sales) if (!location || s.location === location) for (const l of s.lines) row(l.code, l.name).sold += l.qty;
+  for (const r of returns) if (!location || r.location === location) for (const l of r.lines) row(l.code, l.name).sold -= l.qty;
+  for (const [shop, codes] of Object.entries(stock)) {
+    if (location && shop !== location) continue;
+    for (const [code, qty] of Object.entries(codes)) if (qty > 0) row(code).left += qty;
+  }
+  return [...rows.values()]
+    .map((r) => ({ ...r, sold: Math.max(r.sold, 0) }))
+    .filter((r) => r.sold + r.left > 0)
+    .map((r) => ({ ...r, share: r.sold / (r.sold + r.left) }));
 };

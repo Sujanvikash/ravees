@@ -1,15 +1,21 @@
 import { Fragment, useState } from 'react';
 import { ChevronRight, FileSpreadsheet, History, PackageCheck, PackageMinus, Tag, Undo2 } from 'lucide-react';
 import { locationById } from '../config.js';
+import Pager from '../components/Pager.jsx';
+import { usePages } from '../hooks/usePages.js';
+import { rowClick } from '../lib/rowClick.js';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const KIND = {
   import: { label: 'Excel import', Icon: FileSpreadsheet, className: 'bg-evergreen-50 text-evergreen-900' },
   product: { label: 'New product', Icon: Tag, className: 'bg-warn-50 text-warn-ink' },
+  own: { label: 'Added by hand', Icon: Tag, className: 'bg-warn-50 text-warn-ink' },
   order: { label: 'Purchase order', Icon: PackageCheck, className: 'bg-mist text-ink-2' },
   'customer-return': { label: 'Customer return', Icon: Undo2, className: 'bg-ok-50 text-ok-ink' },
-  'sent-back': { label: 'Sent to admin', Icon: PackageMinus, className: 'bg-ruby-50 text-ruby-ink' },
+  'sent-back': { label: 'Purchase return', Icon: PackageMinus, className: 'bg-ruby-50 text-ruby-ink' },
+  'sent-out': { label: 'Sent to showroom', Icon: PackageMinus, className: 'bg-ruby-50 text-ruby-ink' },
+  'returned-in': { label: 'Returned by showroom', Icon: Undo2, className: 'bg-ok-50 text-ok-ink' },
 };
 
 const signed = (sign, n) => `${sign < 0 ? '−' : '+'}${n.toLocaleString('en-IN')}`;
@@ -20,6 +26,7 @@ const signed = (sign, n) => `${sign < 0 ? '−' : '+'}${n.toLocaleString('en-IN'
  */
 const StockHistory = ({ entries, showShop }) => {
   const [open, setOpen] = useState(null);
+  const paged = usePages(entries, 50, `${entries.length}|${showShop}`);
 
   if (!entries.length) {
     return (
@@ -46,13 +53,13 @@ const StockHistory = ({ entries, showShop }) => {
           </tr>
         </thead>
         <tbody>
-          {entries.map((e) => {
+          {paged.rows.map((e) => {
             const kind = KIND[e.kind];
             const isOpen = open === e.id;
             const shop = locationById(e.location);
             return (
               <Fragment key={e.id}>
-                <tr className={`border-b border-line-soft ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
+                <tr onClick={rowClick(() => setOpen(isOpen ? null : e.id))} className={`cursor-pointer border-b border-line-soft ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
                   <td className="py-1.5 pr-3 pl-4 whitespace-nowrap">
                     <button
                       type="button"
@@ -98,6 +105,7 @@ const StockHistory = ({ entries, showShop }) => {
           })}
         </tbody>
       </table>
+      <Pager {...paged.pager} />
     </div>
   );
 };

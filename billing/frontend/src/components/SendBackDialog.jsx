@@ -47,7 +47,7 @@ const SendBackDialog = ({ location, onClose, onDone }) => {
   };
 
   return (
-    <Dialog id="send-back" title="Send stock back to the admin" subtitle={`From ${shop.city} · the units leave your stock when you send them`} onClose={onClose} size="max-w-2xl">
+    <Dialog id="send-back" title="New purchase return" subtitle={`From ${shop.city} to the admin · the units leave your stock when you send them`} onClose={onClose} size="max-w-2xl">
       <div className="flex flex-col gap-3 px-6 pb-5">
         <div className="flex flex-wrap gap-2">
           {REASONS.map((r) => (
@@ -72,7 +72,7 @@ const SendBackDialog = ({ location, onClose, onDone }) => {
               <tr className="border-b border-line-soft text-left text-xs text-ink-3">
                 <th className="py-1.5 pr-3 pl-3 font-medium">Product</th>
                 <th className="py-1.5 pr-3 text-right font-medium">In stock</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Send back</th>
+                <th className="py-1.5 pr-3 text-right font-medium">Return</th>
               </tr>
             </thead>
             <tbody>
@@ -89,7 +89,7 @@ const SendBackDialog = ({ location, onClose, onDone }) => {
                         inputMode="numeric"
                         value={qty[p.code] ?? ''}
                         onChange={(e) => setQty((m) => ({ ...m, [p.code]: Math.min(Number(e.target.value.replace(/\D/g, '')) || 0, have) }))}
-                        aria-label={`Units of ${p.name} to send back`}
+                        aria-label={`Units of ${p.name} to return`}
                         placeholder="0"
                         className="h-8 w-16 rounded-lg border border-line px-2 text-right"
                       />
@@ -118,7 +118,7 @@ const SendBackDialog = ({ location, onClose, onDone }) => {
             {chosen.length} products · {units.toLocaleString('en-IN')} units
           </span>
           <button type="button" onClick={send} disabled={!units || busy} className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3">
-            <Undo2 size={15} aria-hidden="true" /> Send back
+            <Undo2 size={15} aria-hidden="true" /> Send to admin
           </button>
         </div>
       </div>

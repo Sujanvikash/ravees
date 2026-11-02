@@ -1,5 +1,6 @@
 import logo from '../assets/logo.svg';
 import { BRAND, locationById } from '../config.js';
+import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
 import { amount, inr } from '../lib/money.js';
 
@@ -18,14 +19,15 @@ const rule = 'border-t border-dashed border-black pt-1.5';
  *  like the bill. Hidden on screen; it is the only thing that prints while it is on the page. */
 const CreditNotePrint = ({ note }) => {
   const shop = locationById(note.location) ?? {};
+  const gst = useStore().settings.showGst;
   return (
-    <div className="hidden font-mono text-[11px] leading-snug text-black print:block">
+    <div data-receipt className="hidden w-[72mm] font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
         <img src={logo} alt={BRAND.name} className="print-ink mb-1.5 w-[46mm]" />
         {(shop.address ?? []).map((a) => (
           <div key={a}>{a}</div>
         ))}
-        {shop.gstin && <div>GSTIN: {shop.gstin}</div>}
+        {gst && shop.gstin && <div>GSTIN: {shop.gstin}</div>}
       </div>
 
       <div className="my-2 border-y border-dashed border-black py-1 text-center font-bold tracking-[0.18em]">CREDIT NOTE</div>

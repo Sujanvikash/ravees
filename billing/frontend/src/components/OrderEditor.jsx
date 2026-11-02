@@ -182,6 +182,7 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">Product</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">In stock</th>
+                  {admin && <th scope="col" className="px-3 py-2 text-right font-medium">Admin stock</th>}
                   <th scope="col" className="px-3 py-2 text-center font-medium">Qty</th>
                   {admin && <th scope="col" className="px-3 py-2 text-right font-medium">Rate</th>}
                   {admin && <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>}
@@ -198,6 +199,14 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                       {l.name}
                     </td>
                     <td className="px-3 py-1.5 text-right text-ink-3">{stockOf(location, l.code)}</td>
+                    {admin && (
+                      <td
+                        className={`px-3 py-1.5 text-right ${l.qty > stockOf('warehouse', l.code) ? 'font-semibold text-ruby-ink' : 'text-ink-3'}`}
+                        title={l.qty > stockOf('warehouse', l.code) ? 'More than the admin stock holds: it can’t be sent' : undefined}
+                      >
+                        {stockOf('warehouse', l.code)}
+                      </td>
+                    )}
                     <td className="px-3 py-1.5">
                       <div className="mx-auto flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line">
                         <button type="button" onClick={() => setQty(l.code, l.qty - 1)} aria-label={`One less ${l.name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">

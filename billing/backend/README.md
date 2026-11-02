@@ -2,7 +2,7 @@
 
 The billing API for the five showrooms: Python 3.13, FastAPI, SQLAlchemy 2, PostgreSQL and Alembic, managed with [uv](https://docs.astral.sh/uv/).
 
-It holds everything the billing app keeps: **logins** (passwords hashed with Argon2id, JWT sign-in tokens), the **product catalogue** (the product Excel, the admin's season list and the showrooms' own products), **sales** (priced, numbered and taken off stock by the server), **returns and exchanges**, **stock** and Excel stock imports, **stock sent back** to the admin, **purchase orders**, **quotations**, the **daily cash close**, the **sales report** as Excel, and the admin's **settings**. It also holds the **demo**: the same logins on sample data, kept apart from the real data.
+It holds everything the billing app keeps: **logins** (passwords hashed with Argon2id, JWT sign-in tokens), the **product catalogue** (the product Excel, the admin's season list and the showrooms' own products), **sales** (priced, numbered and taken off stock by the server), **returns and exchanges**, **stock** and Excel stock imports, **purchase returns** to the admin, **purchase orders**, **quotations**, the **daily cash close**, the **sales report** as Excel, and the admin's **settings**. It also holds the **demo**: the same logins on sample data, kept apart from the real data.
 
 ## Set up the database (once)
 
@@ -36,6 +36,7 @@ The API is then at http://localhost:8000/api/v1, with interactive docs at http:/
 
 - **Re-running the seed is safe.** It adds what's missing and updates product details from the Excel. It never changes a password, and it keeps the admin's season choices. `--season-from-excel` resets the season to the Excel's "In Season" column; `--excel PATH` reads another file.
 - **The demo** lives in the same database, in its own schema (`demo`) with the same tables. `seed` builds it the first time; `uv run python -m app.cli demo` (or the demo admin's **Reset demo** in Settings) throws it away and builds a fresh month of sample data relative to today. A demo sign-in (`POST /auth/demo`, no password) gets a token marked `demo`, and every request with it reads and writes the demo schema only. Passwords can't be changed in the demo. `DEMO_ENABLED=false` switches it off. The demo schema isn't migrated: it is rebuilt from the models.
+- **Admin stock:** the admin's own stock is a location called `warehouse` (migration 0003; `seed` adds it too). It isn't a showroom: no login, bills or cash close. Stock imports with `location: "warehouse"` add to it (any product, by Excel or by hand with `source: "manual"`). Counting in a purchase return adds to it. Sending a purchase order takes the sent quantities out of it, and is refused (422) if the admin doesn't hold enough.
 - **Default passwords** are `<username>@2026` (`chennai@2026` … `admin@2026`). Change them from the app (Admin → Logins).
 - **Wrong passwords:** after 10 wrong passwords for one login from one computer within 15 minutes, that login pauses on that computer until the oldest attempt is 15 minutes old. The count is kept in the server's memory, so it resets when the server restarts.
 
@@ -69,8 +70,8 @@ Everything is under `/api/v1` except `/health`. Errors come back as `{"detail": 
 | `GET /api/v1/returns`, `POST /api/v1/returns` | signed in / showroom | credit notes. `{ id, saleId or billNo, lines, reason, exchange?: { id, lines, payment } }`: a return refunds in cash; an exchange makes the new bill with the returned value off it, refunding any rest in cash |
 | `GET /api/v1/stock` | signed in | `{ location: { code: qty } }` |
 | `GET /api/v1/stock/imports`, `POST /api/v1/stock/imports` | signed in | stock added from an Excel (`{ id, location?, file, source?, lines }`) |
-| `GET /api/v1/stock-returns`, `POST /api/v1/stock-returns` | signed in / showroom | stock sent back to the admin (`SR-CHN-0001`); it leaves the showroom's stock when sent |
-| `POST /api/v1/stock-returns/{id}/receive` | admin | `{ counted, note }`: counted in at the admin |
+| `GET /api/v1/purchase-returns`, `POST /api/v1/purchase-returns` | signed in / showroom | purchase returns to the admin (`PR-CHN-0001`); it leaves the showroom's stock when sent |
+| `POST /api/v1/purchase-returns/{id}/receive` | admin | `{ counted, note }`: counted in at the admin |
 | `GET /api/v1/orders`, `POST /api/v1/orders` | signed in | purchase orders; a showroom's new one is a request, the admin's is sent straight away |
 | `PUT /api/v1/orders/{id}` | showroom | edit its request before it is sent |
 | `POST /api/v1/orders/{id}/send`, `/reject` | admin | approve as reviewed and send, or turn down with a reason |
@@ -104,7 +105,7 @@ The code is organised by feature: each module under `app/modules/` holds its own
 | `app/modules/auth/` | sign-in, tokens, who is signed in, and the wrong-password brake (`/auth`) |
 | `app/modules/products/` | the catalogue, the product Excel importer and shop products (`/products`) |
 | `app/modules/system/` | app-wide values (the season), the admin's settings (`/settings`) and `/health` |
-| `app/modules/numbering/` | running numbers per showroom: bills, quotations, credit notes, orders, stock returns |
+| `app/modules/numbering/` | running numbers per showroom: bills, quotations, credit notes, orders, purchase returns |
 | `app/modules/sales/` | bills from the counters, and the bill sum (`bill.py`, the same as the frontend's `src/lib/bill.js`) |
 | `app/modules/returns/` | returns (cash refunds) and exchanges, with credit notes |
 | `app/modules/stock/` | stock levels and Excel stock imports |

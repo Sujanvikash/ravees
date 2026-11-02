@@ -56,3 +56,10 @@ def by_codes(session: Session, codes: Iterable[str]) -> dict[str, Product]:
     if not wanted:
         return {}
     return {p.code: p for p in session.scalars(select(Product).where(Product.code.in_(wanted)))}
+
+
+def by_barcode(session: Session, barcode: str) -> Product | None:
+    """The product with this barcode, or this code, if there is one."""
+    return session.scalar(
+        select(Product).where((Product.barcode == barcode) | (Product.code == barcode.upper())).limit(1)
+    )

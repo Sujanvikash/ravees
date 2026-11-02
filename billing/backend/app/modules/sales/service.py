@@ -12,6 +12,7 @@ from app.modules.auth.access import visible_location
 from app.modules.numbering import service as numbering
 from app.modules.products import repository as products
 from app.modules.stock import repository as stock
+from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
 from . import bill
@@ -118,8 +119,11 @@ def create_sale(
         raise Forbidden(ADMIN_CANNOT_BILL)
     if existing := _existing(session, user, data):
         return existing
+    prefs = app_settings.get(session)
     try:
-        name, phone = check_customer(data.name, data.phone)
+        name, phone = check_customer(
+            data.name, data.phone, require_name=prefs.require_name, require_mobile=prefs.require_mobile
+        )
     except ValueError as error:
         raise InvalidInput(str(error)) from None
 

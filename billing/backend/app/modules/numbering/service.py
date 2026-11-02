@@ -61,6 +61,6 @@ def next_return_no(session: Session, location_id: str, at: datetime) -> str:
 
 
 def next_stock_return_no(session: Session, location_id: str) -> str:
-    """SR-CHN-0002: stock a showroom sends back to the admin."""
+    """PR-CHN-0002: stock a showroom sends back to the admin."""
     seq = take_next(session, location_id, STOCK_RETURN)
-    return f'SR-{_prefix(session, location_id)}-{seq:04d}'
+    return f'PR-{_prefix(session, location_id)}-{seq:04d}'

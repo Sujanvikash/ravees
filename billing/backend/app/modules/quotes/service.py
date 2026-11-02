@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.core.errors import Conflict, Forbidden, InvalidInput
+from app.core.errors import Conflict, Forbidden, InvalidInput, NotFound
 from app.modules.auth.access import visible_location
 from app.modules.locations import repository as locations
 from app.modules.numbering import service as numbering
@@ -69,3 +69,13 @@ def create_quote(session: Session, user: User, data: QuoteIn, *, at: datetime | 
     session.add(quote)
     session.commit()
     return quote
+
+
+def delete_quote(session: Session, user: User, quote_id) -> None:
+    """Deletes a quotation (it was never a bill, so nothing else changes). A showroom deletes its own; the admin any.
+    Its number is not used again."""
+    quote = session.get(Quote, quote_id)
+    if not quote or (not user.is_admin and quote.location_id != user.location_id):
+        raise NotFound('No such quotation.')
+    session.delete(quote)
+    session.commit()

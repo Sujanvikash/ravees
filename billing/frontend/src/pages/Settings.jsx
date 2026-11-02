@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlaskConical, Palette, Printer, Undo2 } from 'lucide-react';
+import { FlaskConical, Palette, Percent, Phone, Printer, Undo2, User } from 'lucide-react';
 import { Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { useSession } from '../context/SessionContext.jsx';
@@ -177,6 +177,50 @@ const Settings = ({ onMenu }) => {
               description="When on, showrooms can print a quotation for the customer (an A4 page with a large QUOTATION watermark that says it is not a bill). When off, quotations can still be written and saved, but not printed."
               on={settings.quotePrint}
               onChange={(v) => setSetting('quotePrint', v)}
+            />
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border glass">
+            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+                <User size={17} aria-hidden="true" />
+              </span>
+              <div>
+                <div className="text-[14px] font-semibold">Customer details on a bill</div>
+                <p className="mt-0.5 text-[13px] text-ink-3">
+                  What the counter must have before a bill can be collected. Turn one off for quick walk-in billing; it
+                  can still be typed, and if it is, it’s checked. Quotations always ask for both.
+                </p>
+              </div>
+            </div>
+            <div className="divide-y divide-line-soft">
+              <Toggle
+                id="setting-require-name"
+                Icon={User}
+                title="Require customer name"
+                description="When on, a bill needs the customer’s name before it can be collected. When off, the name is optional."
+                on={settings.requireName}
+                onChange={(v) => setSetting('requireName', v)}
+              />
+              <Toggle
+                id="setting-require-mobile"
+                Icon={Phone}
+                title="Require mobile number"
+                description="When on, a bill needs a valid 10-digit mobile number before it can be collected. When off, the number is optional."
+                on={settings.requireMobile}
+                onChange={(v) => setSetting('requireMobile', v)}
+              />
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border glass">
+            <Toggle
+              id="setting-show-gst"
+              Icon={Percent}
+              title="Show GST"
+              description="When off, GST isn’t shown anywhere: not on bills, credit notes or quotations, not at the counter, not in the sales figures, dashboard or Excel report, and the new-product form doesn’t ask for it. Prices are simply the selling price (what the customer pays doesn’t change), and profit is worked out on it. Use this when GST is handled outside this app."
+              on={settings.showGst}
+              onChange={(v) => setSetting('showGst', v)}
             />
           </section>
 

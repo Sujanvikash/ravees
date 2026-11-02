@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 
 from fastapi import APIRouter, status
@@ -30,3 +31,10 @@ def list_closes(
 def close_day(body: CloseIn, user: CurrentUser, session: DbSession) -> CloseOut:
     """A showroom closes its day with the cash it counted."""
     return CloseOut.from_model(service.close_day(session, user, body))
+
+
+@router.delete('/closes/{close_id}', responses={409: {'description': 'A later day is already closed'}})
+def reopen_day(close_id: uuid.UUID, user: CurrentUser, session: DbSession) -> DayOut:
+    """Reopen a cash close made by mistake: a showroom reopens its own latest close, the admin any latest close.
+    The day goes back to being open, ready to count and close again."""
+    return service.reopen_day(session, user, close_id)

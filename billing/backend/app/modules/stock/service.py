@@ -13,6 +13,11 @@ from . import repository
 from .models import StockImport
 from .schemas import StockImportIn
 
+# Stock a showroom adds by hand for its own products (no barcode, coded CHN-0001...): with the new product, or
+# later when more units come in. Only for that showroom's own products; other stock comes through orders or Excel.
+# The admin adds any product to its own stock by hand ('manual').
+OWN_PRODUCT_SOURCES = frozenset({'new-product', 'own-product'})
+
 
 def stock_by_location(session: Session, user: User, location: str | None = None) -> dict[str, dict[str, int]]:
     """{location: {code: qty}} for the showrooms this login may see."""
@@ -49,8 +54,13 @@ def import_stock(session: Session, user: User, data: StockImportIn, *, at: datet
         if existing.location_id != (data.location if user.is_admin else user.location_id):
             raise Conflict('That import id is already used.')
         return existing
-    location = acting_location(session, user, data.location)
-    lines = merge_lines(data.lines, products.by_codes(session, (line.code for line in data.lines)))
+    location = acting_location(session, user, data.location, warehouse=True)
+    catalogue = products.by_codes(session, (line.code for line in data.lines))
+    lines = merge_lines(data.lines, catalogue)
+    if data.source in OWN_PRODUCT_SOURCES:
+        others = [line['code'] for line in lines if catalogue[line['code']].shop_location_id != location.id]
+        if others:
+            raise InvalidInput(f'Only {location.city}’s own products can be added by hand: not {", ".join(others)}.')
     record = StockImport(
         id=data.id,
         at=at or clock.now(),

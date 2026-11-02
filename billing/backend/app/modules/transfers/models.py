@@ -9,7 +9,7 @@ from app.core.database import Base
 
 
 class StockReturn(Base):
-    """Stock a showroom sends back to the admin (SR-CHN-0002). lines [{code, name, qty, rate}], counted
+    """Stock a showroom sends back to the admin (PR-CHN-0002). lines [{code, name, qty, rate}], counted
     [{code, qty}] once the admin has counted it in, history [{at, by, action, note?}] as on purchase orders."""
 
     __tablename__ = 'stock_returns'
