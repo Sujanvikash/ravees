@@ -20,8 +20,9 @@ import { useStore } from '../context/StoreContext.jsx';
 import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
+import { useScanner } from '../hooks/useScanner.js';
 import { billNumber, buildBill, countLabel, nextSeq } from '../lib/bill.js';
-import { SEASON, seasonCount } from '../lib/catalogue.js';
+import { findProduct, SEASON, seasonCount } from '../lib/catalogue.js';
 import { isValidMobile, isValidName, phoneDigits } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
 import { printReceipt } from '../lib/print.js';
@@ -95,6 +96,19 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     const short = qty > available ? ` · only ${Math.max(available, 0)} in stock at ${shop.city}` : '';
     setNotice({ tone: short ? 'warn' : 'ok', text: `Added ${product.name} · qty ${qty}${short}${earlier}` });
   };
+
+  // A scan adds the product wherever the cursor is; off while a dialog is open so the scan goes to that
+  // dialog's own field (e.g. finding a bill to return). An unknown code offers to add it as a new product.
+  const onScan = (code) => {
+    const product = findProduct(code);
+    if (product) return addProduct(product);
+    setNotice({
+      tone: 'error',
+      text: `No product with barcode “${code}”.`,
+      action: { label: 'Add as new product', run: () => { setNotice(null); setNewProduct({ barcode: code }); } },
+    });
+  };
+  useScanner(onScan, !dialog && !newProduct);
 
   const setCustomer = (next = {}) => {
     setPhone(next.phone ?? '');

@@ -9,6 +9,8 @@ import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
+import { useScanner } from '../hooks/useScanner.js';
+import { findProduct } from '../lib/catalogue.js';
 import { billNumber, buildBill, countLabel, gstLines, nextSeq } from '../lib/bill.js';
 import { customerLabel, isValidMobile, isValidName, phoneDigits, typedMobile } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
@@ -275,6 +277,19 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(null);
   const scanRef = useRef(null);
+
+  // A scan adds the product to the quotation wherever the cursor is (same as the billing counter).
+  const onScan = (code) => {
+    const product = findProduct(code);
+    if (product) {
+      draft.add(product.code);
+      setNotice({ tone: 'ok', text: `${product.name} added` });
+      setError('');
+    } else {
+      setNotice({ tone: 'error', text: `No product with barcode “${code}”.` });
+    }
+  };
+  useScanner(onScan);
 
   const totals = useMemo(() => buildBill(draft.items), [draft.items]);
   const prefix = `QT-${shop.billPrefix}`;
