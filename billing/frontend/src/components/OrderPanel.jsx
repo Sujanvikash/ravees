@@ -191,7 +191,9 @@ const OrderPanel = ({
   onMethod,
   onCollect,
 }) => {
-  const { showGst: gst, requireName, requireMobile } = useStore().settings;
+  const { showGst, composition, requireName, requireMobile } = useStore().settings;
+  const gst = showGst && !composition; // a composition dealer's bill shows no GST
+
   // Each field is satisfied when it holds a valid value, or is optional and left blank. A value that is
   // typed is always checked, so a half-entered number or name still blocks the collect.
   const phoneOk = isValidMobile(phone) || (!requireMobile && !phone.trim());

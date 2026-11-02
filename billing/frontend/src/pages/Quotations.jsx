@@ -428,15 +428,15 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
         <div className="flex flex-col gap-2 border-t border-line-soft pt-3 text-[13px]">
           <Row label="MRP total" value={inr(totals.mrpTotal)} />
           <Row label="Offer discount" value={inr(-totals.savings)} className={totals.savings > 0 ? 'text-ok-ink' : 'text-ink-2'} />
-          {settings.showGst && <Row label="Taxable value" value={inr(totals.taxable)} />}
-          {settings.showGst && gstLines(totals.gstRows).map((g) => <Row key={g.label} label={g.label} value={inr(g.value)} />)}
+          {(settings.showGst && !settings.composition) && <Row label="Taxable value" value={inr(totals.taxable)} />}
+          {(settings.showGst && !settings.composition) && gstLines(totals.gstRows).map((g) => <Row key={g.label} label={g.label} value={inr(g.value)} />)}
         </div>
 
         <div className="mt-auto flex flex-col gap-3 border-t border-line-soft pt-3">
           <div className="flex items-end justify-between gap-3">
             <div className="text-[13px] text-ink-3">
               <div className="font-medium text-ink-2">Quoted total</div>
-              {settings.showGst ? 'incl. GST · not a bill' : 'not a bill'}
+              {(settings.showGst && !settings.composition) ? 'incl. GST · not a bill' : 'not a bill'}
             </div>
             <div className="text-[30px] leading-none font-semibold tracking-tight tabular-nums">{inr(totals.payable)}</div>
           </div>

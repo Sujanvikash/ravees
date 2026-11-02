@@ -39,7 +39,8 @@ const Switch = ({ checked, onChange, children }) => (
 /** Takes the payment for the bill. Enter completes the sale once the amount is enough. */
 const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onBack, onComplete }) => {
   const due = bill.payable;
-  const gst = useStore().settings.showGst;
+  const { showGst, composition } = useStore().settings;
+  const gst = showGst && !composition; // a composition dealer's bill shows no GST
   const [tendered, setTendered] = useState('');
   const [approval, setApproval] = useState('');
   const [splitCash, setSplitCash] = useState('');

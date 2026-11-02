@@ -45,7 +45,8 @@ const NarrowNotice = () => (
  */
 const QuotationPrint = ({ quote }) => {
   const shop = locationById(quote.location) ?? {};
-  const gst = useStore().settings.showGst;
+  const { showGst, composition } = useStore().settings;
+  const gst = showGst && !composition; // a composition dealer shows no GST
   const { totals } = quote;
   return (
     <div className="hidden text-[11.5px] leading-normal text-black [page:quote] print:block">

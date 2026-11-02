@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlaskConical, Palette, Percent, Phone, Printer, Undo2, User } from 'lucide-react';
+import { FlaskConical, Palette, Percent, Phone, Printer, Store, Undo2, User } from 'lucide-react';
 import { Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { useSession } from '../context/SessionContext.jsx';
@@ -30,6 +30,30 @@ const Toggle = ({ id, Icon, title, description, on, onChange }) => (
     </button>
   </div>
 );
+
+/** A text (or multi-line) detail printed on the bill. Edited locally and saved when the field loses focus, so
+ *  the server isn't hit on every keystroke. */
+const StoreField = ({ label, hint, value, onSave, textarea, placeholder }) => {
+  const [v, setV] = useState(value ?? '');
+  const commit = () => {
+    const next = v.trim();
+    if (next !== (value ?? '')) onSave(next);
+  };
+  const cls =
+    'rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-evergreen-800/50 focus:shadow-[0_0_0_3px_rgba(23,92,38,0.10)] focus:outline-none';
+  return (
+    <label className="flex flex-col gap-1.5 text-[13px] font-medium text-ink-2">
+      <span>
+        {label} {hint && <span className="font-normal text-ink-3">{hint}</span>}
+      </span>
+      {textarea ? (
+        <textarea rows={2} value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} placeholder={placeholder} className={`${cls} resize-none font-normal`} />
+      ) : (
+        <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} placeholder={placeholder} className={`${cls} h-10 font-normal`} />
+      )}
+    </label>
+  );
+};
 
 /** One appearance choice: a label, a hint, and its options. */
 const Choice = ({ label, hint, options, value, onChange }) => (
@@ -199,6 +223,55 @@ const Settings = ({ onMenu }) => {
               )}
             </div>
           </section>
+
+          {!admin && (
+            <section className="overflow-hidden rounded-2xl border glass">
+              <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+                  <Store size={17} aria-hidden="true" />
+                </span>
+                <div>
+                  <div className="text-[14px] font-semibold">Shop on the bill</div>
+                  <p className="mt-0.5 text-[13px] text-ink-3">
+                    Your shop’s own details, printed at the top of every bill. A blank field falls back to the built-in
+                    showroom details. A composition dealer bills a “Bill of Supply” with no GST shown — only purchase
+                    orders and returns carry GST.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4 p-5">
+                <StoreField label="Shop name" value={settings.storeName} onSave={(v) => setSetting('storeName', v)} placeholder="e.g. SPARKLE CHRISTMAS" />
+                <StoreField
+                  label="Address"
+                  hint="one line per line"
+                  value={settings.storeAddress}
+                  onSave={(v) => setSetting('storeAddress', v)}
+                  textarea
+                  placeholder={'Ground Floor, 79, M.G.R Road,\nPune - 411001'}
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <StoreField label="Phone" value={settings.storePhone} onSave={(v) => setSetting('storePhone', v)} placeholder="8220263913" />
+                  <StoreField label="GSTIN" value={settings.gstin} onSave={(v) => setSetting('gstin', v)} placeholder="27DDFPR0896L1ZT" />
+                </div>
+                <StoreField
+                  label="Footer notes"
+                  hint="printed at the foot of the bill"
+                  value={settings.billFooter}
+                  onSave={(v) => setSetting('billFooter', v)}
+                  textarea
+                  placeholder="*NO EXCHANGE *NO RETURN *NO GUARANTEE ON COLORS"
+                />
+              </div>
+              <Toggle
+                id="setting-composition"
+                Icon={Store}
+                title="Composition dealer"
+                description="When on, bills print as a “Bill of Supply” with no GST shown anywhere on the customer bill (the price already includes it). Only purchase orders and purchase returns carry GST."
+                on={settings.composition}
+                onChange={(v) => setSetting('composition', v)}
+              />
+            </section>
+          )}
 
           {admin && (
             <>

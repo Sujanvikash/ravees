@@ -14,7 +14,7 @@ signs in, so they hold nothing private.
 import json
 from typing import Literal
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.core.errors import Forbidden
@@ -25,8 +25,10 @@ from . import repository
 
 KEY = 'ui'
 
-# the fields a showroom may set for itself; everything else is global and admin-only
+# appearance a showroom sets for itself; its own details printed on the bill; everything else is admin-only
 APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'effect_where', 'strip', 'nav', 'font', 'lang'})
+STORE = frozenset({'store_name', 'store_address', 'store_phone', 'gstin', 'bill_footer', 'composition'})
+SELF_EDITABLE = APPEARANCE | STORE
 
 
 class AppSettingsOut(ApiModel):
@@ -42,6 +44,17 @@ class AppSettingsOut(ApiModel):
     font: Literal['normal', 'large', 'larger'] = 'normal'
     # the script the app's words are shown in: 'en' English, 'ta' the same words transliterated into Tamil
     lang: Literal['en', 'ta'] = 'en'
+
+    # The showroom's own details on its bill (each franchise fills in its own). A composition dealer bills a
+    # "Bill of Supply" with no GST shown (the price already includes it); only purchase orders and returns carry
+    # GST. address / footer may hold several lines (newline-separated).
+    store_name: str = Field(default='', max_length=80)
+    store_address: str = Field(default='', max_length=300)
+    store_phone: str = Field(default='', max_length=80)
+    gstin: str = Field(default='', max_length=20)
+    bill_footer: str = Field(default='', max_length=200)
+    composition: bool = False
+
     # days after a sale its items can be returned or exchanged; 0 turns returns off
     return_days: Literal[0, 7, 15, 30] = 15
     # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
@@ -66,6 +79,12 @@ class AppSettingsPatch(ApiModel):
     nav: Literal['solid', 'soft'] | None = None
     font: Literal['normal', 'large', 'larger'] | None = None
     lang: Literal['en', 'ta'] | None = None
+    store_name: str | None = Field(default=None, max_length=80)
+    store_address: str | None = Field(default=None, max_length=300)
+    store_phone: str | None = Field(default=None, max_length=80)
+    gstin: str | None = Field(default=None, max_length=20)
+    bill_footer: str | None = Field(default=None, max_length=200)
+    composition: bool | None = None
     return_days: Literal[0, 7, 15, 30] | None = None
     show_gst: bool | None = None
     require_name: bool | None = None
@@ -88,7 +107,7 @@ def get(session: Session, location: str | None = None) -> AppSettingsOut:
     values = _load(session, KEY)
     if location:
         overrides = _load(session, _loc_key(location))
-        for name in APPEARANCE:
+        for name in SELF_EDITABLE:
             if name in overrides:
                 values[name] = overrides[name]
     # a saved value that is no longer allowed falls back to its default
@@ -114,7 +133,7 @@ def update(session: Session, patch: AppSettingsPatch, *, user: User) -> AppSetti
         repository.set_value(session, KEY, json.dumps(current))
         session.commit()
         return get(session)
-    if any(name not in APPEARANCE for name in changes):
+    if any(name not in SELF_EDITABLE for name in changes):
         raise Forbidden('Only the admin can change these settings.')
     location = user.location_id
     overrides = _load(session, _loc_key(location))

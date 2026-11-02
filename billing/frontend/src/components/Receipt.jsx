@@ -43,21 +43,34 @@ const wishFor = (billNo = '') => WISHES[[...billNo].reduce((h, c) => (h * 31 + c
  *  and white only. */
 const Receipt = ({ sale }) => {
   const { totals, payment } = sale;
+  const { settings } = useStore();
   const shop = locationById(sale.location) ?? {};
-  const gst = useStore().settings.showGst; // the admin can hide GST everywhere
+  // A composition dealer bills a "Bill of Supply": no GST is shown (the price already includes it). The store
+  // fills in its own name, address, phone, GSTIN and footer (Settings → Shop on the bill), falling back to the
+  // built-in showroom details when a field is left blank.
+  const composition = Boolean(settings.composition);
+  const gst = settings.showGst && !composition;
+  const storeName = settings.storeName?.trim();
+  const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
+  const phone = settings.storePhone?.trim() || shop.phone;
+  const gstin = settings.gstin?.trim() || shop.gstin;
+  const footer = settings.billFooter?.trim() ? settings.billFooter.split('\n').filter(Boolean) : [];
+  const title = composition ? 'BILL OF SUPPLY' : gst ? 'TAX INVOICE' : 'INVOICE';
   return (
     <div data-receipt className="hidden w-[72mm] font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
         {/* the logo carries the name, "Christmas Tree & Decoration" and "Since 1997" */}
         <img src={logo} alt={BRAND.name} className="print-ink mb-1.5 w-[46mm]" />
-        {(shop.address ?? []).map((a) => (
+        {storeName && <div className="text-[13px] font-bold tracking-wide">{storeName}</div>}
+        {address.map((a) => (
           <div key={a}>{a}</div>
         ))}
-        {shop.phone && <div>Ph: {shop.phone}</div>}
-        {gst && shop.gstin && <div>GSTIN: {shop.gstin}</div>}
+        {phone && <div>Ph: {phone}</div>}
+        {gstin && <div>GSTIN: {gstin}</div>}
+        {composition && <div className="font-bold">Composition Dealer</div>}
       </div>
 
-      <div className="my-2 border-y border-dashed border-black py-1 text-center font-bold tracking-[0.18em]">{gst ? 'TAX INVOICE' : 'INVOICE'}</div>
+      <div className="my-2 border-y border-dashed border-black py-1 text-center font-bold tracking-[0.18em]">{title}</div>
 
       <Line label="Bill" value={sale.billNo} />
       <Line label="Date" value={when.format(new Date(sale.at)).replace(',', '')} />
@@ -89,6 +102,7 @@ const Receipt = ({ sale }) => {
       </div>
 
       <Line label="TOTAL" value={inr(totals.payable)} className="my-2 border-y border-black py-1 text-[15px] font-bold" />
+      {composition && <div className="-mt-1 mb-1 text-center text-[10px]">E. &amp; O.E. · Price incl. GST (not charged separately)</div>}
 
       {gst && (
         <>
@@ -117,18 +131,28 @@ const Receipt = ({ sale }) => {
       </div>
 
       <div className={`mt-2 flex flex-col items-center gap-0.5 pt-2 text-center ${rule}`}>
-        <div className="font-bold">Thank you &amp; Merry Christmas!</div>
+        {footer.length > 0 ? (
+          footer.map((f) => (
+            <div key={f} className="font-bold">
+              {f}
+            </div>
+          ))
+        ) : (
+          <div className="font-bold">Thank you &amp; Merry Christmas!</div>
+        )}
         {BRAND.receiptNote && <div>{BRAND.receiptNote}</div>}
         {BRAND.email && <div>{BRAND.email}</div>}
       </div>
 
-      <div className="mt-2 border-y border-black py-1.5 text-center">
-        <div className="tracking-[0.3em]" aria-hidden="true">
-          * * * * *
+      {!composition && (
+        <div className="mt-2 border-y border-black py-1.5 text-center">
+          <div className="tracking-[0.3em]" aria-hidden="true">
+            * * * * *
+          </div>
+          <div className="mt-1 font-display text-[12px] italic">{wishFor(sale.billNo)}</div>
+          <div className="mt-1 text-[10px] font-bold tracking-[0.2em]">SEASON&rsquo;S GREETINGS</div>
         </div>
-        <div className="mt-1 font-display text-[12px] italic">{wishFor(sale.billNo)}</div>
-        <div className="mt-1 text-[10px] font-bold tracking-[0.2em]">SEASON&rsquo;S GREETINGS</div>
-      </div>
+      )}
     </div>
   );
 };

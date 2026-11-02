@@ -19,7 +19,8 @@ const rule = 'border-t border-dashed border-black pt-1.5';
  *  like the bill. Hidden on screen; it is the only thing that prints while it is on the page. */
 const CreditNotePrint = ({ note }) => {
   const shop = locationById(note.location) ?? {};
-  const gst = useStore().settings.showGst;
+  const { showGst, composition } = useStore().settings;
+  const gst = showGst && !composition; // a composition dealer shows no GST
   return (
     <div data-receipt className="hidden w-[72mm] font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
