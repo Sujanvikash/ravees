@@ -78,17 +78,24 @@ const Receipt = ({ sale }) => {
       {sale.name && <Line label="Customer" value={sale.name} />}
       {sale.phone && <Line label="Mobile" value={formatMobile(sale.phone)} />}
 
-      <Line label="ITEM / QTY × RATE" value="AMOUNT" className={`mt-2 font-bold ${rule}`} />
+      <Line label="ITEM · MRP / DISC% · PRICE" value="AMOUNT" className={`mt-2 font-bold ${rule}`} />
       <div className="mt-1 flex flex-col gap-1.5">
-        {sale.lines.map((l, i) => (
-          <div key={l.code}>
-            <div className="font-semibold">
-              {i + 1}. {l.name}
+        {sale.lines.map((l, i) => {
+          // the catalogue's own offer discount, MRP → selling price (Disc% / Dis.Price on the bill)
+          const disc = l.mrp > l.price ? ((l.mrp - l.price) / l.mrp) * 100 : 0;
+          return (
+            <div key={l.code}>
+              <div className="font-semibold">
+                {i + 1}. {l.name}
+              </div>
+              <Line label={l.code} value={`MRP ${amount(l.mrp)}`} />
+              <Line
+                label={disc > 0 ? `${l.qty} × ${amount(l.price)}  (−${disc.toFixed(2)}%)` : `${l.qty} × ${amount(l.price)}`}
+                value={amount(l.price * l.qty)}
+              />
             </div>
-            <Line label={`${l.code}  ${l.qty} × ${amount(l.price)}`} value={amount(l.price * l.qty)} />
-            {l.mrp > l.price && <div>MRP {amount(l.mrp)}</div>}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className={`mt-2 ${rule}`}>
