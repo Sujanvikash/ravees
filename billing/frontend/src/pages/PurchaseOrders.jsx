@@ -7,7 +7,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { inr } from '../lib/money.js';
-import { orderQty, orderValue, STATUS } from '../lib/orders.js';
+import { orderGst, orderQty, orderTotal, orderValue, PO_GST, STATUS } from '../lib/orders.js';
 import Pager from '../components/Pager.jsx';
 import { usePages } from '../hooks/usePages.js';
 import { rowClick } from '../lib/rowClick.js';
@@ -248,6 +248,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                             <tr className="border-b border-line-soft bg-mist-2">
                               <td colSpan={admin ? 9 : 7} className="px-4 pt-1 pb-4">
                                 <div className="ml-8 grid animate-pop gap-3 md:grid-cols-[minmax(0,1fr)_16rem]">
+                                  <div className="flex flex-col gap-2">
                                   <ul className="flex flex-col rounded-xl border border-line-soft bg-surface p-2">
                                     {o.lines.map((l) => {
                                       const got = o.counted?.find((c) => c.code === l.code)?.qty ?? 0;
@@ -267,6 +268,23 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                                       );
                                     })}
                                   </ul>
+                                  {(admin || o.status === 'sent' || o.status === 'received') && (
+                                    <div className="flex flex-col gap-1 rounded-xl border border-line-soft bg-surface px-3 py-2 text-[13px] tabular-nums">
+                                      <div className="flex justify-between text-ink-2">
+                                        <span>Goods value</span>
+                                        <span>{inr(orderValue(o.lines))}</span>
+                                      </div>
+                                      <div className="flex justify-between text-ink-2">
+                                        <span>GST {PO_GST}%</span>
+                                        <span>{inr(orderGst(o.lines))}</span>
+                                      </div>
+                                      <div className="flex justify-between border-t border-line-soft pt-1 font-semibold">
+                                        <span>Total</span>
+                                        <span>{inr(orderTotal(o.lines))}</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  </div>
                                   <ol aria-label="History" className="flex flex-col gap-2 text-xs">
                                     {o.history.map((h) => (
                                       <li key={h.at + h.action} className="flex gap-2">

@@ -48,11 +48,13 @@ def test_settings(client, chennai, admin):
     assert client.get('/settings', headers=chennai).json()['theme'] == 'dark'
     client.patch('/settings', json={'theme': s['theme'], 'font': 'normal'}, headers=chennai)  # put it back
 
-    # a showroom fills in its own bill details and the composition-dealer flag (store-level, not the admin's)
-    shop = client.patch('/settings', json={'storeName': 'SPARKLE CHRISTMAS', 'composition': True}, headers=chennai)
-    assert shop.status_code == 200 and shop.json()['storeName'] == 'SPARKLE CHRISTMAS' and shop.json()['composition'] is True
-    assert client.get('/settings', headers=admin).json()['composition'] is False  # the admin's own view is unaffected
-    client.patch('/settings', json={'storeName': '', 'composition': False}, headers=chennai)
+    # every store is a composition dealer by default
+    assert s['composition'] is True
+    # a showroom fills in its own bill details (store-level, not the admin's)
+    shop = client.patch('/settings', json={'storeName': 'SPARKLE CHRISTMAS', 'composition': False}, headers=chennai)
+    assert shop.status_code == 200 and shop.json()['storeName'] == 'SPARKLE CHRISTMAS' and shop.json()['composition'] is False
+    assert client.get('/settings', headers=admin).json()['storeName'] == ''  # the admin's own view is unaffected
+    client.patch('/settings', json={'storeName': '', 'composition': True}, headers=chennai)
 
     assert client.patch('/settings', json={'theme': 'pink'}, headers=admin).status_code == 422
     assert client.patch('/settings', json={'nope': 1}, headers=admin).status_code == 422

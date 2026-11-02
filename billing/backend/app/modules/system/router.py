@@ -13,18 +13,24 @@ settings_router = APIRouter(prefix='/settings', tags=['settings'])
 
 
 @settings_router.get('')
-def get_settings(session: DbSession, user: OptionalUser) -> AppSettingsOut:
+def get_settings(session: DbSession, user: OptionalUser, location: str | None = None) -> AppSettingsOut:
     """The settings in force. Open to all, signed in or not: the sign-in screen uses the appearance ones. A
-    showroom gets its own appearance laid over the admin's defaults; the admin and the sign-in screen get the
-    defaults."""
-    location = user.location_id if user and not user.is_admin else None
-    return settings.get(session, location)
+    showroom gets its own settings laid over the admin's defaults; the admin and the sign-in screen get the
+    defaults, or a given showroom's own with `?location=` (admin only, to edit that store's bill details)."""
+    if user and not user.is_admin:
+        loc = user.location_id
+    elif user and user.is_admin:
+        loc = location
+    else:
+        loc = None
+    return settings.get(session, loc)
 
 
 @settings_router.patch('')
-def update_settings(body: AppSettingsPatch, user: CurrentUser, session: DbSession) -> AppSettingsOut:
-    """The admin changes any switch (saved globally); a showroom changes only its own appearance."""
-    return settings.update(session, body, user=user)
+def update_settings(body: AppSettingsPatch, user: CurrentUser, session: DbSession, location: str | None = None) -> AppSettingsOut:
+    """The admin changes any switch (saved globally), or a given showroom's own appearance and bill details with
+    `?location=`; a showroom changes only its own."""
+    return settings.update(session, body, user=user, location=location if user.is_admin else None)
 
 
 class HealthOut(ApiModel):

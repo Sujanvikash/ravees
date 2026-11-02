@@ -53,7 +53,8 @@ class AppSettingsOut(ApiModel):
     store_phone: str = Field(default='', max_length=80)
     gstin: str = Field(default='', max_length=20)
     bill_footer: str = Field(default='', max_length=200)
-    composition: bool = False
+    # every showroom is a composition dealer (a Bill of Supply, GST included and not shown on the customer bill)
+    composition: bool = True
 
     # days after a sale its items can be returned or exchanged; 0 turns returns off
     return_days: Literal[0, 7, 15, 30] = 15
@@ -123,10 +124,23 @@ def get(session: Session, location: str | None = None) -> AppSettingsOut:
     return defaults.model_copy(update=clean)
 
 
-def update(session: Session, patch: AppSettingsPatch, *, user: User) -> AppSettingsOut:
-    """The admin changes the global settings (business switches and the appearance defaults). A showroom may
-    change only its own appearance, saved under its location; a business switch from a showroom is refused."""
+def _save_overrides(session: Session, location: str, changes: dict) -> AppSettingsOut:
+    overrides = _load(session, _loc_key(location))
+    overrides.update(changes)
+    repository.set_value(session, _loc_key(location), json.dumps(overrides))
+    session.commit()
+    return get(session, location)
+
+
+def update(session: Session, patch: AppSettingsPatch, *, user: User, location: str | None = None) -> AppSettingsOut:
+    """The admin changes the global settings (business switches and the appearance/bill-detail defaults), or —
+    with a `location` — a particular showroom's own appearance and bill details. A showroom changes only its
+    own; a business switch from a showroom, or anything but a showroom's own fields, is refused."""
     changes = patch.model_dump(exclude_none=True, by_alias=False)
+    if user.is_admin and location:
+        if any(name not in SELF_EDITABLE for name in changes):
+            raise Forbidden('Only a showroom’s own appearance and bill details can be set per store.')
+        return _save_overrides(session, location, changes)
     if user.is_admin or not user.location_id:
         current = _load(session, KEY)
         current.update(changes)
@@ -135,9 +149,4 @@ def update(session: Session, patch: AppSettingsPatch, *, user: User) -> AppSetti
         return get(session)
     if any(name not in SELF_EDITABLE for name in changes):
         raise Forbidden('Only the admin can change these settings.')
-    location = user.location_id
-    overrides = _load(session, _loc_key(location))
-    overrides.update(changes)
-    repository.set_value(session, _loc_key(location), json.dumps(overrides))
-    session.commit()
-    return get(session, location)
+    return _save_overrides(session, user.location_id, changes)

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { FlaskConical, Palette, Percent, Phone, Printer, Store, Undo2, User } from 'lucide-react';
-import { Segmented } from '../components/Filters.jsx';
+import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import { LOCATIONS } from '../config.js';
 import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
+import { api } from '../lib/api.js';
 
 /** An on/off switch with its label and explanation. */
 const Toggle = ({ id, Icon, title, description, on, onChange }) => (
@@ -65,6 +67,87 @@ const Choice = ({ label, hint, options, value, onChange }) => (
     <Segmented label={label} options={options} value={value} onChange={onChange} />
   </div>
 );
+
+/** The shop-on-the-bill fields and the composition toggle, bound to `values` and saved through onSave(key, value). */
+const ShopFields = ({ values, onSave }) => (
+  <>
+    <div className="flex flex-col gap-4 p-5">
+      <StoreField label="Shop name" value={values.storeName} onSave={(v) => onSave('storeName', v)} placeholder="e.g. SPARKLE CHRISTMAS" />
+      <StoreField
+        label="Address"
+        hint="one line per line"
+        value={values.storeAddress}
+        onSave={(v) => onSave('storeAddress', v)}
+        textarea
+        placeholder={'Ground Floor, 79, M.G.R Road,\nPune - 411001'}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <StoreField label="Phone" value={values.storePhone} onSave={(v) => onSave('storePhone', v)} placeholder="8220263913" />
+        <StoreField label="GSTIN" value={values.gstin} onSave={(v) => onSave('gstin', v)} placeholder="27DDFPR0896L1ZT" />
+      </div>
+      <StoreField
+        label="Footer notes"
+        hint="printed at the foot of the bill"
+        value={values.billFooter}
+        onSave={(v) => onSave('billFooter', v)}
+        textarea
+        placeholder="*NO EXCHANGE *NO RETURN *NO GUARANTEE ON COLORS"
+      />
+    </div>
+    <Toggle
+      id="setting-composition"
+      Icon={Store}
+      title="Composition dealer"
+      description="When on, bills print as a “Bill of Supply” with no GST shown on the customer bill (the price already includes it). Only purchase orders and purchase returns carry GST."
+      on={values.composition}
+      onChange={(v) => onSave('composition', v)}
+    />
+  </>
+);
+
+/** Admin: edit one showroom's own bill details. Keyed by location so it reloads when the showroom changes. */
+const StoreDetailsEditor = ({ location }) => {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  const load = useEffectEvent(() => {
+    api(`/settings?location=${encodeURIComponent(location)}`).then(setData, (e) => setError(e.message));
+  });
+  useEffect(() => {
+    load();
+  }, []);
+  const save = async (key, value) => {
+    setError('');
+    try {
+      setData(await api(`/settings?location=${encodeURIComponent(location)}`, { method: 'PATCH', body: { [key]: value } }));
+    } catch (e) {
+      setError(`Not saved: ${e.message}`);
+    }
+  };
+  if (!data) return <p className="px-5 py-4 text-[13px] text-ink-3">{error || 'Loading…'}</p>;
+  return (
+    <>
+      {error && (
+        <p role="alert" className="px-5 pt-3 text-xs font-medium text-ruby-ink">
+          {error}
+        </p>
+      )}
+      <ShopFields values={data} onSave={save} />
+    </>
+  );
+};
+
+/** Admin: a showroom picker over its bill details. */
+const AdminStoreDetails = () => {
+  const [location, setLocation] = useState(LOCATIONS[0].id);
+  return (
+    <>
+      <div className="px-5 pt-4">
+        <LocationPicker value={location} onChange={setLocation} all={false} />
+      </div>
+      <StoreDetailsEditor key={location} location={location} />
+    </>
+  );
+};
 
 /** Admin only: the app's look, and switches that change what the showrooms can do. They are kept on the server,
  * so they apply on every computer; a change that the server refuses is put back. In the demo, the demo admin can
@@ -224,54 +307,22 @@ const Settings = ({ onMenu }) => {
             </div>
           </section>
 
-          {!admin && (
-            <section className="overflow-hidden rounded-2xl border glass">
-              <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
-                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
-                  <Store size={17} aria-hidden="true" />
-                </span>
-                <div>
-                  <div className="text-[14px] font-semibold">Shop on the bill</div>
-                  <p className="mt-0.5 text-[13px] text-ink-3">
-                    Your shop’s own details, printed at the top of every bill. A blank field falls back to the built-in
-                    showroom details. A composition dealer bills a “Bill of Supply” with no GST shown — only purchase
-                    orders and returns carry GST.
-                  </p>
-                </div>
+          <section className="overflow-hidden rounded-2xl border glass">
+            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+                <Store size={17} aria-hidden="true" />
+              </span>
+              <div>
+                <div className="text-[14px] font-semibold">Shop on the bill</div>
+                <p className="mt-0.5 text-[13px] text-ink-3">
+                  {admin
+                    ? 'Each showroom’s own details, printed at the top of its bills. Pick a showroom to set its name, address, GSTIN and footer. A blank field falls back to the built-in details.'
+                    : 'Your shop’s own details, printed at the top of every bill. A blank field falls back to the built-in showroom details. A composition dealer bills a “Bill of Supply” with no GST shown — only purchase orders and returns carry GST.'}
+                </p>
               </div>
-              <div className="flex flex-col gap-4 p-5">
-                <StoreField label="Shop name" value={settings.storeName} onSave={(v) => setSetting('storeName', v)} placeholder="e.g. SPARKLE CHRISTMAS" />
-                <StoreField
-                  label="Address"
-                  hint="one line per line"
-                  value={settings.storeAddress}
-                  onSave={(v) => setSetting('storeAddress', v)}
-                  textarea
-                  placeholder={'Ground Floor, 79, M.G.R Road,\nPune - 411001'}
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <StoreField label="Phone" value={settings.storePhone} onSave={(v) => setSetting('storePhone', v)} placeholder="8220263913" />
-                  <StoreField label="GSTIN" value={settings.gstin} onSave={(v) => setSetting('gstin', v)} placeholder="27DDFPR0896L1ZT" />
-                </div>
-                <StoreField
-                  label="Footer notes"
-                  hint="printed at the foot of the bill"
-                  value={settings.billFooter}
-                  onSave={(v) => setSetting('billFooter', v)}
-                  textarea
-                  placeholder="*NO EXCHANGE *NO RETURN *NO GUARANTEE ON COLORS"
-                />
-              </div>
-              <Toggle
-                id="setting-composition"
-                Icon={Store}
-                title="Composition dealer"
-                description="When on, bills print as a “Bill of Supply” with no GST shown anywhere on the customer bill (the price already includes it). Only purchase orders and purchase returns carry GST."
-                on={settings.composition}
-                onChange={(v) => setSetting('composition', v)}
-              />
-            </section>
-          )}
+            </div>
+            {admin ? <AdminStoreDetails /> : <ShopFields values={settings} onSave={setSetting} />}
+          </section>
 
           {admin && (
             <>

@@ -19,7 +19,14 @@ export const STATUS = {
 };
 
 export const orderQty = (lines) => lines.reduce((s, l) => s + l.qty, 0);
+/** The goods value at the purchase rate (the rate a showroom buys from the admin at). */
 export const orderValue = (lines) => lines.reduce((s, l) => s + l.qty * l.rate, 0);
+
+// Purchase orders and purchase returns carry GST at this rate on the purchase value (unlike customer bills,
+// where the composition dealer's price already includes GST and none is shown).
+export const PO_GST = 18;
+export const orderGst = (lines) => (orderValue(lines) * PO_GST) / 100;
+export const orderTotal = (lines) => orderValue(lines) + orderGst(lines);
 
 /** Units per product that are on their way to a showroom (sent, not yet counted in) or still requested. */
 export const pendingByProduct = (orders, location, status) => {

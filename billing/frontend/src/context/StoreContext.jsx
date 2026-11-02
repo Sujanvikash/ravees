@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS = {
   storePhone: '',
   gstin: '',
   billFooter: '',
-  composition: false,
+  composition: true,
   returnDays: 15,
   showGst: true,
   requireName: true,
