@@ -38,7 +38,16 @@ def test_quotation(client, chennai, admin):
 def test_settings(client, chennai, admin):
     s = client.get('/settings').json()  # open to the sign-in screen
     assert s['quotePrint'] is True and s['theme'] in {'classic', 'light', 'dark'} and s['returnDays'] in {0, 7, 15, 30}
-    assert client.patch('/settings', json={'theme': 'dark'}, headers=chennai).status_code == 403
+    assert s['font'] in {'normal', 'large', 'larger'}
+    # a showroom may change its own appearance, but not a business switch
+    assert client.patch('/settings', json={'quotePrint': False}, headers=chennai).status_code == 403
+    chennai_view = client.patch('/settings', json={'theme': 'dark', 'font': 'large'}, headers=chennai)
+    assert chennai_view.status_code == 200 and chennai_view.json()['theme'] == 'dark' and chennai_view.json()['font'] == 'large'
+    # the showroom's own appearance doesn't change the admin's (global) view
+    assert client.get('/settings', headers=admin).json()['theme'] == s['theme']
+    assert client.get('/settings', headers=chennai).json()['theme'] == 'dark'
+    client.patch('/settings', json={'theme': s['theme'], 'font': 'normal'}, headers=chennai)  # put it back
+
     assert client.patch('/settings', json={'theme': 'pink'}, headers=admin).status_code == 422
     assert client.patch('/settings', json={'nope': 1}, headers=admin).status_code == 422
     changed = client.patch('/settings', json={'theme': 'dark', 'quotePrint': False}, headers=admin).json()

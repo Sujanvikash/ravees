@@ -29,6 +29,24 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+def get_optional_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+    session: DbSession,
+    settings: AppSettings,
+) -> User | None:
+    """The signed-in login if there's a valid token, else None — for endpoints open to all (the sign-in screen
+    reads the settings before anyone is in)."""
+    if credentials is None:
+        return None
+    try:
+        return service.user_from_token(session, settings, credentials.credentials)
+    except Unauthorized:
+        return None
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]
+
+
 def require_admin(user: CurrentUser) -> User:
     if not user.is_admin:
         raise Forbidden('Only the admin can do this.')

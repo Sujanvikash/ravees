@@ -1,7 +1,14 @@
 """
-The admin's switches (Settings in the app): appearance, whether showrooms may print quotations, how long after a
-sale its items may be returned or exchanged, and whether GST is shown at all. Kept as one JSON value in app_settings; anything not saved
-yet has its default. The sign-in screen reads them before anyone signs in, so they hold nothing private.
+The settings behind Settings in the app, split into two kinds:
+
+  Appearance (per showroom) — theme, wash, effect, snow, where, strip, nav, font. Each showroom sets its own
+    look for its own screen; the admin sets the defaults (also used on the sign-in screen, before anyone is in).
+  Business (global, admin only) — whether showrooms may print quotations, the return window, whether GST is
+    shown at all, and whether a bill needs the customer's name / mobile.
+
+Kept as JSON in app_settings: the global defaults under 'ui', each showroom's appearance overrides under
+'ui:<location>'. Anything not saved yet has its default. The sign-in screen reads the global ones before anyone
+signs in, so they hold nothing private.
 """
 
 import json
@@ -10,11 +17,16 @@ from typing import Literal
 from pydantic import ConfigDict
 from sqlalchemy.orm import Session
 
+from app.core.errors import Forbidden
 from app.core.schemas import ApiModel
+from app.modules.users.models import User
 
 from . import repository
 
 KEY = 'ui'
+
+# the fields a showroom may set for itself; everything else is global and admin-only
+APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'effect_where', 'strip', 'nav', 'font'})
 
 
 class AppSettingsOut(ApiModel):
@@ -26,6 +38,8 @@ class AppSettingsOut(ApiModel):
     effect_where: Literal['everywhere', 'signin'] = 'everywhere'
     strip: Literal['green', 'white'] = 'green'
     nav: Literal['solid', 'soft'] = 'solid'
+    # a per-screen text-size preset (applied as a UI zoom); 'normal' is the original size
+    font: Literal['normal', 'large', 'larger'] = 'normal'
     # days after a sale its items can be returned or exchanged; 0 turns returns off
     return_days: Literal[0, 7, 15, 30] = 15
     # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
@@ -48,18 +62,32 @@ class AppSettingsPatch(ApiModel):
     effect_where: Literal['everywhere', 'signin'] | None = None
     strip: Literal['green', 'white'] | None = None
     nav: Literal['solid', 'soft'] | None = None
+    font: Literal['normal', 'large', 'larger'] | None = None
     return_days: Literal[0, 7, 15, 30] | None = None
     show_gst: bool | None = None
     require_name: bool | None = None
     require_mobile: bool | None = None
 
 
-def get(session: Session) -> AppSettingsOut:
-    saved = repository.get_value(session, KEY, '{}')
+def _loc_key(location: str) -> str:
+    return f'{KEY}:{location}'
+
+
+def _load(session: Session, key: str) -> dict:
     try:
-        values = json.loads(saved)
+        return json.loads(repository.get_value(session, key, '{}'))
     except ValueError:
-        values = {}
+        return {}
+
+
+def get(session: Session, location: str | None = None) -> AppSettingsOut:
+    """The settings in force: the global defaults, with `location`'s own appearance overrides laid over them."""
+    values = _load(session, KEY)
+    if location:
+        overrides = _load(session, _loc_key(location))
+        for name in APPEARANCE:
+            if name in overrides:
+                values[name] = overrides[name]
     # a saved value that is no longer allowed falls back to its default
     defaults = AppSettingsOut()
     clean = {}
@@ -73,9 +101,21 @@ def get(session: Session) -> AppSettingsOut:
     return defaults.model_copy(update=clean)
 
 
-def update(session: Session, patch: AppSettingsPatch) -> AppSettingsOut:
-    current = get(session)
-    merged = current.model_copy(update=patch.model_dump(exclude_none=True, by_alias=False))
-    repository.set_value(session, KEY, json.dumps(merged.model_dump(by_alias=False)))
+def update(session: Session, patch: AppSettingsPatch, *, user: User) -> AppSettingsOut:
+    """The admin changes the global settings (business switches and the appearance defaults). A showroom may
+    change only its own appearance, saved under its location; a business switch from a showroom is refused."""
+    changes = patch.model_dump(exclude_none=True, by_alias=False)
+    if user.is_admin or not user.location_id:
+        current = _load(session, KEY)
+        current.update(changes)
+        repository.set_value(session, KEY, json.dumps(current))
+        session.commit()
+        return get(session)
+    if any(name not in APPEARANCE for name in changes):
+        raise Forbidden('Only the admin can change these settings.')
+    location = user.location_id
+    overrides = _load(session, _loc_key(location))
+    overrides.update(changes)
+    repository.set_value(session, _loc_key(location), json.dumps(overrides))
     session.commit()
-    return merged
+    return get(session, location)

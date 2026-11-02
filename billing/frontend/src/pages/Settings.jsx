@@ -47,7 +47,9 @@ const Choice = ({ label, hint, options, value, onChange }) => (
  * also start the demo's sample data again from scratch. */
 const Settings = ({ onMenu }) => {
   const { settings, setSetting: save, resetDemo } = useStore();
-  const demo = Boolean(useSession()?.demo);
+  const session = useSession();
+  const admin = session?.role === 'admin';
+  const demo = Boolean(session?.demo);
   const [error, setError] = useState('');
   const [resetting, setResetting] = useState('');
   const setSetting = (key, value) => {
@@ -64,10 +66,14 @@ const Settings = ({ onMenu }) => {
   };
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader crumbs={['Admin', 'Settings']} onMenu={onMenu} />
+      <PageHeader crumbs={admin ? ['Admin', 'Settings'] : ['Appearance']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 p-3 lg:px-5 lg:py-4">
-          <p className="text-[13px] text-ink-3">These settings are saved on the billing server and apply to every showroom and computer.</p>
+          <p className="text-[13px] text-ink-3">
+            {admin
+              ? 'Saved on the billing server. The business switches apply everywhere; the appearance below is the default each showroom starts from and can change for its own screens.'
+              : 'The look of your showroom’s screens — theme and text size. Saved on the server for your showroom; the admin sets the defaults.'}
+          </p>
           {error && (
             <p role="alert" className="text-xs font-medium text-ruby-ink">
               {error}
@@ -80,10 +86,25 @@ const Settings = ({ onMenu }) => {
               </span>
               <div>
                 <div className="text-[14px] font-semibold">Appearance</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">The theme for every screen, including sign-in. Changes show straight away.</p>
+                <p className="mt-0.5 text-[13px] text-ink-3">
+                  {admin
+                    ? 'The default look for every screen, including sign-in. Each showroom can change it for its own screens. Changes show straight away.'
+                    : 'Theme and text size for your showroom’s screens. Changes show straight away.'}
+                </p>
               </div>
             </div>
             <div className="divide-y divide-line-soft">
+              <Choice
+                label="Text size"
+                hint="Make everything on screen bigger — for the counter monitor"
+                options={[
+                  { id: 'normal', label: 'Normal' },
+                  { id: 'large', label: 'Large' },
+                  { id: 'larger', label: 'Larger' },
+                ]}
+                value={settings.font}
+                onChange={(v) => setSetting('font', v)}
+              />
               <Choice
                 label="Theme"
                 hint="Classic is the original look"
@@ -169,6 +190,8 @@ const Settings = ({ onMenu }) => {
             </div>
           </section>
 
+          {admin && (
+            <>
           <section className="overflow-hidden rounded-2xl border glass">
             <Toggle
               id="setting-quote-print"
@@ -250,8 +273,10 @@ const Settings = ({ onMenu }) => {
               onChange={(v) => setSetting('returnDays', v)}
             />
           </section>
+            </>
+          )}
 
-          {demo && (
+          {admin && demo && (
             <section className="flex items-start gap-4 overflow-hidden rounded-2xl border glass px-5 py-4">
               <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-warn-50 text-warn-ink">
                 <FlaskConical size={17} aria-hidden="true" />

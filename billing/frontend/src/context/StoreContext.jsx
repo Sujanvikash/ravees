@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS = {
   effectWhere: 'everywhere',
   strip: 'green',
   nav: 'solid',
+  font: 'normal',
   returnDays: 15,
   showGst: true,
   requireName: true,

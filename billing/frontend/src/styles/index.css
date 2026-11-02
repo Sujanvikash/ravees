@@ -144,6 +144,18 @@
   }
 }
 
+/* Text size (Settings → Appearance), chosen per showroom. A whole-UI zoom so everything scales — including the
+   many fixed-pixel sizes — not just rem-based text. Screen only: printed bills and credit notes keep their exact
+   80mm / A4 layout. */
+@media screen {
+  html[data-font="large"] {
+    zoom: 1.12;
+  }
+  html[data-font="larger"] {
+    zoom: 1.25;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

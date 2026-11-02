@@ -79,7 +79,7 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'cash' && <CashClose key={session.username} {...props} />}
           {page === 'logins' && session.role === 'admin' && <Logins {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}
-          {page === 'settings' && session.role === 'admin' && <Settings {...props} />}
+          {page === 'settings' && <Settings {...props} />}
         </div>
       </div>
     </SessionContext.Provider>
@@ -145,12 +145,14 @@ const Screens = ({ session, setSession }) => {
     return () => window.removeEventListener('billing-signed-out', onSignedOut);
   }, [setSession]);
 
-  // The admin's theme (Settings → Appearance) goes on <html>; index.css styles each one.
+  // The theme and text-size (Settings → Appearance) go on <html>; index.css styles each one. Appearance is per
+  // showroom, so this is whatever the signed-in showroom chose (or the admin's default before sign-in).
   useEffect(() => {
     const html = document.documentElement;
     html.dataset.theme = settings.theme;
     html.dataset.wash = settings.wash;
-  }, [settings.theme, settings.wash]);
+    html.dataset.font = settings.font;
+  }, [settings.theme, settings.wash, settings.font]);
 
   return (
     <>
