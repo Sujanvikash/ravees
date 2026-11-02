@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+
 from .conftest import login
 
 CUSTOMER = {'name': 'Priya Raman', 'phone': '9840788950'}
@@ -69,6 +71,28 @@ def test_bill_rules(client, chennai):
     )
     assert 'add up' in refused(sale([{'code': code, 'qty': 1}], 'split', split={'cash': 1, 'upi': 1}))
     assert isinstance(refused(sale([{'code': code, 'qty': 0}])), list)
+
+
+def test_manual_discount_reduces_the_bill_and_the_server_prices_it(client, chennai):
+    code = season_code(client, chennai)
+    full = client.post('/sales', json=sale([{'code': code, 'qty': 2}]), headers=chennai).json()['totals']['payable']
+
+    # 10% off: the server works out the rupees and the GST drops with the taxable value
+    pct = client.post(
+        '/sales', json={**sale([{'code': code, 'qty': 2}], 'cash', received=100000), 'discount': {'kind': 'percent', 'value': 10}}, headers=chennai
+    )
+    assert pct.status_code == 201, pct.text
+    t = pct.json()['totals']
+    assert t['discountKind'] == 'percent' and t['discountValue'] == 10
+    assert t['discount'] > 0 and t['payable'] == round(full - t['discount'])
+    assert t['taxable'] + t['tax'] == pytest.approx(full - t['discount'])
+    assert pct.json()['payment']['change'] == 100000 - t['payable']
+
+    # a flat amount bigger than the bill is capped, so the bill never goes negative
+    capped = client.post(
+        '/sales', json={**sale([{'code': code, 'qty': 1}], 'cash', received=100000), 'discount': {'kind': 'amount', 'value': 10_000_000}}, headers=chennai
+    ).json()['totals']
+    assert capped['payable'] == 0
 
 
 def test_split_and_card(client, chennai):

@@ -27,6 +27,25 @@ class Priced(Protocol):
     gst: Decimal
 
 
+class Discount(Protocol):
+    """A manual whole-bill discount, as `percent` of the subtotal or a flat `amount` in rupees."""
+
+    kind: str  # 'percent' | 'amount'
+    value: float
+
+
+def discount_off(gross: Decimal, discount: Discount | None) -> Decimal:
+    """The rupee amount a manual discount takes off `gross` (the GST-inclusive subtotal), to the paisa.
+    A percentage is capped at 100%, a flat amount at the whole subtotal, so the bill never goes negative."""
+    if not discount or discount.value <= 0:
+        return Decimal(0)
+    if discount.kind == 'percent':
+        off = gross * min(Decimal(str(discount.value)), Decimal(100)) / 100
+    else:
+        off = min(Decimal(str(discount.value)), gross)
+    return off.quantize(PAISA, ROUND_HALF_UP)
+
+
 @dataclass(frozen=True, slots=True)
 class BillLine:
     code: str
@@ -70,8 +89,10 @@ def bill_lines(items: Iterable[tuple[str, int]], products: dict[str, Priced]) ->
     return lines
 
 
-def totals(lines: Sequence[BillLine]) -> dict:
-    """The bill's figures, in the shape the frontend keeps on a sale or quotation (sale.totals)."""
+def totals(lines: Sequence[BillLine], discount: Discount | None = None) -> dict:
+    """The bill's figures, in the shape the frontend keeps on a sale or quotation (sale.totals). A manual
+    `discount` comes off the selling subtotal and is spread across the GST rates in proportion, so the taxable
+    value and GST drop with it (a trade discount), the same as src/lib/bill.js."""
     gross = Decimal(0)
     mrp_total = Decimal(0)
     by_rate: dict[Decimal, list[Decimal]] = {}
@@ -88,19 +109,25 @@ def totals(lines: Sequence[BillLine]) -> dict:
         row[0] += taxable
         row[1] += tax
 
+    off = discount_off(gross, discount)
+    factor = (gross - off) / gross if gross else Decimal(1)
     rates = sorted(by_rate, reverse=True)
-    taxable_total = sum((by_rate[r][0] for r in rates), Decimal(0))
-    tax_total = sum((by_rate[r][1] for r in rates), Decimal(0))
-    exact = gross if PRICES_INCLUDE_GST else gross + tax_total
+    taxable_total = sum((by_rate[r][0] * factor for r in rates), Decimal(0))
+    tax_total = sum((by_rate[r][1] * factor for r in rates), Decimal(0))
+    net = gross - off
+    exact = net if PRICES_INCLUDE_GST else net + tax_total
     payable = exact.quantize(Decimal(1), ROUND_HALF_UP)
     return {
         'count': len(lines),
         'qty': sum(line.qty for line in lines),
         'mrpTotal': _num(mrp_total),
         'savings': _num(mrp_total - gross),
+        'discount': _num(off),
+        'discountKind': discount.kind if off > 0 else None,
+        'discountValue': float(discount.value) if off > 0 else 0,
         'taxable': _num(taxable_total),
         'tax': _num(tax_total),
-        'gstRows': [{'rate': float(r), 'taxable': _num(by_rate[r][0]), 'tax': _num(by_rate[r][1])} for r in rates],
+        'gstRows': [{'rate': float(r), 'taxable': _num(by_rate[r][0] * factor), 'tax': _num(by_rate[r][1] * factor)} for r in rates],
         'roundOff': _num(payable - exact),
         'payable': float(payable),
     }

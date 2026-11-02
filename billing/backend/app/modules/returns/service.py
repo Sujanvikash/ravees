@@ -126,6 +126,7 @@ def create_return(
                 phone=sale.phone,
                 name=sale.name,
                 payment=data.exchange.payment,
+                discount=data.exchange.discount,
             ),
             at=at,
             credit=amount,

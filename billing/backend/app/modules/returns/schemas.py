@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import Field
 
 from app.core.schemas import ApiModel
-from app.modules.sales.schemas import LineIn, PaymentIn, SaleOut
+from app.modules.sales.schemas import DiscountIn, LineIn, PaymentIn, SaleOut
 
 from .models import SaleReturn
 
@@ -15,6 +15,7 @@ class ExchangeIn(ApiModel):
     id: uuid.UUID
     lines: list[LineIn] = Field(min_length=1, max_length=500)
     payment: PaymentIn
+    discount: DiscountIn | None = None
 
 
 class ReturnIn(ApiModel):

@@ -129,7 +129,7 @@ def create_sale(
 
     catalogue = products.by_codes(session, (line.code for line in data.lines))
     lines = bill.bill_lines(((line.code, line.qty) for line in data.lines), catalogue)
-    totals = bill.totals(lines)
+    totals = bill.totals(lines, data.discount)
     payment = _payment(data.payment, Decimal(str(totals['payable'])), credit)
     if credit_note:
         payment['creditNote'] = credit_note

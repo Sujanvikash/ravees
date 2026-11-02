@@ -144,6 +144,7 @@ def build(
         row['bills'] += 1
         row['units'] += t['qty']
         row['sales'] += t['payable']
+        row['discount'] += t.get('discount', 0)
         row['taxable'] += t['taxable'] if gst else t['payable']
         row['gst'] += t['tax']
         row['cost'] += sum(float(ln.cost) * ln.qty for ln in s.lines)
@@ -153,8 +154,8 @@ def build(
             float(next((ln.cost for ln in r.sale.lines if ln.code == x['code']), 0)) * x['qty'] for x in r.lines
         )
     sales_label = 'Sales (incl. GST)' if gst else 'Sales'
-    header = ['Showroom', 'Bills', 'Units', sales_label, 'GST', 'Returns', 'Net sales']
-    money = [sales_label, 'GST', 'Returns', 'Net sales']
+    header = ['Showroom', 'Bills', 'Units', 'Discount', sales_label, 'GST', 'Returns', 'Net sales']
+    money = ['Discount', sales_label, 'GST', 'Returns', 'Net sales']
     if admin:
         header += ['Purchase cost', 'Gross profit', 'Margin %']
         money += ['Purchase cost', 'Gross profit']
@@ -166,6 +167,7 @@ def build(
             CITY[shop],
             int(p['bills']),
             int(p['units']),
+            p['discount'],
             p['sales'],
             p['gst'],
             p['returns'],
@@ -200,6 +202,7 @@ def build(
         'Qty',
         'MRP total',
         'Savings',
+        'Discount',
         'Taxable',
         'GST',
         'Round-off',
@@ -210,7 +213,7 @@ def build(
         'Card',
         'Exchange credit',
     ]
-    money = ['MRP total', 'Savings', 'Taxable', 'GST', 'Round-off', 'Amount', 'Cash', 'UPI', 'Card', 'Exchange credit']
+    money = ['MRP total', 'Savings', 'Discount', 'Taxable', 'GST', 'Round-off', 'Amount', 'Cash', 'UPI', 'Card', 'Exchange credit']
     if admin:
         header += ['Purchase cost', 'Gross profit']
         money += ['Purchase cost', 'Gross profit']
@@ -228,6 +231,7 @@ def build(
             t['qty'],
             t['mrpTotal'],
             t['savings'],
+            t.get('discount', 0),
             t['taxable'],
             t['tax'],
             t['roundOff'],

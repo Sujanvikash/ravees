@@ -45,6 +45,14 @@ class LineIn(ApiModel):
     qty: Qty
 
 
+class DiscountIn(ApiModel):
+    """A manual whole-bill discount: `percent` of the subtotal, or a flat `amount` in rupees. The server works
+    out what it takes off and caps it at the bill total (see sales/bill.py)."""
+
+    kind: Literal['percent', 'amount']
+    value: Annotated[float, Field(gt=0, le=100_000_000)]
+
+
 class SplitIn(ApiModel):
     cash: Amount
     upi: Amount
@@ -69,6 +77,7 @@ class SaleIn(ApiModel):
     phone: str = Field(max_length=32)
     name: str = Field(max_length=120)
     payment: PaymentIn
+    discount: DiscountIn | None = None
 
     @field_validator('name')
     @classmethod

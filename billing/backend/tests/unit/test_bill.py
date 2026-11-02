@@ -42,6 +42,38 @@ def test_totals_take_gst_out_of_the_price():
     assert (t['count'], t['qty'], t['roundOff']) == (2, 4, 0)
 
 
+@dataclass
+class D:
+    kind: str
+    value: float
+
+
+def test_discount_percent_reduces_taxable_and_gst():
+    lines = bill.bill_lines([('TREE', 2), ('STAR', 2)], CATALOGUE)  # subtotal 2498
+    t = bill.totals(lines, D('percent', 10))
+    assert t['discount'] == 249.80 and t['discountKind'] == 'percent' and t['discountValue'] == 10
+    assert t['payable'] == 2248  # 2498 − 249.80 = 2248.20, rounded
+    # each rate's taxable and GST drop in proportion (a trade discount)
+    assert t['gstRows'] == [
+        {'rate': 18.0, 'taxable': 1523.90, 'tax': 274.30},
+        {'rate': 12.0, 'taxable': 401.79, 'tax': 48.21},
+    ]
+    assert t['taxable'] + t['tax'] == pytest.approx(2248.20)
+
+
+def test_discount_amount_is_flat_and_capped():
+    lines = bill.bill_lines([('TREE', 2), ('STAR', 2)], CATALOGUE)
+    assert bill.totals(lines, D('amount', 500))['payable'] == 1998  # 2498 − 500
+    # more than the whole bill is capped, so the bill never goes negative
+    t = bill.totals(lines, D('amount', 99999))
+    assert t['discount'] == 2498 and t['payable'] == 0
+
+
+def test_no_discount_leaves_the_fields_empty():
+    t = bill.totals(bill.bill_lines([('TREE', 1)], CATALOGUE))
+    assert t['discount'] == 0 and t['discountKind'] is None and t['discountValue'] == 0
+
+
 def test_unknown_codes_and_empty_bills_are_refused():
     with pytest.raises(InvalidInput, match='NOPE'):
         bill.bill_lines([('NOPE', 1)], CATALOGUE)
