@@ -156,6 +156,16 @@
   }
 }
 
+/* Tamil script (Settings → Appearance → Language): lean on a Tamil-capable system font so the transliterated
+   words render crisply, falling back to the normal UI font for the Latin that stays (codes, numbers). */
+html[data-lang="ta"] body,
+html[data-lang="ta"] input,
+html[data-lang="ta"] textarea,
+html[data-lang="ta"] select,
+html[data-lang="ta"] button {
+  font-family: "Nirmala UI", "Latha", "Noto Sans Tamil", var(--font-sans);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

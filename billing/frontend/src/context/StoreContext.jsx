@@ -39,6 +39,7 @@ export const DEFAULT_SETTINGS = {
   strip: 'green',
   nav: 'solid',
   font: 'normal',
+  lang: 'en',
   returnDays: 15,
   showGst: true,
   requireName: true,

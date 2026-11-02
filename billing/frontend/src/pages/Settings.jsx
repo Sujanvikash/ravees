@@ -95,6 +95,16 @@ const Settings = ({ onMenu }) => {
             </div>
             <div className="divide-y divide-line-soft">
               <Choice
+                label="Language"
+                hint="Tamil shows the same words in Tamil script (not translated); numbers and codes stay as they are"
+                options={[
+                  { id: 'en', label: 'English' },
+                  { id: 'ta', label: 'தமிழ் · Tamil' },
+                ]}
+                value={settings.lang}
+                onChange={(v) => setSetting('lang', v)}
+              />
+              <Choice
                 label="Text size"
                 hint="Make everything on screen bigger — for the counter monitor"
                 options={[

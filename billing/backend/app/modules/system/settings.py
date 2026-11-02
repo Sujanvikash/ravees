@@ -26,7 +26,7 @@ from . import repository
 KEY = 'ui'
 
 # the fields a showroom may set for itself; everything else is global and admin-only
-APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'effect_where', 'strip', 'nav', 'font'})
+APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'effect_where', 'strip', 'nav', 'font', 'lang'})
 
 
 class AppSettingsOut(ApiModel):
@@ -40,6 +40,8 @@ class AppSettingsOut(ApiModel):
     nav: Literal['solid', 'soft'] = 'solid'
     # a per-screen text-size preset (applied as a UI zoom); 'normal' is the original size
     font: Literal['normal', 'large', 'larger'] = 'normal'
+    # the script the app's words are shown in: 'en' English, 'ta' the same words transliterated into Tamil
+    lang: Literal['en', 'ta'] = 'en'
     # days after a sale its items can be returned or exchanged; 0 turns returns off
     return_days: Literal[0, 7, 15, 30] = 15
     # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
@@ -63,6 +65,7 @@ class AppSettingsPatch(ApiModel):
     strip: Literal['green', 'white'] | None = None
     nav: Literal['solid', 'soft'] | None = None
     font: Literal['normal', 'large', 'larger'] | None = None
+    lang: Literal['en', 'ta'] | None = None
     return_days: Literal[0, 7, 15, 30] | None = None
     show_gst: bool | None = None
     require_name: bool | None = None

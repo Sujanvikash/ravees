@@ -21,6 +21,7 @@ import Quotations from './pages/Quotations.jsx';
 import Sales from './pages/Sales.jsx';
 import Settings from './pages/Settings.jsx';
 import StockReturns from './pages/StockReturns.jsx';
+import TranslitLayer from './components/TranslitLayer.jsx';
 
 /**
  * Sign-in, then the app: a collapsible menu on the left and the chosen page. A showroom login opens on its
@@ -152,10 +153,14 @@ const Screens = ({ session, setSession }) => {
     html.dataset.theme = settings.theme;
     html.dataset.wash = settings.wash;
     html.dataset.font = settings.font;
-  }, [settings.theme, settings.wash, settings.font]);
+    html.dataset.lang = settings.lang;
+    html.lang = settings.lang;
+  }, [settings.theme, settings.wash, settings.font, settings.lang]);
 
   return (
     <>
+      {/* shows the app in Tamil script when the showroom chose it; a no-op in English */}
+      <TranslitLayer lang={settings.lang} />
       {/* on the sign-in screen the snow falls in front; inside the app it stays behind the panels */}
       {(session ? settings.effectWhere === 'everywhere' : true) && <Backdrop effect={settings.effect} amount={settings.snow} front={!session} />}
       {session ? (
