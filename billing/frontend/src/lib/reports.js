@@ -35,6 +35,29 @@ export const filterSales = (sales, { location = null, period = 'all', now = new 
 
 export const saleCost = (sale) => sale.lines.reduce((sum, l) => sum + (l.cost ?? 0) * l.qty, 0);
 
+/** What has come back against each bill, keyed by the bill's id: { qty, amount, byCode: { [code]: qty } }.
+ *  Both returns and exchanges count, since in each case the goods leave the original bill. */
+export const returnsBySale = (returns) => {
+  const map = new Map();
+  for (const r of returns) {
+    const row = map.get(r.saleId) ?? { qty: 0, amount: 0, byCode: {} };
+    row.amount += r.amount;
+    for (const l of r.lines) {
+      row.qty += l.qty;
+      row.byCode[l.code] = (row.byCode[l.code] ?? 0) + l.qty;
+    }
+    map.set(r.saleId, row);
+  }
+  return map;
+};
+
+/** Each showroom's returns for a period: [{ location, amount, count }] in LOCATIONS order. */
+export const returnsByLocation = (returns, { period = 'all', now = new Date() } = {}) =>
+  LOCATIONS.map((l) => {
+    const rs = filterSales(returns, { location: l.id, period, now });
+    return { location: l, amount: rs.reduce((s, r) => s + r.amount, 0), count: rs.length };
+  });
+
 /** Totals for a set of sales. With gst false (the admin's Show GST switch off), profit and margin are on the
  *  selling price rather than on the value without GST. */
 export const summarize = (sales, { gst = true } = {}) => {
@@ -44,11 +67,13 @@ export const summarize = (sales, { gst = true } = {}) => {
   let cost = 0;
   let units = 0;
   let savings = 0;
+  let discount = 0;
   for (const s of sales) {
     total += s.totals.payable;
     taxable += s.totals.taxable;
     tax += s.totals.tax;
     savings += s.totals.savings;
+    discount += s.totals.discount ?? 0;
     units += s.totals.qty;
     cost += saleCost(s);
   }
@@ -64,6 +89,7 @@ export const summarize = (sales, { gst = true } = {}) => {
     bills: sales.length,
     units,
     savings,
+    discount,
     average: sales.length ? total / sales.length : 0,
   };
 };

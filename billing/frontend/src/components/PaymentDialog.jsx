@@ -75,6 +75,12 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-3">
               <span>{customerLabel(phone, name)}</span>
               {bill.savings > 0 && <span className="text-ok-ink">Customer saves {inr(bill.savings)}</span>}
+              {bill.discount > 0 && (
+                <span className="text-ok-ink">
+                  Discount {inr(bill.discount)}
+                  {bill.discountKind === 'percent' && ` (${bill.discountValue}%)`}
+                </span>
+              )}
               {gst && <span>GST {inr(bill.tax)} included</span>}
             </div>
           </div>

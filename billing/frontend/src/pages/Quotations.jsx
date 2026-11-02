@@ -267,8 +267,9 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const now = useClock();
   const draft = useBill(location, 'quote');
   const { quotes, settings } = useStore();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  // Prefilled when a bill was transferred over from the counter ("Save as quotation").
+  const [name, setName] = useState(() => draft.customer?.name ?? '');
+  const [phone, setPhone] = useState(() => draft.customer?.phone ?? '');
   const [days, setDays] = useState(7);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');

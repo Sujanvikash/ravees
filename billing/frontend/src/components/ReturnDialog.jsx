@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { ArrowLeft, Minus, Plus, Repeat, Search, Undo2 } from 'lucide-react';
 import { formatMobile } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
@@ -21,13 +21,13 @@ const secondary =
  *      bill is bigger the customer pays the rest; if smaller, the difference is refunded in cash.
  * Only what was on the bill, and not returned already, can come back, within the admin's return window.
  */
-const ReturnDialog = ({ location, sales, findBill, onRefund, onExchange, onClose }) => {
+const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund, onExchange, onClose }) => {
   const [query, setQuery] = useState('');
   const [found, setFound] = useState(null); // { sale, lines, returnableUntil, open }
   const [qty, setQty] = useState({});
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(Boolean(startBillNo));
 
   const q = query.trim().toLowerCase();
   const digits = q.replace(/\D/g, '');
@@ -51,6 +51,26 @@ const ReturnDialog = ({ location, sales, findBill, onRefund, onExchange, onClose
       setBusy(false);
     }
   };
+
+  // Launched for one bill (from Sales history): go straight to it, skipping the find step. The fetch's setState
+  // runs in the async callback (not synchronously in the effect), so the counter opens straight onto the bill.
+  const openStart = useEffectEvent(() => {
+    if (!startBillNo) return;
+    findBill(startBillNo).then(
+      (bill) => {
+        setFound(bill);
+        setQty({});
+        setBusy(false);
+      },
+      (err) => {
+        setError(err.message);
+        setBusy(false);
+      },
+    );
+  });
+  useEffect(() => {
+    openStart();
+  }, []);
 
   const lines = found ? found.lines.map((l) => ({ ...l, left: l.sold - l.returned, qty: qty[l.code] ?? 0 })) : [];
   const chosen = lines.filter((l) => l.qty > 0);

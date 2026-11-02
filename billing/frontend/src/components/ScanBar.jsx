@@ -116,23 +116,23 @@ const ScanBar = ({ inputRef, onAdd, onNew, notice, onNotice, inStock }) => {
         <Kbd className="hidden sm:inline-flex">F2</Kbd>
       </label>
 
-      <div className="mt-2 flex h-5 items-center gap-3 px-1 text-xs text-ink-3">
+      <div className="mt-2 flex min-h-6 items-center gap-3 px-1 text-ink-3">
         {tone ? (
-          <span role="status" key={notice.text} className={`inline-flex animate-pop items-center gap-1.5 font-medium ${tone.className}`}>
-            <tone.Icon size={14} aria-hidden="true" />
+          <span role="status" key={notice.text} className={`inline-flex animate-pop items-center gap-2 text-sm font-semibold ${tone.className}`}>
+            <tone.Icon size={17} aria-hidden="true" className="shrink-0" />
             {notice.text}
             {notice.action && (
               <button
                 type="button"
                 onClick={notice.action.run}
-                className="ml-1 rounded-md bg-evergreen-800 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-evergreen-900"
+                className="ml-1 rounded-md bg-evergreen-800 px-2.5 py-1 text-xs font-semibold text-white hover:bg-evergreen-900"
               >
                 {notice.action.label}
               </button>
             )}
           </span>
         ) : (
-          <span>
+          <span className="text-xs">
             {PRODUCTS.length.toLocaleString('en-IN')} products, Season {SEASON} first · ↑ ↓ to choose a match, Enter to add
           </span>
         )}

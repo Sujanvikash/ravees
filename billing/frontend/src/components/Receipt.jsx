@@ -82,6 +82,9 @@ const Receipt = ({ sale }) => {
         <div>{countLabel(totals)}</div>
         <Line label="MRP total" value={amount(totals.mrpTotal)} />
         {totals.savings > 0 && <Line label="You saved" value={amount(totals.savings)} />}
+        {totals.discount > 0 && (
+          <Line label={`Discount${totals.discountKind === 'percent' ? ` (${totals.discountValue}%)` : ''}`} value={amount(-totals.discount)} />
+        )}
         {Math.abs(totals.roundOff) >= 0.005 && <Line label="Round off" value={amount(totals.roundOff)} />}
       </div>
 

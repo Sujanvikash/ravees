@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { FileText, History, Pause, Repeat, Trash2, Undo2, X } from 'lucide-react';
+import { FilePlus, FileText, History, Pause, Repeat, Trash2, Undo2, X } from 'lucide-react';
 import BillTable from '../components/BillTable.jsx';
 import CreditNotePrint from '../components/CreditNotePrint.jsx';
 import Dialog from '../components/Dialog.jsx';
@@ -17,7 +17,7 @@ import ScanBar from '../components/ScanBar.jsx';
 import { locationById } from '../config.js';
 import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
-import { useBill } from '../hooks/useBill.js';
+import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { billNumber, buildBill, countLabel, nextSeq } from '../lib/bill.js';
@@ -40,7 +40,7 @@ const toolButton =
  * Returns and exchanges start here too (Return / exchange): a refund is paid out in cash straight away; an
  * exchange puts the returned value on this bill as a credit, and is saved with it when the bill is paid.
  */
-const Counter = ({ location, onMenu }) => {
+const Counter = ({ location, intent, onMenu, onNavigate }) => {
   const shop = locationById(location);
   const now = useClock();
   const session = useSession();
@@ -71,13 +71,13 @@ const Counter = ({ location, onMenu }) => {
   const phoneRef = useRef(null);
   const nameRef = useRef(null);
 
-  const totals = useMemo(() => buildBill(bill.items), [bill.items]);
+  const totals = useMemo(() => buildBill(bill.items, bill.discount), [bill.items, bill.discount]);
   const billNo = billNumber(shop.billPrefix, nextSeq(sales, shop.billPrefix, now), now);
   const credit = exchange ? Math.min(exchange.value, totals.payable) : 0;
   const due = totals.payable - credit;
   useEffect(() => {
     ids.current = { sale: newId(), ret: newId() };
-  }, [bill.items, exchange]);
+  }, [bill.items, bill.discount, exchange]);
   const inStock = (code) => stockOf(location, code);
 
   // Print once the receipt for the sale is on the page.
@@ -109,7 +109,7 @@ const Counter = ({ location, onMenu }) => {
   };
 
   const holdCurrent = (list) =>
-    bill.items.length ? [...list, { id: Date.now(), at: new Date().toISOString(), items: bill.items, phone, name }] : list;
+    bill.items.length ? [...list, { id: Date.now(), at: new Date().toISOString(), items: bill.items, discount: bill.discount, phone, name }] : list;
 
   const hold = () => {
     if (!bill.items.length) return;
@@ -123,7 +123,7 @@ const Counter = ({ location, onMenu }) => {
     const target = held.find((h) => h.id === id);
     if (!target) return;
     setHeld(holdCurrent(held.filter((h) => h.id !== id)));
-    bill.load(target.items);
+    bill.load(target.items, target.discount ?? null);
     setCustomer(target);
     setNotice({ tone: 'ok', text: 'Held bill recalled' });
     closeDialog();
@@ -173,11 +173,11 @@ const Counter = ({ location, onMenu }) => {
     try {
       if (exchange) {
         const { saleId, lines: back, reason } = exchange;
-        const result = await recordReturn({ id: ids.current.ret, saleId, lines: back, reason, exchange: { id: ids.current.sale, lines, payment } });
+        const result = await recordReturn({ id: ids.current.ret, saleId, lines: back, reason, exchange: { id: ids.current.sale, lines, payment, discount: bill.discount || undefined } });
         sale = result.sale;
         note = result.creditNote;
       } else {
-        sale = await recordSale({ id: ids.current.sale, lines, phone: phoneDigits(phone), name: name.trim(), payment });
+        sale = await recordSale({ id: ids.current.sale, lines, phone: phoneDigits(phone), name: name.trim(), payment, discount: bill.discount || undefined });
       }
     } catch (err) {
       setBusy(false);
@@ -211,15 +211,50 @@ const Counter = ({ location, onMenu }) => {
     closeDialog();
   };
 
-  const loadQuote = (quote) => {
-    if (bill.items.length) {
-      setNotice({ tone: 'warn', text: 'Finish, hold or clear the bill in progress first, then load the quotation.' });
-      return closeDialog();
+  // Sent here from Sales history ("Exchange" on a bill): start the exchange so staff can scan the swap. Done
+  // during render (not an effect) so the counter is already in exchange mode on the first paint. Starts at null
+  // (not `intent`) so a fresh mount that already carries the exchange intent still fires once.
+  const [lastIntent, setLastIntent] = useState(null);
+  if (intent !== lastIntent) {
+    setLastIntent(intent);
+    if (intent?.exchange) {
+      const back = intent.exchange;
+      setExchange(back);
+      setCustomer({ phone: back.bill.phone, name: back.bill.name });
+      setNotice({ tone: 'ok', text: `${inr(back.value)} credit from ${back.bill.billNo}. Scan what the customer takes instead.` });
+      setDialog(null);
     }
+  }
+
+  const loadQuote = (quote) => {
+    // A bill already on the counter is parked on hold (F9) rather than blocking the quotation.
+    const parked = bill.items.length > 0;
+    if (parked) setHeld(holdCurrent(held));
     bill.load(quote.lines.map((l) => ({ code: l.code, qty: l.qty })));
     setCustomer({ phone: quote.phone, name: quote.name });
-    setNotice({ tone: 'ok', text: `${quote.quoteNo} loaded for ${quote.name}, at today’s prices.` });
+    setNotice({
+      tone: 'ok',
+      text: `${quote.quoteNo} loaded for ${quote.name}, at today’s prices.${parked ? ' The bill in progress was put on hold (F9).' : ''}`,
+    });
     closeDialog();
+  };
+
+  // Move the bill being rung up over to a new quotation: its items (and customer) go to the Quotations screen,
+  // and the counter is cleared. The quotation is priced fresh there; a manual discount doesn't carry over.
+  const toQuotation = () => {
+    if (!totals.count || exchange) return;
+    const customer = { phone: phoneDigits(phone), name: name.trim() };
+    try {
+      window.localStorage.setItem(
+        billKey(location, 'quote', session?.demo),
+        JSON.stringify({ items: bill.items, lastCode: null, customer }),
+      );
+    } catch {
+      // ignore storage failures (private browsing, quota, etc.)
+    }
+    bill.clear();
+    setCustomer();
+    onNavigate('quotes');
   };
 
   const onShortcut = useEffectEvent((e) => {
@@ -272,7 +307,10 @@ const Counter = ({ location, onMenu }) => {
                 </div>
                 <div className="flex flex-wrap items-center gap-0.5">
                   <button type="button" className={toolButton} onClick={() => setDialog('quote')} disabled={!quotes.some((q) => q.location === location)}>
-                    <FileText size={15} /> Quotation
+                    <FileText size={15} /> View quotations
+                  </button>
+                  <button type="button" className={toolButton} onClick={toQuotation} disabled={!totals.count || Boolean(exchange)}>
+                    <FilePlus size={15} /> Save as quotation
                   </button>
                   <button type="button" className={toolButton} onClick={() => setDialog('return')} disabled={Boolean(exchange)}>
                     <Undo2 size={15} /> Return / exchange
@@ -297,16 +335,33 @@ const Counter = ({ location, onMenu }) => {
                 </div>
               </div>
               {exchange && (
-                <div className="mx-5 mb-2 flex flex-wrap items-center gap-2 rounded-xl bg-evergreen-50 px-3.5 py-2 text-[13px] text-evergreen-900">
-                  <Repeat size={15} aria-hidden="true" />
-                  <span>
-                    <span className="font-semibold">Exchange:</span> {inr(exchange.value)} credit for{' '}
-                    {exchange.lines.reduce((n, l) => n + l.qty, 0)} item(s) back on <span className="font-mono text-xs">{exchange.bill.billNo}</span>
-                    {totals.count > 0 && <> · {due > 0 ? `customer pays ${inr(due)}` : `refund ${inr(exchange.value - totals.payable)} in cash`}</>}
-                  </span>
-                  <button type="button" onClick={() => setExchange(null)} className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium hover:bg-white/70">
-                    <X size={13} aria-hidden="true" /> Cancel exchange
-                  </button>
+                <div className="mx-5 mb-2 rounded-xl bg-evergreen-50 px-4 py-3 text-evergreen-900">
+                  <div className="flex items-center gap-2.5">
+                    <Repeat size={19} aria-hidden="true" className="shrink-0" />
+                    <span className="text-[15px] font-semibold">Exchange</span>
+                    <button
+                      type="button"
+                      onClick={() => setExchange(null)}
+                      className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium hover:bg-white/70"
+                    >
+                      <X size={15} aria-hidden="true" /> Cancel exchange
+                    </button>
+                  </div>
+                  <div className="mt-1 flex flex-col gap-1 pl-[29px] text-[15px] tabular-nums">
+                    <div className="text-evergreen-900/90">
+                      <span className="font-semibold">{inr(exchange.value)}</span> credit ·{' '}
+                      {exchange.lines.reduce((n, l) => n + l.qty, 0)} item(s) back on <span className="font-mono text-sm">{exchange.bill.billNo}</span>
+                    </div>
+                    {totals.count > 0 && (
+                      <div>
+                        {due > 0 ? (
+                          <>Customer pays <span className="font-semibold">{inr(due)}</span> for this bill</>
+                        ) : (
+                          <>Refund <span className="font-semibold">{inr(exchange.value - totals.payable)}</span> in cash</>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               <BillTable lines={totals.lines} lastCode={bill.lastCode} onQty={bill.setQty} inStock={inStock} />
@@ -315,6 +370,8 @@ const Counter = ({ location, onMenu }) => {
 
           <OrderPanel
             bill={totals}
+            discount={bill.discount}
+            onDiscount={bill.setDiscount}
             phone={phone}
             onPhone={(value) => {
               setPhone(value);

@@ -4,12 +4,21 @@ import { findProduct } from './catalogue.js';
 /** What a product sells for: its offer price when it has one, else MRP. */
 export const priceOf = (product) => product.offer || product.mrp;
 
+/** The rupee amount a manual discount ({ kind: 'percent' | 'amount', value }) takes off a GST-inclusive
+ *  subtotal. A percentage is capped at 100%, a flat amount at the whole subtotal (mirrors sales/bill.py). */
+export const discountOff = (gross, discount) => {
+  if (!discount || !(discount.value > 0)) return 0;
+  if (discount.kind === 'percent') return (gross * Math.min(discount.value, 100)) / 100;
+  return Math.min(discount.value, gross);
+};
+
 /**
  * Bill items ({ code, qty }) → lines with their product and amounts, plus the totals: MRP total, offer
  * savings, taxable value and GST per rate (split into CGST + SGST), round-off and the amount payable.
- * Items whose code is no longer in the product list are dropped.
+ * Items whose code is no longer in the product list are dropped. A manual `discount` comes off the selling
+ * subtotal and is spread across the GST rates in proportion, so the taxable value and GST drop with it.
  */
-export const buildBill = (items) => {
+export const buildBill = (items, discount = null) => {
   const lines = items
     .map((item) => ({ ...item, product: findProduct(item.code) }))
     .filter((line) => line.product)
@@ -34,10 +43,15 @@ export const buildBill = (items) => {
     byRate.set(rate, row);
   }
 
-  const gstRows = [...byRate.values()].sort((a, b) => b.rate - a.rate);
+  const off = discountOff(gross, discount);
+  const factor = gross > 0 ? (gross - off) / gross : 1;
+  const gstRows = [...byRate.values()]
+    .map((r) => ({ rate: r.rate, taxable: r.taxable * factor, tax: r.tax * factor }))
+    .sort((a, b) => b.rate - a.rate);
   const taxable = gstRows.reduce((sum, r) => sum + r.taxable, 0);
   const tax = gstRows.reduce((sum, r) => sum + r.tax, 0);
-  const exact = PRICES_INCLUDE_GST ? gross : gross + tax;
+  const net = gross - off;
+  const exact = PRICES_INCLUDE_GST ? net : net + tax;
   const payable = Math.round(exact);
 
   return {
@@ -46,6 +60,9 @@ export const buildBill = (items) => {
     qty,
     mrpTotal,
     savings: mrpTotal - gross,
+    discount: off,
+    discountKind: off > 0 ? discount.kind : null,
+    discountValue: off > 0 ? discount.value : 0,
     taxable,
     tax,
     gstRows,

@@ -48,7 +48,7 @@ const HeldDialog = ({ held, onRecall, onDiscard, onClose }) => {
     >
       <ul className="flex max-h-[65vh] flex-col gap-1.5 overflow-y-auto border-t border-line-soft p-3">
         {held.map((h, i) => {
-          const bill = buildBill(h.items);
+          const bill = buildBill(h.items, h.discount);
           // After a discard the open bill may be gone: open the most recent one instead.
           const open = h.id === openId || (!held.some((x) => x.id === openId) && i === held.length - 1);
           return (

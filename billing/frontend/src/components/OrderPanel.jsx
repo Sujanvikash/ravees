@@ -1,9 +1,10 @@
-import { ArrowRight, CircleCheck, Phone, User } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, CircleCheck, Phone, Tag, User, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { countLabel, gstLines } from '../lib/bill.js';
 import { isValidMobile, isValidName } from '../lib/customer.js';
 import { typedMobile } from '../lib/customer.js';
-import { inr } from '../lib/money.js';
+import { inr, parseAmount } from '../lib/money.js';
 import Kbd from './Kbd.jsx';
 import PaymentMethods from './PaymentMethods.jsx';
 
@@ -62,8 +63,122 @@ const CustomerField = ({ id, label, Icon, error, inputRef, required = true, ...i
   </div>
 );
 
+/**
+ * The manual whole-bill discount: a value with a Percent / Amount toggle (a flat ₹ amount by default). Typing
+ * updates the bill live; the discount is kept on the bill (so it survives a refresh) and clears when the bill
+ * does. `off` is the rupees it took off. The toggle keeps its own `kind` so it still works with the field empty.
+ */
+const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
+  const [open, setOpen] = useState(Boolean(discount));
+  const [kind, setKind] = useState(discount?.kind ?? 'amount');
+  const [text, setText] = useState(discount ? String(discount.value) : '');
+
+  // Keep the field in step when the discount changes from outside (a recall, or the bill clearing after a
+  // sale) without stomping what's being typed: only re-seed when the incoming value isn't already in the box.
+  // This "adjust state during render" pattern avoids an effect (see react.dev "You Might Not Need an Effect").
+  const sig = discount ? `${discount.kind}:${discount.value}` : '';
+  const [lastSig, setLastSig] = useState(sig);
+  if (sig !== lastSig) {
+    setLastSig(sig);
+    const typed = parseAmount(text);
+    const mineSig = typed > 0 ? `${kind}:${typed}` : '';
+    if (sig !== mineSig) {
+      if (discount) {
+        setKind(discount.kind);
+        setText(String(discount.value));
+        setOpen(true);
+      } else {
+        setText(''); // bill cleared: empty the field but leave the chosen type as it is
+      }
+    }
+  }
+
+  const apply = (nextKind, nextText) => {
+    const value = parseAmount(nextText);
+    onDiscount(value > 0 ? { kind: nextKind, value } : null);
+  };
+  const pick = (nextKind) => {
+    setKind(nextKind);
+    apply(nextKind, text); // re-price under the new type; a no-op while the field is empty, but the toggle still moves
+  };
+  const clear = () => {
+    setText('');
+    onDiscount(null);
+    setOpen(false);
+  };
+
+  const kindClass = (value) =>
+    `flex h-8 flex-1 items-center justify-center gap-1 text-[13px] font-semibold transition-colors ${
+      kind === value ? 'bg-evergreen-800 text-white' : 'text-ink-2 hover:bg-mist'
+    }`;
+
+  return (
+    <div className="rounded-xl border border-dashed border-line-strong">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        disabled={disabled}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-[13px] disabled:opacity-40"
+      >
+        <span className="flex items-center gap-1.5 text-ink-2">
+          <Tag size={14} aria-hidden="true" /> Discount
+        </span>
+        {off > 0 ? (
+          <span className="font-medium text-ok-ink tabular-nums">
+            −{inr(off)}
+            {kind === 'percent' && <span className="ml-1 text-ink-3">({discount.value}%)</span>}
+          </span>
+        ) : (
+          <span className="text-ink-3">{open ? 'Enter below' : 'Add'}</span>
+        )}
+      </button>
+      {open && (
+        <div className="flex flex-col gap-2 border-t border-line-soft px-3 py-2.5">
+          <div className="flex overflow-hidden rounded-lg border border-line" role="group" aria-label="Discount type">
+            <button type="button" onClick={() => pick('amount')} aria-pressed={kind === 'amount'} className={kindClass('amount')}>
+              ₹ Amount
+            </button>
+            <span className="w-px bg-line" aria-hidden="true" />
+            <button type="button" onClick={() => pick('percent')} aria-pressed={kind === 'percent'} className={kindClass('percent')}>
+              % Percent
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-ink-3">{kind === 'percent' ? '%' : '₹'}</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                apply(kind, e.target.value);
+              }}
+              placeholder={kind === 'percent' ? 'e.g. 10 (percent off)' : 'e.g. 500 (rupees off)'}
+              aria-label={kind === 'percent' ? 'Discount percentage' : 'Discount amount in rupees'}
+              className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 text-[13px] font-medium tabular-nums placeholder:font-normal placeholder:text-ink-3/70 focus:border-evergreen-800/50 focus:shadow-[0_0_0_3px_rgba(23,92,38,0.10)] focus:outline-none"
+            />
+            {off > 0 && (
+              <button
+                type="button"
+                onClick={clear}
+                aria-label="Remove discount"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby-ink"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const OrderPanel = ({
   bill,
+  discount,
+  onDiscount,
   phone,
   onPhone,
   phoneError,
@@ -132,6 +247,7 @@ const OrderPanel = ({
         <div className="flex flex-col gap-2 text-[13px]">
           <Row label="MRP total" value={inr(bill.mrpTotal)} />
           <Row label="Offer discount" value={inr(-bill.savings)} className={bill.savings > 0 ? 'text-ok-ink' : 'text-ink-2'} />
+          <DiscountControl discount={discount} off={bill.discount} onDiscount={onDiscount} disabled={!bill.count} />
           <div className="my-1 h-px bg-line-soft" />
           {gst && <Row label="Taxable value" value={inr(bill.taxable)} />}
           {gst && gstLines(bill.gstRows).map((g) => <Row key={g.label} label={g.label} value={inr(g.value)} />)}
