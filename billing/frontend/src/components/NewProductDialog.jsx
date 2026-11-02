@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CircleAlert, Tag } from 'lucide-react';
+import { CircleAlert, Minus, Plus, Tag } from 'lucide-react';
 import { LOCATIONS, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { addShopProduct, DEPARTMENTS, GST_RATES, nextShopCode, PRODUCTS } from '../lib/catalogue.js';
@@ -18,6 +18,32 @@ const Field = ({ id, label, hint, children }) => (
   </div>
 );
 
+/** A −/+ counter for a whole number held as a string. Empty or a stray value reads as 0; never goes below 0. */
+const Stepper = ({ id, value, onChange }) => {
+  const n = Number(value) || 0;
+  const step = (by) => onChange(String(Math.max(0, n + by)));
+  const btn =
+    'inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-2 enabled:hover:bg-mist enabled:hover:text-ink disabled:opacity-40';
+  return (
+    <div className="flex items-center gap-2">
+      <button type="button" aria-label="One less" onClick={() => step(-1)} disabled={n <= 0} className={btn}>
+        <Minus size={16} />
+      </button>
+      <input
+        id={id}
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ''))}
+        className="h-10 w-20 rounded-xl border border-line bg-white text-center text-base font-semibold tabular-nums text-ink focus:border-evergreen-800/50 focus:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]"
+      />
+      <button type="button" aria-label="One more" onClick={() => step(1)} className={btn}>
+        <Plus size={16} />
+      </button>
+      <span className="text-[13px] text-ink-3">units</span>
+    </div>
+  );
+};
+
 const money = (v) => (v === '' ? null : Number(v));
 
 /**
@@ -33,7 +59,7 @@ const NewProductDialog = ({ session, defaultLocation, initial = {}, onClose, onD
   const admin = session.role === 'admin';
   const { importStock, settings } = useStore();
   const [location, setLocation] = useState(admin ? (defaultLocation ?? LOCATIONS[0].id) : session.location);
-  const [form, setForm] = useState({ name: initial.name ?? '', dept: '', mrp: '', offer: '', cost: '', gst: '18', hsn: '', barcode: initial.barcode ?? '', qty: '' });
+  const [form, setForm] = useState({ name: initial.name ?? '', dept: '', mrp: '', offer: '', cost: '', gst: '18', hsn: '', barcode: initial.barcode ?? '', qty: '1' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const shop = locationById(location);
@@ -148,16 +174,27 @@ const NewProductDialog = ({ session, defaultLocation, initial = {}, onClose, onD
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field id="np-barcode" label="Barcode" hint="if it has one">
               <input id="np-barcode" value={form.barcode} onChange={set('barcode')} className={`${field} font-mono`} />
             </Field>
             <Field id="np-hsn" label="HSN code" hint="optional">
               <input id="np-hsn" value={form.hsn} onChange={set('hsn')} className={field} />
             </Field>
-            <Field id="np-qty" label="Units in the shop now" hint="optional">
-              <input id="np-qty" inputMode="numeric" value={form.qty} onChange={set('qty')} placeholder="0" className={`${field} tabular-nums`} />
-            </Field>
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-xl bg-mist-2 px-4 py-3 ring-1 ring-line-soft">
+            <label htmlFor="np-qty" className="text-[13px] font-medium text-ink-2">
+              Units in the shop now <span className="font-normal text-ink-3">· opening stock, added straight away</span>
+            </label>
+            <Stepper
+              id="np-qty"
+              value={form.qty}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, qty: v }));
+                setError('');
+              }}
+            />
           </div>
 
           {error && (

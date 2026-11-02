@@ -139,6 +139,9 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
     { products: 0, units: 0, value: 0, low: 0, out: 0, onOrder: 0 },
   );
   const matrix = admin && !location;
+  // A quick "+ Add stock" top-up (no Excel): a showroom for any product into its own stock (its own shop-added
+  // products, or any catalogue product); the admin for any product in its own warehouse stock.
+  const canAddStock = (p) => (admin ? warehouse : !p.shop || p.shop.location === session.location);
   const crumb = location ? `${locationById(location).city} · ${locationById(location).area}` : 'All showrooms';
 
   return (
@@ -315,25 +318,11 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                           <div className="text-xs text-ink-3">
                             {p.dept}
                             {p.shop ? (
-                              <>
-                                <span className="ml-1.5 text-warn-ink">· Added by {p.shop.by}</span>
-                                {!admin && p.shop.location === session.location && !warehouse && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setAddingTo(p);
-                                      setFlash(null);
-                                    }}
-                                    className="ml-2 font-semibold text-evergreen-800 hover:underline"
-                                  >
-                                    + Add stock
-                                  </button>
-                                )}
-                              </>
+                              <span className="ml-1.5 text-warn-ink">· Added by {p.shop.by}</span>
                             ) : (
                               p.inSeason && <span className="ml-1.5 text-evergreen-800">· Season {SEASON}</span>
                             )}
-                            {admin && warehouse && (
+                            {canAddStock(p) && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -385,7 +374,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
         <AddOwnStockDialog
           product={addingTo}
           location={admin ? 'warehouse' : session.location}
-          source={admin ? 'manual' : 'own-product'}
+          source={!admin && addingTo.shop ? 'own-product' : 'manual'}
           onClose={() => setAddingTo(null)}
           onDone={(product, units) => {
             setAddingTo(null);
