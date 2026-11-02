@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar.jsx';
 import { SessionContext } from './context/SessionContext.jsx';
 import { StoreProvider, useStore } from './context/StoreContext.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
+import { billKey } from './hooks/useBill.js';
 import { signOut } from './lib/auth.js';
 import { loadCatalogue } from './lib/catalogue.js';
 import { NAV } from './lib/nav.js';
@@ -162,9 +163,12 @@ const Screens = ({ session, setSession }) => {
       ) : (
         <Login
           onSignedIn={(next) => {
-            // every sign-in opens on the home page (billing or dashboard), not where the last session left off
+            // every sign-in opens on the home page (billing or dashboard), not where the last session left off,
+            // and with an empty counter — a fresh sign-in starts a new bill, not whatever the last one left scanned.
+            // (A reload restores the session without coming through here, so it still keeps a bill in progress.)
             try {
               window.localStorage.removeItem(`billing-page-${next.username}`);
+              window.localStorage.removeItem(billKey(next.location, 'current', next.demo));
             } catch {
               // ignore storage failures (private browsing, etc.)
             }
