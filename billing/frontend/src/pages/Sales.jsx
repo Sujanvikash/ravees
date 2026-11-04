@@ -1,8 +1,11 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, ChevronDown, FileSpreadsheet, ReceiptText, Repeat, Undo2 } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Download, FileSpreadsheet, HandCoins, Printer, ReceiptText, Repeat, Undo2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import CollectBalance from '../components/CollectBalance.jsx';
 import { LocationPicker, PeriodTabs, SearchBox, Segmented } from '../components/Filters.jsx';
 import Dialog from '../components/Dialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import PaymentReceiptPrint from '../components/PaymentReceiptPrint.jsx';
 import ProductPerformance from '../components/ProductPerformance.jsx';
 import ReturnDialog from '../components/ReturnDialog.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
@@ -10,7 +13,8 @@ import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
-import { methodLabel } from '../lib/payment.js';
+import { isCreditBill, methodLabel, paidAtCounter } from '../lib/payment.js';
+import { printAlone } from '../lib/print.js';
 import { filterSales, periodStart, returnsByLocation, returnsBySale, returnStatus, saleCost, summarize } from '../lib/reports.js';
 import { newId } from '../lib/uid.js';
 import Pager from '../components/Pager.jsx';
@@ -32,6 +36,14 @@ const STATUS_FILTERS = [
   { id: 'exchanged', label: 'Exchanged' },
 ];
 
+// Filter bills by what is still owed on them (credit bills).
+const DUE_FILTERS = [
+  { id: 'all', label: 'All bills' },
+  { id: 'credit', label: 'Credit bills' },
+  { id: 'owing', label: 'Balance due' },
+];
+const dueMatch = { all: () => true, credit: isCreditBill, owing: (s) => s.balance > 0 };
+
 /** A bill number shown as a link that jumps the list to that bill. */
 const BillLink = ({ loc, billNo, onClick }) => (
   <button
@@ -51,7 +63,7 @@ const BillLink = ({ loc, billNo, onClick }) => (
  */
 const Sales = ({ session, intent, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { sales, returns, recordReturn, findBill, downloadSalesReport, settings } = useStore();
+  const { sales, returns, recordReturn, findBill, downloadSalesReport, downloadFinalSales, settings } = useStore();
   const gst = settings.showGst;
   const [exporting, setExporting] = useState('');
   const [returnFor, setReturnFor] = useState(null); // bill number being returned/exchanged (showrooms only)
@@ -64,6 +76,12 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
   const [open, setOpen] = useState(intent?.bill ? `${intent.bill.location}-${intent.bill.billNo}` : null);
   const [openLoc, setOpenLoc] = useState(null); // admin: showroom whose returns & exchanges are expanded
   const [highlight, setHighlight] = useState(null); // a row to scroll to and flash (from an exchange cross-link)
+  const [due, setDue] = useState('all'); // credit filter: all | credit | owing
+  const [collecting, setCollecting] = useState(null); // id of the credit bill a balance is being collected on
+  const [reprint, setReprint] = useState(null); // { sale, collection }: a payment receipt to print again
+  useEffect(() => {
+    if (reprint) printAlone();
+  }, [reprint]);
 
   // What has come back against each bill (qty, value, exchange links), and each credit note by its number so an
   // exchange's new bill can point back to the bill it replaced.
@@ -95,11 +113,14 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
       [...scoped]
         .filter((s) => !q || `${s.billNo} ${s.customer} ${s.phone}`.toLowerCase().includes(q))
         .filter((s) => status === 'all' || returnStatus(retBySale.get(s.id), s.totals.qty) === status)
+        .filter(dueMatch[due])
         .sort((a, b) => new Date(b.at) - new Date(a.at)),
-    [scoped, q, status, retBySale],
+    [scoped, q, status, due, retBySale],
   );
   const sum = summarize(scoped, { gst });
-  const paged = usePages(rows, PAGE, `${period}|${location}|${q}|${status}`);
+  const paged = usePages(rows, PAGE, `${period}|${location}|${q}|${status}|${due}`);
+  const owedNow = scoped.reduce((t, s) => t + (s.balance ?? 0), 0);
+  const owingBills = scoped.filter((s) => s.balance > 0).length;
   const returned = filterSales(returns, { location, period }).reduce((t, r) => t + r.amount, 0);
   const retByLoc = useMemo(() => (admin ? returnsByLocation(returns, { period }) : []), [admin, returns, period]);
 
@@ -108,6 +129,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
   const openBill = (loc, billNo) => {
     const id = `${loc}-${billNo}`;
     setStatus('all');
+    setDue('all');
     setPeriod('all');
     setQuery('');
     if (admin) setLocation(loc);
@@ -133,16 +155,18 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
     setReturnFor(null);
     onNavigate('counter', { exchange: back }); // the swap items are scanned at the counter
   };
-  const exportExcel = async () => {
-    setExporting('busy');
+  const exportExcel = async (which) => {
+    setExporting(which);
     const from = periodStart(period, new Date());
+    const get = which === 'final' ? downloadFinalSales : downloadSalesReport;
     try {
-      await downloadSalesReport({ location, since: from ? istDay(from) : undefined, until: istDay(new Date()) });
+      await get({ location, since: from ? istDay(from) : undefined, until: istDay(new Date()) });
       setExporting('');
     } catch (err) {
       setExporting(err.message);
     }
   };
+  const busy = exporting === 'final' || exporting === 'report';
   const shop = locationById(session.location);
   const cols = admin ? 10 : 8;
 
@@ -155,16 +179,27 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
           <div className="flex flex-wrap items-center gap-2">
             <PeriodTabs value={period} onChange={setPeriod} />
             {admin && <LocationPicker value={location} onChange={setLocation} />}
+            {admin && (
+              <button
+                type="button"
+                onClick={() => exportExcel('final')}
+                disabled={busy}
+                title="Each bill less its returns, with a total per showroom"
+                className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 hover:border-evergreen-800/50 hover:bg-evergreen-50 disabled:opacity-60"
+              >
+                <Download size={15} aria-hidden="true" /> {exporting === 'final' ? 'Preparing…' : 'Final sales'}
+              </button>
+            )}
             <button
               type="button"
-              onClick={exportExcel}
-              disabled={exporting === 'busy'}
-              className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 hover:border-evergreen-800/50 hover:bg-evergreen-50 disabled:opacity-60"
+              onClick={() => exportExcel('report')}
+              disabled={busy}
+              className={`${admin ? '' : 'ml-auto '}inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 hover:border-evergreen-800/50 hover:bg-evergreen-50 disabled:opacity-60`}
             >
-              <FileSpreadsheet size={15} aria-hidden="true" /> {exporting === 'busy' ? 'Preparing…' : 'Export to Excel'}
+              <FileSpreadsheet size={15} aria-hidden="true" /> {exporting === 'report' ? 'Preparing…' : 'Export to Excel'}
             </button>
           </div>
-          {exporting && exporting !== 'busy' && (
+          {exporting && !busy && (
             <p role="alert" className="text-xs font-medium text-ruby-ink">
               Couldn’t export: {exporting}
             </p>
@@ -176,6 +211,9 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
               { label: 'Bills', value: sum.bills.toLocaleString('en-IN'), note: `${sum.units.toLocaleString('en-IN')} units sold` },
               { label: 'Returns', value: inrWhole(returned), note: `net sales ${inrWhole(sum.total - returned)}` },
               ...(sum.discount > 0 ? [{ label: 'Discounts given', value: inrWhole(sum.discount), note: 'manual discounts' }] : []),
+              ...(owedNow > 0
+                ? [{ label: 'Owed on credit', value: inrWhole(owedNow), note: `${owingBills} ${owingBills === 1 ? 'bill' : 'bills'} with a balance due`, tone: 'warn' }]
+                : []),
               { label: 'Average bill', value: inrWhole(sum.average) },
               ...(gst ? [{ label: 'GST collected', value: inrWhole(sum.tax) }] : []),
               ...(admin
@@ -306,9 +344,10 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
             <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5">
               <span className="text-[13px] text-ink-3">
                 {rows.length.toLocaleString('en-IN')} {rows.length === 1 ? 'bill' : 'bills'}
-                {(q || status !== 'all') && ' matching'}
+                {(q || status !== 'all' || due !== 'all') && ' matching'}
               </span>
               <Segmented label="Return status" options={STATUS_FILTERS} value={status} onChange={setStatus} />
+              <Segmented label="Credit" options={DUE_FILTERS} value={due} onChange={setDue} />
               <div className="flex flex-1 justify-end">
                 <SearchBox value={query} onChange={setQuery} placeholder="Bill number, customer or mobile" />
               </div>
@@ -383,7 +422,14 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                               {s.phone && <div className="text-xs text-ink-3">{formatMobile(s.phone)}</div>}
                             </td>
                             <td className="py-1.5 pr-3 text-right">{s.totals.qty}</td>
-                            <td className="py-1.5 pr-3 text-ink-2">{methodLabel(s.payment.method)}</td>
+                            <td className="py-1.5 pr-3 text-ink-2">
+                              {methodLabel(s.payment.method)}
+                              {s.balance > 0 ? (
+                                <div className="text-[11px] font-medium text-warn-ink">{inr(s.balance)} due</div>
+                              ) : (
+                                isCreditBill(s) && <div className="text-[11px] text-ok-ink">credit · paid</div>
+                              )}
+                            </td>
                             <td className="py-1.5 pr-3 text-right font-semibold">
                               {inr(s.totals.payable)}
                               {s.totals.discount > 0 && (
@@ -434,6 +480,48 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                       {s.payment.credit > 0 && <span className="text-ink-3">· {inr(s.payment.credit)} credit used · note {s.payment.creditNote}</span>}
                                     </div>
                                   )}
+                                  {isCreditBill(s) && (
+                                    <div className="flex flex-col gap-1.5 rounded-xl border border-line-soft bg-surface px-3 py-2.5 text-xs tabular-nums">
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span className="flex items-center gap-1.5 font-semibold text-ink">
+                                          <HandCoins size={13} className="text-ink-3" aria-hidden="true" /> Credit bill
+                                          <span className="font-normal text-ink-3">
+                                            · {inr(paidAtCounter(s))} paid at the counter · {inr(s.payment.later)} left on credit
+                                          </span>
+                                        </span>
+                                        <span className={`font-semibold ${s.balance > 0 ? 'text-warn-ink' : 'text-ok-ink'}`}>
+                                          {s.balance > 0 ? `${inr(s.balance)} still owed` : 'Paid in full'}
+                                        </span>
+                                      </div>
+                                      {(s.collections ?? []).map((c) => (
+                                        <div key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-line-soft pt-1.5 text-ink-2">
+                                          <span className="font-mono">{c.receiptNo}</span>
+                                          <span className="text-ink-3">{when.format(new Date(c.at))}</span>
+                                          <span>{methodLabel(c.payment.method)}</span>
+                                          <span className="font-medium text-ink">{inr(c.amount)}</span>
+                                          {c.payment.after !== undefined && <span className="text-ink-3">{c.payment.after > 0 ? `${inr(c.payment.after)} left after` : 'cleared the bill'}</span>}
+                                          <button
+                                            type="button"
+                                            onClick={() => setReprint({ sale: s, collection: c })}
+                                            className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-ink-3 hover:bg-mist hover:text-ink"
+                                          >
+                                            <Printer size={12} aria-hidden="true" /> Receipt
+                                          </button>
+                                        </div>
+                                      ))}
+                                      {!admin && s.balance > 0 && (
+                                        <div className="flex justify-end border-t border-line-soft pt-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => setCollecting(s.id)}
+                                            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900"
+                                          >
+                                            <HandCoins size={14} aria-hidden="true" /> Collect balance {inr(s.balance)}
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                   {rs.exchangeBills.length > 0 && (
                                     <div className="flex flex-wrap items-center gap-1.5 px-1 text-xs text-ink-2">
                                       <Repeat size={13} className="text-ink-3" aria-hidden="true" />
@@ -477,6 +565,10 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
         </div>
       </div>
 
+      {collecting && sales.some((s) => s.id === collecting) && (
+        <CollectBalance sale={sales.find((s) => s.id === collecting)} onClose={() => setCollecting(null)} />
+      )}
+      {reprint && createPortal(<PaymentReceiptPrint sale={reprint.sale} collection={reprint.collection} />, document.body)}
       {returnFor && (
         <ReturnDialog
           location={session.location}
@@ -495,6 +587,9 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
               <div className="text-[13px] font-medium text-evergreen-900">Give back</div>
               <div className="text-[34px] leading-tight font-semibold tracking-tight text-evergreen-900 tabular-nums">{inr(refunded.refund)}</div>
               <div className="text-xs text-evergreen-900/80">in cash · the items are back in stock</div>
+              {refunded.balanceOff > 0 && (
+                <div className="mt-1 text-xs font-medium text-evergreen-900">{inr(refunded.balanceOff)} of the value paid off what was owed on the bill</div>
+              )}
             </div>
             <button type="button" autoFocus onClick={() => setRefunded(null)} className="inline-flex h-10 items-center justify-center rounded-xl bg-evergreen-800 text-[13px] font-semibold text-white hover:bg-evergreen-900">
               Done

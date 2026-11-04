@@ -5,6 +5,7 @@ import { checkPassword } from '../lib/auth.js';
 import { countLabel, gstLines } from '../lib/bill.js';
 import { isValidMobile, isValidName } from '../lib/customer.js';
 import { typedMobile } from '../lib/customer.js';
+import { CustomerStatus, CustomerSuggestions } from './CustomerSuggest.jsx';
 import { inr, parseAmount } from '../lib/money.js';
 import Kbd from './Kbd.jsx';
 import PaymentMethods from './PaymentMethods.jsx';
@@ -22,8 +23,8 @@ const Row = ({ label, value, className = 'text-ink-2' }) => (
  */
 /** One customer input with its icon, a red state and the error message under it. `required` marks it with a
  * red asterisk; when the admin has made it optional it shows a muted "optional" instead. */
-const CustomerField = ({ id, label, Icon, error, inputRef, required = true, ...input }) => (
-  <div>
+const CustomerField = ({ id, label, Icon, error, inputRef, required = true, children, ...input }) => (
+  <div className="relative">
     <label htmlFor={id} className="sr-only">
       {label} {required ? '(required)' : '(optional)'}
     </label>
@@ -61,6 +62,7 @@ const CustomerField = ({ id, label, Icon, error, inputRef, required = true, ...i
         {error}
       </p>
     )}
+    {children}
   </div>
 );
 
@@ -272,6 +274,7 @@ const OrderPanel = ({
   onName,
   nameError,
   nameRef,
+  lookup,
   method,
   onMethod,
   onCollect,
@@ -285,8 +288,9 @@ const OrderPanel = ({
   const nameOk = isValidName(name) || (!requireName && !name.trim());
   const ready = phoneOk && nameOk;
   const needed = [requireMobile && 'Mobile', requireName && 'name'].filter(Boolean).join(' and ');
-  // Enter in either field tries to collect, which points at whatever is still missing.
-  const collectOnEnter = (e) => e.key === 'Enter' && onCollect();
+  // Enter in either field picks the highlighted suggestion if the dropdown is open, otherwise tries to collect,
+  // which points at whatever is still missing.
+  const collectOnEnter = (e) => lookup.keyDown(e) || (e.key === 'Enter' && onCollect());
   return (
     <aside className="flex min-h-0 flex-col border-t glass lg:w-96 lg:border-t-0 lg:border-l xl:w-104">
       <section aria-labelledby="customer-heading" className="border-b border-line-soft p-5">
@@ -313,7 +317,10 @@ const OrderPanel = ({
             maxLength={10}
             onChange={(e) => onPhone(typedMobile(e.target.value))}
             onKeyDown={collectOnEnter}
-          />
+            {...lookup.inputProps('phone', 'customer-phone-suggestions')}
+          >
+            <CustomerSuggestions id="customer-phone-suggestions" which="phone" lookup={lookup} />
+          </CustomerField>
           <CustomerField
             id="customer-name"
             label="Customer name"
@@ -326,7 +333,11 @@ const OrderPanel = ({
             value={name}
             onChange={(e) => onName(e.target.value)}
             onKeyDown={collectOnEnter}
-          />
+            {...lookup.inputProps('name', 'customer-name-suggestions')}
+          >
+            <CustomerSuggestions id="customer-name-suggestions" which="name" lookup={lookup} />
+          </CustomerField>
+          <CustomerStatus status={lookup.status} />
         </div>
       </section>
 

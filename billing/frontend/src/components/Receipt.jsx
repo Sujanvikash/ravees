@@ -135,7 +135,7 @@ const Receipt = ({ sale }) => {
         {payment.credit > 0 && (
           <Line label={`Exchange credit ${payment.creditNote ?? ''}`.trim()} value={amount(-payment.credit)} className="font-bold" />
         )}
-        {payment.method === 'credit' ? null : payment.split ? (
+        {payment.method === 'credit' || payment.method === 'later' ? null : payment.split ? (
           <>
             {payment.split.cash > 0 && <Line label="Paid · Cash" value={amount(payment.split.cash)} />}
             {payment.split.upi > 0 && <Line label="Paid · UPI" value={amount(payment.split.upi)} />}
@@ -146,6 +146,13 @@ const Receipt = ({ sale }) => {
         )}
         {payment.change > 0 && <Line label="Change" value={amount(payment.change)} className="font-bold" />}
         {payment.approval && <Line label="Card approval" value={payment.approval} />}
+        {payment.later > 0 && (
+          <>
+            {payment.method === 'later' && <Line label="Paid now" value={amount(0)} />}
+            <Line label="BALANCE DUE" value={inr(payment.later)} className="mt-1 border-y border-black py-1 text-[13px] font-bold" />
+            <div className="text-[10px]">Credit bill: please pay the balance at the showroom quoting this bill number.</div>
+          </>
+        )}
       </div>
 
       {/* the fixed policy note, the same on every showroom's bill */}

@@ -2,10 +2,11 @@
 The sales report as an .xlsx workbook, for a period and one showroom or all of them:
 
   Summary   per showroom: bills, units, sales, GST, returns and net sales (with cost, profit and margin for the admin)
-  Bills     one row per bill, with how it was paid
-  Items     one row per item sold
-  Returns   the credit notes (returns and exchanges)
-  Cash      the daily cash closes and their differences
+  Bills        one row per bill, with how it was paid, what was left on credit and what is still owed
+  Items        one row per item sold
+  Returns      the credit notes (returns and exchanges)
+  Collections  payments taken towards credit bills' balances
+  Cash         the daily cash closes and their differences
 
 Cost and profit columns are only in the admin's report.
 """
@@ -26,7 +27,7 @@ from app.modules.auth.access import visible_location
 from app.modules.cash.models import CashClose
 from app.modules.locations.constants import SHOWROOMS
 from app.modules.returns.models import SaleReturn
-from app.modules.sales.models import Sale
+from app.modules.sales.models import Sale, SaleCollection
 from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
@@ -34,7 +35,14 @@ HEAD = Font(bold=True, color='FFFFFF')
 HEAD_FILL = PatternFill('solid', fgColor='175C26')
 MONEY = '#,##0.00'
 CITY = {s.id: s.city for s in SHOWROOMS}
-METHOD = {'cash': 'Cash', 'upi': 'UPI', 'card': 'Card', 'split': 'Split', 'credit': 'Exchange credit'}
+METHOD = {
+    'cash': 'Cash',
+    'upi': 'UPI',
+    'card': 'Card',
+    'split': 'Split',
+    'credit': 'Exchange credit',
+    'later': 'Credit (nothing paid)',
+}
 
 
 def _bounds(since: date | None, until: date | None) -> tuple[datetime | None, datetime | None]:
@@ -117,21 +125,28 @@ def build(
     stmt = select(Sale).order_by(Sale.at)
     rstmt = select(SaleReturn).order_by(SaleReturn.at)
     cstmt = select(CashClose).order_by(CashClose.day, CashClose.location_id)
+    kstmt = select(SaleCollection).order_by(SaleCollection.at)
     if location_id:
         stmt = stmt.where(Sale.location_id == location_id)
         rstmt = rstmt.where(SaleReturn.location_id == location_id)
+        kstmt = kstmt.where(SaleCollection.location_id == location_id)
         cstmt = cstmt.where(CashClose.location_id == location_id)
     if start:
         stmt = stmt.where(Sale.at >= start)
         rstmt = rstmt.where(SaleReturn.at >= start)
+        kstmt = kstmt.where(SaleCollection.at >= start)
         cstmt = cstmt.where(CashClose.day >= since)
     if end:
         stmt = stmt.where(Sale.at < end)
         rstmt = rstmt.where(SaleReturn.at < end)
+        kstmt = kstmt.where(SaleCollection.at < end)
         cstmt = cstmt.where(CashClose.day <= until)
     sales = session.scalars(stmt).all()
     returns = session.scalars(rstmt).unique().all()
     closes = session.scalars(cstmt).all()
+    collections = session.scalars(kstmt).all()
+    collected_on = {c.sale_id: c for c in collections}  # any one, for its bill: the sales may not be in the period
+    bills = {s.id: s for s in session.scalars(select(Sale).where(Sale.id.in_(collected_on))).all()}
 
     wb = Workbook()
     wb.remove(wb.active)
@@ -212,8 +227,24 @@ def build(
         'UPI',
         'Card',
         'Exchange credit',
+        'On credit',
+        'Balance due',
     ]
-    money = ['MRP total', 'Savings', 'Discount', 'Taxable', 'GST', 'Round-off', 'Amount', 'Cash', 'UPI', 'Card', 'Exchange credit']
+    money = [
+        'MRP total',
+        'Savings',
+        'Discount',
+        'Taxable',
+        'GST',
+        'Round-off',
+        'Amount',
+        'Cash',
+        'UPI',
+        'Card',
+        'Exchange credit',
+        'On credit',
+        'Balance due',
+    ]
     if admin:
         header += ['Purchase cost', 'Gross profit']
         money += ['Purchase cost', 'Gross profit']
@@ -241,6 +272,8 @@ def build(
             upi,
             card,
             p.get('credit', 0),
+            p.get('later', 0),
+            float(s.balance or 0),
         ]
         if admin:
             cost = sum(float(ln.cost) * ln.qty for ln in s.lines)
@@ -285,6 +318,7 @@ def build(
         'Items',
         'Value',
         'Cash refund',
+        'Off balance due',
         'New bill',
         'Reason',
     ]
@@ -299,12 +333,50 @@ def build(
             ', '.join(f'{x["code"]} × {x["qty"]}' for x in r.lines),
             float(r.amount),
             float(r.refund),
+            float(r.balance_off or 0),
             r.exchange_sale.bill_no if r.exchange_sale else '',
             r.reason,
         ]
         for r in returns
     ]
-    _sheet(wb, 'Returns', header, rows, ['Value', 'Cash refund'])
+    _sheet(wb, 'Returns', header, rows, ['Value', 'Cash refund', 'Off balance due'])
+
+    # Collections
+    header = [
+        'Receipt no',
+        'Date',
+        'Showroom',
+        'Bill no',
+        'Customer',
+        'Mobile',
+        'Amount',
+        'Paid by',
+        'Cash',
+        'UPI',
+        'Card',
+        'By',
+    ]
+    rows = []
+    for c in collections:
+        s = bills[c.sale_id]
+        cash, upi, card = _paid(c.payment)
+        rows.append(
+            [
+                c.receipt_no,
+                _local(c.at),
+                CITY.get(c.location_id, c.location_id),
+                s.bill_no,
+                s.name,
+                s.phone,
+                float(c.amount),
+                METHOD.get(c.payment.get('method'), c.payment.get('method')),
+                cash,
+                upi,
+                card,
+                c.created_by,
+            ]
+        )
+    _sheet(wb, 'Collections', header, rows, ['Amount', 'Cash', 'UPI', 'Card'])
 
     # Cash
     header = [

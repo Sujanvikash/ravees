@@ -81,7 +81,12 @@ def test_manual_discount_reduces_the_bill_and_the_server_prices_it(client, chenn
 
     # 10% off: the server works out the rupees and the GST drops with the taxable value
     pct = client.post(
-        '/sales', json={**sale([{'code': code, 'qty': 2}], 'cash', received=100000), 'discount': {'kind': 'percent', 'value': 10}}, headers=chennai
+        '/sales',
+        json={
+            **sale([{'code': code, 'qty': 2}], 'cash', received=100000),
+            'discount': {'kind': 'percent', 'value': 10},
+        },
+        headers=chennai,
     )
     assert pct.status_code == 201, pct.text
     t = pct.json()['totals']
@@ -92,7 +97,12 @@ def test_manual_discount_reduces_the_bill_and_the_server_prices_it(client, chenn
 
     # a flat amount bigger than the bill is capped, so the bill never goes negative
     capped = client.post(
-        '/sales', json={**sale([{'code': code, 'qty': 1}], 'cash', received=100000), 'discount': {'kind': 'amount', 'value': 10_000_000}}, headers=chennai
+        '/sales',
+        json={
+            **sale([{'code': code, 'qty': 1}], 'cash', received=100000),
+            'discount': {'kind': 'amount', 'value': 10_000_000},
+        },
+        headers=chennai,
     ).json()['totals']
     assert capped['payable'] == 0
 
@@ -117,3 +127,24 @@ def test_split_and_card(client, chennai):
     )
     assert three.status_code == 201, three.text
     assert three.json()['payment']['split'] == {'cash': 50, 'upi': 50, 'card': payable - 100}
+
+
+def test_a_returning_customer_is_found_by_mobile_at_any_showroom(client, chennai):
+    code = season_code(client, chennai)
+    assert client.post('/sales/customer', json={'phone': '9123456780'}, headers=chennai).json() is None
+
+    client.post(
+        '/sales', json={**sale([{'code': code, 'qty': 1}]), 'phone': '9123456780', 'name': 'Anu'}, headers=chennai
+    )
+    client.post(
+        '/sales',
+        json={**sale([{'code': code, 'qty': 1}]), 'phone': '+91 91234 56780', 'name': 'Anu Ravi'},
+        headers=chennai,
+    )
+
+    # another showroom knows them too, by their latest name
+    found = client.post('/sales/customer', json={'phone': '9123456780'}, headers=login(client, 'mumbai')).json()
+    assert found['name'] == 'Anu Ravi' and found['bills'] == 2 and found['phone'] == '9123456780'
+
+    # only an exact number is looked up, never a part of one
+    assert client.post('/sales/customer', json={'phone': '91234'}, headers=chennai).json() is None

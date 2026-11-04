@@ -127,7 +127,10 @@ def totals(lines: Sequence[BillLine], discount: Discount | None = None) -> dict:
         'discountValue': float(discount.value) if off > 0 else 0,
         'taxable': _num(taxable_total),
         'tax': _num(tax_total),
-        'gstRows': [{'rate': float(r), 'taxable': _num(by_rate[r][0] * factor), 'tax': _num(by_rate[r][1] * factor)} for r in rates],
+        'gstRows': [
+            {'rate': float(r), 'taxable': _num(by_rate[r][0] * factor), 'tax': _num(by_rate[r][1] * factor)}
+            for r in rates
+        ],
         'roundOff': _num(payable - exact),
         'payable': float(payable),
     }

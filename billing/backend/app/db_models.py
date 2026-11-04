@@ -4,6 +4,7 @@ the tests' create_all read the metadata from here; add a new module's models to 
 """
 
 from app.core.database import Base
+from app.modules.boxes.models import Box
 from app.modules.cash.models import CashClose
 from app.modules.locations.models import Location
 from app.modules.numbering.models import NumberSeries
@@ -20,6 +21,7 @@ from app.modules.users.models import User
 __all__ = [
     'AppSetting',
     'Base',
+    'Box',
     'CashClose',
     'Location',
     'NumberSeries',

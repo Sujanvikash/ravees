@@ -19,6 +19,7 @@ import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
+import { useCustomerLookup } from '../hooks/useCustomerLookup.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { useScanner } from '../hooks/useScanner.js';
 import { billNumber, buildBill, countLabel, nextSeq } from '../lib/bill.js';
@@ -70,6 +71,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
 
   const scanRef = useRef(null);
   const phoneRef = useRef(null);
+  const lookup = useCustomerLookup({ phone, name, setPhone, setName });
   const nameRef = useRef(null);
 
   const totals = useMemo(() => buildBill(bill.items, bill.discount), [bill.items, bill.discount]);
@@ -388,17 +390,18 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
             onDiscount={bill.setDiscount}
             phone={phone}
             onPhone={(value) => {
-              setPhone(value);
+              lookup.changePhone(value);
               setPhoneError('');
             }}
             phoneError={phoneError}
             name={name}
             onName={(value) => {
-              setName(value);
+              lookup.changeName(value);
               setNameError('');
             }}
             nameError={nameError}
             nameRef={nameRef}
+            lookup={lookup}
             phoneRef={phoneRef}
             method={method}
             onMethod={setMethod}
@@ -454,6 +457,9 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
               <div className="text-[13px] font-medium text-evergreen-900">Give back</div>
               <div className="text-[34px] leading-tight font-semibold tracking-tight text-evergreen-900 tabular-nums">{inr(refunded.refund)}</div>
               <div className="text-xs text-evergreen-900/80">in cash · the items are back in stock</div>
+              {refunded.balanceOff > 0 && (
+                <div className="mt-1 text-xs font-medium text-evergreen-900">{inr(refunded.balanceOff)} of the value paid off what was owed on the bill</div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button

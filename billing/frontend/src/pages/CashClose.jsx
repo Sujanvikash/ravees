@@ -26,7 +26,14 @@ const DayFigures = ({ day, opening }) => (
   <SummaryStrip
     figures={[
       { label: 'Opening float', value: inr(opening), note: 'in the drawer at the start' },
-      { label: 'Cash from bills', value: inr(day.cashSales), note: `${day.bills} bills today · cash and the cash part of split` },
+      {
+        label: 'Cash from bills',
+        value: inr(day.cashSales),
+        note: `${day.bills} bills today · cash and the cash part of split${day.collections ? ` · incl. credit payments` : ''}`,
+      },
+      ...(day.collections
+        ? [{ label: 'Credit collected', value: inr(day.collected), note: `${day.collections} payments towards credit bills, any method` }]
+        : []),
       { label: 'Cash refunds', value: inr(day.cashRefunds), note: 'returns and exchanges' },
       { label: 'Should be in the drawer', value: inr(opening + day.cashSales - day.cashRefunds) },
       { label: 'UPI · card', value: `${inr(day.upi)} · ${inr(day.card)}`, note: 'not in the drawer' },

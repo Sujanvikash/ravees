@@ -11,8 +11,8 @@ from app.core import clock
 from app.core.errors import Conflict, Forbidden, InvalidInput
 from app.modules.auth.access import acting_location, visible_location
 from app.modules.returns.models import SaleReturn
-from app.modules.sales.models import Sale
-from app.modules.sales.service import cash_in
+from app.modules.sales.models import Sale, SaleCollection
+from app.modules.sales.service import takings
 from app.modules.system import repository as system_repo
 from app.modules.users.models import User
 
@@ -44,19 +44,33 @@ def _figures(session: Session, location_id: str, day: date) -> dict:
             SaleReturn.location_id == location_id, SaleReturn.at >= start, SaleReturn.at < end
         )
     ).all()
-    cash = sum((cash_in(s.payment) for s in sales), Decimal(0))
-    upi = Decimal(0)
-    card = Decimal(0)
-    for s in sales:
-        p = s.payment
-        if p.get('method') == 'upi':
-            upi += Decimal(str(p['received']))
-        elif p.get('method') == 'card':
-            card += Decimal(str(p['received']))
-        elif p.get('method') == 'split' and p.get('split'):
-            upi += Decimal(str(p['split'].get('upi', 0)))
-            card += Decimal(str(p['split'].get('card', 0)))
-    return {'bills': len(sales), 'cash': cash, 'refunds': sum(refunds, Decimal(0)), 'upi': upi, 'card': card}
+    # balances paid today on credit bills (from any day) count with the day's takings, by how they were paid
+    collections = session.scalars(
+        select(SaleCollection).where(
+            SaleCollection.location_id == location_id, SaleCollection.at >= start, SaleCollection.at < end
+        )
+    ).all()
+    cash = upi = card = Decimal(0)
+    for payment in [s.payment for s in sales] + [c.payment for c in collections]:
+        c, u, k = takings(payment)
+        cash, upi, card = cash + c, upi + u, card + k
+    return {
+        'bills': len(sales),
+        'cash': cash,
+        'refunds': sum(refunds, Decimal(0)),
+        'upi': upi,
+        'card': card,
+        'collections': len(collections),
+        'collected': sum((c.amount for c in collections), Decimal(0)),
+    }
+
+
+def _other(f: dict) -> dict:
+    """The day's other figures kept on a close, for reference."""
+    other = {'bills': f['bills'], 'upi': float(f['upi']), 'card': float(f['card'])}
+    if f['collections']:
+        other |= {'collections': f['collections'], 'collected': float(f['collected'])}
+    return other
 
 
 def _last_float(session: Session, location_id: str, before: date) -> Decimal:
@@ -108,7 +122,7 @@ def auto_close(session: Session, location_id: str) -> None:
             select(CashClose.id).where(CashClose.location_id == location_id, CashClose.day == day)
         )
         f = _figures(session, location_id, day)
-        if not already and f['bills']:
+        if not already and (f['bills'] or f['collections']):
             opening = _last_float(session, location_id, day)
             expected = opening + f['cash'] - f['refunds']
             session.add(
@@ -122,7 +136,7 @@ def auto_close(session: Session, location_id: str) -> None:
                     counted=expected,
                     difference=Decimal(0),
                     float_next=opening,
-                    other={'bills': f['bills'], 'upi': float(f['upi']), 'card': float(f['card']), 'auto': True},
+                    other=_other(f) | {'auto': True},
                     denominations={},
                     note=AUTO_NOTE,
                     by=AUTO_BY,
@@ -157,6 +171,8 @@ def get_day(session: Session, user: User, location: str | None, day: date | None
         cash_refunds=float(f['refunds']),
         upi=float(f['upi']),
         card=float(f['card']),
+        collected=float(f['collected']),
+        collections=f['collections'],
         expected=float(opening + f['cash'] - f['refunds']),
         closed=CloseOut.from_model(closed) if closed else None,
     )
@@ -206,7 +222,7 @@ def close_day(session: Session, user: User, data: CloseIn, *, at: datetime | Non
         counted=counted,
         difference=counted - expected,
         float_next=Decimal(str(data.float_next)),
-        other={'bills': f['bills'], 'upi': float(f['upi']), 'card': float(f['card'])},
+        other=_other(f),
         denominations={k: v for k, v in data.denominations.items() if v},
         note=data.note.strip(),
         by=user.username,

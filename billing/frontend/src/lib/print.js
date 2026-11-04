@@ -28,3 +28,12 @@ export const printReceipt = () => {
   }
   window.print();
 };
+
+/** Prints a receipt drawn outside the app (in a portal on <body>) on its own, from any page: the page itself is
+ *  hidden from the print while it runs (see html[data-print-alone] in styles/index.css). */
+export const printAlone = () => {
+  const html = document.documentElement;
+  html.dataset.printAlone = '';
+  window.addEventListener('afterprint', () => delete html.dataset.printAlone, { once: true });
+  printReceipt();
+};

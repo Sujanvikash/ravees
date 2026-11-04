@@ -4,8 +4,8 @@ import { methodLabel } from '../lib/payment.js';
 import Dialog from './Dialog.jsx';
 import Kbd from './Kbd.jsx';
 
-/** After the sale: the change (or, after an exchange, the cash refund) to hand back, a reprint, and Enter for the
- *  next bill. */
+/** After the sale: the change (or, after an exchange, the cash refund) to hand back, what is left on credit on a
+ *  credit bill, a reprint, and Enter for the next bill. */
 const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => (
   <Dialog id="done" size="max-w-sm">
     <div className="flex flex-col items-center px-6 pt-7 pb-6 text-center">
@@ -23,6 +23,14 @@ const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => (
         <div className="mt-5 w-full rounded-2xl bg-evergreen-50 px-4 py-3.5">
           <div className="text-[13px] font-medium text-evergreen-900">Refund in cash (exchange)</div>
           <div className="text-[34px] leading-tight font-semibold tracking-tight text-evergreen-900 tabular-nums">{inr(refund)}</div>
+        </div>
+      )}
+
+      {sale.payment.later > 0 && (
+        <div className="mt-5 w-full rounded-2xl bg-warn-50 px-4 py-3.5 text-warn-ink">
+          <div className="text-[13px] font-medium">Balance on credit · {sale.name}</div>
+          <div className="text-[34px] leading-tight font-semibold tracking-tight tabular-nums">{inr(sale.payment.later)}</div>
+          <div className="text-xs opacity-80">Collect it later from Sales or Credit bills</div>
         </div>
       )}
 

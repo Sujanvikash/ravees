@@ -146,6 +146,10 @@
   html {
     background: none;
   }
+  /* a receipt printed from a page (a balance collected from Sales or Credit bills) prints alone: lib/print.js */
+  html[data-print-alone] #root {
+    display: none !important;
+  }
 }
 
 /* Text size (Settings → Appearance), chosen per showroom. A whole-UI zoom so everything scales — including the

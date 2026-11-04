@@ -11,8 +11,11 @@ import { signOut } from './lib/auth.js';
 import { loadCatalogue } from './lib/catalogue.js';
 import { NAV } from './lib/nav.js';
 import { ordersNeedingAction } from './lib/orders.js';
+import { overdueCredit } from './lib/payment.js';
+import Boxes from './pages/Boxes.jsx';
 import CashClose from './pages/CashClose.jsx';
 import Counter from './pages/Counter.jsx';
+import Credit from './pages/Credit.jsx';
 import Customers from './pages/Customers.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Inventory from './pages/Inventory.jsx';
@@ -30,7 +33,7 @@ import TranslitLayer from './components/TranslitLayer.jsx';
  * billing counter, the admin on the dashboard. A reload keeps the page it was on; signing in again starts at home.
  */
 const Shell = ({ session, onSignOut }) => {
-  const { orders, stockReturns } = useStore();
+  const { orders, stockReturns, sales } = useStore();
   const items = NAV[session.role];
   const [saved, setPage] = useLocalStorage(`billing-page-${session.username}`, items[0].id);
   const page = items.some((i) => i.id === saved) ? saved : items[0].id;
@@ -64,7 +67,11 @@ const Shell = ({ session, onSignOut }) => {
           session={session}
           page={page}
           onPage={(id) => navigate(id)}
-          badges={{ orders: ordersNeedingAction(orders, session), returns: session.role === 'admin' ? stockReturns.filter((r) => r.status === 'sent').length : 0 }}
+          badges={{
+            orders: ordersNeedingAction(orders, session),
+            returns: session.role === 'admin' ? stockReturns.filter((r) => r.status === 'sent').length : 0,
+            credit: overdueCredit(sales),
+          }}
           collapsed={collapsed}
           onToggle={() => setCollapsed(!collapsed)}
           mobileOpen={menuOpen}
@@ -75,10 +82,12 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'counter' && <Counter key={session.location} location={session.location} {...props} />}
           {page === 'dashboard' && <Dashboard {...props} />}
           {page === 'sales' && <Sales {...props} />}
+          {page === 'credit' && <Credit key={session.username} {...props} />}
           {page === 'customers' && <Customers key={session.username} {...props} />}
           {page === 'inventory' && <Inventory {...props} />}
           {page === 'orders' && <PurchaseOrders {...props} />}
           {page === 'returns' && <StockReturns {...props} />}
+          {page === 'boxes' && <Boxes key={session.username} {...props} />}
           {page === 'cash' && <CashClose key={session.username} {...props} />}
           {page === 'stores' && session.role === 'admin' && <Stores {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}

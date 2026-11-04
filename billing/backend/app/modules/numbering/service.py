@@ -13,6 +13,7 @@ QUOTE = 'quote'
 ORDER = 'order'
 RETURN = 'return'
 STOCK_RETURN = 'stock-return'
+RECEIPT = 'receipt'
 
 
 def take_next(session: Session, location_id: str, kind: str, period: str = '') -> int:
@@ -59,6 +60,13 @@ def next_return_no(session: Session, location_id: str, at: datetime) -> str:
     year = financial_year(at).replace('-', '')
     seq = take_next(session, location_id, RETURN, year)
     return f'CN-{_prefix(session, location_id)}{year}{seq:05d}'
+
+
+def next_receipt_no(session: Session, location_id: str, at: datetime) -> str:
+    """RC-CHN262700001: a payment received towards a credit bill's balance, numbered per financial year."""
+    year = financial_year(at).replace('-', '')
+    seq = take_next(session, location_id, RECEIPT, year)
+    return f'RC-{_prefix(session, location_id)}{year}{seq:05d}'
 
 
 def next_stock_return_no(session: Session, location_id: str) -> str:

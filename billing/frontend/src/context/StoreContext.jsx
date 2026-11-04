@@ -11,14 +11,17 @@ import { newId } from '../lib/uid.js';
  * A showroom gets only its own records; the admin every showroom's. A demo sign-in gets the demo's records.
  *
  *   sales    [{ id, billNo, at, location, phone, name, customer, lines: [{ code, name, qty, price, mrp, cost, gst }],
- *              totals, payment }]
+ *              totals, payment, balance, collections: [{ id, receiptNo, at, amount, payment, by }] }]
+ *            (balance: still owed on a credit bill; collections: payments towards it since, see lib/payment.js)
  *   returns  credit notes: [{ id, returnNo, saleId, billNo, location, at, kind: return | exchange, lines, amount,
- *              refund, exchangeBillNo }]
+ *              refund, balanceOff, exchangeBillNo }]
  *   stock    { [location]: { [code]: qty } }     (can go negative if billed beyond what was counted in)
  *   orders   purchase orders, see lib/orders.js: requested by a showroom → sent by the admin → counted in
  *   quotes   quotations: priced lists for a customer, never a bill
  *   imports  stock added straight from an Excel: [{ id, at, by, username, location, file, lines, source? }]
  *   stockReturns  stock a showroom sent back to the admin: [{ id, number, location, status: sent | received, … }]
+ *   boxes    supplier-packed boxes sent on to a showroom: [{ id, boxNo, stockNo, shipment, supplier, location,
+ *              status: packed | received, lines: [{ code, name, qty }], counted, history }]
  *   closes   daily cash closes: [{ location, day, expected, counted, difference, … }]
  *   settings the admin's switches: see DEFAULT_SETTINGS
  */
@@ -59,7 +62,7 @@ const cachedSettings = () => {
   }
 };
 
-const EMPTY = { sales: [], returns: [], stock: {}, orders: [], quotes: [], imports: [], stockReturns: [], closes: [] };
+const EMPTY = { sales: [], returns: [], stock: {}, orders: [], quotes: [], imports: [], stockReturns: [], boxes: [], closes: [] };
 
 /** Puts `item` in `list` in place of the one with its id, or at the end. */
 const upsert = (list, item) => (list.some((x) => x.id === item.id) ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item]);
@@ -89,7 +92,7 @@ export const StoreProvider = ({ session, children }) => {
 
   const fetchAll = useCallback(async () => {
     const started = new Date();
-    const [sales, returns, stock, orders, quotes, imports, stockReturns, closes, s] = await Promise.all([
+    const [sales, returns, stock, orders, quotes, imports, stockReturns, boxes, closes, s] = await Promise.all([
       api('/sales'),
       api('/returns'),
       api('/stock'),
@@ -97,11 +100,12 @@ export const StoreProvider = ({ session, children }) => {
       api('/quotes'),
       api('/stock/imports'),
       api('/purchase-returns'),
+      api('/boxes'),
       api('/cash/closes'),
       api('/settings'),
     ]);
     lastSync.current = started;
-    setData({ sales, returns, stock, orders, quotes, imports, stockReturns, closes });
+    setData({ sales, returns, stock, orders, quotes, imports, stockReturns, boxes, closes });
     keepSettings(s);
   }, [keepSettings]);
 
@@ -111,12 +115,13 @@ export const StoreProvider = ({ session, children }) => {
     const since = new Date(lastSync.current.getTime() - 60_000).toISOString();
     const started = new Date();
     try {
-      const [sales, returns, stock, orders, stockReturns, closes] = await Promise.all([
+      const [sales, returns, stock, orders, stockReturns, boxes, closes] = await Promise.all([
         api(`/sales?since=${encodeURIComponent(since)}`),
         api(`/returns?since=${encodeURIComponent(since)}`),
         api('/stock'),
         api('/orders'),
         api('/purchase-returns'),
+        api('/boxes'),
         api('/cash/closes'),
       ]);
       lastSync.current = started;
@@ -127,6 +132,7 @@ export const StoreProvider = ({ session, children }) => {
         stock,
         orders,
         stockReturns,
+        boxes,
         closes,
       }));
     } catch {
@@ -179,9 +185,14 @@ export const StoreProvider = ({ session, children }) => {
       recordReturn: async (body) => {
         const result = await api('/returns', { method: 'POST', body });
         saved('returns', result.creditNote, { stock: true });
+        if (result.original) saved('sales', result.original); // a credit bill's balance comes down
         if (result.sale) saved('sales', result.sale);
         return result;
       },
+
+      /** A payment towards a credit bill's balance: { id, amount, payment }. Resolves to the bill as it is now
+       *  (its balance and collections, the new one last). */
+      collectBalance: async (saleId, body) => saved('sales', await api(`/sales/${saleId}/collections`, { method: 'POST', body })),
 
       /** A bill with what can still be returned from it: { sale, lines, returnableUntil, open }. */
       findBill: (billNo) => api(`/returns/bill?bill_no=${encodeURIComponent(billNo)}`),
@@ -208,6 +219,25 @@ export const StoreProvider = ({ session, children }) => {
       receiveStockBack: async (id, counted, note) =>
         saved('stockReturns', await api(`/purchase-returns/${id}/receive`, { method: 'POST', body: { counted, note } })),
 
+      /** Boxes: the admin saves one or many ({ id, boxNo, stockNo, shipment, supplier, location, lines }; the same id
+       *  edits a packed box) and tags them for a showroom; the showroom counts one in, which adds to its stock. */
+      saveBoxes: async (boxes) => {
+        const list = await api('/boxes', { method: 'POST', body: { boxes } });
+        setData((d) => ({ ...d, boxes: merge(d.boxes, list) }));
+        return list;
+      },
+      tagBoxes: async (ids, location) => {
+        const list = await api('/boxes/tag', { method: 'POST', body: { ids, location } });
+        setData((d) => ({ ...d, boxes: merge(d.boxes, list) }));
+        return list;
+      },
+      deleteBox: async (id) => {
+        await api(`/boxes/${id}`, { method: 'DELETE' });
+        setData((d) => ({ ...d, boxes: d.boxes.filter((b) => b.id !== id) }));
+      },
+      receiveBox: async (id, counted, note) =>
+        saved('boxes', await api(`/boxes/${id}/receive`, { method: 'POST', body: { counted, note } }), { stock: true }),
+
       /** A quotation: { id, lines, name, phone, validDays, note }. Resolves to it with its number. */
       saveQuote: async (quote) => saved('quotes', await api('/quotes', { method: 'POST', body: quote })),
       /** Archives a quotation — it is never edited or deleted, only archived (kept) and brought back. */
@@ -232,6 +262,12 @@ export const StoreProvider = ({ session, children }) => {
       downloadSalesReport: ({ location, since, until } = {}) => {
         const q = new URLSearchParams({ ...(location ? { location } : {}), ...(since ? { since } : {}), ...(until ? { until } : {}) });
         return download(`/reports/sales.xlsx?${q}`, 'sales-report.xlsx');
+      },
+
+      /** Admin: the final (net) sales register as an Excel file, same options as the sales report. */
+      downloadFinalSales: ({ location, since, until } = {}) => {
+        const q = new URLSearchParams({ ...(location ? { location } : {}), ...(since ? { since } : {}), ...(until ? { until } : {}) });
+        return download(`/reports/final-sales.xlsx?${q}`, 'final-sales.xlsx');
       },
 
       /** Changes one of the admin's settings: shown straight away, put back if the server refuses. */

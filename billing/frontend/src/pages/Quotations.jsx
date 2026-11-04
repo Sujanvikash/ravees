@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Archive, ArchiveRestore, CircleCheck, FileText, Lock, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
 import BillTable from '../components/BillTable.jsx';
+import { CustomerStatus, CustomerSuggestions } from '../components/CustomerSuggest.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import QuotationPrint from '../components/QuotationPrint.jsx';
@@ -9,6 +10,7 @@ import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
+import { useCustomerLookup } from '../hooks/useCustomerLookup.js';
 import { useScanner } from '../hooks/useScanner.js';
 import { findProduct } from '../lib/catalogue.js';
 import { billNumber, buildBill, countLabel, gstLines, nextSeq } from '../lib/bill.js';
@@ -289,6 +291,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   // Prefilled when a bill was transferred over from the counter ("Save as quotation").
   const [name, setName] = useState(() => draft.customer?.name ?? '');
   const [phone, setPhone] = useState(() => draft.customer?.phone ?? '');
+  const lookup = useCustomerLookup({ phone, name, setPhone, setName });
   const [days, setDays] = useState(7);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
@@ -389,41 +392,54 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
       <aside className="flex flex-col gap-4 rounded-2xl border glass p-5 lg:w-96">
         <div className="flex flex-col gap-2">
           <h2 className="text-[13px] font-medium">Customer</h2>
-          <label className={field}>
-            <User size={15} className="text-ink-3" aria-hidden="true" />
-            <span className="sr-only">Customer name (required)</span>
-            <input
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError('');
-              }}
-              placeholder="Customer name"
-              className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
-            />
-            <span className="text-xs text-ruby-ink" aria-hidden="true">
-              *
-            </span>
-          </label>
-          <label className={field}>
-            <Phone size={15} className="text-ink-3" aria-hidden="true" />
-            <span className="sr-only">Mobile number (required)</span>
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={phone}
-              maxLength={10}
-              onChange={(e) => {
-                setPhone(typedMobile(e.target.value));
-                setError('');
-              }}
-              placeholder="Mobile number"
-              className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
-            />
-            <span className="text-xs text-ruby-ink" aria-hidden="true">
-              *
-            </span>
-          </label>
+          <div className="relative">
+            <label className={field}>
+              <Phone size={15} className="text-ink-3" aria-hidden="true" />
+              <span className="sr-only">Mobile number (required)</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                maxLength={10}
+                autoComplete="off"
+                onChange={(e) => {
+                  lookup.changePhone(typedMobile(e.target.value));
+                  setError('');
+                }}
+                onKeyDown={lookup.keyDown}
+                {...lookup.inputProps('phone', 'quote-phone-suggestions')}
+                placeholder="Mobile number"
+                className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
+              />
+              <span className="text-xs text-ruby-ink" aria-hidden="true">
+                *
+              </span>
+            </label>
+            <CustomerSuggestions id="quote-phone-suggestions" which="phone" lookup={lookup} />
+          </div>
+          <div className="relative">
+            <label className={field}>
+              <User size={15} className="text-ink-3" aria-hidden="true" />
+              <span className="sr-only">Customer name (required)</span>
+              <input
+                value={name}
+                autoComplete="off"
+                onChange={(e) => {
+                  lookup.changeName(e.target.value);
+                  setError('');
+                }}
+                onKeyDown={lookup.keyDown}
+                {...lookup.inputProps('name', 'quote-name-suggestions')}
+                placeholder="Customer name"
+                className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
+              />
+              <span className="text-xs text-ruby-ink" aria-hidden="true">
+                *
+              </span>
+            </label>
+            <CustomerSuggestions id="quote-name-suggestions" which="name" lookup={lookup} />
+          </div>
+          <CustomerStatus status={lookup.status} newNote="" />
         </div>
 
         <div className="flex flex-col gap-2">

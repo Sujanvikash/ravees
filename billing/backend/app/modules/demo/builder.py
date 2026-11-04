@@ -31,6 +31,8 @@ from app import db_models  # noqa: F401  (registers every table)
 from app.core import clock
 from app.core.config import BACKEND_DIR
 from app.core.database import DEMO_SCHEMA, Base, get_demo_engine, get_engine, get_session_factory
+from app.modules.boxes import service as boxes
+from app.modules.boxes.schemas import BoxesIn, BoxIn, BoxReceiveIn, BoxTagIn
 from app.modules.cash import service as cash
 from app.modules.cash.schemas import CloseIn
 from app.modules.locations import repository as locations
@@ -413,6 +415,36 @@ class _Builder:
                     at=_at(self.day(ago - 2), self.rand),
                 )
 
+    def pack_boxes(self) -> None:
+        """A shipment of supplier-packed boxes (the products on a real box label): three for Chennai, one of them
+        counted in already, two for Mumbai, one for Bengaluru and two not tagged yet."""
+        label = ['BR175', 'TA003', 'TA033', 'TA125', 'TA151', 'TA166', 'TA181', 'TA188', 'TA207', 'TA223', 'TA252']
+        codes = sorted(products.by_codes(self.s, label))
+        if not codes:
+            return
+        packed = [
+            BoxIn(
+                id=uuid.uuid4(),
+                box_no=f'{154 + i}.GOA',
+                stock_no=f'PUA{445 + i:06d}',
+                shipment='GOA-1 VELANKA 2026',
+                supplier='ARK Global Traders',
+                lines=[
+                    LineIn(code=c, qty=self.rand.randint(1, 30)) for c in self.rand.sample(codes, min(6, len(codes)))
+                ],
+            )
+            for i in range(8)
+        ]
+        boxes.save_boxes(self.s, self.admin, BoxesIn(boxes=packed), at=_at(self.day(4), self.rand))
+        for ids, to in (([0, 1, 2], 'chennai'), ([3, 4], 'mumbai'), ([5], 'bengaluru')):
+            tag = BoxTagIn(ids=[packed[i].id for i in ids], location=to)
+            boxes.tag(self.s, self.admin, tag, at=_at(self.day(3), self.rand))
+        first = packed[0]
+        counted = [CountedLineIn(code=ln.code, qty=ln.qty) for ln in first.lines]
+        boxes.receive(
+            self.s, self.shops['chennai'], first.id, BoxReceiveIn(counted=counted), at=_at(self.day(1), self.rand)
+        )
+
 
 def o_lines(order) -> list[OrderLineIn]:
     return [OrderLineIn(code=ln['code'], qty=ln['qty'], rate=ln['rate']) for ln in order.lines]
@@ -438,4 +470,5 @@ def build_demo(excel: Path = DEFAULT_EXCEL, *, now: datetime | None = None) -> D
         b.open_orders()
         b.write_quotes()
         b.send_back()
+        b.pack_boxes()
         return DemoReport(**b.counts)

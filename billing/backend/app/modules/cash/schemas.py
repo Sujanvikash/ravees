@@ -22,6 +22,8 @@ class DayOut(ApiModel):
     cash_refunds: float
     upi: float
     card: float
+    collected: float = 0  # paid today towards credit bills' balances, by any method (already in cash, UPI and card)
+    collections: int = 0
     expected: float  # opening + cash_sales - cash_refunds
     closed: 'CloseOut | None'
 

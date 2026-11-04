@@ -44,6 +44,7 @@ class ReturnOut(ApiModel):
     lines: list[dict]
     amount: float
     refund: float
+    balance_off: float  # on a credit bill, the part of the value that paid off what was still owed
     exchange_bill_no: str | None
     by: str
 
@@ -63,16 +64,19 @@ class ReturnOut(ApiModel):
             lines=r.lines,
             amount=float(r.amount),
             refund=float(r.refund),
+            balance_off=float(r.balance_off or 0),
             exchange_bill_no=r.exchange_sale.bill_no if r.exchange_sale else None,
             by=r.created_by,
         )
 
 
 class ReturnResult(ApiModel):
-    """The credit note, and for an exchange the new bill (to print)."""
+    """The credit note, for an exchange the new bill (to print), and the bill the goods came back against (its
+    balance comes down when it was a credit bill)."""
 
     credit_note: ReturnOut
     sale: SaleOut | None = None
+    original: SaleOut | None = None
 
 
 class ReturnableLine(ApiModel):

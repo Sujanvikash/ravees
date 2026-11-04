@@ -34,4 +34,8 @@ def find_bill(
 def create_return(body: ReturnIn, user: CurrentUser, session: DbSession) -> ReturnResult:
     """A return (refunded in cash) or an exchange (with the new bill) against a bill of this showroom."""
     record, sale = service.create_return(session, user, body)
-    return ReturnResult(credit_note=ReturnOut.from_model(record), sale=SaleOut.from_model(sale) if sale else None)
+    return ReturnResult(
+        credit_note=ReturnOut.from_model(record),
+        sale=SaleOut.from_model(sale) if sale else None,
+        original=SaleOut.from_model(record.sale),
+    )

@@ -1,77 +1,47 @@
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, HandCoins } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { countLabel } from '../lib/bill.js';
-import { customerLabel } from '../lib/customer.js';
-import { inr, inrWhole, parseAmount } from '../lib/money.js';
+import { customerLabel, isValidMobile, isValidName } from '../lib/customer.js';
+import { inr, parseAmount } from '../lib/money.js';
 import Dialog from './Dialog.jsx';
 import Kbd from './Kbd.jsx';
+import { usePaymentEntry } from '../hooks/usePaymentEntry.js';
+import { field, label, PaymentFields, Switch } from './PaymentFields.jsx';
 import PaymentMethods from './PaymentMethods.jsx';
 
-/** Exact, then the next round notes up: for ₹31,640 → Exact, ₹31,700, ₹32,000, ₹35,000. */
-const quickAmounts = (due) => {
-  const ups = [due, ...[100, 500, 1000, 5000].map((step) => Math.ceil(due / step) * step)];
-  return [...new Set(ups)].slice(0, 4);
-};
-
-const SPLIT_PARTS = [
-  { id: 'cash', label: 'Cash' },
-  { id: 'upi', label: 'UPI' },
-  { id: 'card', label: 'Card' },
-];
-
-const field =
-  'flex items-center gap-2 rounded-xl border border-line bg-surface px-4 transition-shadow focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_4px_rgba(23,92,38,0.10)]';
-const label = 'mb-1.5 block text-[13px] font-medium text-ink-2';
-
-/** An on/off switch with its label, for "Print receipt". */
-const Switch = ({ checked, onChange, children }) => (
-  <label className="inline-flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-2 select-none">
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? 'bg-evergreen-800' : 'bg-line-strong'}`}
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-4' : ''}`}
-      />
-    </button>
-    {children}
-  </label>
-);
-
-/** Takes the payment for the bill. Enter completes the sale once the amount is enough. */
+/**
+ * Takes the payment for the bill. Enter completes the sale once the amount is enough.
+ *
+ * "Credit bill" lets the customer pay part now (or nothing) and the rest later: what is typed under "Paying now"
+ * is taken by the chosen method, and the balance is kept on the bill to collect from Sales or Credit bills. A
+ * credit bill needs the customer's name and mobile, whatever the store's settings, so the balance can be chased.
+ */
 const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onBack, onComplete }) => {
   const due = bill.payable;
   const { showGst, composition } = useStore().settings;
   const gst = showGst && !composition; // a composition dealer's bill shows no GST
-  const [tendered, setTendered] = useState('');
-  const [approval, setApproval] = useState('');
-  const [parts, setParts] = useState({ cash: '', upi: '', card: '' });
   const [print, setPrint] = useState(true);
+  const [onCredit, setOnCredit] = useState(false);
+  const [nowText, setNowText] = useState('');
 
-  // Cash left blank means the customer gave the exact amount.
-  const received = tendered.trim() ? parseAmount(tendered) : due;
-  const change = received - due;
-  // A split bill: what is typed for cash, UPI and card must come to the amount due, using at least two of them.
-  const split = { cash: parseAmount(parts.cash), upi: parseAmount(parts.upi), card: parseAmount(parts.card) };
-  const splitLeft = Math.round((due - split.cash - split.upi - split.card) * 100) / 100;
-  const splitValid = splitLeft === 0 && Object.values(split).filter((v) => v > 0).length >= 2;
-  const valid = method === 'cash' ? change >= 0 : method === 'split' ? splitValid : true;
+  const payNow = onCredit ? Math.min(Math.max(parseAmount(nowText), 0), due) : due;
+  const later = Math.round((due - payNow) * 100) / 100;
+  const entry = usePaymentEntry(payNow, method);
+  const customerOk = isValidMobile(phone) && isValidName(name);
+  const creditProblem = !onCredit
+    ? ''
+    : !customerOk
+      ? 'A credit bill needs the customer’s name and mobile number. Go back and fill them in.'
+      : later <= 0
+        ? 'Paying the whole amount now: turn Credit bill off, or enter less.'
+        : '';
+  const valid = entry.valid && !creditProblem;
 
   const submit = (e) => {
     e.preventDefault();
     if (!valid) return;
-    onComplete({
-      method,
-      received: method === 'cash' ? received : due,
-      change: method === 'cash' ? change : 0,
-      approval: method === 'card' || (method === 'split' && split.card > 0) ? approval.trim() : '',
-      split: method === 'split' ? split : null,
-      print,
-    });
+    onComplete({ ...entry.details(), later: onCredit ? later : 0, print });
   };
 
   return (
@@ -94,144 +64,56 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
             </div>
           </div>
 
-          <PaymentMethods value={method} onChange={onMethod} />
-
-          {method === 'cash' && (
-            <div className="flex flex-col gap-3">
-              <div>
-                <label htmlFor="tendered" className={label}>
-                  Cash received
-                </label>
-                <div className={`${field} h-14`}>
-                  <span className="text-xl text-ink-3">₹</span>
-                  <input
-                    id="tendered"
-                    type="text"
-                    inputMode="decimal"
-                    autoFocus
-                    autoComplete="off"
-                    value={tendered}
-                    onChange={(e) => setTendered(e.target.value)}
-                    placeholder={String(due)}
-                    className="min-w-0 flex-1 bg-transparent text-2xl font-semibold tabular-nums placeholder:font-normal placeholder:text-ink-3/70"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {quickAmounts(due).map((v, i) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setTendered(String(v))}
-                    className="h-8 rounded-full border border-line px-3.5 text-[13px] font-medium tabular-nums transition-colors hover:border-ink-3 hover:bg-mist"
-                  >
-                    {i === 0 ? 'Exact' : inrWhole(v)}
-                  </button>
-                ))}
-              </div>
-              <div
-                className={`flex items-center justify-between rounded-xl px-4 py-3 ${
-                  change >= 0 ? 'bg-evergreen-50 text-evergreen-900' : 'bg-ruby-50 text-ruby-ink'
-                }`}
-              >
-                <span className="text-[13px] font-medium">{change >= 0 ? 'Change to return' : 'Still to collect'}</span>
-                <span className="text-2xl font-semibold tabular-nums">{inr(Math.abs(change))}</span>
-              </div>
-            </div>
-          )}
-
-          {method === 'upi' && (
-            <div className="rounded-xl border border-dashed border-line-strong p-4 text-[13px] text-ink-2">
-              <div className="font-medium text-ink">Ask the customer to pay {inr(due)} by UPI</div>
-              <div className="mt-1">
-                UPI ID: <span className="font-mono text-ink">{upiId || 'not set yet (src/config.js)'}</span>
-              </div>
-              <div className="mt-1 text-ink-3">Complete the sale once the payment shows as received.</div>
-            </div>
-          )}
-
-          {method === 'card' && (
-            <div>
-              <p className="mb-3 text-[13px] text-ink-2">
-                Ask the customer to tap or insert their card on the card machine, then enter the approval code.
-              </p>
-              <label htmlFor="approval" className={label}>
-                Approval code <span className="font-normal text-ink-3">(optional)</span>
-              </label>
-              <div className={`${field} h-12`}>
-                <input
-                  id="approval"
-                  type="text"
-                  autoFocus
-                  autoComplete="off"
-                  value={approval}
-                  onChange={(e) => setApproval(e.target.value)}
-                  placeholder="e.g. 4F7K21"
-                  className="min-w-0 flex-1 bg-transparent font-mono text-base placeholder:text-ink-3/70"
-                />
-              </div>
-            </div>
-          )}
-
-          {method === 'split' && (
-            <div className="flex flex-col gap-2.5">
-              <div className="grid grid-cols-3 gap-2.5">
-                {SPLIT_PARTS.map(({ id, label: name }, i) => (
-                  <div key={id}>
-                    <label htmlFor={`split-${id}`} className={label}>
-                      {name}
-                    </label>
-                    <div className={`${field} h-12 px-3`}>
-                      <span className="text-ink-3">₹</span>
-                      <input
-                        id={`split-${id}`}
-                        type="text"
-                        inputMode="decimal"
-                        autoFocus={i === 0}
-                        autoComplete="off"
-                        value={parts[id]}
-                        onChange={(e) => setParts((p) => ({ ...p, [id]: e.target.value }))}
-                        onFocus={() => {
-                          // an empty box after the first takes what is still left, so the last part needs no typing
-                          if (i > 0 && !parts[id].trim() && splitLeft > 0) setParts((p) => ({ ...p, [id]: String(splitLeft) }));
-                        }}
-                        placeholder="0"
-                        className="min-w-0 flex-1 bg-transparent text-base font-medium tabular-nums placeholder:font-normal placeholder:text-ink-3/70"
-                      />
-                    </div>
+          <div className={`rounded-2xl border ${onCredit ? 'border-warn-ink/30 bg-warn-50/50' : 'border-line-soft'} px-4 py-3`}>
+            <Switch checked={onCredit} onChange={setOnCredit}>
+              <span className="flex items-center gap-1.5 font-medium text-ink">
+                <HandCoins size={15} aria-hidden="true" /> Credit bill
+              </span>
+              <span className="text-ink-3">· customer pays the rest later</span>
+            </Switch>
+            {onCredit && (
+              <div className="mt-3 grid animate-pop grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="pay-now" className={label}>
+                    Paying now
+                  </label>
+                  <div className={`${field} h-12 px-3`}>
+                    <span className="text-ink-3">₹</span>
+                    <input
+                      id="pay-now"
+                      type="text"
+                      inputMode="decimal"
+                      autoFocus
+                      autoComplete="off"
+                      value={nowText}
+                      onChange={(e) => setNowText(e.target.value)}
+                      placeholder="0"
+                      className="min-w-0 flex-1 bg-transparent text-lg font-semibold tabular-nums placeholder:font-normal placeholder:text-ink-3/70"
+                    />
                   </div>
-                ))}
-              </div>
-              <div
-                className={`flex justify-between rounded-xl px-4 py-3 text-[13px] ${
-                  splitValid ? 'bg-evergreen-50 text-evergreen-900' : 'bg-ruby-50 text-ruby-ink'
-                }`}
-              >
-                <span className="font-medium">
-                  {splitLeft > 0
-                    ? 'Still to collect'
-                    : splitLeft < 0
-                      ? 'More than the amount due'
-                      : splitValid
-                        ? 'Adds up to the amount due'
-                        : 'Use at least two of cash, UPI and card'}
-                </span>
-                <span className="font-semibold tabular-nums">{inr(Math.abs(splitLeft))}</span>
-              </div>
-              {split.card > 0 && (
-                <div className={`${field} h-11`}>
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    aria-label="Card approval code (optional)"
-                    value={approval}
-                    onChange={(e) => setApproval(e.target.value)}
-                    placeholder="Card approval code (optional)"
-                    className="min-w-0 flex-1 bg-transparent font-mono text-sm placeholder:font-sans placeholder:text-ink-3/70"
-                  />
                 </div>
-              )}
-            </div>
+                <div className="flex flex-col justify-end rounded-xl bg-warn-50 px-3 py-2 text-warn-ink">
+                  <span className="text-xs font-medium">Balance on credit</span>
+                  <span className="text-xl font-semibold tabular-nums">{inr(later)}</span>
+                </div>
+                {creditProblem && (
+                  <p role="alert" className="col-span-2 text-xs font-medium text-ruby-ink">
+                    {creditProblem}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {payNow > 0 ? (
+            <>
+              <PaymentMethods value={method} onChange={onMethod} />
+              <PaymentFields key={method} due={payNow} method={method} upiId={upiId} entry={entry} />
+            </>
+          ) : (
+            <p className="rounded-xl border border-dashed border-line-strong px-4 py-3 text-[13px] text-ink-2">
+              Nothing is paid now: the whole {inr(due)} goes on credit against {name.trim() || 'the customer'}.
+            </p>
           )}
         </div>
 
@@ -253,7 +135,7 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3 disabled:shadow-none"
             >
               <Check size={16} strokeWidth={2.4} />
-              Complete sale <Kbd tone="dark">Enter</Kbd>
+              {onCredit ? 'Complete credit sale' : 'Complete sale'} <Kbd tone="dark">Enter</Kbd>
             </button>
           </div>
         </div>

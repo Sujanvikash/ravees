@@ -157,14 +157,24 @@ export const topProducts = (sales, limit = 8, { gst = true } = {}) => {
     .slice(0, limit);
 };
 
-/** Takings per payment method. A split bill counts each of its cash, UPI and card parts under that method. */
+/** Takings per payment method. A split bill counts each of its cash, UPI and card parts under that method. What
+ *  a credit bill left owing is under `later`, and comes into the methods as the balance is collected (counted
+ *  with the bill it was collected on). */
 export const byMethod = (sales) => {
   const out = { cash: 0, upi: 0, card: 0 };
   for (const s of sales) {
+    const later = s.payment.later ?? 0;
+    if (later) out.later = (out.later ?? 0) + later;
     if (s.payment.method === 'split' && s.payment.split) {
       for (const k of ['cash', 'upi', 'card']) out[k] += s.payment.split[k] ?? 0;
-    } else {
-      out[s.payment.method] = (out[s.payment.method] ?? 0) + s.totals.payable;
+    } else if (s.payment.method !== 'later') {
+      out[s.payment.method] = (out[s.payment.method] ?? 0) + s.totals.payable - later;
+    }
+    for (const c of s.collections ?? []) {
+      const p = c.payment;
+      if (p.method === 'split' && p.split) for (const k of ['cash', 'upi', 'card']) out[k] += p.split[k] ?? 0;
+      else out[p.method] = (out[p.method] ?? 0) + c.amount;
+      out.later -= c.amount;
     }
   }
   return out;

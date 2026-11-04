@@ -70,7 +70,10 @@ def create_return(
 ) -> tuple[SaleReturn, Sale | None]:
     """Takes goods back against a bill: they go back into the showroom's stock and get a credit note. A return
     refunds their value in cash. An exchange makes the new bill at the same time, with the returned value off
-    it; any of the value the new bill doesn't use is refunded in cash. All in one transaction."""
+    it; any of the value the new bill doesn't use is refunded in cash. All in one transaction.
+
+    On a credit bill the value first pays off what is still owed on it (balance_off); only the rest is refunded
+    or goes to the exchange, so a customer is never handed cash for goods they haven't paid for."""
     if user.is_admin or not user.location_id:
         raise Forbidden(ONLY_SHOWROOM)
     if existing := session.get(SaleReturn, data.id):
@@ -102,8 +105,15 @@ def create_return(
     amount = value.quantize(Decimal(1), ROUND_HALF_UP)
     return_no = numbering.next_return_no(session, user.location_id, at)
 
+    balance_off = Decimal(0)
+    if sale.balance > 0:
+        session.refresh(sale, with_for_update=True)  # a collection at the same moment waits for this
+        balance_off = min(amount, sale.balance)
+        sale.balance -= balance_off
+    available = amount - balance_off
+
     new_sale = None
-    refund = amount
+    refund = available
     if data.exchange:
         new_sale = sales.create_sale(
             session,
@@ -117,11 +127,11 @@ def create_return(
                 discount=data.exchange.discount,
             ),
             at=at,
-            credit=amount,
+            credit=available,
             credit_note=return_no,
             commit=False,
         )
-        refund = max(amount - Decimal(str(new_sale.totals['payable'])), Decimal(0))
+        refund = max(available - Decimal(str(new_sale.totals['payable'])), Decimal(0))
 
     record = SaleReturn(
         id=data.id,
@@ -134,6 +144,7 @@ def create_return(
         lines=lines,
         amount=amount,
         refund=refund,
+        balance_off=balance_off,
         exchange_sale_id=new_sale.id if new_sale else None,
         created_by=user.username,
     )

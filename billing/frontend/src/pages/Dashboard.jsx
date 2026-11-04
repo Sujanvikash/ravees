@@ -150,6 +150,12 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                       </li>
                     ))}
                   </ul>
+                  {methods.later > 0 && (
+                    <p className="mt-4 flex justify-between text-[13px] text-warn-ink">
+                      <span>Still on credit</span>
+                      <span className="font-medium tabular-nums">{inrWhole(methods.later)}</span>
+                    </p>
+                  )}
                   <p className="mt-4 text-xs text-ink-3">Average bill {inr(sum.average)}</p>
                 </Card>
               </div>

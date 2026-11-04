@@ -14,7 +14,8 @@ from app.modules.sales.models import Sale
 class SaleReturn(Base):
     """Goods a customer brought back against a bill. lines: [{code, name, qty, price, gst}] at the price paid.
     amount is their value (to the rupee); refund is the cash handed back: all of it for a return, the part the
-    new bill didn't use for an exchange."""
+    new bill didn't use for an exchange. On a credit bill the value first pays off what is still owed on it:
+    balance_off is that part, and only the rest is refunded or carried to the exchange."""
 
     __tablename__ = 'sale_returns'
 
@@ -28,6 +29,7 @@ class SaleReturn(Base):
     lines: Mapped[list[dict]] = mapped_column(JSONB)
     amount: Mapped[Decimal] = mapped_column(Money)
     refund: Mapped[Decimal] = mapped_column(Money)
+    balance_off: Mapped[Decimal] = mapped_column(Money, default=Decimal(0), server_default='0')
     exchange_sale_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('sales.id'))
     created_by: Mapped[str] = mapped_column(String(32))
 

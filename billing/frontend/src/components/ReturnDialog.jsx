@@ -74,6 +74,11 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
   const lines = found ? found.lines.map((l) => ({ ...l, left: l.sold - l.returned, qty: qty[l.code] ?? 0 })) : [];
   const chosen = lines.filter((l) => l.qty > 0);
   const value = Math.round(chosen.reduce((s, l) => s + l.price * l.qty, 0));
+  // On a credit bill the goods coming back first pay off what is still owed on it; only the rest is refunded or
+  // goes to an exchange (the server does the same, see returns/service.py).
+  const owed = found?.sale.balance ?? 0;
+  const offBalance = Math.min(value, owed);
+  const usable = value - offBalance;
   const bump = (code, by, left) => setQty((m) => ({ ...m, [code]: Math.min(Math.max((m[code] ?? 0) + by, 0), left) }));
   const body = () => ({ saleId: found.sale.id, lines: chosen.map((l) => ({ code: l.code, qty: l.qty })), reason: reason.trim() });
 
@@ -215,6 +220,14 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
               <span className="text-[13px] text-ink-2">Value of the items coming back</span>
               <span className="text-xl font-semibold tabular-nums">{inr(value)}</span>
             </div>
+            {owed > 0 && (
+              <div className="flex items-baseline justify-between rounded-xl bg-warn-50 px-4 py-2.5 text-warn-ink">
+                <span className="text-[13px]">
+                  Credit bill: {inr(owed)} still owed. {offBalance > 0 ? `${inr(offBalance)} of the value clears it first.` : ''}
+                </span>
+                {offBalance > 0 && <span className="font-semibold tabular-nums">−{inr(offBalance)}</span>}
+              </div>
+            )}
 
             {error && (
               <p role="alert" className="text-xs font-medium text-ruby-ink">
@@ -223,11 +236,11 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
             )}
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button type="button" className={secondary} disabled={busy || !chosen.length} onClick={() => onExchange({ ...body(), value, bill: found.sale })}>
+              <button type="button" className={secondary} disabled={busy || !chosen.length} onClick={() => onExchange({ ...body(), value: usable, bill: found.sale })}>
                 <Repeat size={16} aria-hidden="true" /> Exchange for other items
               </button>
               <button type="button" className={primary} disabled={busy || !chosen.length} onClick={refund}>
-                <Undo2 size={16} aria-hidden="true" /> Refund {inr(value)} in cash
+                <Undo2 size={16} aria-hidden="true" /> {usable > 0 ? `Refund ${inr(usable)} in cash` : 'Take back (clears what is owed)'}
               </button>
             </div>
             <p className="text-xs text-ink-3">

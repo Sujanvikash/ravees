@@ -72,6 +72,11 @@ Everything is under `/api/v1` except `/health`. Errors come back as `{"detail": 
 | `GET /api/v1/stock/imports`, `POST /api/v1/stock/imports` | signed in | stock added from an Excel (`{ id, location?, file, source?, lines }`) |
 | `GET /api/v1/purchase-returns`, `POST /api/v1/purchase-returns` | signed in / showroom | purchase returns to the admin (`PR-CHN-0001`); it leaves the showroom's stock when sent |
 | `POST /api/v1/purchase-returns/{id}/receive` | admin | `{ counted, note }`: counted in at the admin |
+| `GET /api/v1/boxes` | signed in | supplier-packed boxes (`154.GOA`, stock no `PUA000445`) with what is in each: a showroom's own, the admin all (or `?location=`) |
+| `POST /api/v1/boxes` | admin | `{ boxes: [{ id, boxNo, stockNo, shipment, supplier, location, lines }] }`: one box or a whole packing list, saved all or none; the same `id` edits a packed box |
+| `POST /api/v1/boxes/tag` | admin | `{ ids, location }`: tags packed boxes for the showroom they go to (`null` untags) |
+| `DELETE /api/v1/boxes/{id}` | admin | removes a packed box entered by mistake |
+| `POST /api/v1/boxes/{id}/receive` | showroom | `{ counted, note }`: the showroom the box is tagged for counts it in; what it counts is added to its stock |
 | `GET /api/v1/orders`, `POST /api/v1/orders` | signed in | purchase orders; a showroom's new one is a request, the admin's is sent straight away |
 | `PUT /api/v1/orders/{id}` | showroom | edit its request before it is sent |
 | `POST /api/v1/orders/{id}/send`, `/reject` | admin | approve as reviewed and send, or turn down with a reason |

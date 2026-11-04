@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, time, timedelta
 from io import BytesIO
 
+import pytest
 from openpyxl import load_workbook
 
 from app.core import clock
@@ -156,7 +157,7 @@ def test_sales_report_excel(client, admin, chennai):
     r = client.get('/reports/sales.xlsx', headers=admin)
     assert r.status_code == 200 and 'attachment' in r.headers['content-disposition']
     wb = load_workbook(BytesIO(r.content))
-    assert wb.sheetnames == ['Summary', 'Bills', 'Items', 'Returns', 'Cash']
+    assert wb.sheetnames == ['Summary', 'Bills', 'Items', 'Returns', 'Collections', 'Cash']
     assert 'Gross profit' in [c.value for c in wb['Summary'][1]]
     assert wb['Summary'].cell(row=wb['Summary'].max_row, column=1).value == 'All showrooms'
 
@@ -174,3 +175,22 @@ def test_report_without_gst(client, admin):
             assert not {'GST', 'Taxable', 'GST %', 'Sales (incl. GST)'} & set(header), header
     finally:
         client.patch('/settings', json={'showGst': True}, headers=admin)
+
+
+def test_final_sales_register(client, admin, chennai):
+    assert client.get('/reports/final-sales.xlsx', headers=chennai).status_code == 403
+    r = client.get('/reports/final-sales.xlsx', headers=admin)
+    assert r.status_code == 200 and 'final-sales-all-showrooms' in r.headers['content-disposition']
+    ws = load_workbook(BytesIO(r.content))['Final sales']
+    header = [c.value for c in ws[1]]
+    assert header[:3] == ['Bill no', 'Date', 'Showroom'] and header[-1] == 'Net amount'
+    rows = list(ws.iter_rows(min_row=2, values_only=True))
+    amount, back, net = header.index('Amount'), header.index('Returns'), header.index('Net amount')
+    bills = [row for row in rows if not str(row[0]).startswith('Total · ')]
+    assert bills and all(row[net] == pytest.approx(row[amount] - row[back]) for row in bills)
+    assert rows[-1][0] == 'Total · All showrooms'
+    assert rows[-1][net] == pytest.approx(sum(row[net] for row in bills))
+
+    one = load_workbook(BytesIO(client.get('/reports/final-sales.xlsx?location=chennai', headers=admin).content))
+    rows = list(one['Final sales'].iter_rows(min_row=2, values_only=True))
+    assert rows[-1][0] == 'Total · Chennai' and {row[2] for row in rows[:-1]} == {'Chennai'}
