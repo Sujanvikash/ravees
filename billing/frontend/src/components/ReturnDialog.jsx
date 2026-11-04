@@ -5,7 +5,6 @@ import { inr } from '../lib/money.js';
 import Dialog from './Dialog.jsx';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-const day = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 const primary =
   'inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-evergreen-800 text-[14px] font-semibold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3';
@@ -19,11 +18,11 @@ const secondary =
  *   3. either refund it in cash (whatever the bill was paid with: a UPI or card payment is refunded in cash too),
  *      or exchange it: the returned value becomes a credit on the next bill rung up at the counter. If the new
  *      bill is bigger the customer pays the rest; if smaller, the difference is refunded in cash.
- * Only what was on the bill, and not returned already, can come back, within the admin's return window.
+ * Only what was on the bill, and not returned already, can come back.
  */
 const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund, onExchange, onClose }) => {
   const [query, setQuery] = useState('');
-  const [found, setFound] = useState(null); // { sale, lines, returnableUntil, open }
+  const [found, setFound] = useState(null); // { sale, lines }
   const [qty, setQty] = useState({});
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
@@ -78,6 +77,11 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
   const bump = (code, by, left) => setQty((m) => ({ ...m, [code]: Math.min(Math.max((m[code] ?? 0) + by, 0), left) }));
   const body = () => ({ saleId: found.sale.id, lines: chosen.map((l) => ({ code: l.code, qty: l.qty })), reason: reason.trim() });
 
+  // "Return all": every line still returnable (bought minus already returned) set to its full quantity.
+  const returnable = lines.filter((l) => l.left > 0);
+  const allBack = returnable.length > 0 && returnable.every((l) => l.qty === l.left);
+  const toggleAll = () => setQty(allBack ? {} : Object.fromEntries(returnable.map((l) => [l.code, l.left])));
+
   const refund = async () => {
     setBusy(true);
     setError('');
@@ -103,7 +107,10 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (query.includes('/')) open(query.trim());
+                // a whole bill number (letters then digits, e.g. CHN262700184 — or the older CHN/26-27/… form)
+                // is looked up directly; anything else searches by name or mobile and opens the first match
+                const typed = query.trim();
+                if (/^[a-z]{2,}\d{4,}$/i.test(typed) || typed.includes('/')) open(typed);
                 else if (recent[0]) open(recent[0].billNo);
               }}
             >
@@ -147,20 +154,25 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
             >
               <ArrowLeft size={15} aria-hidden="true" /> Another bill
             </button>
-            {!found.open && (
-              <p className="rounded-xl bg-warn-50 px-3.5 py-2.5 text-[13px] font-medium text-warn-ink">
-                {found.returnableUntil
-                  ? `This bill could be returned until ${day.format(new Date(found.returnableUntil))}; that has passed.`
-                  : 'Returns and exchanges are switched off in Settings.'}
-              </p>
-            )}
             <table className="w-full text-[13px] tabular-nums">
               <thead>
                 <tr className="border-b border-line-soft text-left text-xs text-ink-3">
                   <th className="py-1.5 pr-3 font-medium">Product</th>
                   <th className="py-1.5 pr-3 text-right font-medium">Bought</th>
                   <th className="py-1.5 pr-3 text-right font-medium">Rate</th>
-                  <th className="py-1.5 text-right font-medium">Coming back</th>
+                  <th className="py-1.5 text-right font-medium">
+                    <label className="inline-flex cursor-pointer items-center justify-end gap-1.5 select-none">
+                      <input
+                        type="checkbox"
+                        checked={allBack}
+                        disabled={!returnable.length}
+                        onChange={toggleAll}
+                        aria-label="Return all items"
+                        className="size-3.5 accent-evergreen-800 disabled:opacity-40"
+                      />
+                      <span>Return all</span>
+                    </label>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -177,11 +189,11 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
                     <td className="py-2 pr-3 text-right">{inr(l.price)}</td>
                     <td className="py-2 text-right">
                       <span className="inline-flex items-center gap-1">
-                        <button type="button" aria-label={`One less ${l.name}`} disabled={!found.open || l.qty === 0} onClick={() => bump(l.code, -1, l.left)} className="inline-flex size-7 items-center justify-center rounded-lg border border-line enabled:hover:bg-mist disabled:opacity-40">
+                        <button type="button" aria-label={`One less ${l.name}`} disabled={l.qty === 0} onClick={() => bump(l.code, -1, l.left)} className="inline-flex size-7 items-center justify-center rounded-lg border border-line enabled:hover:bg-mist disabled:opacity-40">
                           <Minus size={13} />
                         </button>
                         <span className="w-8 text-center font-semibold">{l.qty}</span>
-                        <button type="button" aria-label={`One more ${l.name}`} disabled={!found.open || l.qty >= l.left} onClick={() => bump(l.code, 1, l.left)} className="inline-flex size-7 items-center justify-center rounded-lg border border-line enabled:hover:bg-mist disabled:opacity-40">
+                        <button type="button" aria-label={`One more ${l.name}`} disabled={l.qty >= l.left} onClick={() => bump(l.code, 1, l.left)} className="inline-flex size-7 items-center justify-center rounded-lg border border-line enabled:hover:bg-mist disabled:opacity-40">
                           <Plus size={13} />
                         </button>
                       </span>
@@ -196,7 +208,6 @@ const ReturnDialog = ({ location, sales, findBill, startBillNo = null, onRefund,
               onChange={(e) => setReason(e.target.value)}
               placeholder="Reason (optional), e.g. wrong size, damaged"
               aria-label="Reason"
-              disabled={!found.open}
               className="h-10 rounded-xl border border-line bg-white px-3 text-[13px]"
             />
 

@@ -277,7 +277,15 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                       )}
                       <th scope="col" className={`py-1.5 pr-3 font-medium ${admin ? 'pl-3' : 'pl-4'}`}>Code</th>
                       <th scope="col" className="py-1.5 pr-3 font-medium">Product</th>
-                      <th scope="col" className="py-1.5 pr-3 text-right font-medium">{admin ? 'Cost' : 'Price'}</th>
+                      {admin ? (
+                        <th scope="col" className="py-1.5 pr-3 text-right font-medium">Cost</th>
+                      ) : (
+                        <>
+                          <th scope="col" className="py-1.5 pr-3 text-right font-medium">MRP</th>
+                          <th scope="col" className="py-1.5 pr-3 text-right font-medium">Disc</th>
+                          <th scope="col" className="py-1.5 pr-3 text-right font-medium">Price</th>
+                        </>
+                      )}
                       {matrix ? (
                         shops.map((l) => (
                           <th key={l.id} scope="col" className="py-1.5 pr-3 text-right font-medium">
@@ -299,7 +307,11 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {shown.map(({ p, perShop, qty, received, sold, onOrder, requested }) => (
+                    {shown.map(({ p, perShop, qty, received, sold, onOrder, requested }) => {
+                      // the selling price, and its discount off MRP — shown as MRP · Disc% · Price, like the bill
+                      const price = priceOf(p);
+                      const disc = p.mrp > price ? Math.round(((p.mrp - price) / p.mrp) * 100) : 0;
+                      return (
                       <tr key={p.code} className="row-hover border-b border-line-soft">
                         {admin && (
                           <td className="py-1.5 pl-4 text-center">
@@ -336,7 +348,15 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                             )}
                           </div>
                         </td>
-                        <td className="py-1.5 pr-3 text-right text-ink-2">{inr(unitValue(p))}</td>
+                        {admin ? (
+                          <td className="py-1.5 pr-3 text-right text-ink-2">{inr(p.cost ?? 0)}</td>
+                        ) : (
+                          <>
+                            <td className="py-1.5 pr-3 text-right text-ink-3">{inr(p.mrp)}</td>
+                            <td className="py-1.5 pr-3 text-right text-ink-3">{disc ? `${disc}%` : '—'}</td>
+                            <td className="py-1.5 pr-3 text-right font-medium">{inr(price)}</td>
+                          </>
+                        )}
                         {matrix ? (
                           perShop.map((n, i) => (
                             <td key={shops[i].id} className={`py-1.5 pr-3 text-right ${n <= 0 ? 'text-ink-3' : ''}`}>
@@ -358,7 +378,8 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                         </td>
                         <td className="py-1.5 pr-4 text-right">{inr(Math.max(qty, 0) * unitValue(p))}</td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
                 <Pager {...paged.pager} />

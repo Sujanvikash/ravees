@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { LOCATIONS } from '../config.js';
+import { activeLocations } from '../config.js';
 import { PERIODS } from '../lib/reports.js';
 
 const segment = (on) =>
@@ -20,15 +20,22 @@ export const Segmented = ({ label, options, value, onChange }) => (
 
 export const PeriodTabs = ({ value, onChange }) => <Segmented label="Period" options={PERIODS} value={value} onChange={onChange} />;
 
-/** Showroom picker for the admin; `all` adds an "All showrooms" option whose value is null. */
-export const LocationPicker = ({ value, onChange, all = true }) => (
-  <Segmented
-    label="Showroom"
-    options={[...(all ? [{ id: null, label: 'All showrooms' }] : []), ...LOCATIONS.map((l) => ({ id: l.id, label: l.city }))]}
-    value={value}
-    onChange={onChange}
-  />
-);
+/** Showroom picker for the admin; `all` adds an "All showrooms" option whose value is null. Two stores that
+ *  share a city (Chennai · Egmore, Chennai · ECR) show their area so they can be told apart. */
+export const LocationPicker = ({ value, onChange, all = true }) => {
+  const stores = activeLocations();
+  const perCity = {};
+  for (const l of stores) perCity[l.city] = (perCity[l.city] ?? 0) + 1;
+  const label = (l) => (perCity[l.city] > 1 ? `${l.city} · ${l.area}` : l.city);
+  return (
+    <Segmented
+      label="Showroom"
+      options={[...(all ? [{ id: null, label: 'All showrooms' }] : []), ...stores.map((l) => ({ id: l.id, label: label(l) }))]}
+      value={value}
+      onChange={onChange}
+    />
+  );
+};
 
 export const SearchBox = ({ value, onChange, placeholder }) => (
   <label className="flex h-8 min-w-56 flex-1 items-center gap-2 rounded-xl border border-line bg-surface px-3 transition-shadow focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)] sm:max-w-72">

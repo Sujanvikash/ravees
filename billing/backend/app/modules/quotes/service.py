@@ -71,11 +71,25 @@ def create_quote(session: Session, user: User, data: QuoteIn, *, at: datetime | 
     return quote
 
 
-def delete_quote(session: Session, user: User, quote_id) -> None:
-    """Deletes a quotation (it was never a bill, so nothing else changes). A showroom deletes its own; the admin any.
-    Its number is not used again."""
+def _own_quote(session: Session, user: User, quote_id) -> Quote:
     quote = session.get(Quote, quote_id)
     if not quote or (not user.is_admin and quote.location_id != user.location_id):
         raise NotFound('No such quotation.')
-    session.delete(quote)
+    return quote
+
+
+def archive_quote(session: Session, user: User, quote_id) -> Quote:
+    """Archives a quotation: it leaves the live list but is kept (it was never a bill, so nothing else changes).
+    A showroom archives its own; the admin any. A quotation is never edited or deleted."""
+    quote = _own_quote(session, user, quote_id)
+    quote.archived_at = clock.now()
     session.commit()
+    return quote
+
+
+def unarchive_quote(session: Session, user: User, quote_id) -> Quote:
+    """Brings an archived quotation back onto the live list."""
+    quote = _own_quote(session, user, quote_id)
+    quote.archived_at = None
+    session.commit()
+    return quote

@@ -34,6 +34,18 @@ const SendBackDialog = ({ location, onClose, onDone }) => {
   const chosen = Object.entries(qty).filter(([, n]) => n > 0);
   const units = chosen.reduce((t, [, n]) => t + n, 0);
 
+  // "Return all": the whole in-stock quantity of every product currently listed (respecting the search).
+  const allSelected = list.length > 0 && list.every((p) => (qty[p.code] ?? 0) === stockOf(location, p.code));
+  const toggleAll = () =>
+    setQty((m) => {
+      const next = { ...m };
+      for (const p of list) {
+        if (allSelected) delete next[p.code];
+        else next[p.code] = stockOf(location, p.code);
+      }
+      return next;
+    });
+
   const send = async () => {
     setBusy(true);
     setError('');
@@ -72,7 +84,19 @@ const SendBackDialog = ({ location, onClose, onDone }) => {
               <tr className="border-b border-line-soft text-left text-xs text-ink-3">
                 <th className="py-1.5 pr-3 pl-3 font-medium">Product</th>
                 <th className="py-1.5 pr-3 text-right font-medium">In stock</th>
-                <th className="py-1.5 pr-3 text-right font-medium">Return</th>
+                <th className="py-1.5 pr-3 text-right font-medium">
+                  <label className="inline-flex cursor-pointer items-center justify-end gap-1.5 select-none">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      disabled={!list.length}
+                      onChange={toggleAll}
+                      aria-label="Return all products in stock"
+                      className="size-3.5 accent-evergreen-800 disabled:opacity-40"
+                    />
+                    <span>Return all</span>
+                  </label>
+                </th>
               </tr>
             </thead>
             <tbody>

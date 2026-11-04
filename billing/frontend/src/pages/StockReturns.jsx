@@ -1,7 +1,8 @@
-import { Fragment, useState } from 'react';
-import { ChevronDown, History, PackageCheck, Undo2 } from 'lucide-react';
+import { Fragment, useEffect, useState } from 'react';
+import { ChevronDown, History, PackageCheck, Printer, Undo2 } from 'lucide-react';
 import CountInDialog from '../components/CountInDialog.jsx';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
+import OrderPrint from '../components/OrderPrint.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import SendBackDialog from '../components/SendBackDialog.jsx';
 import { locationById } from '../config.js';
@@ -57,6 +58,16 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
   const [counting, setCounting] = useState(null);
   const [open, setOpen] = useState(null);
   const [flash, setFlash] = useState(null);
+  const [printing, setPrinting] = useState(null); // the return on the print page
+  const [printJob, setPrintJob] = useState(0);
+
+  useEffect(() => {
+    if (printJob) window.print();
+  }, [printJob]);
+  const print = (r) => {
+    setPrinting(r);
+    setPrintJob((n) => n + 1);
+  };
 
   const mine = stockReturns.filter((r) => !location || r.location === location);
   const count = (id) => mine.filter((r) => id === 'all' || r.status === id).length;
@@ -77,7 +88,8 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <>
+    <div className="flex min-h-0 flex-1 flex-col print:hidden">
       <PageHeader crumbs={[admin ? 'All showrooms' : `${shop.city} · ${shop.area}`, 'Purchase returns']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
@@ -184,7 +196,14 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
                             </td>
                             {admin && <td className="py-1.5 pr-3 text-right font-medium">{inr(orderValue(r.lines))}</td>}
                             <td className="py-1.5 pr-4">
-                              <div className="flex justify-end">
+                              <div className="flex justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => print(r)}
+                                  className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink"
+                                >
+                                  <Printer size={14} aria-hidden="true" /> Print
+                                </button>
                                 {admin && r.status === 'sent' && (
                                   <button type="button" onClick={() => setCounting(r)} className={primary}>
                                     <PackageCheck size={14} aria-hidden="true" /> Count in
@@ -277,6 +296,8 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
         />
       )}
     </div>
+      {printing && <OrderPrint doc={printing} kind="return" />}
+    </>
   );
 };
 

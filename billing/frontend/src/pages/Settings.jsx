@@ -1,11 +1,13 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import { FlaskConical, Palette, Percent, Phone, Printer, Store, Undo2, User } from 'lucide-react';
+import { FlaskConical, Palette, Phone, Printer, Store, User } from 'lucide-react';
+import logo from '../assets/logo.svg';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { LOCATIONS } from '../config.js';
+import { BILL_FOOTER, BRAND, LOCATIONS, locationById } from '../config.js';
 import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 import { api } from '../lib/api.js';
+import { amount, inr } from '../lib/money.js';
 
 /** An on/off switch with its label and explanation. */
 const Toggle = ({ id, Icon, title, description, on, onChange }) => (
@@ -33,13 +35,13 @@ const Toggle = ({ id, Icon, title, description, on, onChange }) => (
   </div>
 );
 
-/** A text (or multi-line) detail printed on the bill. Edited locally and saved when the field loses focus, so
- *  the server isn't hit on every keystroke. */
+/** A text (or multi-line) detail printed on the bill. Edited locally; its own Save button writes it to the
+ *  server and updates the sample bill alongside. The button is live only while there is an unsaved change. */
 const StoreField = ({ label, hint, value, onSave, textarea, placeholder }) => {
   const [v, setV] = useState(value ?? '');
+  const dirty = v.trim() !== (value ?? '');
   const commit = () => {
-    const next = v.trim();
-    if (next !== (value ?? '')) onSave(next);
+    if (dirty) onSave(v.trim());
   };
   const cls =
     'rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-evergreen-800/50 focus:shadow-[0_0_0_3px_rgba(23,92,38,0.10)] focus:outline-none';
@@ -48,51 +50,174 @@ const StoreField = ({ label, hint, value, onSave, textarea, placeholder }) => {
       <span>
         {label} {hint && <span className="font-normal text-ink-3">{hint}</span>}
       </span>
-      {textarea ? (
-        <textarea rows={2} value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} placeholder={placeholder} className={`${cls} resize-none font-normal`} />
-      ) : (
-        <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} placeholder={placeholder} className={`${cls} h-10 font-normal`} />
-      )}
+      <div className="flex items-start gap-2">
+        {textarea ? (
+          <textarea rows={2} value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder} className={`${cls} min-w-0 flex-1 resize-none font-normal`} />
+        ) : (
+          <input
+            value={v}
+            onChange={(e) => setV(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+              }
+            }}
+            placeholder={placeholder}
+            className={`${cls} h-10 min-w-0 flex-1 font-normal`}
+          />
+        )}
+        <button
+          type="button"
+          onClick={commit}
+          disabled={!dirty}
+          className="h-10 shrink-0 rounded-xl bg-evergreen-800 px-3.5 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3"
+        >
+          Save
+        </button>
+      </div>
     </label>
   );
 };
 
-/** One appearance choice: a label, a hint, and its options. */
-const Choice = ({ label, hint, options, value, onChange }) => (
-  <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-3">
+/** One appearance choice: a label, a hint, and its options. `sub` nests it under the choice above (e.g. Snow
+ *  amount under Festive effect) — indented, lightly tinted, with a branch rule — so dependent options read as
+ *  children, not peers. */
+const Choice = ({ label, hint, options, value, onChange, sub = false }) => (
+  <div
+    className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3 pr-5 ${
+      sub ? 'bg-mist-2/40 pl-5 before:mr-3 before:h-4 before:w-4 before:shrink-0 before:self-center before:rounded-bl-md before:border-b-2 before:border-l-2 before:border-line before:content-[\'\']' : 'pl-5'
+    }`}
+  >
     <div className="min-w-0">
       <div className="text-[13px] font-medium">{label}</div>
-      {hint && <div className="text-xs text-ink-3">{hint}</div>}
+      {hint && <div className="mt-0.5 text-xs text-ink-3">{hint}</div>}
     </div>
     <Segmented label={label} options={options} value={value} onChange={onChange} />
   </div>
 );
 
-/** The shop-on-the-bill fields and the composition toggle, bound to `values` and saved through onSave(key, value). */
-const ShopFields = ({ values, onSave }) => (
-  <>
-    <div className="flex flex-col gap-4 p-5">
-      <StoreField label="Shop name" value={values.storeName} onSave={(v) => onSave('storeName', v)} placeholder="e.g. SPARKLE CHRISTMAS" />
-      <StoreField
-        label="Address"
-        hint="one line per line"
-        value={values.storeAddress}
-        onSave={(v) => onSave('storeAddress', v)}
-        textarea
-        placeholder={'Ground Floor, 79, M.G.R Road,\nPune - 411001'}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StoreField label="Phone" value={values.storePhone} onSave={(v) => onSave('storePhone', v)} placeholder="8220263913" />
-        <StoreField label="GSTIN" value={values.gstin} onSave={(v) => onSave('gstin', v)} placeholder="27DDFPR0896L1ZT" />
+// A short sample sale, so the preview shows the MRP / discount / price columns and a real total.
+const SAMPLE = {
+  lines: [
+    { code: 'SR156', name: 'HO HO WOOD 30CM', mrp: 500, price: 420, qty: 2 },
+    { code: 'D0016', name: 'DEER SINGLE 19IN', mrp: 2500, price: 2120, qty: 1 },
+    { code: 'W0045', name: 'CHRIS.LETTER B A2-6', mrp: 180, price: 180, qty: 3 },
+  ],
+  mrpTotal: 4040,
+  payable: 3500,
+};
+
+const Row = ({ label, value, className = '' }) => (
+  <div className={`flex justify-between gap-2 ${className}`}>
+    <span>{label}</span>
+    <span>{value}</span>
+  </div>
+);
+
+/** A live, on-screen sample of the printed bill (components/Receipt.jsx), so a store sees exactly how its own
+ *  details land on the receipt as it edits them. Black-and-white, like the print. */
+const BillPreview = ({ values, shop }) => {
+  const composition = Boolean(values.composition);
+  const name = values.storeName?.trim();
+  const address = values.storeAddress?.trim() ? values.storeAddress.split('\n').filter(Boolean) : (shop?.address ?? []);
+  const phone = values.storePhone?.trim() || shop?.phone;
+  const gstin = values.gstin?.trim();
+  const title = composition ? 'BILL OF SUPPLY' : 'TAX INVOICE';
+  return (
+    <div className="mx-auto w-[264px] rounded-md bg-white p-4 font-mono text-[10px] leading-snug text-black shadow-[0_8px_24px_-12px_rgba(0,0,0,0.4)] ring-1 ring-black/10">
+      <div className="flex flex-col items-center gap-0.5 text-center">
+        <img src={logo} alt="" className="print-ink mb-1 w-[56px]" />
+        {name && <div className="text-[16px] leading-tight font-bold tracking-wide uppercase">{name}</div>}
+        {address.map((a) => (
+          <div key={a}>{a}</div>
+        ))}
+        {phone && <div>Ph: {phone}</div>}
+        {gstin && <div>GSTIN: {gstin}</div>}
+        {composition && <div className="font-bold">Composition Dealer</div>}
       </div>
-      <StoreField
-        label="Footer notes"
-        hint="printed at the foot of the bill"
-        value={values.billFooter}
-        onSave={(v) => onSave('billFooter', v)}
-        textarea
-        placeholder="*NO EXCHANGE *NO RETURN *NO GUARANTEE ON COLORS"
-      />
+      <div className="my-1.5 border-y border-dashed border-black py-0.5 text-center font-bold tracking-[0.18em]">{title}</div>
+      <div className="mb-1 text-center text-[11px] font-bold">Bill No. PUN262700412</div>
+      <Row label="Date" value="03-11-26 11:43" />
+      <div className="mt-1.5 grid grid-cols-4 gap-x-1.5 border-t border-dashed border-black pt-1 text-[8px] font-bold">
+        <span className="text-right">MRP</span>
+        <span className="text-right">DISC</span>
+        <span className="text-right">PRICE</span>
+        <span className="text-right">AMOUNT</span>
+      </div>
+      <div className="mt-1 flex flex-col gap-1">
+        {SAMPLE.lines.map((l, i) => {
+          const disc = l.mrp > l.price ? Math.round(((l.mrp - l.price) / l.mrp) * 100) : 0;
+          return (
+            <div key={l.code}>
+              <div className="flex items-baseline justify-between gap-1">
+                <span className="font-semibold">
+                  {i + 1}. {l.name}
+                </span>
+                <span className="shrink-0 text-[8px]">
+                  {l.code} ×{l.qty}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-x-1.5 tabular-nums">
+                <span className="text-right">{amount(l.mrp)}</span>
+                <span className="text-right">{disc ? `${disc}%` : '—'}</span>
+                <span className="text-right">{amount(l.price)}</span>
+                <span className="text-right font-semibold">{amount(l.price * l.qty)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 border-t border-dashed border-black pt-1">
+        <Row label="MRP total" value={amount(SAMPLE.mrpTotal)} />
+        <Row label="You saved" value={amount(SAMPLE.mrpTotal - SAMPLE.payable)} />
+      </div>
+      <Row label="TOTAL" value={inr(SAMPLE.payable)} className="my-1.5 border-y border-black py-1 text-[13px] font-bold" />
+      <div className="mt-1.5 flex flex-col items-center gap-0.5 border-t border-dashed border-black pt-1.5 text-center">
+        {BILL_FOOTER.map((f) => (
+          <div key={f} className="font-bold">
+            {f}
+          </div>
+        ))}
+        {BRAND.email && <div>{BRAND.email}</div>}
+      </div>
+      <div className="mt-1.5 border-y border-black py-1 text-center">
+        <div className="tracking-[0.3em]" aria-hidden="true">
+          * * * * *
+        </div>
+        <div className="mt-0.5 font-display text-[11px] italic">May your tree shine bright and your home be full of joy this Christmas.</div>
+      </div>
+    </div>
+  );
+};
+
+/** The shop-on-the-bill fields and the composition toggle, bound to `values` and saved through onSave(key, value).
+ *  The live sample bill on the right mirrors every field (`shop` gives the built-in fall-backs). */
+const ShopFields = ({ values, onSave, shop }) => (
+  <>
+    <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="flex min-w-0 flex-col gap-4">
+        <StoreField label="Shop name" value={values.storeName} onSave={(v) => onSave('storeName', v)} placeholder="Shop name as printed on the bill" />
+        <StoreField
+          label="Address"
+          hint="one line per line"
+          value={values.storeAddress}
+          onSave={(v) => onSave('storeAddress', v)}
+          textarea
+          placeholder="Shop address"
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <StoreField label="Phone" value={values.storePhone} onSave={(v) => onSave('storePhone', v)} placeholder="Phone number" />
+          <StoreField label="GSTIN" value={values.gstin} onSave={(v) => onSave('gstin', v)} placeholder="GSTIN" />
+        </div>
+        <p className="rounded-xl bg-mist-2 px-3 py-2 text-xs text-ink-3">
+          Every bill ends with the fixed note <span className="font-medium text-ink-2">*NO EXCHANGE *NO RETURN · *NO GUARANTEE ON COLOURS</span> and a Christmas wish.
+        </p>
+      </div>
+      <div className="lg:border-l lg:border-line-soft lg:pl-5">
+        <div className="mb-2 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Sample bill</div>
+        <BillPreview values={values} shop={shop} />
+      </div>
     </div>
     <Toggle
       id="setting-composition"
@@ -131,7 +256,7 @@ const StoreDetailsEditor = ({ location }) => {
           {error}
         </p>
       )}
-      <ShopFields values={data} onSave={save} />
+      <ShopFields values={data} onSave={save} shop={locationById(location)} />
     </>
   );
 };
@@ -173,9 +298,9 @@ const Settings = ({ onMenu }) => {
   };
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader crumbs={admin ? ['Admin', 'Settings'] : ['Appearance']} onMenu={onMenu} />
+      <PageHeader crumbs={admin ? ['Admin', 'Settings'] : ['Settings']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-3xl flex-col gap-3 p-3 lg:px-5 lg:py-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 p-3 lg:px-5 lg:py-4">
           <p className="text-[13px] text-ink-3">
             {admin
               ? 'Saved on the billing server. The business switches apply everywhere; the appearance below is the default each showroom starts from and can change for its own screens.'
@@ -235,6 +360,7 @@ const Settings = ({ onMenu }) => {
               />
               {settings.theme === 'light' && (
                 <Choice
+                  sub
                   label="Whiteness"
                   hint="How much of the photo shows through"
                   options={[
@@ -248,6 +374,7 @@ const Settings = ({ onMenu }) => {
               )}
               {settings.theme === 'light' && (
                 <Choice
+                  sub
                   label="Figures strip"
                   hint="Above Inventory, Sales and the Dashboard"
                   options={[
@@ -258,15 +385,6 @@ const Settings = ({ onMenu }) => {
                   onChange={(v) => setSetting('strip', v)}
                 />
               )}
-              <Choice
-                label="Current page in the menu"
-                options={[
-                  { id: 'solid', label: 'Solid green' },
-                  { id: 'soft', label: 'Soft green' },
-                ]}
-                value={settings.nav}
-                onChange={(v) => setSetting('nav', v)}
-              />
               <Choice
                 label="Festive effect"
                 hint="Behind the screens, never over them; still if reduced motion is on"
@@ -281,6 +399,7 @@ const Settings = ({ onMenu }) => {
               />
               {(settings.effect === 'snow' || settings.effect === 'both') && (
                 <Choice
+                  sub
                   label="Snow amount"
                   options={[
                     { id: 'light', label: 'Light' },
@@ -290,18 +409,6 @@ const Settings = ({ onMenu }) => {
                   ]}
                   value={settings.snow}
                   onChange={(v) => setSetting('snow', v)}
-                />
-              )}
-              {settings.effect !== 'none' && (
-                <Choice
-                  label="Show the effect"
-                  hint="On sign-in the snow falls in front of the cards; inside the app it stays behind"
-                  options={[
-                    { id: 'everywhere', label: 'Everywhere' },
-                    { id: 'signin', label: 'Sign-in only' },
-                  ]}
-                  value={settings.effectWhere}
-                  onChange={(v) => setSetting('effectWhere', v)}
                 />
               )}
             </div>
@@ -321,7 +428,7 @@ const Settings = ({ onMenu }) => {
                 </p>
               </div>
             </div>
-            {admin ? <AdminStoreDetails /> : <ShopFields values={settings} onSave={setSetting} />}
+            {admin ? <AdminStoreDetails /> : <ShopFields values={settings} onSave={setSetting} shop={locationById(session.location)} />}
           </section>
 
           {admin && (
@@ -370,43 +477,6 @@ const Settings = ({ onMenu }) => {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border glass">
-            <Toggle
-              id="setting-show-gst"
-              Icon={Percent}
-              title="Show GST"
-              description="When off, GST isn’t shown anywhere: not on bills, credit notes or quotations, not at the counter, not in the sales figures, dashboard or Excel report, and the new-product form doesn’t ask for it. Prices are simply the selling price (what the customer pays doesn’t change), and profit is worked out on it. Use this when GST is handled outside this app."
-              on={settings.showGst}
-              onChange={(v) => setSetting('showGst', v)}
-            />
-          </section>
-
-          <section className="overflow-hidden rounded-2xl border glass">
-            <div className="flex items-start gap-4 px-5 pt-4">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
-                <Undo2 size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-[14px] font-semibold">Returns and exchanges</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  How long after a sale the showroom can take items back against the bill. A return is refunded in cash, also
-                  for bills paid by UPI or card. An exchange takes the returned value off the new bill; if the new bill is
-                  smaller, the rest is refunded in cash. Each one gets a credit note.
-                </p>
-              </div>
-            </div>
-            <Choice
-              label="Return window"
-              options={[
-                { id: 0, label: 'Off' },
-                { id: 7, label: '7 days' },
-                { id: 15, label: '15 days' },
-                { id: 30, label: '30 days' },
-              ]}
-              value={settings.returnDays}
-              onChange={(v) => setSetting('returnDays', v)}
-            />
-          </section>
             </>
           )}
 

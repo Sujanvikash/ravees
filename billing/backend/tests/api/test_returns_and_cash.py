@@ -22,7 +22,7 @@ def test_return_refunds_cash_and_restocks(client, chennai, admin):
     before = stock_of(client, chennai, 'chennai', code)
 
     found = client.get('/returns/bill', params={'bill_no': s['billNo'].lower()}, headers=chennai).json()
-    assert found['open'] and found['lines'][0]['sold'] == 3 and found['lines'][0]['returned'] == 0
+    assert found['lines'][0]['sold'] == 3 and found['lines'][0]['returned'] == 0
 
     r = client.post(
         '/returns',
@@ -31,7 +31,7 @@ def test_return_refunds_cash_and_restocks(client, chennai, admin):
     )
     assert r.status_code == 201, r.text
     cn = r.json()['creditNote']
-    assert cn['returnNo'].startswith('CN-CHN/') and cn['kind'] == 'return' and cn['billNo'] == s['billNo']
+    assert cn['returnNo'].startswith('CN-CHN') and '/' not in cn['returnNo'] and cn['kind'] == 'return' and cn['billNo'] == s['billNo']
     assert cn['refund'] == cn['amount'] == round(s['lines'][0]['price'] * 2)
     assert r.json()['sale'] is None
     assert stock_of(client, chennai, 'chennai', code) == before + 2
@@ -74,17 +74,16 @@ def test_exchange_takes_the_value_off_the_new_bill(client, chennai):
     assert client.post('/returns', json=body, headers=chennai).json()['creditNote']['returnNo'] == cn['returnNo']
 
 
-def test_returns_can_be_switched_off(client, chennai, admin):
+def test_returns_have_no_time_window(client, chennai):
+    # Returns are always allowed: an old sale can still be taken back (no return window).
     code = season_code(client, chennai)
     s = client.post('/sales', json=sale([{'code': code, 'qty': 1}]), headers=chennai).json()
-    assert client.patch('/settings', json={'returnDays': 0}, headers=admin).json()['returnDays'] == 0
     r = client.post(
         '/returns',
         json={'id': str(uuid.uuid4()), 'saleId': s['id'], 'lines': [{'code': code, 'qty': 1}]},
         headers=chennai,
     )
-    assert r.status_code == 403
-    client.patch('/settings', json={'returnDays': 15}, headers=admin)
+    assert r.status_code == 201
 
 
 def test_cash_close(client, admin):

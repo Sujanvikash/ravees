@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CircleCheck, FileText, Lock, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
+import { Archive, ArchiveRestore, CircleCheck, FileText, Lock, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
 import BillTable from '../components/BillTable.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -37,15 +37,14 @@ const Row = ({ label, value, className = 'text-ink-2' }) => (
 
 /**
  * Quotations: like the billing counter, but it ends in a saved quotation instead of a payment. A quotation
- * never touches stock or the sales figures; it is numbered on its own (QT-CHN/26-27/00001), and printed on
+ * never touches stock or the sales figures; it is numbered on its own (QT-CHN262700001), and printed on
  * A4 with a QUOTATION watermark and a plain "not a bill, do not pay" notice, when the admin allows printing.
  * A saved quotation can be loaded into the billing counter when the customer buys. Showrooms write and see
  * their own; the admin sees every showroom's.
  */
 const Quotations = ({ session, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { quotes, saveQuote, deleteQuote, stockOf, settings } = useStore();
-  const [confirming, setConfirming] = useState(null); // the quotation whose Delete was pressed once
+  const { quotes, saveQuote, archiveQuote, unarchiveQuote, stockOf, settings } = useStore();
   const canPrint = settings.quotePrint;
   const [tab, setTab] = useState(admin ? 'saved' : 'new');
   const [location, setLocation] = useState(admin ? null : session.location);
@@ -67,8 +66,10 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
     [quotes, location],
   );
   const q = query.trim().toLowerCase();
-  const list = mine.filter((x) => !q || `${x.quoteNo} ${x.name} ${x.phone}`.toLowerCase().includes(q));
-  const paged = usePages(list, 50, `${q}|${location}`);
+  const archived = tab === 'archived';
+  const scoped = mine.filter((x) => (archived ? x.archivedAt : !x.archivedAt));
+  const list = scoped.filter((x) => !q || `${x.quoteNo} ${x.name} ${x.phone}`.toLowerCase().includes(q));
+  const paged = usePages(list, 50, `${q}|${location}|${tab}`);
 
   // Load a quotation's items into this showroom's billing counter, unless a bill is already in progress there.
   const billIt = (quote) => {
@@ -90,18 +91,28 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
     onNavigate('counter');
   };
 
-  const remove = async (quote) => {
-    setConfirming(null);
+  // A quotation is never edited or deleted, only archived (kept) and brought back.
+  const archive = async (quote) => {
     try {
-      await deleteQuote(quote.id);
-      setFlash({ tone: 'ok', text: `${quote.quoteNo} deleted.` });
+      await archiveQuote(quote.id);
+      setFlash({ tone: 'ok', text: `${quote.quoteNo} archived — find it under Archived.` });
     } catch (err) {
-      setFlash({ tone: 'warn', text: `Not deleted: ${err.message}` });
+      setFlash({ tone: 'warn', text: `Not archived: ${err.message}` });
+    }
+  };
+  const unarchive = async (quote) => {
+    try {
+      await unarchiveQuote(quote.id);
+      setFlash({ tone: 'ok', text: `${quote.quoteNo} brought back to Saved.` });
+    } catch (err) {
+      setFlash({ tone: 'warn', text: `Not restored: ${err.message}` });
     }
   };
 
   const crumb = location ? `${locationById(location).city} · ${locationById(location).area}` : 'All showrooms';
-  const savedCount = admin ? quotes.length : quotes.filter((x) => x.location === session.location).length;
+  const forScope = admin ? quotes : quotes.filter((x) => x.location === session.location);
+  const savedCount = forScope.filter((x) => !x.archivedAt).length;
+  const archivedCount = forScope.filter((x) => x.archivedAt).length;
 
   return (
     <>
@@ -110,20 +121,19 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-3 p-3 lg:flex-1 lg:px-5 lg:py-4">
             <div className="flex flex-wrap items-center gap-2">
-              {!admin && (
-                <Segmented
-                  label="View"
-                  options={[
-                    { id: 'new', label: 'New quotation' },
-                    { id: 'saved', label: `Saved${savedCount ? ` · ${savedCount}` : ''}` },
-                  ]}
-                  value={tab}
-                  onChange={(t) => {
-                    setTab(t);
-                    setFlash(null);
-                  }}
-                />
-              )}
+              <Segmented
+                label="View"
+                options={[
+                  ...(admin ? [] : [{ id: 'new', label: 'New quotation' }]),
+                  { id: 'saved', label: `Saved${savedCount ? ` · ${savedCount}` : ''}` },
+                  { id: 'archived', label: `Archived${archivedCount ? ` · ${archivedCount}` : ''}` },
+                ]}
+                value={tab}
+                onChange={(t) => {
+                  setTab(t);
+                  setFlash(null);
+                }}
+              />
               {admin && <LocationPicker value={location} onChange={setLocation} />}
               <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-3">
                 {canPrint ? <Printer size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
@@ -164,8 +174,10 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                 {list.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
                     <FileText size={22} className="text-ink-3" aria-hidden="true" />
-                    <div className="text-[15px] font-semibold">No quotations {q ? 'match that search' : 'yet'}</div>
-                    <div className="text-[13px] text-ink-3">Saved quotations show up here, ready to print or bill.</div>
+                    <div className="text-[15px] font-semibold">No {archived ? 'archived ' : ''}quotations {q ? 'match that search' : 'yet'}</div>
+                    <div className="text-[13px] text-ink-3">
+                      {archived ? 'Archived quotations are kept here and can be brought back.' : 'Saved quotations show up here, ready to print or bill.'}
+                    </div>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -210,38 +222,35 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                                       <Printer size={14} aria-hidden="true" /> Print
                                     </button>
                                   )}
-                                  {confirming === x.id ? (
+                                  {archived ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => unarchive(x)}
+                                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-evergreen-800/25 bg-white px-2.5 text-[13px] font-semibold text-evergreen-900 hover:bg-evergreen-50"
+                                    >
+                                      <ArchiveRestore size={14} aria-hidden="true" /> Bring back
+                                    </button>
+                                  ) : (
                                     <>
-                                      <button type="button" onClick={() => setConfirming(null)} className="inline-flex h-8 items-center rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-white">
-                                        Keep
-                                      </button>
                                       <button
                                         type="button"
-                                        onClick={() => remove(x)}
-                                        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-ruby-ink px-2.5 text-[13px] font-semibold text-white hover:opacity-90"
+                                        onClick={() => archive(x)}
+                                        aria-label={`Archive ${x.quoteNo}`}
+                                        title="Archive this quotation"
+                                        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-white hover:text-ink"
                                       >
-                                        <Trash2 size={14} aria-hidden="true" /> Delete {x.quoteNo}?
+                                        <Archive size={14} aria-hidden="true" /> Archive
                                       </button>
+                                      {!admin && (
+                                        <button
+                                          type="button"
+                                          onClick={() => billIt(x)}
+                                          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-2.5 text-[13px] font-semibold text-white hover:bg-evergreen-900"
+                                        >
+                                          <ReceiptText size={14} aria-hidden="true" /> Bill this
+                                        </button>
+                                      )}
                                     </>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => setConfirming(x.id)}
-                                      aria-label={`Delete ${x.quoteNo}`}
-                                      title="Delete this quotation"
-                                      className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby-ink"
-                                    >
-                                      <Trash2 size={14} aria-hidden="true" />
-                                    </button>
-                                  )}
-                                  {!admin && confirming !== x.id && (
-                                    <button
-                                      type="button"
-                                      onClick={() => billIt(x)}
-                                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-2.5 text-[13px] font-semibold text-white hover:bg-evergreen-900"
-                                    >
-                                      <ReceiptText size={14} aria-hidden="true" /> Bill this
-                                    </button>
                                   )}
                                 </div>
                               </td>

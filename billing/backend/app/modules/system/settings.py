@@ -1,10 +1,10 @@
 """
 The settings behind Settings in the app, split into two kinds:
 
-  Appearance (per showroom) — theme, wash, effect, snow, where, strip, nav, font. Each showroom sets its own
+  Appearance (per showroom) — theme, wash, effect, snow, strip, font. Each showroom sets its own
     look for its own screen; the admin sets the defaults (also used on the sign-in screen, before anyone is in).
-  Business (global, admin only) — whether showrooms may print quotations, the return window, whether GST is
-    shown at all, and whether a bill needs the customer's name / mobile.
+  Business (global, admin only) — whether showrooms may print quotations, whether GST is shown at all, and
+    whether a bill needs the customer's name / mobile.
 
 Kept as JSON in app_settings: the global defaults under 'ui', each showroom's appearance overrides under
 'ui:<location>'. Anything not saved yet has its default. The sign-in screen reads the global ones before anyone
@@ -26,8 +26,8 @@ from . import repository
 KEY = 'ui'
 
 # appearance a showroom sets for itself; its own details printed on the bill; everything else is admin-only
-APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'effect_where', 'strip', 'nav', 'font', 'lang'})
-STORE = frozenset({'store_name', 'store_address', 'store_phone', 'gstin', 'bill_footer', 'composition'})
+APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'strip', 'font', 'lang'})
+STORE = frozenset({'store_name', 'store_address', 'store_phone', 'gstin', 'composition'})
 SELF_EDITABLE = APPEARANCE | STORE
 
 
@@ -37,9 +37,7 @@ class AppSettingsOut(ApiModel):
     wash: Literal['light', 'lighter', 'lightest'] = 'lighter'
     effect: Literal['none', 'snow', 'glow', 'both'] = 'none'
     snow: Literal['light', 'medium', 'heavy', 'blizzard'] = 'light'
-    effect_where: Literal['everywhere', 'signin'] = 'everywhere'
     strip: Literal['green', 'white'] = 'green'
-    nav: Literal['solid', 'soft'] = 'solid'
     # a per-screen text-size preset (applied as a UI zoom); 'normal' is the original size
     font: Literal['normal', 'large', 'larger'] = 'normal'
     # the script the app's words are shown in: 'en' English, 'ta' the same words transliterated into Tamil
@@ -47,17 +45,14 @@ class AppSettingsOut(ApiModel):
 
     # The showroom's own details on its bill (each franchise fills in its own). A composition dealer bills a
     # "Bill of Supply" with no GST shown (the price already includes it); only purchase orders and returns carry
-    # GST. address / footer may hold several lines (newline-separated).
+    # GST. address may hold several lines (newline-separated). The foot of the bill is a fixed note (frontend).
     store_name: str = Field(default='', max_length=80)
     store_address: str = Field(default='', max_length=300)
     store_phone: str = Field(default='', max_length=80)
     gstin: str = Field(default='', max_length=20)
-    bill_footer: str = Field(default='', max_length=200)
     # every showroom is a composition dealer (a Bill of Supply, GST included and not shown on the customer bill)
     composition: bool = True
 
-    # days after a sale its items can be returned or exchanged; 0 turns returns off
-    return_days: Literal[0, 7, 15, 30] = 15
     # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
     show_gst: bool = True
     # whether the counter asks for the customer's name / mobile on a bill (a quotation always needs both)
@@ -75,18 +70,14 @@ class AppSettingsPatch(ApiModel):
     wash: Literal['light', 'lighter', 'lightest'] | None = None
     effect: Literal['none', 'snow', 'glow', 'both'] | None = None
     snow: Literal['light', 'medium', 'heavy', 'blizzard'] | None = None
-    effect_where: Literal['everywhere', 'signin'] | None = None
     strip: Literal['green', 'white'] | None = None
-    nav: Literal['solid', 'soft'] | None = None
     font: Literal['normal', 'large', 'larger'] | None = None
     lang: Literal['en', 'ta'] | None = None
     store_name: str | None = Field(default=None, max_length=80)
     store_address: str | None = Field(default=None, max_length=300)
     store_phone: str | None = Field(default=None, max_length=80)
     gstin: str | None = Field(default=None, max_length=20)
-    bill_footer: str | None = Field(default=None, max_length=200)
     composition: bool | None = None
-    return_days: Literal[0, 7, 15, 30] | None = None
     show_gst: bool | None = None
     require_name: bool | None = None
     require_mobile: bool | None = None

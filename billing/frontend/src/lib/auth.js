@@ -1,15 +1,16 @@
-import { LOCATIONS } from '../config.js';
+import { activeLocations } from '../config.js';
 import { api, setToken } from './api.js';
 
 /**
  * Sign-in goes through the billing API, which keeps the passwords (hashed) and hands back a token. Each login
  * starts with the default password "<username>@2026" (chennai@2026 … admin@2026); the admin can change any of
- * them on the Logins page.
+ * them on the Stores page.
  */
 
-/** Who can sign in: each showroom (bills and sees only its own sales) and the admin (sees everything). */
-export const ACCOUNTS = [
-  ...LOCATIONS.map((l) => ({ username: l.id, label: l.city, role: 'location', location: l.id })),
+/** Who can sign in: each active store (bills and sees only its own sales) and the admin (sees everything).
+ *  Computed on call — the store list loads from the server at start-up, and the admin can add or remove stores. */
+export const accounts = () => [
+  ...activeLocations().map((l) => ({ username: l.id, label: l.city, area: l.area, role: 'location', location: l.id })),
   { username: 'admin', label: 'Admin', role: 'admin', location: null },
 ];
 

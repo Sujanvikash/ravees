@@ -4,7 +4,7 @@ import CashComparison from '../components/CashComparison.jsx';
 import { LocationPicker, PeriodTabs } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
-import { LOCATIONS, locationById } from '../config.js';
+import { activeLocations, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { differenceLabel, differenceTone } from '../lib/cash.js';
 import { inr, parseAmount } from '../lib/money.js';
@@ -290,7 +290,7 @@ const CashClose = ({ session, onMenu }) => {
   const month = list.filter(inPeriod);
   const short = month.filter((c) => c.difference <= -0.5).reduce((t, c) => t + c.difference, 0);
   const over = month.filter((c) => c.difference >= 0.5).reduce((t, c) => t + c.difference, 0);
-  const notClosed = LOCATIONS.filter((l) => (!location || l.id === location) && !closes.some((c) => c.location === l.id && c.day === today));
+  const notClosed = activeLocations().filter((l) => (!location || l.id === location) && !closes.some((c) => c.location === l.id && c.day === today));
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

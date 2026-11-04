@@ -15,12 +15,18 @@ MAX_PASSWORD = 128
 DEMO_PASSWORDS = 'Passwords can’t be changed in the demo: its logins don’t use them.'
 
 
-def _login_position(user: User) -> int:
-    return LOGIN_ORDER.index(user.username) if user.username in LOGIN_ORDER else len(LOGIN_ORDER)
+def _login_position(user: User) -> tuple[int, int, str]:
+    """Sort key: the seeded showrooms first in their order, then any store added later (alphabetical), the admin
+    last."""
+    if user.is_admin:
+        return (2, 0, user.username)
+    if user.username in LOGIN_ORDER:
+        return (0, LOGIN_ORDER.index(user.username), user.username)
+    return (1, 0, user.username)
 
 
 def list_logins(session: Session) -> list[User]:
-    """Every login: the showrooms in the frontend's order, then the admin, then anything else."""
+    """Every login: the seeded showrooms in the frontend's order, then stores added later, then the admin."""
     return sorted(repository.list_all(session), key=_login_position)
 
 
@@ -73,3 +79,20 @@ def add_missing_logins(session: Session) -> int:
         )
         added += 1
     return added
+
+
+def create_login(session: Session, location_id: str) -> User:
+    """Adds the login for a newly created store: username = the store id, role 'location', default password
+    (id@2026). The caller commits."""
+    password_hash = security.hash_password(security.default_password(location_id))
+    return repository.add(
+        session, User(username=location_id, role=Role.LOCATION.value, location_id=location_id, password_hash=password_hash)
+    )
+
+
+def remove_login(session: Session, username: str) -> None:
+    """Deletes a login (used only when a brand-new, empty store is removed). The caller commits."""
+    user = repository.get(session, username)
+    if user:
+        session.delete(user)
+        session.flush()

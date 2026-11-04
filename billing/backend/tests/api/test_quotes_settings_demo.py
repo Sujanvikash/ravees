@@ -19,25 +19,28 @@ def test_quotation(client, chennai, admin):
     q = client.post('/quotes', json=body, headers=chennai)
     assert q.status_code == 201, q.text
     q = q.json()
-    assert q['quoteNo'].startswith('QT-CHN/') and q['by'] == 'Chennai' and q['note'] == 'Corporate'
+    assert q['quoteNo'].startswith('QT-CHN') and '/' not in q['quoteNo'] and q['by'] == 'Chennai' and q['note'] == 'Corporate'
     assert q['lines'][0]['qty'] == 2 and q['totals']['payable'] > 0
     assert client.post('/quotes', json=body, headers=chennai).json()['quoteNo'] == q['quoteNo']
     assert client.post('/quotes', json={**body, 'id': str(uuid.uuid4())}, headers=admin).status_code == 403
     assert client.post('/quotes', json={**body, 'validDays': 9}, headers=chennai).status_code == 422
     assert q['id'] in {x['id'] for x in client.get('/quotes', headers=admin).json()}
 
-    # deleting: not another showroom's, then by its own showroom
+    # archiving (never deleting): not another showroom's, then by its own showroom — it is kept, archived
     from .conftest import login
 
-    assert client.delete(f'/quotes/{q["id"]}', headers=login(client, 'goa')).status_code == 404
-    assert client.delete(f'/quotes/{q["id"]}', headers=chennai).status_code == 204
-    assert q['id'] not in {x['id'] for x in client.get('/quotes', headers=admin).json()}
-    assert client.delete(f'/quotes/{q["id"]}', headers=admin).status_code == 404
+    assert client.post(f'/quotes/{q["id"]}/archive', headers=login(client, 'goa')).status_code == 404
+    archived = client.post(f'/quotes/{q["id"]}/archive', headers=chennai)
+    assert archived.status_code == 200 and archived.json()['archivedAt']
+    kept = {x['id']: x for x in client.get('/quotes', headers=admin).json()}
+    assert q['id'] in kept and kept[q['id']]['archivedAt']  # still there, just archived
+    # and it can be brought back
+    assert client.post(f'/quotes/{q["id"]}/unarchive', headers=chennai).json()['archivedAt'] is None
 
 
 def test_settings(client, chennai, admin):
     s = client.get('/settings').json()  # open to the sign-in screen
-    assert s['quotePrint'] is True and s['theme'] in {'classic', 'light', 'dark'} and s['returnDays'] in {0, 7, 15, 30}
+    assert s['quotePrint'] is True and s['theme'] in {'classic', 'light', 'dark'}
     assert s['font'] in {'normal', 'large', 'larger'}
     # a showroom may change its own appearance, but not a business switch
     assert client.patch('/settings', json={'quotePrint': False}, headers=chennai).status_code == 403
@@ -59,7 +62,7 @@ def test_settings(client, chennai, admin):
     assert client.patch('/settings', json={'theme': 'pink'}, headers=admin).status_code == 422
     assert client.patch('/settings', json={'nope': 1}, headers=admin).status_code == 422
     changed = client.patch('/settings', json={'theme': 'dark', 'quotePrint': False}, headers=admin).json()
-    assert changed['theme'] == 'dark' and changed['quotePrint'] is False and changed['nav'] == s['nav']
+    assert changed['theme'] == 'dark' and changed['quotePrint'] is False and changed['strip'] == s['strip']
     client.patch('/settings', json={'theme': s['theme'], 'quotePrint': True}, headers=admin)
 
 

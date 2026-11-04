@@ -1,4 +1,4 @@
-import { Boxes, FileText, KeyRound, LayoutDashboard, PackagePlus, Palette, ReceiptText, ScanBarcode, Settings, Undo2, Users, Wallet } from 'lucide-react';
+import { Boxes, FileText, LayoutDashboard, PackagePlus, ReceiptText, ScanBarcode, Settings, Store, Undo2, Users, Wallet } from 'lucide-react';
 
 /**
  * What each kind of login can open. Showrooms bill and see their own figures; the admin sees all showrooms.
@@ -14,7 +14,7 @@ export const NAV = {
     { id: 'orders', label: 'Purchase orders', Icon: PackagePlus, group: 'Stock' },
     { id: 'returns', label: 'Purchase returns', Icon: Undo2, group: 'Stock' },
     { id: 'customers', label: 'Customers', Icon: Users, group: 'CRM' },
-    { id: 'settings', label: 'Appearance', Icon: Palette, group: 'This screen' },
+    { id: 'settings', label: 'Settings', Icon: Settings, group: 'This screen' },
   ],
   admin: [
     { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, group: 'Reports' },
@@ -25,7 +25,7 @@ export const NAV = {
     { id: 'orders', label: 'Purchase orders', Icon: PackagePlus, group: 'Stock' },
     { id: 'returns', label: 'Purchase returns', Icon: Undo2, group: 'Stock' },
     { id: 'customers', label: 'Customers', Icon: Users, group: 'CRM' },
-    { id: 'logins', label: 'Logins', Icon: KeyRound, group: 'Settings' },
+    { id: 'stores', label: 'Stores', Icon: Store, group: 'Settings' },
     { id: 'settings', label: 'Settings', Icon: Settings, group: 'Settings' },
   ],
 };

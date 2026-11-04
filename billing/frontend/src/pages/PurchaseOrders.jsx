@@ -1,8 +1,9 @@
-import { Fragment, useState } from 'react';
-import { ChevronDown, ClipboardList, History, PackageCheck, PencilLine, Plus, Send } from 'lucide-react';
+import { Fragment, useEffect, useState } from 'react';
+import { ChevronDown, ClipboardList, History, PackageCheck, PencilLine, Plus, Printer, Send } from 'lucide-react';
 import CountInDialog from '../components/CountInDialog.jsx';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import OrderEditor from '../components/OrderEditor.jsx';
+import OrderPrint from '../components/OrderPrint.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
@@ -57,6 +58,16 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const [counting, setCounting] = useState(null);
   const [open, setOpen] = useState(null);
   const [flash, setFlash] = useState(null);
+  const [printing, setPrinting] = useState(null); // the order on the print page
+  const [printJob, setPrintJob] = useState(0);
+
+  useEffect(() => {
+    if (printJob) window.print();
+  }, [printJob]);
+  const print = (order) => {
+    setPrinting(order);
+    setPrintJob((n) => n + 1);
+  };
 
   const mine = orders.filter((o) => !location || o.location === location);
   const count = (id) => mine.filter((o) => id === 'all' || o.status === id).length;
@@ -112,7 +123,8 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const shop = locationById(session.location);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <>
+    <div className="flex min-h-0 flex-1 flex-col print:hidden">
       <PageHeader crumbs={[admin ? 'All showrooms' : `${shop.city} · ${shop.area}`, 'Purchase orders']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
@@ -221,6 +233,9 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                             {admin && <td className="py-1.5 pr-3 text-right font-medium">{inr(orderValue(o.lines))}</td>}
                             <td className="py-1.5 pr-4">
                               <div className="flex justify-end gap-1">
+                                <button type="button" onClick={() => print(o)} className={quiet}>
+                                  <Printer size={14} aria-hidden="true" /> Print
+                                </button>
                                 {!admin && o.status === 'sent' && (
                                   <button type="button" onClick={() => setCounting(o)} className={primary}>
                                     <PackageCheck size={14} aria-hidden="true" /> Count in
@@ -328,6 +343,8 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
       )}
       {counting && <CountInDialog order={counting} onClose={() => setCounting(null)} onConfirm={receive} />}
     </div>
+      {printing && <OrderPrint doc={printing} kind="order" />}
+    </>
   );
 };
 

@@ -34,17 +34,18 @@ def _prefix(session: Session, location_id: str) -> str:
 
 
 def next_bill_no(session: Session, location_id: str, at: datetime) -> tuple[str, int]:
-    """CHN/26-27/00184: the showroom's prefix, the financial year and its running number."""
-    year = financial_year(at)
+    """CHN262700184: the showroom's prefix, the financial year and its running number — letters and digits only,
+    no separators. The year (2627) keeps the number unique across financial years (the sequence resets each)."""
+    year = financial_year(at).replace('-', '')
     seq = take_next(session, location_id, BILL, year)
-    return f'{_prefix(session, location_id)}/{year}/{seq:05d}', seq
+    return f'{_prefix(session, location_id)}{year}{seq:05d}', seq
 
 
 def next_quote_no(session: Session, location_id: str, at: datetime) -> str:
-    """QT-CHN/26-27/00012: numbered on their own, apart from the bills."""
-    year = financial_year(at)
+    """QT-CHN262700012: numbered on their own, apart from the bills (the QT- marks it a quotation)."""
+    year = financial_year(at).replace('-', '')
     seq = take_next(session, location_id, QUOTE, year)
-    return f'QT-{_prefix(session, location_id)}/{year}/{seq:05d}'
+    return f'QT-{_prefix(session, location_id)}{year}{seq:05d}'
 
 
 def next_order_no(session: Session, location_id: str) -> str:
@@ -54,10 +55,10 @@ def next_order_no(session: Session, location_id: str) -> str:
 
 
 def next_return_no(session: Session, location_id: str, at: datetime) -> str:
-    """CN-CHN/26-27/00003: a credit note for goods a customer brought back, numbered per financial year."""
-    year = financial_year(at)
+    """CN-CHN262700003: a credit note for goods a customer brought back, numbered per financial year."""
+    year = financial_year(at).replace('-', '')
     seq = take_next(session, location_id, RETURN, year)
-    return f'CN-{_prefix(session, location_id)}/{year}/{seq:05d}'
+    return f'CN-{_prefix(session, location_id)}{year}{seq:05d}'
 
 
 def next_stock_return_no(session: Session, location_id: str) -> str:

@@ -1,6 +1,6 @@
-import { Fragment, useMemo, useState } from 'react';
-import { ChevronDown, FileSpreadsheet, ReceiptText, Undo2 } from 'lucide-react';
-import { LocationPicker, PeriodTabs, SearchBox } from '../components/Filters.jsx';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { ArrowUpRight, ChevronDown, FileSpreadsheet, ReceiptText, Repeat, Undo2 } from 'lucide-react';
+import { LocationPicker, PeriodTabs, SearchBox, Segmented } from '../components/Filters.jsx';
 import Dialog from '../components/Dialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import ProductPerformance from '../components/ProductPerformance.jsx';
@@ -11,7 +11,7 @@ import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
 import { methodLabel } from '../lib/payment.js';
-import { filterSales, periodStart, returnsByLocation, returnsBySale, saleCost, summarize } from '../lib/reports.js';
+import { filterSales, periodStart, returnsByLocation, returnsBySale, returnStatus, saleCost, summarize } from '../lib/reports.js';
 import { newId } from '../lib/uid.js';
 import Pager from '../components/Pager.jsx';
 import { usePages } from '../hooks/usePages.js';
@@ -23,6 +23,26 @@ const PERIOD_NOTE = { today: 'today', '7d': 'last 7 days', '30d': 'last 30 days'
 
 /** A date as YYYY-MM-DD in India, for the report's days. */
 const istDay = (d) => new Date(d.getTime() + 5.5 * 3600_000).toISOString().slice(0, 10);
+
+// Filter bills by what has come back against them. Matches the one-word returnStatus of each bill.
+const STATUS_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'returned', label: 'Fully returned' },
+  { id: 'part', label: 'Partly returned' },
+  { id: 'exchanged', label: 'Exchanged' },
+];
+
+/** A bill number shown as a link that jumps the list to that bill. */
+const BillLink = ({ loc, billNo, onClick }) => (
+  <button
+    type="button"
+    onClick={() => onClick(loc, billNo)}
+    className="inline-flex items-center gap-0.5 font-mono text-xs font-semibold text-evergreen-900 hover:underline"
+  >
+    {billNo}
+    <ArrowUpRight size={12} aria-hidden="true" />
+  </button>
+);
 
 /**
  * Completed bills. A showroom sees only its own; the admin sees every showroom and, on top, the purchase
@@ -36,12 +56,37 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
   const [exporting, setExporting] = useState('');
   const [returnFor, setReturnFor] = useState(null); // bill number being returned/exchanged (showrooms only)
   const [refunded, setRefunded] = useState(null); // the credit note after a cash refund, for its dialog
-  const nowMs = useMemo(() => new Date().getTime(), []); // stable "now" for the return-window check
   // opened from a customer's bill (intent.bill): that bill, found in all time, opened
   const [period, setPeriod] = useState(intent?.bill ? 'all' : '30d');
   const [location, setLocation] = useState(admin ? (intent?.bill?.location ?? null) : session.location);
   const [query, setQuery] = useState(intent?.bill?.billNo ?? '');
+  const [status, setStatus] = useState('all'); // return-status filter: all | returned | part | exchanged
   const [open, setOpen] = useState(intent?.bill ? `${intent.bill.location}-${intent.bill.billNo}` : null);
+  const [openLoc, setOpenLoc] = useState(null); // admin: showroom whose returns & exchanges are expanded
+  const [highlight, setHighlight] = useState(null); // a row to scroll to and flash (from an exchange cross-link)
+
+  // What has come back against each bill (qty, value, exchange links), and each credit note by its number so an
+  // exchange's new bill can point back to the bill it replaced.
+  const retBySale = useMemo(() => returnsBySale(returns), [returns]);
+  const retByNote = useMemo(() => new Map(returns.map((r) => [r.returnNo, r])), [returns]);
+  // A showroom can take any of its bills back from here (the admin only views); returns are always allowed.
+  const canReturn = !admin;
+  const returnState = (s) => {
+    const ret = retBySale.get(s.id);
+    const retQty = ret?.qty ?? 0;
+    const fully = retQty > 0 && retQty >= s.totals.qty;
+    return {
+      ret,
+      retQty,
+      fully,
+      partial: retQty > 0 && !fully,
+      exchanged: ret?.exchanged ?? false,
+      exchangeBills: ret?.exchangeBills ?? [],
+      status: returnStatus(ret, s.totals.qty),
+      origin: s.payment.creditNote ? retByNote.get(s.payment.creditNote) : null, // set when this bill IS an exchange
+      returnable: canReturn && !fully,
+    };
+  };
 
   const scoped = useMemo(() => filterSales(sales, { location, period }), [sales, location, period]);
   const q = query.trim().toLowerCase();
@@ -49,24 +94,35 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
     () =>
       [...scoped]
         .filter((s) => !q || `${s.billNo} ${s.customer} ${s.phone}`.toLowerCase().includes(q))
+        .filter((s) => status === 'all' || returnStatus(retBySale.get(s.id), s.totals.qty) === status)
         .sort((a, b) => new Date(b.at) - new Date(a.at)),
-    [scoped, q],
+    [scoped, q, status, retBySale],
   );
   const sum = summarize(scoped, { gst });
-  const paged = usePages(rows, PAGE, `${period}|${location}|${q}`);
+  const paged = usePages(rows, PAGE, `${period}|${location}|${q}|${status}`);
   const returned = filterSales(returns, { location, period }).reduce((t, r) => t + r.amount, 0);
-  // What has come back against each bill, and (for the admin) each branch's returns this period.
-  const retBySale = useMemo(() => returnsBySale(returns), [returns]);
   const retByLoc = useMemo(() => (admin ? returnsByLocation(returns, { period }) : []), [admin, returns, period]);
-  // A showroom can take a bill back from here (the admin only views); the dialog re-checks the window server-side.
-  const canReturn = !admin && settings.returnDays > 0;
-  const returnState = (s) => {
-    const ret = retBySale.get(s.id);
-    const retQty = ret?.qty ?? 0;
-    const fully = retQty > 0 && retQty >= s.totals.qty;
-    const within = settings.returnDays > 0 && nowMs - new Date(s.at).getTime() <= settings.returnDays * 86_400_000;
-    return { ret, retQty, fully, partial: retQty > 0 && !fully, returnable: canReturn && !fully && within };
+
+  // Jump to a specific bill from a cross-link (e.g. an exchange's original or new bill): widen the view and clear
+  // any filters so it is on screen, then scroll to its row and flash it — the bill is NOT typed into the search.
+  const openBill = (loc, billNo) => {
+    const id = `${loc}-${billNo}`;
+    setStatus('all');
+    setPeriod('all');
+    setQuery('');
+    if (admin) setLocation(loc);
+    setOpen(id);
+    setHighlight(id);
   };
+
+  // Once the list has re-rendered with the target in scope, bring its row into view and let the flash fade.
+  useEffect(() => {
+    if (!highlight) return undefined;
+    const el = document.getElementById(`sale-${highlight}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const t = setTimeout(() => setHighlight(null), 2200);
+    return () => clearTimeout(t);
+  }, [highlight]);
 
   const doRefund = async (body) => {
     const { creditNote } = await recordReturn({ id: newId(), ...body }); // throws → ReturnDialog shows the message
@@ -141,27 +197,102 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
           {admin && returns.length > 0 && (
             <section className="overflow-clip rounded-2xl border glass">
               <div className="border-b border-line-soft px-4 py-2.5 text-[13px] font-semibold">
-                Returns by showroom <span className="font-normal text-ink-3">· {PERIOD_NOTE[period]}</span>
+                Returns &amp; exchanges by showroom{' '}
+                <span className="font-normal text-ink-3">· {PERIOD_NOTE[period]} · open a showroom to see each one</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[32rem] text-[13px] tabular-nums">
                   <thead>
                     <tr className="border-b border-line-soft text-left text-xs text-ink-3">
-                      <th scope="col" className="py-1.5 pr-3 pl-4 font-medium">Showroom</th>
+                      <th scope="col" className="w-8 py-1.5 pl-4" />
+                      <th scope="col" className="py-1.5 pr-3 font-medium">Showroom</th>
                       <th scope="col" className="py-1.5 pr-3 text-right font-medium">Credit notes</th>
-                      <th scope="col" className="py-1.5 pr-4 text-right font-medium">Returned</th>
+                      <th scope="col" className="py-1.5 pr-4 text-right font-medium">Credited</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {retByLoc.map((r) => (
-                      <tr key={r.location.id} className="border-b border-line-soft row-hover">
-                        <td className="py-2 pr-3 pl-4">{r.location.city}</td>
-                        <td className="py-2 pr-3 text-right text-ink-2">{r.count}</td>
-                        <td className="py-2 pr-4 text-right font-medium">{inrWhole(r.amount)}</td>
-                      </tr>
-                    ))}
+                    {retByLoc.map((r) => {
+                      const isOpen = openLoc === r.location.id;
+                      const notes = filterSales(returns, { location: r.location.id, period }).sort((a, b) => new Date(b.at) - new Date(a.at));
+                      return (
+                        <Fragment key={r.location.id}>
+                          <tr
+                            onClick={r.count ? rowClick(() => setOpenLoc(isOpen ? null : r.location.id)) : undefined}
+                            className={`border-b border-line-soft ${r.count ? 'cursor-pointer' : ''} ${isOpen ? 'bg-mist-2' : r.count ? 'row-hover' : 'opacity-55'}`}
+                          >
+                            <td className="py-2 pl-4">
+                              {r.count > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenLoc(isOpen ? null : r.location.id)}
+                                  aria-expanded={isOpen}
+                                  aria-label={`${isOpen ? 'Hide' : 'Show'} ${r.location.city} returns`}
+                                  className="inline-flex size-6 items-center justify-center rounded-md text-ink-3 hover:bg-mist hover:text-ink"
+                                >
+                                  <ChevronDown size={15} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                              )}
+                            </td>
+                            <td className="py-2 pr-3 font-medium">{r.location.city}</td>
+                            <td className="py-2 pr-3 text-right text-ink-2">{r.count}</td>
+                            <td className="py-2 pr-4 text-right font-medium">{inrWhole(r.amount)}</td>
+                          </tr>
+                          {isOpen && r.count > 0 && (
+                            <tr className="border-b border-line-soft bg-mist-2">
+                              <td colSpan={4} className="px-4 pt-1 pb-3">
+                                <div className="ml-6 animate-pop overflow-x-auto rounded-xl border border-line-soft bg-surface">
+                                  <table className="w-full min-w-[46rem] text-[13px] tabular-nums">
+                                    <thead>
+                                      <tr className="border-b border-line-soft text-left text-xs text-ink-3">
+                                        <th scope="col" className="py-1.5 pr-3 pl-3 font-medium">Credit note</th>
+                                        <th scope="col" className="py-1.5 pr-3 font-medium">Date</th>
+                                        <th scope="col" className="py-1.5 pr-3 font-medium">Against bill</th>
+                                        <th scope="col" className="py-1.5 pr-3 font-medium">Customer</th>
+                                        <th scope="col" className="py-1.5 pr-3 font-medium">Type</th>
+                                        <th scope="col" className="py-1.5 pr-3 text-right font-medium">Items</th>
+                                        <th scope="col" className="py-1.5 pr-3 text-right font-medium">Value</th>
+                                        <th scope="col" className="py-1.5 pr-3 text-right font-medium">Refunded</th>
+                                        <th scope="col" className="py-1.5 pr-3 font-medium">New bill</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {notes.map((n) => {
+                                        const qty = n.lines.reduce((t, l) => t + l.qty, 0);
+                                        const exchange = n.kind === 'exchange';
+                                        return (
+                                          <tr key={n.id} className="border-b border-line-soft last:border-0">
+                                            <td className="py-1.5 pr-3 pl-3 font-mono text-xs">{n.returnNo}</td>
+                                            <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(n.at))}</td>
+                                            <td className="py-1.5 pr-3">
+                                              <BillLink loc={n.location} billNo={n.billNo} onClick={openBill} />
+                                            </td>
+                                            <td className="py-1.5 pr-3">{n.name || (n.phone ? formatMobile(n.phone) : 'Walk-in')}</td>
+                                            <td className="py-1.5 pr-3">
+                                              <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${exchange ? 'bg-evergreen-50 text-evergreen-900' : 'bg-mist text-ink-2'}`}>
+                                                {exchange ? 'Exchange' : 'Return'}
+                                              </span>
+                                            </td>
+                                            <td className="py-1.5 pr-3 text-right">{qty}</td>
+                                            <td className="py-1.5 pr-3 text-right font-medium">{inr(n.amount)}</td>
+                                            <td className="py-1.5 pr-3 text-right text-ink-2">{n.refund > 0 ? inr(n.refund) : '—'}</td>
+                                            <td className="py-1.5 pr-3">
+                                              {n.exchangeBillNo ? <BillLink loc={n.location} billNo={n.exchangeBillNo} onClick={openBill} /> : <span className="text-ink-3">—</span>}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                     <tr className="font-semibold">
-                      <td className="py-2 pr-3 pl-4">All showrooms</td>
+                      <td className="py-2 pl-4" />
+                      <td className="py-2 pr-3">All showrooms</td>
                       <td className="py-2 pr-3 text-right">{retByLoc.reduce((t, r) => t + r.count, 0)}</td>
                       <td className="py-2 pr-4 text-right">{inrWhole(retByLoc.reduce((t, r) => t + r.amount, 0))}</td>
                     </tr>
@@ -175,8 +306,9 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
             <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5">
               <span className="text-[13px] text-ink-3">
                 {rows.length.toLocaleString('en-IN')} {rows.length === 1 ? 'bill' : 'bills'}
-                {q && ' matching'}
+                {(q || status !== 'all') && ' matching'}
               </span>
+              <Segmented label="Return status" options={STATUS_FILTERS} value={status} onChange={setStatus} />
               <div className="flex flex-1 justify-end">
                 <SearchBox value={query} onChange={setQuery} placeholder="Bill number, customer or mobile" />
               </div>
@@ -209,11 +341,18 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                     {paged.rows.map((s) => {
                       const id = `${s.location}-${s.billNo}`;
                       const isOpen = open === id;
+                      const isHighlight = highlight === id;
                       const cost = saleCost(s);
                       const rs = returnState(s);
                       return (
                         <Fragment key={id}>
-                          <tr onClick={rowClick(() => setOpen(isOpen ? null : id))} className={`cursor-pointer border-b border-line-soft tabular-nums ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
+                          <tr
+                            id={`sale-${id}`}
+                            onClick={rowClick(() => setOpen(isOpen ? null : id))}
+                            className={`cursor-pointer border-b border-line-soft tabular-nums ${
+                              isHighlight ? 'animate-pop bg-evergreen-50 shadow-[inset_3px_0_0_var(--color-evergreen-800)]' : isOpen ? 'bg-mist-2' : 'row-hover'
+                            }`}
+                          >
                             <td className="py-2.5 pl-4">
                               <button
                                 type="button"
@@ -228,11 +367,14 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                             <td className="py-1.5 pr-3 font-mono text-xs">
                               {s.billNo}
                               {s.demo && <span className="ml-2 rounded bg-warn-50 px-1 font-sans text-[10px] font-medium text-warn-ink">DEMO</span>}
-                              {(rs.fully || rs.partial) && (
-                                <span className={`ml-2 rounded px-1 font-sans text-[10px] font-medium ${rs.fully ? 'bg-ruby-50 text-ruby-ink' : 'bg-warn-50 text-warn-ink'}`}>
-                                  {rs.fully ? 'RETURNED' : 'PART RETURNED'}
-                                </span>
-                              )}
+                              {rs.exchanged ? (
+                                <span className="ml-2 rounded bg-evergreen-50 px-1 font-sans text-[10px] font-medium text-evergreen-900">EXCHANGED</span>
+                              ) : rs.fully ? (
+                                <span className="ml-2 rounded bg-ruby-50 px-1 font-sans text-[10px] font-medium text-ruby-ink">RETURNED</span>
+                              ) : rs.partial ? (
+                                <span className="ml-2 rounded bg-warn-50 px-1 font-sans text-[10px] font-medium text-warn-ink">PART RETURNED</span>
+                              ) : null}
+                              {rs.origin && <span className="ml-2 rounded bg-mist px-1 font-sans text-[10px] font-medium text-ink-2">EXCHANGE BILL</span>}
                             </td>
                             <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(s.at))}</td>
                             {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(s.location)?.city ?? '—'}</td>}
@@ -284,11 +426,28 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                       </li>
                                     )}
                                   </ul>
+                                  {rs.origin && (
+                                    <div className="flex flex-wrap items-center gap-1.5 px-1 text-xs text-ink-2">
+                                      <Repeat size={13} className="text-ink-3" aria-hidden="true" />
+                                      This bill is an exchange against
+                                      <BillLink loc={rs.origin.location} billNo={rs.origin.billNo} onClick={openBill} />
+                                      {s.payment.credit > 0 && <span className="text-ink-3">· {inr(s.payment.credit)} credit used · note {s.payment.creditNote}</span>}
+                                    </div>
+                                  )}
+                                  {rs.exchangeBills.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 px-1 text-xs text-ink-2">
+                                      <Repeat size={13} className="text-ink-3" aria-hidden="true" />
+                                      Exchanged for
+                                      {rs.exchangeBills.map((b) => (
+                                        <BillLink key={b} loc={s.location} billNo={b} onClick={openBill} />
+                                      ))}
+                                    </div>
+                                  )}
                                   {(rs.retQty > 0 || rs.returnable) && (
                                     <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                                       <span className="text-xs text-ink-3">
                                         {rs.retQty > 0
-                                          ? `Returned ${rs.retQty} of ${s.totals.qty} ${s.totals.qty === 1 ? 'item' : 'items'} · ${inr(rs.ret.amount)} credited`
+                                          ? `${rs.exchanged ? 'Swapped' : 'Returned'} ${rs.retQty} of ${s.totals.qty} ${s.totals.qty === 1 ? 'item' : 'items'} · ${inr(rs.ret.amount)} ${rs.exchanged ? 'in exchange credit' : 'credited'}${rs.ret.refund > 0 ? ` · ${inr(rs.ret.refund)} refunded in cash` : ''}`
                                           : 'Nothing returned yet'}
                                       </span>
                                       {rs.returnable && (

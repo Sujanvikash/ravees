@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import select
@@ -15,7 +15,6 @@ from app.modules.sales import service as sales
 from app.modules.sales.models import Sale
 from app.modules.sales.schemas import SaleIn
 from app.modules.stock import repository as stock
-from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
 from .models import SaleReturn
@@ -55,21 +54,15 @@ def returned_so_far(session: Session, sale_id: uuid.UUID) -> dict[str, int]:
     return out
 
 
-def returnable_until(session: Session, sale: Sale) -> datetime | None:
-    days = app_settings.get(session).return_days
-    return sale.at + timedelta(days=days) if days else None
-
-
 def returnable(session: Session, user: User, sale_id: uuid.UUID | None, bill_no: str | None):
-    """A bill with what can still come back of each line."""
+    """A bill with what can still come back of each line. Returns are always allowed (no time window)."""
     sale = _find_sale(session, user, sale_id, bill_no)
     done = returned_so_far(session, sale.id)
     lines = [
         ReturnableLine(code=ln.code, name=ln.name, sold=ln.qty, returned=done.get(ln.code, 0), price=float(ln.price))
         for ln in sale.lines
     ]
-    until = returnable_until(session, sale)
-    return sale, lines, until, bool(until and clock.now() <= until)
+    return sale, lines
 
 
 def create_return(
@@ -87,11 +80,6 @@ def create_return(
 
     sale = _find_sale(session, user, data.sale_id, data.bill_no)
     at = at or clock.now()
-    until = returnable_until(session, sale)
-    if until is None:
-        raise Forbidden('Returns and exchanges are switched off (Settings).')
-    if at > until:
-        raise InvalidInput(f'{sale.bill_no} is past its return window (until {until.astimezone(clock.IST):%d %b %Y}).')
 
     sold = {ln.code: ln for ln in sale.lines}
     done = returned_so_far(session, sale.id)

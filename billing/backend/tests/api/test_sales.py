@@ -26,7 +26,8 @@ def test_a_bill_is_priced_numbered_and_comes_off_stock(client, chennai, admin):
     r = client.post('/sales', json=body, headers=chennai)
     assert r.status_code == 201, r.text
     s = r.json()
-    assert s['billNo'].startswith('CHN/') and s['location'] == 'chennai' and s['by'] == 'chennai'
+    assert s['billNo'].startswith('CHN') and '/' not in s['billNo'] and '-' not in s['billNo']
+    assert s['location'] == 'chennai' and s['by'] == 'chennai'
     assert s['lines'][0]['code'] == code and s['lines'][0]['qty'] == 2
     assert s['payment']['change'] == 100000 - s['totals']['payable']
     assert s['customer'] == 'Priya Raman · +91 98407 88950'

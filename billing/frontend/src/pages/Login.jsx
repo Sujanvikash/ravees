@@ -4,24 +4,19 @@ import logo from '../assets/logo.svg';
 import { Landmark } from '../components/Landmarks.jsx';
 import { BRAND, locationById } from '../config.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
-import { ACCOUNTS, signIn, signInDemo } from '../lib/auth.js';
+import { accounts, signIn, signInDemo } from '../lib/auth.js';
 
-const SHOWROOMS = ACCOUNTS.filter((a) => a.role === 'location');
-const ADMIN = ACCOUNTS.find((a) => a.role === 'admin');
-
-// a slight, different tilt per card, as if laid out on a table (straight on a phone)
+// a slight, different tilt per card, as if laid out on a table (straight on a phone); cycled for any store count
 const TILT = ['sm:rotate-[-2.5deg]', 'sm:rotate-[1.5deg] sm:translate-y-2.5', 'sm:rotate-[-1deg] sm:-translate-y-1.5', 'sm:rotate-[2deg] sm:translate-y-2', 'sm:rotate-[-1.5deg]'];
 
-/** Step 1: a postcard per showroom, with its landmark and a stamp showing its bill code. */
+/** Step 1: a postcard per store, with its landmark and a stamp showing its bill code. */
 const Postcard = ({ account, index, onPick }) => {
   const shop = locationById(account.location);
   return (
     <button
       type="button"
       onClick={() => onPick(account)}
-      className={`group relative flex flex-col items-start rounded-md bg-[#fffdf8] px-4 pt-5 pb-9 text-left shadow-[0_2px_4px_rgba(0,0,0,0.06),0_18px_32px_-14px_rgba(60,40,10,0.35)] transition duration-200 before:pointer-events-none before:absolute before:inset-2 before:rounded-[3px] before:border before:border-dashed before:border-evergreen-800/25 before:content-[''] hover:-translate-y-1.5 hover:rotate-0 hover:shadow-[0_4px_8px_rgba(0,0,0,0.06),0_28px_40px_-16px_rgba(23,92,38,0.45)] sm:h-72 sm:w-52 sm:px-5 sm:pt-6 ${TILT[index]} ${
-        index === 4 ? 'col-span-2 w-[calc(50%-0.375rem)] justify-self-center' : ''
-      }`}
+      className={`group relative flex flex-col items-start rounded-md bg-[#fffdf8] px-4 pt-5 pb-9 text-left shadow-[0_2px_4px_rgba(0,0,0,0.06),0_18px_32px_-14px_rgba(60,40,10,0.35)] transition duration-200 before:pointer-events-none before:absolute before:inset-2 before:rounded-[3px] before:border before:border-dashed before:border-evergreen-800/25 before:content-[''] hover:-translate-y-1.5 hover:rotate-0 hover:shadow-[0_4px_8px_rgba(0,0,0,0.06),0_28px_40px_-16px_rgba(23,92,38,0.45)] sm:h-72 sm:w-52 sm:px-5 sm:pt-6 ${TILT[index % TILT.length]}`}
     >
       <span className="absolute top-4 right-4 bg-raave-red px-1.5 py-1 font-mono text-[11px] font-bold tracking-wider text-white shadow-[0_0_0_1px_var(--color-raave-red)] outline-[3px] outline-offset-[-2px] outline-[#fffdf8] outline-dotted">
         {shop.billPrefix}
@@ -38,6 +33,9 @@ const Postcard = ({ account, index, onPick }) => {
  * With the Demo switch on, the same logins open the demo (sample data, kept apart from the real data) in one
  * click, with no password. */
 const Login = ({ onSignedIn }) => {
+  const all = accounts();
+  const SHOWROOMS = all.filter((a) => a.role === 'location');
+  const ADMIN = all.find((a) => a.role === 'admin');
   const [account, setAccount] = useState(null);
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
@@ -111,7 +109,7 @@ const Login = ({ onSignedIn }) => {
             </h1>
             {demo && (
               <p className="mt-1 max-w-md text-center text-[13px] text-balance text-ink-3">
-                The same five showrooms and the admin, on sample data. No password needed, and nothing you do here touches the real sales or stock.
+                The same stores and the admin, on sample data. No password needed, and nothing you do here touches the real sales or stock.
               </p>
             )}
             {demoError && (

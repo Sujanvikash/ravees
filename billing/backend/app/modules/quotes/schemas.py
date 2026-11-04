@@ -34,6 +34,7 @@ class QuoteOut(ApiModel):
     note: str
     lines: list[dict]
     totals: dict
+    archived_at: datetime | None
 
     @classmethod
     def from_model(cls, quote: Quote) -> 'QuoteOut':
@@ -49,4 +50,5 @@ class QuoteOut(ApiModel):
             note=quote.note,
             lines=quote.lines,
             totals=quote.totals,
+            archived_at=quote.archived_at,
         )

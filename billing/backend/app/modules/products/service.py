@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import InvalidInput, NotFound
 from app.modules.locations import repository as locations
-from app.modules.locations.constants import SHOWROOM_IDS
+from app.modules.locations.constants import WAREHOUSE_ID
 from app.modules.system import repository as app_settings
 from app.modules.users.models import User
 
@@ -45,7 +45,9 @@ def add_shop_product(session: Session, user: User, data: NewProductIn) -> Produc
     bill prefix and its next number (CHN-0001 ...), skipping any code already taken, e.g. one typed into the
     Excel by hand."""
     location_id = data.location if user.is_admin else user.location_id
-    location = locations.get(session, location_id) if location_id in SHOWROOM_IDS else None
+    # any location that isn't the admin's warehouse is a showroom that can hold its own products
+    candidate = locations.get(session, location_id) if location_id else None
+    location = candidate if candidate and candidate.id != WAREHOUSE_ID else None
     if not location:
         raise InvalidInput('Choose the showroom.')
     offer = data.offer if data.offer is not None else data.mrp

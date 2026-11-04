@@ -2,7 +2,6 @@ import { Fragment } from 'react';
 import { LogOut, PanelLeft, ShieldCheck, Store, X } from 'lucide-react';
 import logo from '../assets/logo.svg';
 import { BRAND, locationById } from '../config.js';
-import { useStore } from '../context/StoreContext.jsx';
 import { isDemo } from '../lib/auth.js';
 import { NAV } from '../lib/nav.js';
 import Kbd from './Kbd.jsx';
@@ -39,7 +38,6 @@ const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobi
   const shop = locationById(session.location);
   const items = NAV[session.role];
   const rail = collapsed; // icon-only on lg+; the mobile drawer always shows labels
-  const soft = useStore().settings.nav === 'soft'; // the admin's menu-highlight choice
   const who = shop ? `${shop.city} · ${shop.area}` : 'Admin';
 
   const nav = (
@@ -64,11 +62,11 @@ const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobi
               }}
               aria-current={on ? 'page' : undefined}
               className={`group relative flex h-8 items-center gap-3 rounded-lg px-2.5 text-[13px] font-medium transition-colors ${
-                on ? (soft ? 'bg-evergreen-50 font-semibold text-evergreen-900 shadow-[inset_3px_0_0_var(--color-evergreen-800)]' : 'brand-gradient font-semibold shadow-[0_1px_2px_rgba(9,9,11,0.15)]') : 'text-ink-2 hover:bg-white/60 hover:text-ink'
+                on ? 'brand-gradient font-semibold shadow-[0_1px_2px_rgba(9,9,11,0.15)]' : 'text-ink-2 hover:bg-white/60 hover:text-ink'
               } ${rail ? 'lg:justify-center lg:px-0' : ''}`}
             >
               <Icon size={17} strokeWidth={on ? 2.2 : 1.9} aria-hidden="true" />
-              <span className={rail ? 'lg:sr-only' : ''}>{label}</span>
+              <span className={`whitespace-nowrap ${rail ? 'lg:sr-only' : ''}`}>{label}</span>
               {badge > 0 && (
                 <span
                   className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-raave-red px-1.5 text-[11px] font-semibold text-white ${

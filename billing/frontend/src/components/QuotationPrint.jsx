@@ -45,8 +45,14 @@ const NarrowNotice = () => (
  */
 const QuotationPrint = ({ quote }) => {
   const shop = locationById(quote.location) ?? {};
-  const { showGst, composition } = useStore().settings;
+  const settings = useStore().settings;
+  const { showGst, composition } = settings;
   const gst = showGst && !composition; // a composition dealer shows no GST
+  // Same identity as the bill: the showroom's own name is the prominent line, with Raave's as the house brand under it.
+  const storeName = settings.storeName?.trim();
+  const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
+  const phone = settings.storePhone?.trim() || shop.phone;
+  const gstin = settings.gstin?.trim() || shop.gstin;
   const { totals } = quote;
   return (
     <div className="hidden text-[11.5px] leading-normal text-black [page:quote] print:block">
@@ -66,12 +72,17 @@ const QuotationPrint = ({ quote }) => {
             <div className="flex items-start gap-4">
               <img src={logo} alt={BRAND.name} className="print-ink h-[64px] w-auto" />
               <div className="text-[10.5px] leading-snug">
-                <div className="text-[11.5px] font-bold">{shop.city ? `${shop.city} showroom · ${shop.area}` : BRAND.name}</div>
-                {(shop.address ?? []).map((a) => (
+                <div className="text-[16px] leading-tight font-bold uppercase">
+                  {storeName || (shop.city ? `${shop.city} showroom · ${shop.area}` : BRAND.name)}
+                </div>
+                <div className="mb-0.5 text-[9.5px] font-semibold tracking-wide text-black/70">
+                  {BRAND.name} · {BRAND.tagline}
+                </div>
+                {address.map((a) => (
                   <div key={a}>{a}</div>
                 ))}
-                {shop.phone && <div>Ph: {shop.phone}</div>}
-                {gst && shop.gstin && <div>GSTIN: {shop.gstin}</div>}
+                {phone && <div>Ph: {phone}</div>}
+                {gst && gstin && <div>GSTIN: {gstin}</div>}
                 {BRAND.email && <div>{BRAND.email}</div>}
               </div>
             </div>

@@ -26,3 +26,5 @@ class Quote(Base):
     lines: Mapped[list[dict]] = mapped_column(JSONB)
     totals: Mapped[dict] = mapped_column(JSONB)
     created_by: Mapped[str] = mapped_column(String(32))
+    # A quotation is never edited or deleted, only archived (hidden from the live list, kept). Null = live.
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

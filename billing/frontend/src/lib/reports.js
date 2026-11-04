@@ -35,13 +35,20 @@ export const filterSales = (sales, { location = null, period = 'all', now = new 
 
 export const saleCost = (sale) => sale.lines.reduce((sum, l) => sum + (l.cost ?? 0) * l.qty, 0);
 
-/** What has come back against each bill, keyed by the bill's id: { qty, amount, byCode: { [code]: qty } }.
+/** What has come back against each bill, keyed by the bill's id:
+ *  { qty, amount, refund, byCode: { [code]: qty }, exchanged, exchangeBills: [billNo], notes: [{…}] }.
  *  Both returns and exchanges count, since in each case the goods leave the original bill. */
 export const returnsBySale = (returns) => {
   const map = new Map();
   for (const r of returns) {
-    const row = map.get(r.saleId) ?? { qty: 0, amount: 0, byCode: {} };
+    const row = map.get(r.saleId) ?? { qty: 0, amount: 0, refund: 0, byCode: {}, exchanged: false, exchangeBills: [], notes: [] };
     row.amount += r.amount;
+    row.refund += r.refund ?? 0;
+    row.notes.push(r);
+    if (r.kind === 'exchange') {
+      row.exchanged = true;
+      if (r.exchangeBillNo) row.exchangeBills.push(r.exchangeBillNo);
+    }
     for (const l of r.lines) {
       row.qty += l.qty;
       row.byCode[l.code] = (row.byCode[l.code] ?? 0) + l.qty;
@@ -49,6 +56,14 @@ export const returnsBySale = (returns) => {
     map.set(r.saleId, row);
   }
   return map;
+};
+
+/** The one-word state of a bill, given what has come back against it (its returnsBySale row, or undefined):
+ *  'exchanged' (any exchange), 'returned' (all units back), 'part' (some back), or 'none'. */
+export const returnStatus = (row, soldQty) => {
+  if (!row || row.qty === 0) return 'none';
+  if (row.exchanged) return 'exchanged';
+  return row.qty >= soldQty ? 'returned' : 'part';
 };
 
 /** Each showroom's returns for a period: [{ location, amount, count }] in LOCATIONS order. */

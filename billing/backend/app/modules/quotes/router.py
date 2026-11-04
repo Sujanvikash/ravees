@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, status
 
 from app.core.dependencies import DbSession
 from app.modules.auth.dependencies import CurrentUser
@@ -23,10 +23,13 @@ def create_quote(body: QuoteIn, user: CurrentUser, session: DbSession) -> QuoteO
     return QuoteOut.from_model(service.create_quote(session, user, body))
 
 
-@router.delete(
-    '/{quote_id}', status_code=status.HTTP_204_NO_CONTENT, responses={404: {'description': 'No such quotation'}}
-)
-def delete_quote(quote_id: uuid.UUID, user: CurrentUser, session: DbSession) -> Response:
-    """Deletes a quotation: a showroom its own, the admin any."""
-    service.delete_quote(session, user, quote_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+@router.post('/{quote_id}/archive', responses={404: {'description': 'No such quotation'}})
+def archive_quote(quote_id: uuid.UUID, user: CurrentUser, session: DbSession) -> QuoteOut:
+    """Archives a quotation (a showroom its own, the admin any). Quotations are never edited or deleted."""
+    return QuoteOut.from_model(service.archive_quote(session, user, quote_id))
+
+
+@router.post('/{quote_id}/unarchive', responses={404: {'description': 'No such quotation'}})
+def unarchive_quote(quote_id: uuid.UUID, user: CurrentUser, session: DbSession) -> QuoteOut:
+    """Brings an archived quotation back onto the live list."""
+    return QuoteOut.from_model(service.unarchive_quote(session, user, quote_id))

@@ -25,28 +25,24 @@ import { newId } from '../lib/uid.js';
 const StoreContext = createContext(null);
 
 /** quotePrint: showrooms may print quotations. theme: classic | light | dark; wash (Light): light | lighter |
- *  lightest; effect: none | snow | glow | both; snow: light | medium | heavy | blizzard; effectWhere: everywhere |
- *  signin; strip (Light): green | white; nav: solid | soft; returnDays: 0 (off) | 7 | 15 | 30; showGst: when off, no GST
- *  is shown anywhere (bills, quotations, figures) and prices are simply the selling price. requireName /
- *  requireMobile: whether the counter must have each before a bill can be collected (a quotation always needs both). */
+ *  lightest; effect: none | snow | glow | both (always behind the app, in front on sign-in); snow: light | medium |
+ *  heavy | blizzard; strip (Light): green | white; showGst: when off, no GST is shown anywhere (bills, quotations,
+ *  figures) and prices are simply the selling price. requireName / requireMobile: whether the counter must have
+ *  each before a bill can be collected (a quotation always needs both). */
 export const DEFAULT_SETTINGS = {
   quotePrint: true,
   theme: 'classic',
   wash: 'lighter',
   effect: 'none',
   snow: 'light',
-  effectWhere: 'everywhere',
   strip: 'green',
-  nav: 'solid',
   font: 'normal',
   lang: 'en',
   storeName: '',
   storeAddress: '',
   storePhone: '',
   gstin: '',
-  billFooter: '',
   composition: true,
-  returnDays: 15,
   showGst: true,
   requireName: true,
   requireMobile: true,
@@ -214,11 +210,9 @@ export const StoreProvider = ({ session, children }) => {
 
       /** A quotation: { id, lines, name, phone, validDays, note }. Resolves to it with its number. */
       saveQuote: async (quote) => saved('quotes', await api('/quotes', { method: 'POST', body: quote })),
-      /** Deletes a quotation (a showroom its own, the admin any). */
-      deleteQuote: async (id) => {
-        await api(`/quotes/${id}`, { method: 'DELETE' });
-        setData((d) => ({ ...d, quotes: d.quotes.filter((q) => q.id !== id) }));
-      },
+      /** Archives a quotation — it is never edited or deleted, only archived (kept) and brought back. */
+      archiveQuote: async (id) => saved('quotes', await api(`/quotes/${id}/archive`, { method: 'POST' })),
+      unarchiveQuote: async (id) => saved('quotes', await api(`/quotes/${id}/unarchive`, { method: 'POST' })),
 
       /** The day's cash so far for a showroom (the admin names it), and closing the day with the count. */
       cashDay: (location, day) => {

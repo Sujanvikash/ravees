@@ -5,6 +5,8 @@ import { SessionContext } from './context/SessionContext.jsx';
 import { StoreProvider, useStore } from './context/StoreContext.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { billKey } from './hooks/useBill.js';
+import { loadLocations } from './config.js';
+import { api } from './lib/api.js';
 import { signOut } from './lib/auth.js';
 import { loadCatalogue } from './lib/catalogue.js';
 import { NAV } from './lib/nav.js';
@@ -15,7 +17,7 @@ import Customers from './pages/Customers.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Inventory from './pages/Inventory.jsx';
 import Login from './pages/Login.jsx';
-import Logins from './pages/Logins.jsx';
+import Stores from './pages/Stores.jsx';
 import PurchaseOrders from './pages/PurchaseOrders.jsx';
 import Quotations from './pages/Quotations.jsx';
 import Sales from './pages/Sales.jsx';
@@ -78,7 +80,7 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'orders' && <PurchaseOrders {...props} />}
           {page === 'returns' && <StockReturns {...props} />}
           {page === 'cash' && <CashClose key={session.username} {...props} />}
-          {page === 'logins' && session.role === 'admin' && <Logins {...props} />}
+          {page === 'stores' && session.role === 'admin' && <Stores {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}
           {page === 'settings' && <Settings {...props} />}
         </div>
@@ -162,7 +164,7 @@ const Screens = ({ session, setSession }) => {
       {/* shows the app in Tamil script when the showroom chose it; a no-op in English */}
       <TranslitLayer lang={settings.lang} />
       {/* on the sign-in screen the snow falls in front; inside the app it stays behind the panels */}
-      {(session ? settings.effectWhere === 'everywhere' : true) && <Backdrop effect={settings.effect} amount={settings.snow} front={!session} />}
+      <Backdrop effect={settings.effect} amount={settings.snow} front={!session} />
       {session ? (
         <CatalogueGate key={session.username} onSignOut={leave}>
           <Shell key={session.username} session={session} onSignOut={leave} />
@@ -187,12 +189,55 @@ const Screens = ({ session, setSession }) => {
   );
 };
 
+/** Loads the store list from the server before anything renders — the sign-in screen and every picker need it,
+ *  and it is public (no token), so it runs before sign-in. */
+const StoresGate = ({ children }) => {
+  const [state, setState] = useState({ loading: true, error: '' });
+  const fetchIt = () =>
+    api('/locations').then(
+      (stores) => {
+        loadLocations(stores);
+        setState({ loading: false, error: '' });
+      },
+      (err) => setState({ loading: false, error: err.message }),
+    );
+  const retry = () => {
+    setState({ loading: true, error: '' });
+    fetchIt();
+  };
+  const firstLoad = useEffectEvent(fetchIt);
+  useEffect(() => {
+    firstLoad();
+  }, []);
+
+  if (!state.loading && !state.error) return children;
+  return (
+    <main className="flex min-h-dvh items-center justify-center p-6">
+      <div className="w-full max-w-sm rounded-2xl border glass p-6 text-center">
+        {state.loading ? (
+          <p className="text-[13px] text-ink-3">Starting up…</p>
+        ) : (
+          <>
+            <p className="text-[15px] font-semibold">Couldn’t reach the server</p>
+            <p className="mt-1 text-[13px] text-ink-3">{state.error}</p>
+            <button type="button" onClick={retry} className="mt-4 h-9 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900">
+              Try again
+            </button>
+          </>
+        )}
+      </div>
+    </main>
+  );
+};
+
 const App = () => {
   const [session, setSession] = useLocalStorage('billing-session', null);
   return (
-    <StoreProvider key={session ? `${session.demo ? 'demo-' : ''}${session.username}` : 'signed-out'} session={session}>
-      <Screens session={session} setSession={setSession} />
-    </StoreProvider>
+    <StoresGate>
+      <StoreProvider key={session ? `${session.demo ? 'demo-' : ''}${session.username}` : 'signed-out'} session={session}>
+        <Screens session={session} setSession={setSession} />
+      </StoreProvider>
+    </StoresGate>
   );
 };
 

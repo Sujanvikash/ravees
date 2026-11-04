@@ -15,6 +15,7 @@ from app.core.errors import register_exception_handlers
 from app.modules.auth.router import router as auth_router
 from app.modules.cash.router import router as cash_router
 from app.modules.demo.router import router as demo_router
+from app.modules.locations.router import router as locations_router
 from app.modules.orders.router import router as orders_router
 from app.modules.products.router import router as products_router
 from app.modules.quotes.router import router as quotes_router
@@ -61,6 +62,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     routers = (
         auth_router,
         users_router,
+        locations_router,
         products_router,
         sales_router,
         returns_router,

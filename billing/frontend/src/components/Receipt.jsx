@@ -1,5 +1,5 @@
 import logo from '../assets/logo.svg';
-import { BRAND, locationById } from '../config.js';
+import { BILL_FOOTER, BRAND, locationById } from '../config.js';
 import { countLabel, gstLines } from '../lib/bill.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
@@ -54,14 +54,13 @@ const Receipt = ({ sale }) => {
   const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;
-  const footer = settings.billFooter?.trim() ? settings.billFooter.split('\n').filter(Boolean) : [];
   const title = composition ? 'BILL OF SUPPLY' : gst ? 'TAX INVOICE' : 'INVOICE';
   return (
     <div data-receipt className="hidden w-[72mm] font-mono text-[11px] leading-snug text-black print:block">
       <div className="flex flex-col items-center gap-0.5 text-center">
-        {/* the logo carries the name, "Christmas Tree & Decoration" and "Since 1997" */}
-        <img src={logo} alt={BRAND.name} className="print-ink mb-1.5 w-[46mm]" />
-        {storeName && <div className="text-[13px] font-bold tracking-wide">{storeName}</div>}
+        {/* the Raave's logo is a small mark on top; the showroom's own name is the large line below it */}
+        <img src={logo} alt={BRAND.name} className="print-ink mb-1 w-[20mm]" />
+        {storeName && <div className="text-[18px] leading-tight font-bold tracking-wide uppercase">{storeName}</div>}
         {address.map((a) => (
           <div key={a}>{a}</div>
         ))}
@@ -71,28 +70,40 @@ const Receipt = ({ sale }) => {
       </div>
 
       <div className="my-2 border-y border-dashed border-black py-1 text-center font-bold tracking-[0.18em]">{title}</div>
+      <div className="mb-1.5 text-center text-[12px] font-bold">Bill No. {sale.billNo}</div>
 
-      <Line label="Bill" value={sale.billNo} />
       <Line label="Date" value={when.format(new Date(sale.at)).replace(',', '')} />
       <Line label="Showroom" value={shop.city} />
       {sale.name && <Line label="Customer" value={sale.name} />}
       {sale.phone && <Line label="Mobile" value={formatMobile(sale.phone)} />}
 
-      <Line label="ITEM · MRP / DISC% · PRICE" value="AMOUNT" className={`mt-2 font-bold ${rule}`} />
+      {/* each item on its own line with its code and quantity, then a column row: MRP · discount · price · amount */}
+      <div className={`mt-2 grid grid-cols-4 gap-x-2 pt-1 text-[9.5px] font-bold ${rule}`}>
+        <span className="text-right">MRP</span>
+        <span className="text-right">DISC</span>
+        <span className="text-right">PRICE</span>
+        <span className="text-right">AMOUNT</span>
+      </div>
       <div className="mt-1 flex flex-col gap-1.5">
         {sale.lines.map((l, i) => {
-          // the catalogue's own offer discount, MRP → selling price (Disc% / Dis.Price on the bill)
+          // the catalogue's own offer discount, MRP → selling price
           const disc = l.mrp > l.price ? ((l.mrp - l.price) / l.mrp) * 100 : 0;
           return (
             <div key={l.code}>
-              <div className="font-semibold">
-                {i + 1}. {l.name}
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-semibold">
+                  {i + 1}. {l.name}
+                </span>
+                <span className="shrink-0 text-[10px]">
+                  {l.code} ×{l.qty}
+                </span>
               </div>
-              <Line label={l.code} value={`MRP ${amount(l.mrp)}`} />
-              <Line
-                label={disc > 0 ? `${l.qty} × ${amount(l.price)}  (−${disc.toFixed(2)}%)` : `${l.qty} × ${amount(l.price)}`}
-                value={amount(l.price * l.qty)}
-              />
+              <div className="grid grid-cols-4 gap-x-2 tabular-nums">
+                <span className="text-right">{amount(l.mrp)}</span>
+                <span className="text-right">{disc > 0 ? `${Math.round(disc)}%` : '—'}</span>
+                <span className="text-right">{amount(l.price)}</span>
+                <span className="text-right font-semibold">{amount(l.price * l.qty)}</span>
+              </div>
             </div>
           );
         })}
@@ -109,7 +120,6 @@ const Receipt = ({ sale }) => {
       </div>
 
       <Line label="TOTAL" value={inr(totals.payable)} className="my-2 border-y border-black py-1 text-[15px] font-bold" />
-      {composition && <div className="-mt-1 mb-1 text-center text-[10px]">E. &amp; O.E. · Price incl. GST (not charged separately)</div>}
 
       {gst && (
         <>
@@ -137,29 +147,23 @@ const Receipt = ({ sale }) => {
         {payment.approval && <Line label="Card approval" value={payment.approval} />}
       </div>
 
+      {/* the fixed policy note, the same on every showroom's bill */}
       <div className={`mt-2 flex flex-col items-center gap-0.5 pt-2 text-center ${rule}`}>
-        {footer.length > 0 ? (
-          footer.map((f) => (
-            <div key={f} className="font-bold">
-              {f}
-            </div>
-          ))
-        ) : (
-          <div className="font-bold">Thank you &amp; Merry Christmas!</div>
-        )}
-        {BRAND.receiptNote && <div>{BRAND.receiptNote}</div>}
+        {BILL_FOOTER.map((f) => (
+          <div key={f} className="font-bold">
+            {f}
+          </div>
+        ))}
         {BRAND.email && <div>{BRAND.email}</div>}
       </div>
 
-      {!composition && (
-        <div className="mt-2 border-y border-black py-1.5 text-center">
-          <div className="tracking-[0.3em]" aria-hidden="true">
-            * * * * *
-          </div>
-          <div className="mt-1 font-display text-[12px] italic">{wishFor(sale.billNo)}</div>
-          <div className="mt-1 text-[10px] font-bold tracking-[0.2em]">SEASON&rsquo;S GREETINGS</div>
+      {/* a Christmas wish on every bill */}
+      <div className="mt-2 border-y border-black py-1.5 text-center">
+        <div className="tracking-[0.3em]" aria-hidden="true">
+          * * * * *
         </div>
-      )}
+        <div className="mt-1 font-display text-[12px] italic">{wishFor(sale.billNo)}</div>
+      </div>
     </div>
   );
 };

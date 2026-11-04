@@ -32,11 +32,13 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
   const shop = locationById(location);
   const existing = Boolean(order.number);
 
-  const matches = useMemo(() => searchProducts(query, { limit: 6 }), [query]);
+  // A showroom's own added products (p.shop) aren't supplied by the admin, so they can't be ordered: only the
+  // admin's catalogue is offered here.
+  const matches = useMemo(() => searchProducts(query, { limit: 12 }).filter((p) => !p.shop).slice(0, 6), [query]);
   // Before anything is typed: this season's products not on the order yet, lowest stock first.
   const browse = useMemo(
     () =>
-      PRODUCTS.filter((p) => p.inSeason && !lines.some((l) => l.code === p.code))
+      PRODUCTS.filter((p) => p.inSeason && !p.shop && !lines.some((l) => l.code === p.code))
         .map((p) => ({ p, stock: stockOf(location, p.code) }))
         .sort((a, b) => a.stock - b.stock || a.p.name.localeCompare(b.p.name)),
     [lines, location, stockOf],
@@ -56,7 +58,7 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
 
   const lineFor = (product, qty = 1, rate) => ({ code: product.code, name: product.name, qty, rate: rate ?? product.cost ?? 0 });
 
-  const lowStock = PRODUCTS.filter((p) => p.inSeason && stockOf(location, p.code) <= LOW && !lines.some((l) => l.code === p.code));
+  const lowStock = PRODUCTS.filter((p) => p.inSeason && !p.shop && stockOf(location, p.code) <= LOW && !lines.some((l) => l.code === p.code));
 
   const importFile = async (f) => {
     if (!f) return;
@@ -98,7 +100,7 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                   if (e.key !== 'Enter') return;
                   e.preventDefault();
                   const p = findProduct(query) ?? matches[0];
-                  if (p) {
+                  if (p && !p.shop) {
                     addLines([lineFor(p)]);
                     setQuery('');
                   }
@@ -128,7 +130,8 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                     >
                       <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
                       <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
-                      <span className={`text-xs tabular-nums ${stock <= 0 ? 'text-ruby-ink' : stock <= LOW ? 'text-warn-ink' : 'text-ink-3'}`}>{stock} in stock</span>
+                      <span className="text-xs text-ink-2 tabular-nums">{inr(p.cost ?? 0)}</span>
+                      <span className={`w-20 text-right text-xs tabular-nums ${stock <= 0 ? 'text-ruby-ink' : stock <= LOW ? 'text-warn-ink' : 'text-ink-3'}`}>{stock} in stock</span>
                     </button>
                   </li>
                 ))}
@@ -149,6 +152,11 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
             <input ref={fileRef} type="file" accept=".xlsx" className="sr-only" onChange={(e) => importFile(e.target.files[0])} />
           </label>
         </div>
+
+        <p className="flex items-start gap-1.5 text-xs text-ink-3">
+          <CircleAlert size={14} className="mt-px shrink-0" aria-hidden="true" />
+          Only products from the admin&rsquo;s catalogue can be ordered. A showroom&rsquo;s own added products are not supplied by the admin and are not listed here.
+        </p>
 
         {importInfo && (
           <div
@@ -184,8 +192,8 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                   <th scope="col" className="px-3 py-2 text-right font-medium">In stock</th>
                   {admin && <th scope="col" className="px-3 py-2 text-right font-medium">Admin stock</th>}
                   <th scope="col" className="px-3 py-2 text-center font-medium">Qty</th>
-                  {admin && <th scope="col" className="px-3 py-2 text-right font-medium">Rate</th>}
-                  {admin && <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>}
+                  <th scope="col" className="px-3 py-2 text-right font-medium">Rate</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
                   <th scope="col" className="w-10 px-2 py-2">
                     <span className="sr-only">Remove</span>
                   </th>
@@ -228,8 +236,8 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                         </button>
                       </div>
                     </td>
-                    {admin && (
-                      <td className="px-3 py-1.5 text-right">
+                    <td className="px-3 py-1.5 text-right">
+                      {admin ? (
                         <label className="ml-auto flex h-8 w-28 items-center gap-1 rounded-lg border border-line px-2">
                           <span className="text-ink-3">₹</span>
                           <span className="sr-only">Purchase rate of {l.name}</span>
@@ -241,9 +249,12 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                             className="min-w-0 flex-1 bg-transparent text-right"
                           />
                         </label>
-                      </td>
-                    )}
-                    {admin && <td className="px-3 py-1.5 text-right font-medium">{inr(l.qty * l.rate)}</td>}
+                      ) : (
+                        // The admin sets the rate on review; a showroom only sees the purchase rate it will pay.
+                        <span className="text-ink-2">{inr(l.rate)}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-medium">{inr(l.qty * l.rate)}</td>
                     <td className="px-2 py-1.5 text-right">
                       <button type="button" onClick={() => setQty(l.code, 0)} aria-label={`Remove ${l.name}`} className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby">
                         <X size={15} />
@@ -270,8 +281,7 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-mist-2 px-6 py-4">
         <div className="text-[13px] text-ink-3 tabular-nums">
-          {lines.length} products · {orderQty(lines).toLocaleString('en-IN')} units
-          {admin && ` · ${inr(orderValue(lines))}`}
+          {lines.length} products · {orderQty(lines).toLocaleString('en-IN')} units · {inr(orderValue(lines))}
         </div>
         <div className="flex items-center gap-2">
           {admin && existing && onReject && (

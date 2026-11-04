@@ -62,9 +62,16 @@ const MERLONS = {
   ],
 };
 
+// A plain storefront for a store added later, which has no city landmark drawing of its own.
+const GENERIC = [
+  'M14 46V22H66V46',
+  'M12 22L20 12H60L68 22H12',
+  'M34 46V30H46V46',
+  'M20 29H30V38H20V29M50 29H60V38H50V29',
+];
+
 export const Landmark = ({ id, className = '' }) => {
-  const paths = PATHS[id];
-  if (!paths) return null;
+  const paths = PATHS[id] ?? GENERIC;
   return (
     <svg viewBox="0 0 80 48" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
       <path d="M2 46H78" />

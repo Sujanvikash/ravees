@@ -26,8 +26,8 @@ def find_bill(
     user: CurrentUser, session: DbSession, bill_no: str | None = None, sale_id: uuid.UUID | None = None
 ) -> ReturnableOut:
     """A bill to take a return against (by number or id): each line with how much can still come back."""
-    sale, lines, until, is_open = service.returnable(session, user, sale_id, bill_no)
-    return ReturnableOut(sale=SaleOut.from_model(sale), lines=lines, returnable_until=until, open=is_open)
+    sale, lines = service.returnable(session, user, sale_id, bill_no)
+    return ReturnableOut(sale=SaleOut.from_model(sale), lines=lines)
 
 
 @router.post('', status_code=status.HTTP_201_CREATED)

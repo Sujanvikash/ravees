@@ -84,9 +84,7 @@ class ReturnableLine(ApiModel):
 
 
 class ReturnableOut(ApiModel):
-    """A bill as the return screen needs it: what can still come back, and until when."""
+    """A bill as the return screen needs it: what can still come back of each line."""
 
     sale: SaleOut
     lines: list[ReturnableLine]
-    returnable_until: datetime | None  # None: returns are switched off
-    open: bool

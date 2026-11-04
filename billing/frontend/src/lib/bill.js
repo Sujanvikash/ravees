@@ -92,11 +92,12 @@ const financialYear = (date) => {
 /** The next running number for a showroom's bills this financial year, after the highest one in `sales` (the
  *  server hands out the real one when the bill is saved). */
 export const nextSeq = (sales, prefix, date) => {
-  const start = `${prefix}/${financialYear(date)}/`;
+  const start = `${prefix}${financialYear(date).replace('-', '')}`;
   let max = 0;
   for (const s of sales) if (s.billNo.startsWith(start)) max = Math.max(max, Number(s.billNo.slice(start.length)) || 0);
   return max + 1;
 };
 
-/** CHN/26-27/00184: the showroom's prefix, the financial year and its running number. */
-export const billNumber = (prefix, seq, date) => `${prefix}/${financialYear(date)}/${String(seq).padStart(5, '0')}`;
+/** CHN262700184: the showroom's prefix, the financial year (2627) and its running number — letters and digits
+ *  only, no separators. The year keeps it unique across financial years (the sequence resets each). */
+export const billNumber = (prefix, seq, date) => `${prefix}${financialYear(date).replace('-', '')}${String(seq).padStart(5, '0')}`;
