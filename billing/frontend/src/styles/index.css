@@ -34,6 +34,10 @@
   --color-ruby-ink: #b91c1c;
   --color-ruby-50: #fef2f2;
 
+  /* charts: cost price and gross profit, a pair checked for colour-blind separation on white and dark panels */
+  --color-chart-cost: #2a78d6;
+  --color-chart-profit: #1f7a34;
+
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", monospace;
   --font-display: "Libre Baskerville", Georgia, "Times New Roman", serif; /* the receipt's shop name */
@@ -233,6 +237,8 @@ html[data-theme="dark"] {
   color-scheme: dark;
   --color-white: #1c211d; /* plain "white" fills (inputs, hovers) become a dark surface; white text is pinned below */
   --color-ground: #0e120f;
+  --color-chart-cost: #3987e5;
+  --color-chart-profit: #3fa45a;
   --color-surface: #1a1f1b;
   --color-mist: #262c27;
   --color-mist-2: #20251f;

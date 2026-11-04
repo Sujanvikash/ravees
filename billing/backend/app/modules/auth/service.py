@@ -47,6 +47,19 @@ def login(
 ) -> LoginResult:
     """Checks a username and password and returns a token. Raises Unauthorized for a wrong username or password,
     and TooManyRequests once this login has had too many wrong passwords from this client."""
+    user = _checked_user(session, throttle, username, password, client)
+    return LoginResult(token=issue_token(user, settings), user=user)
+
+
+def check_password(session: Session, throttle: LoginThrottle, user: User, password: str, client: str) -> None:
+    """Checks the signed-in login's own password again, as the counter does before a manual discount. Wrong
+    passwords count towards the same brake as sign-in. The demo has no passwords, so there it always passes."""
+    if is_demo(session):
+        return
+    _checked_user(session, throttle, user.username, password, client)
+
+
+def _checked_user(session: Session, throttle: LoginThrottle, username: str, password: str, client: str) -> User:
     username = username.strip().lower()
     key = f'{username}|{client}'
     wait = throttle.retry_after(key)
@@ -68,7 +81,7 @@ def login(
     if security.needs_rehash(user.password_hash):
         user.password_hash = security.hash_password(password)
         session.commit()
-    return LoginResult(token=issue_token(user, settings), user=user)
+    return user
 
 
 def demo_login(session: Session, settings: Settings, username: str) -> LoginResult:

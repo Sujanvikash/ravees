@@ -192,7 +192,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
             ]}
           />
 
-          <ProductPerformance location={location} />
+          <ProductPerformance location={location} admin={admin} />
 
           {admin && returns.length > 0 && (
             <section className="overflow-clip rounded-2xl border glass">

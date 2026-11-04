@@ -68,9 +68,11 @@ def _payment(payment: PaymentIn, payable: Decimal, credit: Decimal = Decimal(0))
     split = None
     if payment.method == 'split':
         parts = payment.split
-        if not parts or parts.cash <= 0 or parts.upi <= 0 or abs(parts.cash + parts.upi - float(due)) > 0.005:
-            raise InvalidInput('The cash and UPI parts must both be more than ₹0 and add up to the amount due.')
-        split = {'cash': parts.cash, 'upi': float(due) - parts.cash}
+        paid = [parts.cash, parts.upi, parts.card] if parts else []
+        if sum(v > 0 for v in paid) < 2 or abs(sum(paid) - float(due)) > 0.005:
+            raise InvalidInput('Use at least two of cash, UPI and card, and make them add up to the amount due.')
+        # the card part takes up any paisa of rounding
+        split = {'cash': parts.cash, 'upi': parts.upi, 'card': float(due) - parts.cash - parts.upi}
     approval = payment.approval.strip() if payment.method == 'card' else ''
     return {
         'method': payment.method,

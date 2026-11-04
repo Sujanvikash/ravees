@@ -54,8 +54,11 @@ class DiscountIn(ApiModel):
 
 
 class SplitIn(ApiModel):
-    cash: Amount
-    upi: Amount
+    """A bill paid partly in cash, partly by UPI and partly by card. At least two parts are more than ₹0."""
+
+    cash: Amount = 0
+    upi: Amount = 0
+    card: Amount = 0
 
 
 class PaymentIn(ApiModel):

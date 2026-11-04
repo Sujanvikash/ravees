@@ -46,3 +46,18 @@ def test_too_many_wrong_passwords(client):
     assert r.json()['detail'].startswith('Too many wrong passwords for this login.')
     assert int(r.headers['Retry-After']) > 0
     login(client, 'goa')  # other logins are not affected
+
+
+def test_check_password_takes_the_signed_in_logins_own_password(client, chennai):
+    assert client.post('/auth/check-password', json={'password': 'chennai@2026'}, headers=chennai).status_code == 204
+    wrong = client.post('/auth/check-password', json={'password': 'goa@2026'}, headers=chennai)
+    assert wrong.status_code == 401 and wrong.json() == {'detail': 'That password is not right for this login.'}
+    assert client.get('/auth/me', headers=chennai).status_code == 200  # a wrong password doesn't sign the store out
+    assert client.post('/auth/check-password', json={'password': 'chennai@2026'}).status_code == 401
+
+
+def test_check_password_shares_the_sign_in_brake(client, chennai):
+    for _ in range(get_settings().login_max_failures):
+        assert client.post('/auth/check-password', json={'password': 'nope'}, headers=chennai).status_code == 401
+    assert client.post('/auth/check-password', json={'password': 'chennai@2026'}, headers=chennai).status_code == 429
+    assert client.post('/auth/login', json={'username': 'chennai', 'password': 'chennai@2026'}).status_code == 429

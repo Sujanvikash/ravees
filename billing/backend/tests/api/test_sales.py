@@ -71,6 +71,7 @@ def test_bill_rules(client, chennai):
         == 'The cash received is less than the amount due.'
     )
     assert 'add up' in refused(sale([{'code': code, 'qty': 1}], 'split', split={'cash': 1, 'upi': 1}))
+    assert 'two' in refused(sale([{'code': code, 'qty': 1}], 'split', split={'cash': 0, 'upi': 0, 'card': 1}))
     assert isinstance(refused(sale([{'code': code, 'qty': 0}])), list)
 
 
@@ -108,4 +109,11 @@ def test_split_and_card(client, chennai):
         json=sale([{'code': code, 'qty': 1}], 'split', split={'cash': 100, 'upi': payable - 100}),
         headers=chennai,
     )
-    assert split.json()['payment']['split'] == {'cash': 100, 'upi': payable - 100}
+    assert split.json()['payment']['split'] == {'cash': 100, 'upi': payable - 100, 'card': 0}
+    three = client.post(
+        '/sales',
+        json=sale([{'code': code, 'qty': 1}], 'split', split={'cash': 50, 'upi': 50, 'card': payable - 100}),
+        headers=chennai,
+    )
+    assert three.status_code == 201, three.text
+    assert three.json()['payment']['split'] == {'cash': 50, 'upi': 50, 'card': payable - 100}

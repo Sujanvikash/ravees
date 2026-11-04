@@ -227,7 +227,9 @@ class _Builder:
             part = max(100, math.floor(payable * self.rand.uniform(0.2, 0.6) / 100) * 100)
             if part >= payable:
                 return PaymentIn(method='upi')
-            return PaymentIn(method='split', split=SplitIn(cash=part, upi=payable - part))
+            if self.rand.random() < 0.5:
+                return PaymentIn(method='split', split=SplitIn(cash=part, upi=payable - part))
+            return PaymentIn(method='split', split=SplitIn(cash=part, card=payable - part))
         if method == 'card':
             return PaymentIn(method='card', approval=f'{self.rand.randint(100000, 999999)}')
         return PaymentIn(method='upi')

@@ -14,6 +14,12 @@ const quickAmounts = (due) => {
   return [...new Set(ups)].slice(0, 4);
 };
 
+const SPLIT_PARTS = [
+  { id: 'cash', label: 'Cash' },
+  { id: 'upi', label: 'UPI' },
+  { id: 'card', label: 'Card' },
+];
+
 const field =
   'flex items-center gap-2 rounded-xl border border-line bg-surface px-4 transition-shadow focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_4px_rgba(23,92,38,0.10)]';
 const label = 'mb-1.5 block text-[13px] font-medium text-ink-2';
@@ -43,15 +49,17 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
   const gst = showGst && !composition; // a composition dealer's bill shows no GST
   const [tendered, setTendered] = useState('');
   const [approval, setApproval] = useState('');
-  const [splitCash, setSplitCash] = useState('');
+  const [parts, setParts] = useState({ cash: '', upi: '', card: '' });
   const [print, setPrint] = useState(true);
 
   // Cash left blank means the customer gave the exact amount.
   const received = tendered.trim() ? parseAmount(tendered) : due;
   const change = received - due;
-  const cashPart = Math.min(parseAmount(splitCash), due);
-  const valid =
-    method === 'cash' ? change >= 0 : method === 'split' ? cashPart > 0 && cashPart < due : true;
+  // A split bill: what is typed for cash, UPI and card must come to the amount due, using at least two of them.
+  const split = { cash: parseAmount(parts.cash), upi: parseAmount(parts.upi), card: parseAmount(parts.card) };
+  const splitLeft = Math.round((due - split.cash - split.upi - split.card) * 100) / 100;
+  const splitValid = splitLeft === 0 && Object.values(split).filter((v) => v > 0).length >= 2;
+  const valid = method === 'cash' ? change >= 0 : method === 'split' ? splitValid : true;
 
   const submit = (e) => {
     e.preventDefault();
@@ -60,8 +68,8 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
       method,
       received: method === 'cash' ? received : due,
       change: method === 'cash' ? change : 0,
-      approval: method === 'card' ? approval.trim() : '',
-      split: method === 'split' ? { cash: cashPart, upi: due - cashPart } : null,
+      approval: method === 'card' || (method === 'split' && split.card > 0) ? approval.trim() : '',
+      split: method === 'split' ? split : null,
       print,
     });
   };
@@ -167,28 +175,62 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
 
           {method === 'split' && (
             <div className="flex flex-col gap-2.5">
-              <div>
-                <label htmlFor="split-cash" className={label}>
-                  Cash part
-                </label>
-                <div className={`${field} h-12`}>
-                  <span className="text-lg text-ink-3">₹</span>
+              <div className="grid grid-cols-3 gap-2.5">
+                {SPLIT_PARTS.map(({ id, label: name }, i) => (
+                  <div key={id}>
+                    <label htmlFor={`split-${id}`} className={label}>
+                      {name}
+                    </label>
+                    <div className={`${field} h-12 px-3`}>
+                      <span className="text-ink-3">₹</span>
+                      <input
+                        id={`split-${id}`}
+                        type="text"
+                        inputMode="decimal"
+                        autoFocus={i === 0}
+                        autoComplete="off"
+                        value={parts[id]}
+                        onChange={(e) => setParts((p) => ({ ...p, [id]: e.target.value }))}
+                        onFocus={() => {
+                          // an empty box after the first takes what is still left, so the last part needs no typing
+                          if (i > 0 && !parts[id].trim() && splitLeft > 0) setParts((p) => ({ ...p, [id]: String(splitLeft) }));
+                        }}
+                        placeholder="0"
+                        className="min-w-0 flex-1 bg-transparent text-base font-medium tabular-nums placeholder:font-normal placeholder:text-ink-3/70"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div
+                className={`flex justify-between rounded-xl px-4 py-3 text-[13px] ${
+                  splitValid ? 'bg-evergreen-50 text-evergreen-900' : 'bg-ruby-50 text-ruby-ink'
+                }`}
+              >
+                <span className="font-medium">
+                  {splitLeft > 0
+                    ? 'Still to collect'
+                    : splitLeft < 0
+                      ? 'More than the amount due'
+                      : splitValid
+                        ? 'Adds up to the amount due'
+                        : 'Use at least two of cash, UPI and card'}
+                </span>
+                <span className="font-semibold tabular-nums">{inr(Math.abs(splitLeft))}</span>
+              </div>
+              {split.card > 0 && (
+                <div className={`${field} h-11`}>
                   <input
-                    id="split-cash"
                     type="text"
-                    inputMode="decimal"
-                    autoFocus
                     autoComplete="off"
-                    value={splitCash}
-                    onChange={(e) => setSplitCash(e.target.value)}
-                    className="min-w-0 flex-1 bg-transparent text-lg font-medium tabular-nums"
+                    aria-label="Card approval code (optional)"
+                    value={approval}
+                    onChange={(e) => setApproval(e.target.value)}
+                    placeholder="Card approval code (optional)"
+                    className="min-w-0 flex-1 bg-transparent font-mono text-sm placeholder:font-sans placeholder:text-ink-3/70"
                   />
                 </div>
-              </div>
-              <div className="flex justify-between rounded-xl bg-mist-2 px-4 py-3 text-[13px] text-ink-2 ring-1 ring-line-soft">
-                <span>UPI / card for the rest</span>
-                <span className="font-medium text-ink tabular-nums">{inr(Math.max(due - cashPart, 0))}</span>
-              </div>
+              )}
             </div>
           )}
         </div>

@@ -100,7 +100,7 @@ def _paid(p: dict) -> tuple[float, float, float]:
     if method == 'card':
         return 0, 0, p.get('received', 0)
     if method == 'split' and p.get('split'):
-        return p['split'].get('cash', 0), p['split'].get('upi', 0), 0
+        return p['split'].get('cash', 0), p['split'].get('upi', 0), p['split'].get('card', 0)
     return 0, 0, 0
 
 

@@ -137,8 +137,9 @@ const Receipt = ({ sale }) => {
         )}
         {payment.method === 'credit' ? null : payment.split ? (
           <>
-            <Line label="Paid · Cash" value={amount(payment.split.cash)} />
-            <Line label="Paid · UPI / card" value={amount(payment.split.upi)} />
+            {payment.split.cash > 0 && <Line label="Paid · Cash" value={amount(payment.split.cash)} />}
+            {payment.split.upi > 0 && <Line label="Paid · UPI" value={amount(payment.split.upi)} />}
+            {payment.split.card > 0 && <Line label="Paid · Card" value={amount(payment.split.card)} />}
           </>
         ) : (
           <Line label={`Paid · ${methodLabel(payment.method)}`} value={amount(payment.received)} />

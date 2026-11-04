@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { ClipboardList, LayoutDashboard } from 'lucide-react';
 import CashDifferences from '../components/CashDifferences.jsx';
+import CostBars from '../components/CostBars.jsx';
 import DayChart from '../components/DayChart.jsx';
-import { LocationPicker, PeriodTabs } from '../components/Filters.jsx';
+import { LocationPicker, PeriodTabs, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import ProductPerformance from '../components/ProductPerformance.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
@@ -14,6 +15,10 @@ import { METHODS } from '../lib/payment.js';
 import { byLocation, byMethod, filterSales, periodStart, salesByDay, summarize, topProducts } from '../lib/reports.js';
 
 const CHART_DAYS = { today: 7, '7d': 7, '30d': 30, all: 30 };
+const COST_VIEWS = [
+  { id: 'shops', label: 'Showrooms' },
+  { id: 'products', label: 'Top products' },
+];
 
 const Card = ({ title, note, children, className = '' }) => (
   <section className={`rounded-2xl border glass p-4 ${className}`}>
@@ -36,19 +41,21 @@ const pct = (n) => `${(n * 100).toFixed(1)}%`;
 
 /**
  * The admin's view of all five showrooms: sales, purchase cost, gross profit and margin, GST, stock
- * counted in, sales by day, by showroom, top products and payment methods, for a period and showroom.
+ * counted in, sales by day, by showroom, top products and payment methods, for a period and showroom. The charts
+ * split sales into cost price and gross profit: by day, and by showroom or top product.
  */
 const Dashboard = ({ onMenu, onNavigate }) => {
   const { sales, orders, returns, closes, settings } = useStore();
   const gst = settings.showGst;
   const [period, setPeriod] = useState('30d');
   const [location, setLocation] = useState(null);
+  const [costView, setCostView] = useState('shops');
   const now = useMemo(() => new Date(), []);
 
   const scoped = useMemo(() => filterSales(sales, { location, period, now }), [sales, location, period, now]);
   const sum = summarize(scoped, { gst });
-  const days = salesByDay(scoped, CHART_DAYS[period], now);
-  const shops = byLocation(filterSales(sales, { period, now }));
+  const days = salesByDay(scoped, CHART_DAYS[period], now, { gst });
+  const shops = byLocation(filterSales(sales, { period, now }), { gst });
   const products = topProducts(scoped, 8, { gst });
   const methods = byMethod(scoped);
   const toReview = orders.filter((o) => o.status === 'requested').length;
@@ -123,16 +130,16 @@ const Dashboard = ({ onMenu, onNavigate }) => {
               />
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-                <Card title="Sales by day" note={`last ${CHART_DAYS[period]} days${gst ? ' · incl. GST' : ''}`}>
-                  <DayChart data={days} gst={gst} />
+                <Card title="Sales by day" note={`last ${CHART_DAYS[period]} days · cost price and gross profit`}>
+                  <DayChart data={days} gst={gst} split />
                 </Card>
                 <Card title="Payment methods">
                   <ul className="flex flex-col gap-3.5">
-                    {METHODS.map(({ id, label, Icon }) => (
+                    {METHODS.filter((m) => m.id !== 'split').map(({ id, label, Icon }) => (
                       <li key={id} className="text-[13px]">
                         <div className="mb-1.5 flex items-center justify-between gap-2">
                           <span className="flex items-center gap-2 text-ink-2">
-                            <Icon size={14} aria-hidden="true" /> {id === 'split' ? 'UPI / card part of split' : label}
+                            <Icon size={14} aria-hidden="true" /> {label}
                           </span>
                           <span className="tabular-nums">
                             <span className="font-medium">{inrWhole(methods[id])}</span>
@@ -146,6 +153,30 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                   <p className="mt-4 text-xs text-ink-3">Average bill {inr(sum.average)}</p>
                 </Card>
               </div>
+
+              <section className="rounded-2xl border glass p-4">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-[15px] font-semibold tracking-tight">Cost price vs sales</h2>
+                    <p className="text-xs text-ink-3">
+                      {costView === 'shops' ? 'Every showroom for the period · click one to see only it' : 'The top products by sales value'}
+                    </p>
+                  </div>
+                  <Segmented label="Compare" options={COST_VIEWS} value={costView} onChange={setCostView} />
+                </div>
+                {costView === 'shops' ? (
+                  <CostBars
+                    gst={gst}
+                    rows={shops.map((s) => ({ key: s.location.id, label: s.location.city, base: gst ? s.taxable : s.total, cost: s.cost }))}
+                    selected={location}
+                    onSelect={(id) => setLocation(location === id ? null : id)}
+                  />
+                ) : products.length === 0 ? (
+                  <p className="text-[13px] text-ink-3">No sales in this period.</p>
+                ) : (
+                  <CostBars gst={gst} rows={products.map((p) => ({ key: p.code, code: p.code, label: p.name, base: p.taxable, cost: p.cost }))} />
+                )}
+              </section>
 
               <Card title="By showroom" note="for the period, every showroom">
                 <div className="overflow-x-auto">
@@ -228,7 +259,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                   </div>
                 )}
               </Card>
-              <ProductPerformance location={location} />
+              <ProductPerformance location={location} admin />
 
               <CashDifferences closes={closes} location={location} onOpen={() => onNavigate('cash')} />
 

@@ -111,25 +111,30 @@ export const summarize = (sales, { gst = true } = {}) => {
 
 const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-/** Sales total for each of the last `days` days, oldest first (days with no sales are 0). */
-export const salesByDay = (sales, days, now = new Date()) => {
+/** Each of the last `days` days, oldest first: { date, total, base, cost } (days with no sales are 0). base is
+ *  what gross profit is taken from: sales without GST, or the selling price when gst is false (as summarize). */
+export const salesByDay = (sales, days, now = new Date(), { gst = true } = {}) => {
   const totals = new Map();
   for (const s of sales) {
     const k = dayKey(new Date(s.at));
-    totals.set(k, (totals.get(k) ?? 0) + s.totals.payable);
+    const t = totals.get(k) ?? { total: 0, base: 0, cost: 0 };
+    t.total += s.totals.payable;
+    t.base += gst ? s.totals.taxable : s.totals.payable;
+    t.cost += saleCost(s);
+    totals.set(k, t);
   }
   const out = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = startOfDay(now);
     d.setDate(d.getDate() - i);
-    out.push({ date: d, total: totals.get(dayKey(d)) ?? 0 });
+    out.push({ date: d, ...(totals.get(dayKey(d)) ?? { total: 0, base: 0, cost: 0 }) });
   }
   return out;
 };
 
 /** Each showroom's totals, in the order of LOCATIONS. */
-export const byLocation = (sales) =>
-  LOCATIONS.map((l) => ({ location: l, ...summarize(sales.filter((s) => s.location === l.id)) }));
+export const byLocation = (sales, { gst = true } = {}) =>
+  LOCATIONS.map((l) => ({ location: l, ...summarize(sales.filter((s) => s.location === l.id), { gst }) }));
 
 /** Products ranked by sales value: units, sales (incl. GST), cost and profit. */
 export const topProducts = (sales, limit = 8, { gst = true } = {}) => {
@@ -152,13 +157,12 @@ export const topProducts = (sales, limit = 8, { gst = true } = {}) => {
     .slice(0, limit);
 };
 
-/** Takings per payment method. A split bill counts its cash part as Cash and the rest as UPI / card. */
+/** Takings per payment method. A split bill counts each of its cash, UPI and card parts under that method. */
 export const byMethod = (sales) => {
-  const out = { cash: 0, upi: 0, card: 0, split: 0 };
+  const out = { cash: 0, upi: 0, card: 0 };
   for (const s of sales) {
     if (s.payment.method === 'split' && s.payment.split) {
-      out.cash += s.payment.split.cash;
-      out.split += s.payment.split.upi;
+      for (const k of ['cash', 'upi', 'card']) out[k] += s.payment.split[k] ?? 0;
     } else {
       out[s.payment.method] = (out[s.payment.method] ?? 0) + s.totals.payable;
     }

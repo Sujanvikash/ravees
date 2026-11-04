@@ -55,6 +55,7 @@ def _figures(session: Session, location_id: str, day: date) -> dict:
             card += Decimal(str(p['received']))
         elif p.get('method') == 'split' and p.get('split'):
             upi += Decimal(str(p['split'].get('upi', 0)))
+            card += Decimal(str(p['split'].get('card', 0)))
     return {'bills': len(sales), 'cash': cash, 'refunds': sum(refunds, Decimal(0)), 'upi': upi, 'card': card}
 
 

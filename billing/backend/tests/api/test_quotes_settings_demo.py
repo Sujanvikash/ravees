@@ -114,3 +114,8 @@ def test_demo_reset(client, demo_built):
     r = client.post('/demo/reset', headers=d_admin)
     assert r.status_code == 200 and 'Demo ready' in r.json()['detail']
     assert client.get('/auth/me', headers=d_admin).status_code == 200  # still signed in after the rebuild
+
+
+def test_demo_discount_needs_no_password(client, demo_built):
+    _, headers = demo(client, 'chennai')
+    assert client.post('/auth/check-password', json={'password': ''}, headers=headers).status_code == 204

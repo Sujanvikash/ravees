@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { PackageSearch } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
+import { findProduct } from '../lib/catalogue.js';
+import { inr } from '../lib/money.js';
 import { productSellThrough } from '../lib/reports.js';
 import { SearchBox, Segmented } from './Filters.jsx';
 import Pager from '../components/Pager.jsx';
@@ -18,14 +20,17 @@ const ORDER = {
 };
 const PAGE = 15;
 const GRID = 'grid grid-cols-[minmax(0,16rem)_1fr_3.5rem_3.5rem_3.5rem_3.5rem] items-center gap-x-4';
+// the admin also sees each product's cost price
+const GRID_COST = 'grid grid-cols-[minmax(0,16rem)_1fr_5rem_3.5rem_3.5rem_3.5rem_3.5rem] items-center gap-x-4';
 const n = (v) => v.toLocaleString('en-IN');
 
 /**
  * How each product is selling, season to date: one bar per product, the green part is units sold and the grey
  * part units still in stock, so fast and slow sellers stand out. For one showroom or all (location null).
- * Sorted by most sold, slowest (lowest share sold) or most left, with a search.
+ * Sorted by most sold, slowest (lowest share sold) or most left, with a search. The admin also sees cost prices.
  */
-const ProductPerformance = ({ location = null }) => {
+const ProductPerformance = ({ location = null, admin = false }) => {
+  const grid = admin ? GRID_COST : GRID;
   const { sales, returns, stock } = useStore();
   const [sort, setSort] = useState('sold');
   const [query, setQuery] = useState('');
@@ -68,9 +73,10 @@ const ProductPerformance = ({ location = null }) => {
       ) : (
         <>
           {/* product · bar · total, sold, left and share sold in their own columns, so nothing has to be added up */}
-          <div className={`${GRID} border-b border-line-soft pb-1.5 text-xs text-ink-3`} aria-hidden="true">
+          <div className={`${grid} border-b border-line-soft pb-1.5 text-xs text-ink-3`} aria-hidden="true">
             <span>Product</span>
             <span />
+            {admin && <span className="text-right">Cost</span>}
             <span className="text-right">Total</span>
             <span className="text-right">Sold</span>
             <span className="text-right">Left</span>
@@ -80,7 +86,7 @@ const ProductPerformance = ({ location = null }) => {
             {paged.rows.map((r) => {
               const pct = Math.round(r.share * 100);
               return (
-                <li key={r.code} className={`${GRID} border-t border-line-soft py-2 text-[13px] first:border-t-0`}>
+                <li key={r.code} className={`${grid} border-t border-line-soft py-2 text-[13px] first:border-t-0`}>
                   <span className="min-w-0 truncate" title={r.name}>
                     <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{r.code}</span>
                     {r.name}
@@ -92,6 +98,7 @@ const ProductPerformance = ({ location = null }) => {
                   >
                     <span className="h-full bg-ok" style={{ width: `${r.share * 100}%` }} />
                   </span>
+                  {admin && <span className="text-right text-ink-2 tabular-nums">{inr(findProduct(r.code)?.cost ?? 0)}</span>}
                   <span className="text-right text-ink-2 tabular-nums">{n(r.sold + r.left)}</span>
                   <span className="text-right font-semibold text-ok-ink tabular-nums">{n(r.sold)}</span>
                   <span className="text-right text-ink-2 tabular-nums">{n(r.left)}</span>

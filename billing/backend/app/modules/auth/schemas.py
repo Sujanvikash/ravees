@@ -13,6 +13,10 @@ class LoginIn(ApiModel):
     password: str = Field(max_length=256)
 
 
+class PasswordCheckIn(ApiModel):
+    password: str = Field(max_length=256)
+
+
 class SessionOut(ApiModel):
     """What the frontend keeps as its session: the same shape it used before the backend existed."""
 

@@ -226,6 +226,7 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
                                           <span className="min-w-0 flex-1 truncate">{l.name}</span>
                                           {r.status === 'received' && got !== l.qty && <span className="text-xs font-medium text-warn-ink">counted {got}</span>}
                                           <span className="text-xs text-ink-3">{l.qty}</span>
+                                          {admin && <span className="w-28 text-right text-xs text-ink-2 tabular-nums">× {inr(l.rate)} cost</span>}
                                         </li>
                                       );
                                     })}

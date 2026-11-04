@@ -25,6 +25,8 @@ const VALIDITY = [
 ];
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const day = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+// Quotation lines carry no cost, so the admin's figure is at today's cost prices.
+const quoteCost = (quote) => quote.lines.reduce((sum, l) => sum + (findProduct(l.code)?.cost ?? 0) * l.qty, 0);
 
 const field =
   'flex h-10 items-center gap-2 rounded-xl border border-line bg-white px-3 transition-shadow focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]';
@@ -190,6 +192,8 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                           <th scope="col" className="py-2 pr-3 font-medium">Customer</th>
                           <th scope="col" className="py-2 pr-3 text-right font-medium">Items</th>
                           <th scope="col" className="py-2 pr-3 text-right font-medium">Amount</th>
+                          {admin && <th scope="col" className="py-2 pr-3 text-right font-medium">Cost</th>}
+                          {admin && <th scope="col" className="py-2 pr-3 text-right font-medium">Profit</th>}
                           <th scope="col" className="py-2 pr-3 font-medium">Valid until</th>
                           <th scope="col" className="py-2 pr-4 text-right font-medium">
                             <span className="sr-only">Actions</span>
@@ -199,6 +203,8 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                       <tbody>
                         {paged.rows.map((x) => {
                           const expired = new Date(x.validUntil) < new Date();
+                          const cost = admin ? quoteCost(x) : 0;
+                          const profit = (settings.showGst ? x.totals.taxable : x.totals.payable) - cost;
                           return (
                             <tr key={x.quoteNo} className="row-hover border-b border-line-soft">
                               <td className="py-1.5 pr-3 pl-4 font-mono text-xs">{x.quoteNo}</td>
@@ -207,6 +213,8 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                               <td className="py-1.5 pr-3 font-medium">{customerLabel(x.phone, x.name)}</td>
                               <td className="py-1.5 pr-3 text-right text-ink-2">{x.totals.count}</td>
                               <td className="py-1.5 pr-3 text-right font-semibold">{inr(x.totals.payable)}</td>
+                              {admin && <td className="py-1.5 pr-3 text-right text-ink-2">{inr(cost)}</td>}
+                              {admin && <td className={`py-1.5 pr-3 text-right font-medium ${profit >= 0 ? 'text-ok-ink' : 'text-ruby-ink'}`}>{inr(profit)}</td>}
                               <td className="py-1.5 pr-3 whitespace-nowrap">
                                 {day.format(new Date(x.validUntil))}{' '}
                                 {expired && <span className="ml-1 rounded-full bg-mist px-2 py-0.5 text-[11px] font-medium text-ink-3">Expired</span>}

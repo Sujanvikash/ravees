@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ArrowRight, CircleCheck, Phone, Tag, User, X } from 'lucide-react';
+import { ArrowRight, CircleCheck, LockKeyhole, Phone, Tag, User, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
+import { checkPassword } from '../lib/auth.js';
 import { countLabel, gstLines } from '../lib/bill.js';
 import { isValidMobile, isValidName } from '../lib/customer.js';
 import { typedMobile } from '../lib/customer.js';
@@ -64,12 +65,88 @@ const CustomerField = ({ id, label, Icon, error, inputRef, required = true, ...i
 );
 
 /**
+ * The store's login password, asked for before a manual discount can be typed or changed, so only someone who
+ * knows it (the manager, not every counter hand) can give one. The server checks it; `onUnlock` runs when it's right.
+ */
+const DiscountUnlock = ({ onUnlock, onRemove }) => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!password || busy) return;
+    setBusy(true);
+    try {
+      await checkPassword(password);
+      onUnlock();
+    } catch (err) {
+      setError(err.message);
+      setPassword('');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor="discount-password" className="text-[12px] text-ink-3">
+        Enter the store’s login password to give a discount
+      </label>
+      <div className="flex items-center gap-2">
+        <div
+          className={`flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-surface px-2.5 ${
+            error ? 'border-ruby' : 'border-line focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]'
+          }`}
+        >
+          <LockKeyhole size={13} className="shrink-0 text-ink-3" aria-hidden="true" />
+          <input
+            id="discount-password"
+            type="password"
+            autoComplete="current-password"
+            autoFocus
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError('');
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'discount-password-error' : undefined}
+            className="min-w-0 flex-1 bg-transparent text-[13px]"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!password || busy}
+          className="h-8 shrink-0 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:opacity-50"
+        >
+          Unlock
+        </button>
+      </div>
+      {error && (
+        <p id="discount-password-error" role="alert" className="animate-pop text-xs font-medium text-ruby-ink">
+          {error}
+        </p>
+      )}
+      {onRemove && (
+        <button type="button" onClick={onRemove} className="self-start text-xs font-medium text-ink-3 hover:text-ruby-ink">
+          Remove the discount
+        </button>
+      )}
+    </div>
+  );
+};
+
+/**
  * The manual whole-bill discount: a value with a Percent / Amount toggle (a flat ₹ amount by default). Typing
  * updates the bill live; the discount is kept on the bill (so it survives a refresh) and clears when the bill
  * does. `off` is the rupees it took off. The toggle keeps its own `kind` so it still works with the field empty.
+ * The field stays locked until the store's password is entered, and locks again once the discount is cleared.
+ * A discount already on the bill (recalled, or after a refresh) still applies; changing it asks again.
  */
 const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
-  const [open, setOpen] = useState(Boolean(discount));
+  const [open, setOpen] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
   const [kind, setKind] = useState(discount?.kind ?? 'amount');
   const [text, setText] = useState(discount ? String(discount.value) : '');
 
@@ -84,11 +161,13 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
     const mineSig = typed > 0 ? `${kind}:${typed}` : '';
     if (sig !== mineSig) {
       if (discount) {
-        setKind(discount.kind);
+        setKind(discount.kind); // a recalled bill: its discount stands, but changing it needs the password
         setText(String(discount.value));
-        setOpen(true);
+        setUnlocked(false);
       } else {
-        setText(''); // bill cleared: empty the field but leave the chosen type as it is
+        setText(''); // bill cleared: empty the field but leave the chosen type as it is, and lock it again
+        setUnlocked(false);
+        setOpen(false);
       }
     }
   }
@@ -105,6 +184,7 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
     setText('');
     onDiscount(null);
     setOpen(false);
+    setUnlocked(false);
   };
 
   const kindClass = (value) =>
@@ -132,7 +212,12 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
           <span className="text-ink-3">{open ? 'Enter below' : 'Add'}</span>
         )}
       </button>
-      {open && (
+      {open && !unlocked && (
+        <div className="border-t border-line-soft px-3 py-2.5">
+          <DiscountUnlock onUnlock={() => setUnlocked(true)} onRemove={discount ? clear : null} />
+        </div>
+      )}
+      {open && unlocked && (
         <div className="flex flex-col gap-2 border-t border-line-soft px-3 py-2.5">
           <div className="flex overflow-hidden rounded-lg border border-line" role="group" aria-label="Discount type">
             <button type="button" onClick={() => pick('amount')} aria-pressed={kind === 'amount'} className={kindClass('amount')}>
