@@ -1,0 +1,137 @@
+# Billing CI/CD.
+#   every push and pull request touching billing/: backend lint + tests (on a throwaway PostgreSQL), frontend lint + build
+#   a push to main: also builds the API image, pushes it to GHCR and deploys it to the server over SSH
+# The frontend itself is deployed by Cloudflare Pages from main (see billing/deploy/README.md), not here.
+#
+# Repository secrets the deploy needs: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY.
+
+name: billing
+
+on:
+  push:
+    branches: [main, rohit, sujan]
+    paths: ['billing/**', '.github/workflows/billing.yml']
+  pull_request:
+    paths: ['billing/**', '.github/workflows/billing.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: billing-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: billing/backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: billing
+          POSTGRES_PASSWORD: billing
+          POSTGRES_DB: raaves_billing_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U billing" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://billing:billing@localhost:5432/raaves_billing_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.8.22'
+          enable-cache: true
+          cache-dependency-glob: billing/backend/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: billing/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: billing/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/raaves-billing-api" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: billing/backend
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Copy compose files to the server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: billing/deploy/compose.yml,billing/deploy/Caddyfile
+          target: billing
+          strip_components: 2
+
+      - name: Pull and restart on the server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: IMAGE,GHCR_USER,GHCR_TOKEN
+          script: |
+            set -e
+            cd ~/billing
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            # pin the exact image this run built, so a restart never picks up something else
+            sed -i "s|^API_IMAGE=.*|API_IMAGE=$IMAGE|" .env
+            docker compose pull api
+            docker compose up -d --remove-orphans
+            docker logout ghcr.io
+            # wait for the API to answer (migrations run on start)
+            for i in $(seq 1 30); do
+              if docker compose exec -T api python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"; then
+                echo "API is up"; docker image prune -f; exit 0
+              fi
+              sleep 4
+            done
+            docker compose logs --tail 80 api
+            exit 1

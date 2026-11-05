@@ -9,6 +9,8 @@
 
 Each app has its own backend and its own database. Their product lists are separate on purpose: billing has the full multi-year catalogue, while the website's products (with photos and descriptions) are added on their own.
 
+Billing is deployed with Docker on an AWS server (API) and Cloudflare Pages (frontend), with CI/CD in GitHub Actions: see `billing/deploy/README.md`.
+
 ## Run the website
 
 ```bash
