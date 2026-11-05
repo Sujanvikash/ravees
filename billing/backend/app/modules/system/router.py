@@ -27,7 +27,9 @@ def get_settings(session: DbSession, user: OptionalUser, location: str | None = 
 
 
 @settings_router.patch('')
-def update_settings(body: AppSettingsPatch, user: CurrentUser, session: DbSession, location: str | None = None) -> AppSettingsOut:
+def update_settings(
+    body: AppSettingsPatch, user: CurrentUser, session: DbSession, location: str | None = None
+) -> AppSettingsOut:
     """The admin changes any switch (saved globally), or a given showroom's own appearance and bill details with
     `?location=`; a showroom changes only its own."""
     return settings.update(session, body, user=user, location=location if user.is_admin else None)

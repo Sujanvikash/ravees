@@ -22,13 +22,19 @@ from .models import Location
 
 def list_stores(session: Session) -> Sequence[Location]:
     """Every store (not the admin's warehouse), active ones first, then by city and area."""
-    stmt = select(Location).where(Location.id != WAREHOUSE_ID).order_by(Location.active.desc(), Location.city, Location.area)
+    stmt = (
+        select(Location)
+        .where(Location.id != WAREHOUSE_ID)
+        .order_by(Location.active.desc(), Location.city, Location.area)
+    )
     return session.scalars(stmt).all()
 
 
 def _has_history(session: Session, location_id: str) -> bool:
     """Whether a store has anything on it: a number issued (a bill, quote, order or return) or any stock."""
-    numbered = session.scalar(select(func.count()).select_from(NumberSeries).where(NumberSeries.location_id == location_id))
+    numbered = session.scalar(
+        select(func.count()).select_from(NumberSeries).where(NumberSeries.location_id == location_id)
+    )
     stocked = session.scalar(select(func.count()).select_from(StockLevel).where(StockLevel.location_id == location_id))
     return bool(numbered or stocked)
 

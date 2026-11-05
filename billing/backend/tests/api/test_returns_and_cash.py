@@ -32,7 +32,12 @@ def test_return_refunds_cash_and_restocks(client, chennai, admin):
     )
     assert r.status_code == 201, r.text
     cn = r.json()['creditNote']
-    assert cn['returnNo'].startswith('CN-CHN') and '/' not in cn['returnNo'] and cn['kind'] == 'return' and cn['billNo'] == s['billNo']
+    assert (
+        cn['returnNo'].startswith('CN-CHN')
+        and '/' not in cn['returnNo']
+        and cn['kind'] == 'return'
+        and cn['billNo'] == s['billNo']
+    )
     assert cn['refund'] == cn['amount'] == round(s['lines'][0]['price'] * 2)
     assert r.json()['sale'] is None
     assert stock_of(client, chennai, 'chennai', code) == before + 2

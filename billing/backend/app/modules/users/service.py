@@ -86,7 +86,8 @@ def create_login(session: Session, location_id: str) -> User:
     (id@2026). The caller commits."""
     password_hash = security.hash_password(security.default_password(location_id))
     return repository.add(
-        session, User(username=location_id, role=Role.LOCATION.value, location_id=location_id, password_hash=password_hash)
+        session,
+        User(username=location_id, role=Role.LOCATION.value, location_id=location_id, password_hash=password_hash),
     )
 
 

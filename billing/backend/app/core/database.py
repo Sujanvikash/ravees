@@ -18,6 +18,10 @@ from .config import get_settings
 
 DEMO_SCHEMA = 'demo'
 
+# Database connections in the pool. app/core/dependencies.py lets no more requests than this hold a session at
+# once, so a request never waits for a connection on a worker thread (see there).
+POOL_SIZE = 20
+
 # Constraint names Alembic can rely on, the same on every database: pk_users, fk_users_location_id_locations ...
 NAMING_CONVENTION = {
     'ix': 'ix_%(column_0_label)s',
@@ -37,7 +41,7 @@ class Base(DeclarativeBase):
 @lru_cache
 def get_engine() -> Engine:
     """The one engine (connection pool) for this process."""
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    return create_engine(get_settings().database_url, pool_pre_ping=True, pool_size=POOL_SIZE, max_overflow=0)
 
 
 def get_demo_engine() -> Engine:
@@ -53,12 +57,6 @@ def get_session_factory(demo: bool = False) -> sessionmaker[Session]:
 
 def is_demo(session: Session) -> bool:
     return bool(session.info.get('demo'))
-
-
-def open_session(demo: bool = False) -> Iterator[Session]:
-    """One session for a request, closed afterwards. Services commit their own work."""
-    with get_session_factory(demo)() as session:
-        yield session
 
 
 @contextmanager

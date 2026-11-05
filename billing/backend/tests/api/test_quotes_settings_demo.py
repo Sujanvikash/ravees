@@ -19,7 +19,12 @@ def test_quotation(client, chennai, admin):
     q = client.post('/quotes', json=body, headers=chennai)
     assert q.status_code == 201, q.text
     q = q.json()
-    assert q['quoteNo'].startswith('QT-CHN') and '/' not in q['quoteNo'] and q['by'] == 'Chennai' and q['note'] == 'Corporate'
+    assert (
+        q['quoteNo'].startswith('QT-CHN')
+        and '/' not in q['quoteNo']
+        and q['by'] == 'Chennai'
+        and q['note'] == 'Corporate'
+    )
     assert q['lines'][0]['qty'] == 2 and q['totals']['payable'] > 0
     assert client.post('/quotes', json=body, headers=chennai).json()['quoteNo'] == q['quoteNo']
     assert client.post('/quotes', json={**body, 'id': str(uuid.uuid4())}, headers=admin).status_code == 403
@@ -45,7 +50,11 @@ def test_settings(client, chennai, admin):
     # a showroom may change its own appearance, but not a business switch
     assert client.patch('/settings', json={'quotePrint': False}, headers=chennai).status_code == 403
     chennai_view = client.patch('/settings', json={'theme': 'dark', 'font': 'large'}, headers=chennai)
-    assert chennai_view.status_code == 200 and chennai_view.json()['theme'] == 'dark' and chennai_view.json()['font'] == 'large'
+    assert (
+        chennai_view.status_code == 200
+        and chennai_view.json()['theme'] == 'dark'
+        and chennai_view.json()['font'] == 'large'
+    )
     # the showroom's own appearance doesn't change the admin's (global) view
     assert client.get('/settings', headers=admin).json()['theme'] == s['theme']
     assert client.get('/settings', headers=chennai).json()['theme'] == 'dark'
@@ -55,7 +64,11 @@ def test_settings(client, chennai, admin):
     assert s['composition'] is True
     # a showroom fills in its own bill details (store-level, not the admin's)
     shop = client.patch('/settings', json={'storeName': 'SPARKLE CHRISTMAS', 'composition': False}, headers=chennai)
-    assert shop.status_code == 200 and shop.json()['storeName'] == 'SPARKLE CHRISTMAS' and shop.json()['composition'] is False
+    assert (
+        shop.status_code == 200
+        and shop.json()['storeName'] == 'SPARKLE CHRISTMAS'
+        and shop.json()['composition'] is False
+    )
     assert client.get('/settings', headers=admin).json()['storeName'] == ''  # the admin's own view is unaffected
     client.patch('/settings', json={'storeName': '', 'composition': True}, headers=chennai)
 

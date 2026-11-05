@@ -118,9 +118,7 @@ def auto_close(session: Session, location_id: str) -> None:
     day = max(last + timedelta(days=1), t - timedelta(days=MAX_AUTO_DAYS))
     changed = False
     while day < t:
-        already = session.scalar(
-            select(CashClose.id).where(CashClose.location_id == location_id, CashClose.day == day)
-        )
+        already = session.scalar(select(CashClose.id).where(CashClose.location_id == location_id, CashClose.day == day))
         f = _figures(session, location_id, day)
         if not already and (f['bills'] or f['collections']):
             opening = _last_float(session, location_id, day)
