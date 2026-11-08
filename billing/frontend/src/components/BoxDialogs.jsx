@@ -15,14 +15,13 @@ const quiet = 'inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-[13px]
 /**
  * One box by hand: its number and stock number from the label, the shipment and supplier, and the products
  * inside (scan or search each, then set the quantity). Also edits a box still in the warehouse.
- * A new box starts with the shipment and supplier of the last one entered, as boxes come in shipments.
  */
-export const BoxEditor = ({ box, last, onClose, onSave }) => {
+export const BoxEditor = ({ box, onClose, onSave }) => {
   const [form, setForm] = useState(() => ({
     boxNo: box?.boxNo ?? '',
     stockNo: box?.stockNo ?? '',
-    shipment: box?.shipment ?? last?.shipment ?? '',
-    supplier: box?.supplier ?? last?.supplier ?? '',
+    shipment: box?.shipment ?? '',
+    supplier: box?.supplier ?? '',
   }));
   const [lines, setLines] = useState(() => box?.lines.map((l) => ({ code: l.code, name: l.name, qty: l.qty })) ?? []);
   const [notice, setNotice] = useState(null);
@@ -55,9 +54,15 @@ export const BoxEditor = ({ box, last, onClose, onSave }) => {
   };
 
   return (
-    <Dialog id="box-editor" title={box ? `Box ${box.boxNo}` : 'New box'} subtitle="Copy the label: box number, stock number and the products inside." onClose={onClose}>
-      <div className="flex flex-col gap-4 px-6 pb-5">
-        <div className="grid gap-3 sm:grid-cols-2">
+    <Dialog
+      id="box-editor"
+      title={box ? `Box ${box.boxNo}` : 'New box'}
+      subtitle="Copy the label: box number, stock number and the products inside."
+      size="max-w-5xl"
+      onClose={onClose}
+    >
+      <div className="flex flex-col gap-5 px-8 pb-6">
+        <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 text-[13px] font-medium">
             Box number <span className="sr-only">(required)</span>
             <input value={form.boxNo} onChange={set('boxNo')} placeholder="e.g. 154.GOA" autoFocus className={`${field} font-mono uppercase placeholder:font-sans placeholder:normal-case`} />
@@ -82,11 +87,12 @@ export const BoxEditor = ({ box, last, onClose, onSave }) => {
           </label>
         </div>
 
-        <div className="flex flex-col gap-2">
+        {/* room for the search results, which drop down over the list and would be cut off by the edge of the dialog */}
+        <div className="flex min-h-[30rem] flex-col gap-2">
           <h3 className="text-[13px] font-medium">Products in the box</h3>
           <ScanBar inputRef={scanRef} onAdd={add} notice={notice} onNotice={setNotice} inStock={() => 0} />
           {lines.length > 0 && (
-            <ul className="flex max-h-72 flex-col overflow-y-auto rounded-xl border border-line-soft bg-surface p-1">
+            <ul className="flex max-h-96 flex-col overflow-y-auto rounded-xl border border-line-soft bg-surface p-1">
               {lines.map((l) => (
                 <li key={l.code} className="flex items-center gap-3 px-2 py-1.5 text-[13px]">
                   <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>

@@ -57,7 +57,6 @@ const Boxes = ({ onMenu }) => {
     .filter((b) => !q || `${b.boxNo} ${b.stockNo} ${b.shipment} ${b.supplier} ${b.lines.map((l) => l.code).join(' ')}`.toLowerCase().includes(q))
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   const paged = usePages(list, 50, `${tab}|${q}`);
-  const last = [...boxes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
   const fail = (err) => setFlash({ tone: 'warn', text: `Not saved: ${err.message}` });
 
@@ -291,7 +290,7 @@ const Boxes = ({ onMenu }) => {
         </div>
       </div>
 
-      {editing && <BoxEditor box={editing.id ? editing : null} last={last} onClose={() => setEditing(null)} onSave={save} />}
+      {editing && <BoxEditor box={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} />}
       {importing && <BoxImport boxes={boxes} onClose={() => setImporting(false)} onSave={saveMany} />}
     </div>
   );
