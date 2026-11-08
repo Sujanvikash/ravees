@@ -98,7 +98,7 @@ def test_demo_has_the_same_logins_on_its_own_data(client, admin, demo_built):
     assert client.get('/auth/me', headers=d_admin).json()['demo'] is True
     assert len(client.get('/sales', headers=d_admin).json()) > 300
     assert {o['status'] for o in client.get('/orders', headers=d_admin).json()} == {
-        'requested', 'sent', 'received', 'rejected', 'cancelled'
+        'requested', 'fulfilled', 'rejected', 'cancelled'
     }  # fmt: skip
     assert client.get('/cash/closes', headers=d_admin).json()
     # the real data never sees the demo's bills

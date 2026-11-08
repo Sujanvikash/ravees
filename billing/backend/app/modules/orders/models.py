@@ -11,10 +11,11 @@ from app.core.database import Base
 
 class Status(StrEnum):
     REQUESTED = 'requested'  # a showroom asked for stock; the admin reviews it
-    SENT = 'sent'  # the admin sent it; the showroom counts the goods in when they arrive
-    RECEIVED = 'received'  # counted in: the counted quantities were added to stock
+    FULFILLED = 'fulfilled'  # the admin raised a transfer invoice for it
     REJECTED = 'rejected'  # the admin turned the request down
-    CANCELLED = 'cancelled'  # the showroom withdrew its request before it was sent
+    CANCELLED = 'cancelled'  # the showroom withdrew its request before it was answered
+    SENT = 'sent'  # legacy: sent by the admin, to be counted in by the showroom (old rows only)
+    RECEIVED = 'received'  # legacy: counted in (old rows only)
 
 
 class PurchaseOrder(Base):

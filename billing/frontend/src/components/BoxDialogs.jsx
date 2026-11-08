@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { readSheet } from 'read-excel-file/browser';
 import { CircleAlert, Download, FileSpreadsheet, Minus, Plus, Save, Trash2 } from 'lucide-react';
-import { activeLocations, locationById } from '../config.js';
 import { boxUnits, parseBoxRows } from '../lib/boxes.js';
 import { newId } from '../lib/uid.js';
 import Dialog from './Dialog.jsx';
@@ -13,21 +12,9 @@ const primary =
   'inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:opacity-50';
 const quiet = 'inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink';
 
-/** The showroom select used for tagging: "Not tagged yet" or one of the stores in use. */
-export const ShowroomSelect = ({ value, onChange, id, className = field }) => (
-  <select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className={className}>
-    <option value="">Not tagged yet</option>
-    {activeLocations().map((l) => (
-      <option key={l.id} value={l.id}>
-        {l.city} · {l.area}
-      </option>
-    ))}
-  </select>
-);
-
 /**
- * One box by hand: its number and stock number from the label, the shipment and supplier, the showroom it goes
- * to, and the products inside (scan or search each, then set the quantity). Also edits a box still packed.
+ * One box by hand: its number and stock number from the label, the shipment and supplier, and the products
+ * inside (scan or search each, then set the quantity). Also edits a box still in the warehouse.
  * A new box starts with the shipment and supplier of the last one entered, as boxes come in shipments.
  */
 export const BoxEditor = ({ box, last, onClose, onSave }) => {
@@ -36,7 +23,6 @@ export const BoxEditor = ({ box, last, onClose, onSave }) => {
     stockNo: box?.stockNo ?? '',
     shipment: box?.shipment ?? last?.shipment ?? '',
     supplier: box?.supplier ?? last?.supplier ?? '',
-    location: box?.location ?? null,
   }));
   const [lines, setLines] = useState(() => box?.lines.map((l) => ({ code: l.code, name: l.name, qty: l.qty })) ?? []);
   const [notice, setNotice] = useState(null);
@@ -93,10 +79,6 @@ export const BoxEditor = ({ box, last, onClose, onSave }) => {
               Supplier <span className="text-xs font-normal text-ink-3">optional</span>
             </span>
             <input value={form.supplier} onChange={set('supplier')} placeholder="e.g. ARK Global Traders" className={field} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-[13px] font-medium sm:col-span-2">
-            Goes to
-            <ShowroomSelect value={form.location} onChange={(location) => setForm((f) => ({ ...f, location }))} />
           </label>
         </div>
 
@@ -161,7 +143,8 @@ export const BoxEditor = ({ box, last, onClose, onSave }) => {
 
 /**
  * A whole packing list from Excel: one row per product, with the box number on each row (or on the box's first
- * row only). Boxes already entered and still packed are updated from the sheet; received ones are skipped.
+ * row only). Boxes already entered and still in the warehouse are updated from the sheet; ones already on an
+ * invoice are skipped.
  */
 export const BoxImport = ({ boxes, onClose, onSave }) => {
   const [file, setFile] = useState(null); // { name, boxes, problems } | { error }
@@ -178,8 +161,8 @@ export const BoxImport = ({ boxes, onClose, onSave }) => {
         const problems = [...parsed.problems];
         const ready = parsed.boxes.filter((b) => {
           const existing = boxes.find((x) => x.boxNo === b.boxNo);
-          if (existing && existing.status !== 'packed') {
-            problems.push({ row: b.rows[0], box: b.boxNo, code: '', reason: 'Already received: skipped' });
+          if (existing && existing.status !== 'in_stock') {
+            problems.push({ row: b.rows[0], box: b.boxNo, code: '', reason: 'Already on an invoice: skipped' });
             return false;
           }
           return true;
@@ -195,7 +178,6 @@ export const BoxImport = ({ boxes, onClose, onSave }) => {
 
   const list = file?.boxes ?? [];
   const updates = list.filter((b) => boxes.some((x) => x.boxNo === b.boxNo)).length;
-  const untagged = list.filter((b) => !b.location).length;
 
   const confirm = async () => {
     setSaving(true);
@@ -208,7 +190,6 @@ export const BoxImport = ({ boxes, onClose, onSave }) => {
           stockNo: b.stockNo,
           shipment: b.shipment,
           supplier: b.supplier,
-          location: b.location,
           lines: b.lines.map(({ code, qty }) => ({ code, qty })),
         })),
       );
@@ -229,7 +210,7 @@ export const BoxImport = ({ boxes, onClose, onSave }) => {
           <a href="/box-template.xlsx" download className={quiet}>
             <Download size={15} aria-hidden="true" /> Template
           </a>
-          <span className="text-xs text-ink-3">Box No, Code and Qty columns; Stock No, Shipment, Supplier and Showroom are optional.</span>
+          <span className="text-xs text-ink-3">Box No, Code and Qty columns; Stock No, Shipment and Supplier are optional.</span>
         </div>
 
         {file?.error && (
@@ -244,7 +225,6 @@ export const BoxImport = ({ boxes, onClose, onSave }) => {
               <span className="font-semibold">{file.name}</span>: {list.length} {list.length === 1 ? 'box' : 'boxes'},{' '}
               {list.reduce((t, b) => t + boxUnits(b.lines), 0).toLocaleString('en-IN')} units
               {updates > 0 && ` · ${updates} already entered will be updated`}
-              {untagged > 0 && ` · ${untagged} not tagged for a showroom yet`}
             </div>
             {file.problems.length > 0 && (
               <details className="rounded-xl bg-warn-50 px-4 py-2.5 text-[13px] text-warn-ink" open={file.problems.length <= 8}>
@@ -269,7 +249,6 @@ export const BoxImport = ({ boxes, onClose, onSave }) => {
                     <tr className="text-left text-xs text-ink-3">
                       <th scope="col" className="px-3 py-2 font-medium">Box</th>
                       <th scope="col" className="px-3 py-2 font-medium">Stock no.</th>
-                      <th scope="col" className="px-3 py-2 font-medium">Goes to</th>
                       <th scope="col" className="px-3 py-2 text-right font-medium">Products</th>
                       <th scope="col" className="px-3 py-2 text-right font-medium">Units</th>
                     </tr>
@@ -279,7 +258,6 @@ export const BoxImport = ({ boxes, onClose, onSave }) => {
                       <tr key={b.boxNo} className="border-t border-line-soft">
                         <td className="px-3 py-1.5 font-mono text-xs">{b.boxNo}</td>
                         <td className="px-3 py-1.5 font-mono text-xs text-ink-2">{b.stockNo || '—'}</td>
-                        <td className="px-3 py-1.5 text-ink-2">{b.location ? locationById(b.location)?.city : 'Not tagged'}</td>
                         <td className="px-3 py-1.5 text-right">{b.lines.length}</td>
                         <td className="px-3 py-1.5 text-right">{boxUnits(b.lines)}</td>
                       </tr>

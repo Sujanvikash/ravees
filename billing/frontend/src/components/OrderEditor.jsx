@@ -13,13 +13,11 @@ const LOW = 5; // matches Inventory's low-stock line
 const RESTOCK_TO = 10; // "Add low stock" suggests topping each item up to this many units
 
 /**
- * Request stock, or review a request. A showroom requests stock (quantities only); the admin reviews it,
- * sets the purchase rate, and approves and sends it or rejects it. Lines can be picked from the product list
+ * A showroom's stock request (quantities only; the admin fulfils it with a transfer invoice). Lines can be picked from the product list
  * (shown as soon as the search box is clicked: this season's products, lowest stock first), searched,
  * suggested from low stock, or imported from a purchase Excel.
  */
-const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
-  const admin = session.role === 'admin';
+const OrderEditor = ({ order, onClose, onSave }) => {
   const { stockOf } = useStore();
   const location = order.location;
   const [lines, setLines] = useState(order.lines);
@@ -27,7 +25,6 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
   const [query, setQuery] = useState('');
   const [browsing, setBrowsing] = useState(false); // search box focused: show the product list
   const [importInfo, setImportInfo] = useState(null);
-  const [rejecting, setRejecting] = useState(false);
   const fileRef = useRef(null);
   const shop = locationById(location);
   const existing = Boolean(order.number);
@@ -75,13 +72,10 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
   };
 
   const setQty = (code, qty) => setLines((prev) => (qty > 0 ? prev.map((l) => (l.code === code ? { ...l, qty } : l)) : prev.filter((l) => l.code !== code)));
-  const setRate = (code, rate) => setLines((prev) => prev.map((l) => (l.code === code ? { ...l, rate } : l)));
 
-  const title = admin ? `Review ${order.number}` : existing ? `Edit request ${order.number}` : 'Request stock';
-  const subtitle = admin
-    ? `Requested by ${shop.city}. Adjust it if needed, then approve it: the goods go to ${shop.city}, who count them in.`
-    : 'The admin reviews your request and sends it back as a purchase order.';
-  const action = admin ? 'Approve & send' : existing ? 'Update request' : 'Send request to admin';
+  const title = existing ? `Edit request ${order.number}` : 'Request stock';
+  const subtitle = 'The admin reviews your request and sends the stock with a transfer invoice.';
+  const action = existing ? 'Update request' : 'Send request to admin';
 
   return (
     <Dialog id="order" title={title} subtitle={subtitle} onClose={onClose} size="max-w-4xl">
@@ -190,7 +184,6 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">Product</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">In stock</th>
-                  {admin && <th scope="col" className="px-3 py-2 text-right font-medium">Admin stock</th>}
                   <th scope="col" className="px-3 py-2 text-center font-medium">Qty</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Rate</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
@@ -207,14 +200,6 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                       {l.name}
                     </td>
                     <td className="px-3 py-1.5 text-right text-ink-3">{stockOf(location, l.code)}</td>
-                    {admin && (
-                      <td
-                        className={`px-3 py-1.5 text-right ${l.qty > stockOf('warehouse', l.code) ? 'font-semibold text-ruby-ink' : 'text-ink-3'}`}
-                        title={l.qty > stockOf('warehouse', l.code) ? 'More than the admin stock holds: it can’t be sent' : undefined}
-                      >
-                        {stockOf('warehouse', l.code)}
-                      </td>
-                    )}
                     <td className="px-3 py-1.5">
                       <div className="mx-auto flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line">
                         <button type="button" onClick={() => setQty(l.code, l.qty - 1)} aria-label={`One less ${l.name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
@@ -236,24 +221,7 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
                         </button>
                       </div>
                     </td>
-                    <td className="px-3 py-1.5 text-right">
-                      {admin ? (
-                        <label className="ml-auto flex h-8 w-28 items-center gap-1 rounded-lg border border-line px-2">
-                          <span className="text-ink-3">₹</span>
-                          <span className="sr-only">Purchase rate of {l.name}</span>
-                          <input
-                            inputMode="decimal"
-                            value={l.rate}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => setRate(l.code, Number(e.target.value.replace(/[^\d.]/g, '')) || 0)}
-                            className="min-w-0 flex-1 bg-transparent text-right"
-                          />
-                        </label>
-                      ) : (
-                        // The admin sets the rate on review; a showroom only sees the purchase rate it will pay.
-                        <span className="text-ink-2">{inr(l.rate)}</span>
-                      )}
-                    </td>
+                    <td className="px-3 py-1.5 text-right text-ink-2">{inr(l.rate)}</td>
                     <td className="px-3 py-1.5 text-right font-medium">{inr(l.qty * l.rate)}</td>
                     <td className="px-2 py-1.5 text-right">
                       <button type="button" onClick={() => setQty(l.code, 0)} aria-label={`Remove ${l.name}`} className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby">
@@ -268,12 +236,12 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
         </div>
 
         <label className="flex flex-col gap-1.5 text-[13px] font-medium text-ink-2">
-          {rejecting ? 'Reason for rejecting' : 'Note'} <span className="sr-only">(optional)</span>
+          Note <span className="sr-only">(optional)</span>
           <textarea
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={rejecting ? 'Tell the showroom why' : admin ? 'Optional: e.g. supplier, expected delivery date' : 'Optional: anything the admin should know'}
+            placeholder="Optional: anything the admin should know"
             className="resize-none rounded-xl border border-line px-3 py-2 font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
           />
         </label>
@@ -284,30 +252,17 @@ const OrderEditor = ({ session, order, onClose, onSave, onReject }) => {
           {lines.length} products · {orderQty(lines).toLocaleString('en-IN')} units · {inr(orderValue(lines))}
         </div>
         <div className="flex items-center gap-2">
-          {admin && existing && onReject && (
-            rejecting ? (
-              <button type="button" onClick={() => onReject(note)} className="h-10 rounded-xl bg-ruby-50 px-3.5 text-[13px] font-semibold text-ruby-ink hover:bg-ruby/15">
-                Confirm reject
-              </button>
-            ) : (
-              <button type="button" onClick={() => setRejecting(true)} className="h-10 rounded-xl px-3.5 text-[13px] font-medium text-ruby-ink hover:bg-ruby-50">
-                Reject request
-              </button>
-            )
-          )}
           <button type="button" onClick={onClose} className="h-10 rounded-xl px-3.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink">
             Cancel
           </button>
-          {!rejecting && (
-            <button
-              type="button"
-              onClick={() => onSave({ location, lines, note: note.trim() })}
-              disabled={!lines.length}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3 disabled:shadow-none"
-            >
-              <Send size={15} aria-hidden="true" /> {action}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onSave({ location, lines, note: note.trim() })}
+            disabled={!lines.length}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3 disabled:shadow-none"
+          >
+            <Send size={15} aria-hidden="true" /> {action}
+          </button>
         </div>
       </div>
     </Dialog>

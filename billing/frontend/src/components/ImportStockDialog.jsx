@@ -1,22 +1,21 @@
 import { useRef, useState } from 'react';
 import { readSheet } from 'read-excel-file/browser';
 import { CircleAlert, Download, FileSpreadsheet, PackageCheck } from 'lucide-react';
-import { STOCK_PLACES, locationById } from '../config.js';
+import { WAREHOUSE, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { orderQty } from '../lib/orders.js';
 import { parsePurchaseRows } from '../lib/purchaseFile.js';
 import Dialog from './Dialog.jsx';
-import { Segmented } from './Filters.jsx';
 
 /**
  * Adds stock straight from an Excel (opening stock, or goods that came outside a purchase order). Same sheet
  * as a purchase: a Code and a Qty column, Rate optional. Shows each product's stock now and after, and only
- * changes stock when confirmed. A showroom imports into its own stock; the admin picks the showroom.
+ * changes stock when confirmed. Only the admin imports, into the admin's own stock (the warehouse): a showroom's
+ * stock arrives through a transfer invoice.
  */
-const ImportStockDialog = ({ session, defaultLocation, onClose, onDone }) => {
-  const admin = session.role === 'admin';
+const ImportStockDialog = ({ onClose, onDone }) => {
   const { stockOf, importStock } = useStore();
-  const [location, setLocation] = useState(admin ? (defaultLocation ?? STOCK_PLACES[0].id) : session.location);
+  const location = WAREHOUSE.id;
   const [file, setFile] = useState(null); // { name, lines, problems } | { error }
   const fileRef = useRef(null);
   const shop = locationById(location);
@@ -54,19 +53,10 @@ const ImportStockDialog = ({ session, defaultLocation, onClose, onDone }) => {
     <Dialog
       id="import-stock"
       title="Import stock from Excel"
-      subtitle={`Adds the quantities in the sheet to ${shop.city} · ${shop.area} stock. Use it for opening stock or goods that came without a purchase order.`}
+      subtitle={`Adds the quantities in the sheet to the ${shop.city} stock (${shop.area}). Use it for opening stock or goods that came without a box.`}
       onClose={onClose}
     >
       <div className="flex flex-col gap-4 px-6 pb-5">
-        {admin && (
-          <Segmented
-            label="Stock at"
-            options={STOCK_PLACES.map((l) => ({ id: l.id, label: l.id === 'warehouse' ? 'Admin stock' : l.city }))}
-            value={location}
-            onChange={setLocation}
-          />
-        )}
-
         <div className="flex flex-wrap items-center gap-2">
           <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900">
             <FileSpreadsheet size={15} aria-hidden="true" /> {file ? 'Choose another file' : 'Choose Excel file'}

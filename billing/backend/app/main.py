@@ -16,6 +16,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.boxes.router import router as boxes_router
 from app.modules.cash.router import router as cash_router
 from app.modules.demo.router import router as demo_router
+from app.modules.invoices.router import router as invoices_router
 from app.modules.locations.router import router as locations_router
 from app.modules.orders.router import router as orders_router
 from app.modules.products.router import router as products_router
@@ -71,6 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         transfers_router,
         orders_router,
         boxes_router,
+        invoices_router,
         quotes_router,
         cash_router,
         reports_router,

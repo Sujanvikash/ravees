@@ -1,17 +1,19 @@
 /**
- * Purchase orders: how stock gets into a showroom. The server numbers them (PO-CHN-0007) and moves them on.
+ * Purchase orders: a showroom's requests for stock. The server numbers them (PO-CHN-0007). The admin fulfils one
+ * by raising a transfer invoice for it; stock reaches the showroom through that invoice, not through the order.
  *
- *   requested  a showroom asked for stock; the admin reviews it (edits quantities, rates, items)
- *   sent       the admin sent it to the showroom; the showroom counts the goods in when they arrive
- *   received   counted in: the counted quantities were added to the showroom's stock
+ *   requested  a showroom asked for stock; the admin reviews it
+ *   fulfilled  the admin raised a transfer invoice for it
  *   rejected   the admin turned the request down
- *   cancelled  the showroom withdrew its request before the admin sent it
+ *   cancelled  the showroom withdrew its request
+ *   sent, received  older orders, from when the admin sent stock on a purchase order (kept for the record)
  *
  *   order = { id, number, location, status, lines: [{ code, name, qty, rate }], note, source,
  *             counted: [{ code, qty }] | null, history: [{ at, by, action, note? }], createdAt, updatedAt }
  */
 export const STATUS = {
   requested: { label: 'Requested', className: 'bg-warn-50 text-warn-ink' },
+  fulfilled: { label: 'Fulfilled', className: 'bg-ok-50 text-ok-ink' },
   sent: { label: 'On the way', className: 'bg-evergreen-50 text-evergreen-900' },
   received: { label: 'Received', className: 'bg-mist text-ink-2' },
   rejected: { label: 'Rejected', className: 'bg-ruby-50 text-ruby-ink' },
@@ -48,8 +50,6 @@ export const receivedByProduct = (orders, location) => {
   return out;
 };
 
-/** How many orders need this login's attention: requests to review (admin) or deliveries to count in (showroom). */
+/** How many requests the admin still has to review (a showroom has nothing to act on). */
 export const ordersNeedingAction = (orders, session) =>
-  session.role === 'admin'
-    ? orders.filter((o) => o.status === 'requested').length
-    : orders.filter((o) => o.status === 'sent' && o.location === session.location).length;
+  session.role === 'admin' ? orders.filter((o) => o.status === 'requested').length : 0;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Boxes, CircleCheck, FileSpreadsheet, PackagePlus, Tag, Undo2 } from 'lucide-react';
+import { Boxes, CircleCheck, FileSpreadsheet, ImagePlus, PackagePlus, Tag, Undo2 } from 'lucide-react';
 import AddOwnStockDialog from '../components/AddOwnStockDialog.jsx';
 import { SearchBox, Segmented } from '../components/Filters.jsx';
 import ImportStockDialog from '../components/ImportStockDialog.jsx';
@@ -11,7 +11,7 @@ import { STOCK_PLACES, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { useCatalogue } from '../hooks/useCatalogue.js';
 import { priceOf } from '../lib/bill.js';
-import { SEASON, setInSeason } from '../lib/catalogue.js';
+import { SEASON, setInSeason, setProductImage } from '../lib/catalogue.js';
 import { inr } from '../lib/money.js';
 import { orderQty, pendingByProduct, receivedByProduct } from '../lib/orders.js';
 import { stockLog } from '../lib/stockLog.js';
@@ -177,16 +177,18 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                 >
                   <Tag size={15} aria-hidden="true" /> New product
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImporting(true);
-                    setFlash(null);
-                  }}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 shadow-[0_1px_2px_rgba(9,9,11,0.06)] hover:border-evergreen-800/50 hover:bg-evergreen-50"
-                >
-                  <FileSpreadsheet size={15} aria-hidden="true" /> Import stock
-                </button>
+                {admin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImporting(true);
+                      setFlash(null);
+                    }}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-evergreen-800/25 bg-white px-3.5 text-[13px] font-semibold text-evergreen-900 shadow-[0_1px_2px_rgba(9,9,11,0.06)] hover:border-evergreen-800/50 hover:bg-evergreen-50"
+                  >
+                    <FileSpreadsheet size={15} aria-hidden="true" /> Import stock
+                  </button>
+                )}
                 {!admin && (
                   <button
                     type="button"
@@ -334,6 +336,34 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                             ) : (
                               p.inSeason && <span className="ml-1.5 text-evergreen-800">· Season {SEASON}</span>
                             )}
+                            {admin && (
+                              <label
+                                className="ml-2 inline-flex cursor-pointer items-center gap-1 font-semibold text-evergreen-800 hover:underline"
+                                title="The picture printed on quotations"
+                              >
+                                <ImagePlus size={12} aria-hidden="true" />
+                                {p.hasImage ? 'Change picture' : 'Add picture'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="sr-only"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    e.target.value = '';
+                                    if (file) setProductImage(p.code, file).catch((err) => setFlash({ text: err.message, history: false }));
+                                  }}
+                                />
+                              </label>
+                            )}
+                            {admin && p.hasImage && (
+                              <button
+                                type="button"
+                                onClick={() => setProductImage(p.code, null).catch((err) => setFlash({ text: err.message, history: false }))}
+                                className="ml-2 font-semibold text-ink-3 hover:underline"
+                              >
+                                Remove picture
+                              </button>
+                            )}
                             {canAddStock(p) && (
                               <button
                                 type="button"
@@ -390,7 +420,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
       </div>
 
       {adding && <NewProductDialog session={session} defaultLocation={location} onClose={() => setAdding(false)} onDone={added} />}
-      {importing && <ImportStockDialog session={session} defaultLocation={location ?? 'warehouse'} onClose={() => setImporting(false)} onDone={imported} />}
+      {importing && <ImportStockDialog onClose={() => setImporting(false)} onDone={imported} />}
       {addingTo && (
         <AddOwnStockDialog
           product={addingTo}
