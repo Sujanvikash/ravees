@@ -25,5 +25,49 @@ export const inrShort = (n) => {
   return `₹${Math.round(n)}`;
 };
 
+const ONES = [
+  '',
+  'One',
+  'Two',
+  'Three',
+  'Four',
+  'Five',
+  'Six',
+  'Seven',
+  'Eight',
+  'Nine',
+  'Ten',
+  'Eleven',
+  'Twelve',
+  'Thirteen',
+  'Fourteen',
+  'Fifteen',
+  'Sixteen',
+  'Seventeen',
+  'Eighteen',
+  'Nineteen',
+];
+const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+const below100 = (n) => (n < 20 ? ONES[n] : `${TENS[Math.floor(n / 10)]}${n % 10 ? ` ${ONES[n % 10]}` : ''}`);
+const below1000 = (n) => [n >= 100 ? `${ONES[Math.floor(n / 100)]} Hundred` : '', below100(n % 100)].filter(Boolean).join(' ');
+
+/** 12345.5 → "Twelve Thousand Three Hundred Forty Five Rupees and Fifty Paise Only" (Indian crore / lakh grouping). */
+export const inWords = (n) => {
+  const total = Math.round(Math.abs(n) * 100);
+  const rupees = Math.floor(total / 100);
+  const paise = total % 100;
+  const parts = [
+    [Math.floor(rupees / 1e7), 'Crore'],
+    [Math.floor(rupees / 1e5) % 100, 'Lakh'],
+    [Math.floor(rupees / 1e3) % 100, 'Thousand'],
+  ]
+    .filter(([count]) => count)
+    .map(([count, name]) => `${below100(count)} ${name}`);
+  if (rupees % 1000) parts.push(below1000(rupees % 1000));
+  const words = `${parts.join(' ') || 'Zero'} Rupees`;
+  return `${words}${paise ? ` and ${below100(paise)} Paise` : ''} Only`;
+};
+
 /** "32,000" or "₹ 32000.50" typed by staff → 32000.5; anything unreadable → 0. */
 export const parseAmount = (text) => Number(String(text).replace(/[^\d.]/g, '')) || 0;

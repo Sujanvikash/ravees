@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { CircleAlert, Download, FileText, PackageCheck, ScanBarcode, Search, Upload } from 'lucide-react';
+import { CircleAlert, Download, FileText, PackageCheck, Printer, ScanBarcode, Search, Upload } from 'lucide-react';
 import { activeLocations, locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { useScanner } from '../hooks/useScanner.js';
@@ -289,7 +289,7 @@ const readPdf = (file) =>
  * portal, then Mark paid, then Add to store stock. Raised and paid invoices can still be cancelled: their boxes go
  * back to the warehouse.
  */
-export const InvoiceDetail = ({ id, onClose }) => {
+export const InvoiceDetail = ({ id, onClose, onPrint }) => {
   const { invoices, saveInvoiceDocuments, payInvoice, stockInvoice, cancelInvoice, downloadInvoiceDocument } = useStore();
   const invoice = invoices.find((i) => i.id === id);
   const [form, setForm] = useState(() => ({ ewayNo: invoice?.ewayNo ?? '', billNo: invoice?.billNo ?? '' }));
@@ -359,6 +359,15 @@ export const InvoiceDetail = ({ id, onClose }) => {
     >
       <div className="flex flex-col gap-4 border-t border-line-soft px-6 pt-4 pb-5">
         <LinesTable lines={invoice.lines} total={invoice.total} />
+
+        {onPrint && (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-ink-3">An A4 invoice with your business details, the showroom’s GSTIN, HSN codes and the e-way bill number.</p>
+            <button type="button" onClick={() => run(() => onPrint(invoice))} disabled={busy} className={secondary}>
+              <Printer size={15} aria-hidden="true" /> Print invoice
+            </button>
+          </div>
+        )}
 
         <section className="flex flex-col gap-3 rounded-xl border border-line-soft p-4">
           <h3 className="text-[13px] font-semibold">E-way bill / bill</h3>

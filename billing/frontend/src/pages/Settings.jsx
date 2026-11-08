@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import { FlaskConical, Palette, Phone, Printer, Store, User } from 'lucide-react';
+import { FileText, FlaskConical, Palette, Phone, Printer, Store, User } from 'lucide-react';
 import logo from '../assets/logo.svg';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -433,6 +433,45 @@ const Settings = ({ onMenu }) => {
 
           {admin && (
             <>
+          <section className="overflow-hidden rounded-2xl border glass">
+            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+                <FileText size={17} aria-hidden="true" />
+              </span>
+              <div>
+                <div className="text-[14px] font-semibold">Business details for invoices</div>
+                <p className="mt-0.5 text-[13px] text-ink-3">
+                  Your own business, printed as the seller on every transfer invoice (the showroom is the buyer, with the details from its Shop on the bill).
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4 p-5">
+              <StoreField label="Business name" value={settings.bizName} onSave={(v) => setSetting('bizName', v)} placeholder="Legal name as on your GST registration" />
+              <StoreField label="Address" hint="one line per line" value={settings.bizAddress} onSave={(v) => setSetting('bizAddress', v)} textarea placeholder="Street, area, city, PIN" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <StoreField label="State" value={settings.bizState} onSave={(v) => setSetting('bizState', v)} placeholder="e.g. Tamil Nadu" />
+                <StoreField label="GSTIN" value={settings.bizGstin} onSave={(v) => setSetting('bizGstin', v.toUpperCase())} placeholder="15-character GSTIN" />
+                <StoreField label="PAN" value={settings.bizPan} onSave={(v) => setSetting('bizPan', v.toUpperCase())} placeholder="PAN" />
+                <StoreField label="Phone" value={settings.bizPhone} onSave={(v) => setSetting('bizPhone', v)} placeholder="Phone number" />
+                <StoreField label="Email" value={settings.bizEmail} onSave={(v) => setSetting('bizEmail', v)} placeholder="Email" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <StoreField label="Bank" value={settings.bankName} onSave={(v) => setSetting('bankName', v)} placeholder="Bank and branch" />
+                <StoreField label="Account number" value={settings.bankAccount} onSave={(v) => setSetting('bankAccount', v)} placeholder="Account number" />
+                <StoreField label="IFSC" value={settings.bankIfsc} onSave={(v) => setSetting('bankIfsc', v.toUpperCase())} placeholder="IFSC" />
+              </div>
+              <StoreField label="Terms" hint="printed at the foot of the invoice" value={settings.invoiceTerms} onSave={(v) => setSetting('invoiceTerms', v)} textarea placeholder="Payment terms, jurisdiction…" />
+            </div>
+            <Toggle
+              id="setting-invoice-gst"
+              Icon={Store}
+              title="Add GST to transfer invoices"
+              description="Off: an invoice totals cost price + 18% and prints as an “Invoice”. On: each product’s own GST (from its HSN and rate) is added on top, split into CGST + SGST inside a state and IGST across states, and it prints as a “Tax invoice”."
+              on={settings.invoiceGst}
+              onChange={(v) => setSetting('invoiceGst', v)}
+            />
+          </section>
+
           <section className="overflow-hidden rounded-2xl border glass">
             <Toggle
               id="setting-quote-print"
