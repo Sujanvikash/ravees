@@ -1,4 +1,4 @@
-import { Boxes, Package, FileText, HandCoins, LayoutDashboard, PackagePlus, ReceiptText, ScanBarcode, Settings, Store, Undo2, Users, Wallet } from 'lucide-react';
+import { Boxes, Package, FileText, FileSpreadsheet, HandCoins, LayoutDashboard, PackagePlus, ReceiptText, ScanBarcode, Settings, Store, Undo2, Users, Wallet } from 'lucide-react';
 
 /**
  * What each kind of login can open. Showrooms bill and see their own figures; the admin sees all showrooms.
@@ -13,7 +13,6 @@ export const NAV = {
     { id: 'cash', label: 'Cash close', Icon: Wallet, group: 'Selling' },
     { id: 'inventory', label: 'Inventory', Icon: Boxes, group: 'Stock' },
     { id: 'orders', label: 'Purchase orders', Icon: PackagePlus, group: 'Stock' },
-    { id: 'boxes', label: 'Boxes', Icon: Package, group: 'Stock' },
     { id: 'returns', label: 'Purchase returns', Icon: Undo2, group: 'Stock' },
     { id: 'customers', label: 'Customers', Icon: Users, group: 'CRM' },
     { id: 'settings', label: 'Settings', Icon: Settings, group: 'This screen' },
@@ -27,6 +26,7 @@ export const NAV = {
     { id: 'inventory', label: 'Inventory', Icon: Boxes, group: 'Stock' },
     { id: 'orders', label: 'Purchase orders', Icon: PackagePlus, group: 'Stock' },
     { id: 'boxes', label: 'Boxes', Icon: Package, group: 'Stock' },
+    { id: 'transfers', label: 'Transfer invoices', Icon: FileSpreadsheet, group: 'Stock' },
     { id: 'returns', label: 'Purchase returns', Icon: Undo2, group: 'Stock' },
     { id: 'customers', label: 'Customers', Icon: Users, group: 'CRM' },
     { id: 'stores', label: 'Stores', Icon: Store, group: 'Settings' },

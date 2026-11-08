@@ -1,3 +1,4 @@
+import { RefreshCw, WifiOff } from 'lucide-react';
 import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 import { useClock } from '../hooks/useClock.js';
@@ -9,15 +10,40 @@ const sameDay = (a, b) => a.toDateString() === b.toDateString();
 const time = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit' });
 const date = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
+/** "Offline · 3 bills to send", while the server can't be reached or bills made offline are still on their way. */
+const OfflineStatus = ({ offline }) => {
+  const { online, pending, failed } = offline;
+  if (online && !pending) return null;
+  const bills = (n) => `${n} ${n === 1 ? 'bill' : 'bills'}`;
+  const text = failed.length
+    ? `${bills(failed.length)} not accepted`
+    : !online
+      ? pending
+        ? `Offline · ${bills(pending)} to send`
+        : 'Offline'
+      : `Sending ${bills(pending)}…`;
+  const tone = failed.length ? 'bg-ruby-50 text-ruby-ink' : 'bg-warn-50 text-warn-ink';
+  return (
+    <span
+      role="status"
+      title={online ? 'Bills made offline are being sent to the server.' : 'The billing server can’t be reached. Bills are kept on this counter and sent when the connection is back.'}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${tone}`}
+    >
+      {online ? <RefreshCw size={12} aria-hidden="true" /> : <WifiOff size={12} aria-hidden="true" />}
+      {text}
+    </span>
+  );
+};
+
 const Divider = () => <span className="hidden h-7 w-px bg-ink/10 md:block" aria-hidden="true" />;
 
 /**
  * The right side of every top bar: today's takings (this showroom's, or all showrooms' for the admin), what is
- * waiting on this login, the season, and the date and time.
+ * waiting on this login, whether it is offline, the season, and the date and time.
  */
 const HeaderStatus = () => {
   const session = useSession();
-  const { sales, orders } = useStore();
+  const { sales, orders, offline } = useStore();
   const now = useClock();
   if (!session) return null;
 
@@ -40,6 +66,7 @@ const HeaderStatus = () => {
           {todoLabel}
         </span>
       )}
+      <OfflineStatus offline={offline} />
       <span className="hidden items-center gap-1.5 rounded-full border border-line bg-white/60 px-2.5 py-1 text-xs font-medium text-ink-2 sm:inline-flex">
         <span className="size-1.5 rounded-full bg-evergreen-800" aria-hidden="true" />
         Season {SEASON}

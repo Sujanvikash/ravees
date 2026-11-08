@@ -6,10 +6,11 @@ import { StoreProvider, useStore } from './context/StoreContext.jsx';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { billKey } from './hooks/useBill.js';
 import { loadLocations } from './config.js';
-import { api } from './lib/api.js';
+import { api, unreachable } from './lib/api.js';
 import { signOut } from './lib/auth.js';
 import { loadCatalogue } from './lib/catalogue.js';
 import { NAV } from './lib/nav.js';
+import { offlineKey } from './lib/offline.js';
 import { ordersNeedingAction } from './lib/orders.js';
 import { overdueCredit } from './lib/payment.js';
 import Boxes from './pages/Boxes.jsx';
@@ -21,6 +22,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Inventory from './pages/Inventory.jsx';
 import Login from './pages/Login.jsx';
 import Stores from './pages/Stores.jsx';
+import TransferInvoices from './pages/TransferInvoices.jsx';
 import PurchaseOrders from './pages/PurchaseOrders.jsx';
 import Quotations from './pages/Quotations.jsx';
 import Sales from './pages/Sales.jsx';
@@ -87,7 +89,8 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'inventory' && <Inventory {...props} />}
           {page === 'orders' && <PurchaseOrders {...props} />}
           {page === 'returns' && <StockReturns {...props} />}
-          {page === 'boxes' && <Boxes key={session.username} {...props} />}
+          {page === 'boxes' && session.role === 'admin' && <Boxes key={session.username} {...props} />}
+          {page === 'transfers' && session.role === 'admin' && <TransferInvoices key={session.username} {...props} />}
           {page === 'cash' && <CashClose key={session.username} {...props} />}
           {page === 'stores' && session.role === 'admin' && <Stores {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}
@@ -99,12 +102,13 @@ const Shell = ({ session, onSignOut }) => {
 };
 
 /** Loads the product catalogue and the showrooms' records from the server before the app opens; says so if the
- * server can't be reached. */
-const CatalogueGate = ({ children, onSignOut }) => {
+ * server can't be reached. A showroom counter opens on its kept copies instead (see lib/offline.js). */
+const CatalogueGate = ({ session, children, onSignOut }) => {
   const { load: loadStore } = useStore();
   const [state, setState] = useState({ loading: true, error: '' });
+  const key = offlineKey(session);
   const fetchIt = () =>
-    Promise.all([loadCatalogue(), loadStore()]).then(
+    Promise.all([loadCatalogue(key && `catalogue-${key}`), loadStore()]).then(
       () => setState({ loading: false, error: '' }),
       (err) => setState({ loading: false, error: err.message }),
     );
@@ -175,7 +179,7 @@ const Screens = ({ session, setSession }) => {
       {/* on the sign-in screen the snow falls in front; inside the app it stays behind the panels */}
       <Backdrop effect={settings.effect} amount={settings.snow} front={!session} />
       {session ? (
-        <CatalogueGate key={session.username} onSignOut={leave}>
+        <CatalogueGate key={session.username} session={session} onSignOut={leave}>
           <Shell key={session.username} session={session} onSignOut={leave} />
         </CatalogueGate>
       ) : (
@@ -198,17 +202,36 @@ const Screens = ({ session, setSession }) => {
   );
 };
 
+const STORES_KEY = 'billing-stores'; // the last store list, so a counter still opens offline
+
+const keptStores = () => {
+  try {
+    return JSON.parse(window.localStorage.getItem(STORES_KEY) ?? 'null');
+  } catch {
+    return null;
+  }
+};
+
 /** Loads the store list from the server before anything renders — the sign-in screen and every picker need it,
- *  and it is public (no token), so it runs before sign-in. */
+ *  and it is public (no token), so it runs before sign-in. Offline, the last list this browser saw. */
 const StoresGate = ({ children }) => {
   const [state, setState] = useState({ loading: true, error: '' });
   const fetchIt = () =>
     api('/locations').then(
       (stores) => {
         loadLocations(stores);
+        try {
+          window.localStorage.setItem(STORES_KEY, JSON.stringify(stores));
+        } catch {
+          // ignore write failures (private browsing, quota, etc.)
+        }
         setState({ loading: false, error: '' });
       },
-      (err) => setState({ loading: false, error: err.message }),
+      (err) => {
+        const stores = unreachable(err) ? keptStores() : null;
+        if (stores) loadLocations(stores);
+        setState({ loading: false, error: stores ? '' : err.message });
+      },
     );
   const retry = () => {
     setState({ loading: true, error: '' });

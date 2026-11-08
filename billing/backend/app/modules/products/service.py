@@ -39,6 +39,22 @@ def set_in_season(session: Session, code: str, in_season: bool) -> Product:
     return product
 
 
+def set_image(session: Session, code: str, image: str | None) -> Product:
+    """Sets a product's picture, or removes it (None)."""
+    product = repository.get(session, code.strip().upper())
+    if not product:
+        raise NotFound(f'No product with code {code}.')
+    product.image = image
+    product.has_image = image is not None
+    session.commit()
+    return product
+
+
+def images_of(session: Session, codes: Sequence[str]) -> dict[str, str]:
+    """The pictures of these products, by code; products without one are left out."""
+    return repository.images(session, codes)
+
+
 def add_shop_product(session: Session, user: User, data: NewProductIn) -> Product:
     """A showroom's own product (an item without a barcode, or one whose barcode isn't in the catalogue), in season
     straight away. Its code is the showroom's

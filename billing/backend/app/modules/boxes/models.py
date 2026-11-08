@@ -9,11 +9,11 @@ from app.core.database import Base
 
 
 class Box(Base):
-    """A box the supplier packed, sent on to a showroom as it is (box 154.GOA, stock no PUA000445, in the
-    shipment "GOA-1 VELANKA 2026"). The admin enters what is in it, lines [{code, name, qty}], and tags the
-    showroom it goes to; the showroom scans the box's number when it arrives and counts it in, which adds the
-    items to its stock. counted [{code, qty}] once received, history [{at, by, action, note?}] as on purchase
-    orders."""
+    """A box the supplier packed (box 154.GOA, stock no PUA000445, in the shipment "GOA-1 VELANKA 2026"), kept in
+    the admin's warehouse. The admin enters what is in it, lines [{code, name, qty}], which adds the items to the
+    warehouse stock. Scanning it onto a transfer invoice for a showroom moves it to `invoiced` (location and
+    invoice_id set); when the admin adds the paid invoice's items to the showroom's stock it is `stocked`.
+    history [{at, by, action, note?}] as on purchase orders."""
 
     __tablename__ = 'boxes'
 
@@ -22,10 +22,10 @@ class Box(Base):
     stock_no: Mapped[str] = mapped_column(String(32), default='', index=True)
     shipment: Mapped[str] = mapped_column(String(120), default='')
     supplier: Mapped[str] = mapped_column(String(120), default='')
-    location_id: Mapped[str | None] = mapped_column(ForeignKey('locations.id'), index=True)  # None: not tagged yet
-    status: Mapped[str] = mapped_column(String(16), index=True)  # packed | received
+    location_id: Mapped[str | None] = mapped_column(ForeignKey('locations.id'), index=True)  # the invoiced showroom
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('transfer_invoices.id'), index=True)
+    status: Mapped[str] = mapped_column(String(16), index=True)  # in_stock | invoiced | stocked
     lines: Mapped[list[dict]] = mapped_column(JSONB)
-    counted: Mapped[list[dict] | None] = mapped_column(JSONB)
     history: Mapped[list[dict]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

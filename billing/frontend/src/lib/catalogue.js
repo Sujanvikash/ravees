@@ -1,4 +1,5 @@
-import { api } from './api.js';
+import { api, unreachable } from './api.js';
+import { keep, kept } from './snapshots.js';
 
 /**
  * The product catalogue, loaded from the billing API after sign-in (loadCatalogue) and kept in memory: every
@@ -32,9 +33,17 @@ const changed = () => {
   listeners.forEach((fn) => fn());
 };
 
-/** Fetches the whole catalogue from the server and replaces what is in memory. */
-export const loadCatalogue = async () => {
-  const data = await api('/products');
+/** Fetches the whole catalogue from the server and replaces what is in memory. With `cacheName` (a showroom
+ *  counter) it is also kept in this browser, and that copy is used when the server can't be reached. */
+export const loadCatalogue = async (cacheName = null) => {
+  let data;
+  try {
+    data = await api('/products');
+    if (cacheName) keep(cacheName, data);
+  } catch (err) {
+    data = cacheName && unreachable(err) ? await kept(cacheName) : undefined;
+    if (!data) throw err;
+  }
   SEASON = data.season;
   PRODUCTS.length = 0;
   byKey.clear();
@@ -76,6 +85,39 @@ export const setInSeason = async (code, on) => {
     changed();
     throw e;
   }
+};
+
+/** A picture file → a small JPEG as a data: URL (at most 480px on its longest side), so a quotation carries it
+ *  without weight. Transparent areas turn white. */
+const shrink = async (file) => {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 480 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.8);
+};
+
+/** Admin: sets a product's picture from an image file (printed on quotations), or removes it with null. */
+export const setProductImage = async (code, file) => {
+  const product = byKey.get(code.toUpperCase());
+  if (!product) return;
+  const updated = file
+    ? await api(`/products/${encodeURIComponent(product.code)}/image`, { method: 'PUT', body: { image: await shrink(file) } })
+    : await api(`/products/${encodeURIComponent(product.code)}/image`, { method: 'DELETE' });
+  product.hasImage = updated.hasImage;
+  changed();
+};
+
+/** The pictures of these product codes, as { code: data URL } (only those that have one). */
+export const productImages = async (codes) => {
+  const wanted = codes.filter((c) => byKey.get(c.toUpperCase())?.hasImage);
+  if (!wanted.length) return {};
+  return api(`/products/images?${wanted.map((c) => `codes=${encodeURIComponent(c)}`).join('&')}`);
 };
 
 /** A scanned barcode or typed product code → its product, or undefined. Labels are printed as `<code>.<tag>`

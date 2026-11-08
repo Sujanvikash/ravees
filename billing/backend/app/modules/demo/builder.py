@@ -4,11 +4,12 @@ and a month of sample activity made through the same services the app uses, so e
 
   opening stock   each showroom's sheet in seed/opening-stock-2026, imported 5 weeks ago
   admin stock     a supplier delivery into the admin's own stock (the season's products and the showrooms' lines)
-  a delivery      a received purchase order of the season's products per showroom, sent out of the admin stock
+  a delivery      the season's products added to each showroom's stock by the admin
   sales           about 30 days of bills, busier towards Christmas, only for what is in stock
   returns         a few returns and one exchange
   cash closes     every past day closed, a few with a small difference
-  orders          one of each state: to count in, to review, rejected, cancelled
+  orders          one of each state: to review (two), fulfilled by an invoice, rejected, cancelled
+  boxes           supplier boxes in the admin warehouse and transfer invoices: raised, paid, added to stock
   quotations      a couple per showroom, one of them expired
   purchase returns   one on its way to the admin, one counted in
 
@@ -32,13 +33,15 @@ from app.core import clock
 from app.core.config import BACKEND_DIR
 from app.core.database import DEMO_SCHEMA, Base, get_demo_engine, get_engine, get_session_factory
 from app.modules.boxes import service as boxes
-from app.modules.boxes.schemas import BoxesIn, BoxIn, BoxReceiveIn, BoxTagIn
+from app.modules.boxes.schemas import BoxesIn, BoxIn
 from app.modules.cash import service as cash
 from app.modules.cash.schemas import CloseIn
+from app.modules.invoices import service as invoices
+from app.modules.invoices.schemas import DocumentsIn, InvoiceIn, PayIn
 from app.modules.locations import repository as locations
 from app.modules.locations.constants import ADMIN_USERNAME, SHOWROOMS, WAREHOUSE_ID
 from app.modules.orders import service as orders
-from app.modules.orders.schemas import CountedLineIn, OrderEditIn, OrderIn, OrderLineIn, ReceiveIn
+from app.modules.orders.schemas import CountedLineIn, OrderIn, OrderLineIn
 from app.modules.products import repository as products
 from app.modules.products import service as products_service
 from app.modules.products.importer import DEFAULT_EXCEL, read_catalogue
@@ -151,6 +154,7 @@ class _Builder:
         self.rand = random.Random(2026)
         self.admin = users.get(session, ADMIN_USERNAME)
         self.shops = {sh.id: users.get(session, sh.id) for sh in SHOWROOMS}
+        self.chennai_order = None  # the request an invoice answers, made by open_orders
         self.counts = {'sales': 0, 'returns': 0, 'orders': 0, 'quotes': 0}
         self.bills: dict[str, list] = {sh.id: [] for sh in SHOWROOMS}
         # each showroom's customers: a pool of 60, the first ones regulars who come back often, so the Customers
@@ -176,8 +180,8 @@ class _Builder:
             if lines:
                 stock_service.import_stock(
                     self.s,
-                    self.shops[sh.id],
-                    StockImportIn(id=uuid.uuid4(), file=path.name, lines=lines),
+                    self.admin,
+                    StockImportIn(id=uuid.uuid4(), location=sh.id, file=path.name, lines=lines),
                     at=_at(self.day(DAYS + 5), self.rand),
                 )
 
@@ -203,21 +207,12 @@ class _Builder:
     def season_delivery(self) -> None:
         season = [p for p in products.list_all(self.s) if p.in_season]
         for sh in SHOWROOMS:
-            user = self.shops[sh.id]
-            lines = [OrderLineIn(code=p.code, qty=self.rand.randint(12, 30)) for p in season]
-            order = orders.create_order(
-                self.s, user, OrderIn(lines=lines, note='Season stock'), at=_at(self.day(DAYS + 1), self.rand)
-            )
-            self.counts['orders'] += 1
-            orders.send(self.s, self.admin, order.id, OrderEditIn(lines=lines), at=_at(self.day(DAYS), self.rand))
-            counted = [CountedLineIn(code=ln.code, qty=ln.qty) for ln in lines]
-            counted[0] = CountedLineIn(code=lines[0].code, qty=max(lines[0].qty - 2, 1))  # a little short
-            orders.receive(
+            lines = [ImportLineIn(code=p.code, qty=self.rand.randint(12, 30)) for p in season]
+            stock_service.import_stock(
                 self.s,
-                user,
-                order.id,
-                ReceiveIn(counted=counted, note='2 short in the first carton'),
-                at=_at(self.day(DAYS - 1), self.rand, 8, 9),
+                self.admin,
+                StockImportIn(id=uuid.uuid4(), location=sh.id, file='season-delivery-2026.xlsx', lines=lines),
+                at=_at(self.day(DAYS), self.rand),
             )
 
     def payment(self, payable: float) -> PaymentIn:
@@ -354,14 +349,7 @@ class _Builder:
                 at=_at(self.day(ago), self.rand),
             )
 
-        o = request('chennai', 3, 'Running low before the weekend')
-        orders.send(
-            self.s,
-            self.admin,
-            o.id,
-            OrderEditIn(lines=o_lines(o), note='Sent with the Monday van'),
-            at=_at(self.day(2), self.rand),
-        )
+        self.chennai_order = request('chennai', 3, 'Running low before the weekend')
         request('bengaluru', 1, 'Trees are selling fast')
         request('mumbai', 0, '')
         o = request('goa', 4, '')
@@ -416,8 +404,9 @@ class _Builder:
                 )
 
     def pack_boxes(self) -> None:
-        """A shipment of supplier-packed boxes (the products on a real box label): three for Chennai, one of them
-        counted in already, two for Mumbai, one for Bengaluru and two not tagged yet."""
+        """A shipment of supplier-packed boxes (the products on a real box label) in the admin warehouse. Three go
+        to Chennai on a transfer invoice (answering its purchase order): one paid and added to its stock, one
+        only raised. Two more are billed to Mumbai."""
         label = ['BR175', 'TA003', 'TA033', 'TA125', 'TA151', 'TA166', 'TA181', 'TA188', 'TA207', 'TA223', 'TA252']
         codes = sorted(products.by_codes(self.s, label))
         if not codes:
@@ -436,18 +425,28 @@ class _Builder:
             for i in range(8)
         ]
         boxes.save_boxes(self.s, self.admin, BoxesIn(boxes=packed), at=_at(self.day(4), self.rand))
-        for ids, to in (([0, 1, 2], 'chennai'), ([3, 4], 'mumbai'), ([5], 'bengaluru')):
-            tag = BoxTagIn(ids=[packed[i].id for i in ids], location=to)
-            boxes.tag(self.s, self.admin, tag, at=_at(self.day(3), self.rand))
-        first = packed[0]
-        counted = [CountedLineIn(code=ln.code, qty=ln.qty) for ln in first.lines]
-        boxes.receive(
-            self.s, self.shops['chennai'], first.id, BoxReceiveIn(counted=counted), at=_at(self.day(1), self.rand)
+        first = invoices.raise_invoice(
+            self.s,
+            self.admin,
+            InvoiceIn(
+                id=uuid.uuid4(),
+                location='chennai',
+                box_ids=[packed[0].id, packed[1].id],
+                order_id=self.chennai_order.id,
+                note='Sent with the Monday van',
+            ),
+            at=_at(self.day(3), self.rand),
         )
-
-
-def o_lines(order) -> list[OrderLineIn]:
-    return [OrderLineIn(code=ln['code'], qty=ln['qty'], rate=ln['rate']) for ln in order.lines]
+        docs = DocumentsIn(eway_no='271012345678', bill_no=first.number)
+        invoices.set_documents(self.s, self.admin, first.id, docs, at=_at(self.day(3), self.rand))
+        invoices.pay(self.s, self.admin, first.id, PayIn(ref='NEFT 4821'), at=_at(self.day(2), self.rand))
+        invoices.add_to_stock(self.s, self.admin, first.id, at=_at(self.day(1), self.rand))
+        invoices.raise_invoice(
+            self.s,
+            self.admin,
+            InvoiceIn(id=uuid.uuid4(), location='mumbai', box_ids=[packed[2].id, packed[3].id]),
+            at=_at(self.day(1), self.rand),
+        )
 
 
 def build_demo(excel: Path = DEFAULT_EXCEL, *, now: datetime | None = None) -> DemoReport:

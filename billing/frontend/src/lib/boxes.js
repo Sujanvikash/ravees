@@ -1,17 +1,14 @@
-import { activeLocations } from '../config.js';
 import { findProduct } from './catalogue.js';
 
 /**
  * Packing lists: the boxes a supplier packed, each with the products inside, as one Excel sheet with a row per
  * product. The header row is found by name: it needs "Box No", "Code" and "Qty" columns; "Stock No", "Shipment"
- * (or Batch), "Supplier" and "Showroom" (or Store / To) are optional. A box's number and details can be on its
- * first row only: blank cells below take the box above, as a printed packing list does.
+ * (or Batch) and "Supplier" are optional. A box's number and details can be on its first row only: blank cells
+ * below take the box above, as a printed packing list does. (A Showroom column in an older sheet is ignored: the
+ * showroom is chosen when the box goes on a transfer invoice.)
  *
- * The showroom cell can be the store's id, city or bill prefix ("BLR", "Bengaluru", or "BLR-3" as written on
- * the box); one it can't match is reported, and that box is left untagged.
- *
- * Returns { boxes: [{ boxNo, stockNo, shipment, supplier, location, place, lines: [{ code, name, qty }],
- * rows }], problems: [{ row, box, code, reason }], error }.
+ * Returns { boxes: [{ boxNo, stockNo, shipment, supplier, lines: [{ code, name, qty }], rows }],
+ * problems: [{ row, box, code, reason }], error }.
  */
 const norm = (v) => String(v ?? '').trim().toLowerCase();
 const text = (v) => String(v ?? '').trim();
@@ -25,17 +22,6 @@ const COLUMNS = {
   stock: [/^stock\.?( ?no\.?| ?number)$/],
   shipment: [/^(shipment|batch|lot|consignment)( ?no\.?| ?name)?$/],
   supplier: [/^(supplier|vendor|from)$/],
-  place: [/^(showroom|store|branch|to|destination|send to)$/],
-};
-
-/** The showroom a cell names (id, city, area or bill prefix; "BLR-3" counts as BLR), or undefined. */
-export const matchShowroom = (value) => {
-  const raw = norm(value);
-  if (!raw) return undefined;
-  const first = raw.split(/[\s\-_/.]+/)[0];
-  return activeLocations().find((l) =>
-    [l.id, l.city, l.area, l.billPrefix].filter(Boolean).some((name) => [raw, first].includes(norm(name))),
-  );
 };
 
 export const parseBoxRows = (rows) => {
@@ -62,14 +48,14 @@ export const parseBoxRows = (rows) => {
     if (boxNo) {
       current = boxes.get(boxNo);
       if (!current) {
-        current = { boxNo, stockNo: '', shipment: '', supplier: '', place: '', location: null, lines: new Map(), rows: [] };
+        current = { boxNo, stockNo: '', shipment: '', supplier: '', lines: new Map(), rows: [] };
         boxes.set(boxNo, current);
       }
     }
     if (!current) return problems.push({ row: excelRow, box: '', code, reason: 'No box number above this row' });
     // box details can be on any of its rows; the first one given is kept
-    for (const k of ['stockNo', 'shipment', 'supplier', 'place']) {
-      const v = cell(r, { stockNo: 'stock', shipment: 'shipment', supplier: 'supplier', place: 'place' }[k]);
+    for (const k of ['stockNo', 'shipment', 'supplier']) {
+      const v = cell(r, { stockNo: 'stock', shipment: 'shipment', supplier: 'supplier' }[k]);
       if (v && !current[k]) current[k] = k === 'stockNo' ? v.toUpperCase() : v;
     }
     current.rows.push(excelRow);
@@ -86,11 +72,7 @@ export const parseBoxRows = (rows) => {
     current.lines.set(product.code, { code: product.code, name: product.name, qty: (prev?.qty ?? 0) + qty });
   });
 
-  const list = [...boxes.values()].map((b) => {
-    const showroom = matchShowroom(b.place);
-    if (b.place && !showroom) problems.push({ row: b.rows[0], box: b.boxNo, code: '', reason: `No showroom "${b.place}": left untagged` });
-    return { ...b, location: showroom?.id ?? null, lines: [...b.lines.values()] };
-  });
+  const list = [...boxes.values()].map((b) => ({ ...b, lines: [...b.lines.values()] }));
   for (const b of list) {
     if (!b.lines.length) problems.push({ row: b.rows[0], box: b.boxNo, code: '', reason: 'No products: box skipped' });
   }

@@ -15,6 +15,12 @@ class SeasonIn(ApiModel):
     in_season: bool
 
 
+class ImageIn(ApiModel):
+    """A product picture: a small JPEG as a data: URL (the browser shrinks it before sending)."""
+
+    image: str = Field(max_length=400_000, pattern=r'^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')
+
+
 class NewProductIn(ApiModel):
     """A showroom's own product. A showroom login always adds to its own showroom; the admin names one."""
 
@@ -59,6 +65,7 @@ class ProductOut(ApiModel):
     cost: float
     gst: float
     in_season: bool
+    has_image: bool
     shop: ShopOut | None
 
     @classmethod
@@ -79,6 +86,7 @@ class ProductOut(ApiModel):
             cost=float(product.cost),
             gst=float(product.gst),
             in_season=product.in_season,
+            has_image=product.has_image,
             shop=shop,
         )
 

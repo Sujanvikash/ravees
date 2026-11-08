@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.core.errors import Conflict, InvalidInput
+from app.core.errors import Conflict, Forbidden, InvalidInput
 from app.modules.auth.access import acting_location, by_label, visible_location
 from app.modules.products import repository as products
 from app.modules.users.models import User
@@ -14,8 +14,8 @@ from .models import StockImport
 from .schemas import StockImportIn
 
 # Stock a showroom adds by hand for its own products (no barcode, coded CHN-0001...): with the new product, or
-# later when more units come in. Only for that showroom's own products; other stock comes through orders or Excel.
-# The admin adds any product to its own stock by hand ('manual').
+# later when more units come in. Only for that showroom's own products; all other stock reaches a showroom through
+# the admin's transfer invoice. The admin adds any product to any stock by hand or Excel.
 OWN_PRODUCT_SOURCES = frozenset({'new-product', 'own-product'})
 
 
@@ -54,6 +54,8 @@ def import_stock(session: Session, user: User, data: StockImportIn, *, at: datet
         if existing.location_id != (data.location if user.is_admin else user.location_id):
             raise Conflict('That import id is already used.')
         return existing
+    if not user.is_admin and data.source not in OWN_PRODUCT_SOURCES:
+        raise Forbidden('Stock reaches a showroom through the admin’s transfer invoice.')
     location = acting_location(session, user, data.location, warehouse=True)
     catalogue = products.by_codes(session, (line.code for line in data.lines))
     lines = merge_lines(data.lines, catalogue)

@@ -1,12 +1,15 @@
 import { Check, Printer } from 'lucide-react';
 import { inr } from '../lib/money.js';
+import { setPaper, usePaper } from '../lib/paper.js';
 import { methodLabel } from '../lib/payment.js';
 import Dialog from './Dialog.jsx';
 import Kbd from './Kbd.jsx';
 
 /** After the sale: the change (or, after an exchange, the cash refund) to hand back, what is left on credit on a
  *  credit bill, a reprint, and Enter for the next bill. */
-const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => (
+const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => {
+  const paper = usePaper();
+  return (
   <Dialog id="done" size="max-w-sm">
     <div className="flex flex-col items-center px-6 pt-7 pb-6 text-center">
       <div className="flex size-12 items-center justify-center rounded-full bg-evergreen-800 text-white shadow-[0_0_0_6px_var(--color-evergreen-50)]">
@@ -43,7 +46,27 @@ const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => (
         </div>
       )}
 
-      <div className="mt-5 grid w-full grid-cols-2 gap-2">
+      <div className="mt-5 flex w-full items-center justify-between gap-2 text-[12px] text-ink-3">
+        <span>Print on</span>
+        <div className="inline-flex rounded-lg border border-line p-0.5" role="group" aria-label="Bill paper">
+          {[
+            ['thermal', '80mm receipt'],
+            ['a4', 'A4 page'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={paper === id}
+              onClick={() => setPaper(id)}
+              className={`rounded-md px-2.5 py-1 font-medium ${paper === id ? 'bg-evergreen-800 text-white' : 'hover:bg-mist hover:text-ink'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-3 grid w-full grid-cols-2 gap-2">
         <button
           type="button"
           onClick={onReprint}
@@ -62,6 +85,7 @@ const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => (
       </div>
     </div>
   </Dialog>
-);
+  );
+};
 
 export default DoneDialog;

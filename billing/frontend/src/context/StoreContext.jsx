@@ -1,5 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, download } from '../lib/api.js';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { api, download, unreachable } from '../lib/api.js';
+import { ensureOfflineCounter, markOutbox, offlineKey, queueOfflineSale, readOutbox, removeFromOutbox, subscribeOutbox } from '../lib/offline.js';
+import { keep, kept } from '../lib/snapshots.js';
 import { newId } from '../lib/uid.js';
 
 /**
@@ -10,18 +12,26 @@ import { newId } from '../lib/uid.js';
  *
  * A showroom gets only its own records; the admin every showroom's. A demo sign-in gets the demo's records.
  *
+ * Offline (a showroom counter only, see lib/offline.js): the records last loaded are kept in this browser and
+ * used when the server can't be reached at start-up. A bill made while it can't be reached goes to the outbox and
+ * is shown here at once (in sales, and off stock); the outbox is sent in order as soon as the server answers.
+ *
  *   sales    [{ id, billNo, at, location, phone, name, customer, lines: [{ code, name, qty, price, mrp, cost, gst }],
  *              totals, payment, balance, collections: [{ id, receiptNo, at, amount, payment, by }] }]
  *            (balance: still owed on a credit bill; collections: payments towards it since, see lib/payment.js)
  *   returns  credit notes: [{ id, returnNo, saleId, billNo, location, at, kind: return | exchange, lines, amount,
  *              refund, balanceOff, exchangeBillNo }]
  *   stock    { [location]: { [code]: qty } }     (can go negative if billed beyond what was counted in)
- *   orders   purchase orders, see lib/orders.js: requested by a showroom → sent by the admin → counted in
+ *   orders   purchase orders, see lib/orders.js: a showroom's request → fulfilled by the admin's transfer invoice
  *   quotes   quotations: priced lists for a customer, never a bill
  *   imports  stock added straight from an Excel: [{ id, at, by, username, location, file, lines, source? }]
  *   stockReturns  stock a showroom sent back to the admin: [{ id, number, location, status: sent | received, … }]
- *   boxes    supplier-packed boxes sent on to a showroom: [{ id, boxNo, stockNo, shipment, supplier, location,
- *              status: packed | received, lines: [{ code, name, qty }], counted, history }]
+ *   boxes    the admin's boxes (admin only; a showroom gets none): [{ id, boxNo, stockNo, shipment, supplier,
+ *              location, invoiceId, status: in_stock | invoiced | stocked, lines: [{ code, name, qty }], history }]
+ *   invoices transfer invoices, the admin's bills to a showroom for boxes at cost + 18%: [{ id, number, location,
+ *              status: raised | paid | stocked | cancelled, lines: [{ code, name, qty, cost, rate, amount }],
+ *              markupPct, subtotal, total, ewayNo, billNo, docName, hasDocument, paidAt, paidRef, orderId, boxIds,
+ *              history }]
  *   closes   daily cash closes: [{ location, day, expected, counted, difference, … }]
  *   settings the admin's switches: see DEFAULT_SETTINGS
  */
@@ -62,18 +72,37 @@ const cachedSettings = () => {
   }
 };
 
-const EMPTY = { sales: [], returns: [], stock: {}, orders: [], quotes: [], imports: [], stockReturns: [], boxes: [], closes: [] };
+const EMPTY = { sales: [], returns: [], stock: {}, orders: [], quotes: [], imports: [], stockReturns: [], boxes: [], invoices: [], closes: [] };
 
 /** Puts `item` in `list` in place of the one with its id, or at the end. */
 const upsert = (list, item) => (list.some((x) => x.id === item.id) ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item]);
 const merge = (list, items) => items.reduce(upsert, list);
 const byAt = (a, b) => new Date(a.at) - new Date(b.at);
 
+/** Takes the bills in `pending` off `stock` at their showroom (the server's stock doesn't have them yet). */
+const lessPending = (stock, pending) => {
+  if (!pending.length) return stock;
+  const next = { ...stock };
+  for (const sale of pending) {
+    const place = { ...next[sale.location] };
+    for (const line of sale.lines) place[line.code] = (place[line.code] ?? 0) - line.qty;
+    next[sale.location] = place;
+  }
+  return next;
+};
+
 export const StoreProvider = ({ session, children }) => {
   const [data, setData] = useState(EMPTY);
   const [settings, setSettings] = useState(cachedSettings);
+  const [online, setOnline] = useState(true);
   const lastSync = useRef(null); // server time of the last full or partial sales fetch
+  const fromCache = useRef(false); // opened on the records kept in this browser: load them all once it's back
+  const loaded = useRef(false);
   const signedIn = Boolean(session);
+  const admin = session?.role === 'admin';
+  const key = offlineKey(session); // null for the admin: only a showroom counter bills offline
+  const snapshotName = key && `store-${key}`;
+  const outbox = useSyncExternalStore(subscribeOutbox, () => readOutbox(key));
 
   const keepSettings = useCallback((next) => {
     setSettings({ ...DEFAULT_SETTINGS, ...next });
@@ -92,39 +121,60 @@ export const StoreProvider = ({ session, children }) => {
 
   const fetchAll = useCallback(async () => {
     const started = new Date();
-    const [sales, returns, stock, orders, quotes, imports, stockReturns, boxes, closes, s] = await Promise.all([
-      api('/sales'),
-      api('/returns'),
-      api('/stock'),
-      api('/orders'),
-      api('/quotes'),
-      api('/stock/imports'),
-      api('/purchase-returns'),
-      api('/boxes'),
-      api('/cash/closes'),
-      api('/settings'),
-    ]);
+    let results;
+    try {
+      results = await Promise.all([
+        api('/sales'),
+        api('/returns'),
+        api('/stock'),
+        api('/orders'),
+        api('/quotes'),
+        api('/stock/imports'),
+        api('/purchase-returns'),
+        admin ? api('/boxes') : [],
+        api('/transfer-invoices'),
+        api('/cash/closes'),
+        api('/settings'),
+      ]);
+    } catch (err) {
+      // the server can't be reached: a counter opens on what it kept last time
+      const snapshot = snapshotName && unreachable(err) ? await kept(snapshotName) : undefined;
+      if (!snapshot) throw err;
+      setData({ ...EMPTY, ...snapshot });
+      fromCache.current = true;
+      loaded.current = true;
+      setOnline(false);
+      return;
+    }
+    const [sales, returns, stock, orders, quotes, imports, stockReturns, boxes, invoices, closes, s] = results;
     lastSync.current = started;
-    setData({ sales, returns, stock, orders, quotes, imports, stockReturns, boxes, closes });
+    fromCache.current = false;
+    loaded.current = true;
+    setOnline(true);
+    setData({ sales, returns, stock, orders, quotes, imports, stockReturns, boxes, invoices, closes });
     keepSettings(s);
-  }, [keepSettings]);
+    if (key) ensureOfflineCounter(key).catch(() => {});
+  }, [admin, keepSettings, key, snapshotName]);
 
   // A light refresh: new bills since the last one (with a minute of overlap), and the small lists whole.
   const refresh = useCallback(async () => {
+    if (fromCache.current) return fetchAll().catch(() => {});
     if (!lastSync.current) return;
     const since = new Date(lastSync.current.getTime() - 60_000).toISOString();
     const started = new Date();
     try {
-      const [sales, returns, stock, orders, stockReturns, boxes, closes] = await Promise.all([
+      const [sales, returns, stock, orders, stockReturns, boxes, invoices, closes] = await Promise.all([
         api(`/sales?since=${encodeURIComponent(since)}`),
         api(`/returns?since=${encodeURIComponent(since)}`),
         api('/stock'),
         api('/orders'),
         api('/purchase-returns'),
-        api('/boxes'),
+        admin ? api('/boxes') : [],
+        api('/transfer-invoices'),
         api('/cash/closes'),
       ]);
       lastSync.current = started;
+      setOnline(true);
       setData((d) => ({
         ...d,
         sales: merge(d.sales, sales).sort(byAt),
@@ -133,28 +183,68 @@ export const StoreProvider = ({ session, children }) => {
         orders,
         stockReturns,
         boxes,
+        invoices,
         closes,
       }));
-    } catch {
+    } catch (err) {
       // offline for a moment: try again next time
+      if (unreachable(err)) setOnline(false);
     }
-  }, []);
+  }, [admin, fetchAll]);
 
+  // What this counter keeps for opening offline: the records as the server last sent them.
   useEffect(() => {
-    if (!signedIn) return undefined;
-    const timer = setInterval(refresh, REFRESH_MS);
-    const onFocus = () => document.visibilityState === 'visible' && refresh();
-    document.addEventListener('visibilitychange', onFocus);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', onFocus);
-    };
-  }, [signedIn, refresh]);
+    if (snapshotName && loaded.current && !fromCache.current) keep(snapshotName, data);
+  }, [snapshotName, data]);
 
   const reloadStock = useCallback(async () => {
     const stock = await api('/stock');
     setData((d) => ({ ...d, stock }));
   }, []);
+
+  // Sends the bills made offline, oldest first, and stops at the first that can't get through. One the server
+  // turns down keeps its reason and stays in the outbox (shown on the counter), and is tried again next time.
+  const sending = useRef(false);
+  const sendOutbox = useCallback(async () => {
+    if (!key || sending.current || !readOutbox(key).length) return;
+    sending.current = true;
+    let sent = false;
+    try {
+      for (const item of readOutbox(key)) {
+        try {
+          const sale = await api('/sales', { method: 'POST', body: item.body });
+          setData((d) => ({ ...d, sales: upsert(d.sales, sale).sort(byAt) }));
+          removeFromOutbox(key, item.body.id);
+          sent = true;
+        } catch (err) {
+          if (unreachable(err)) setOnline(false);
+          if (unreachable(err) || err.status === 401) break;
+          markOutbox(key, item.body.id, err.message);
+        }
+      }
+    } finally {
+      sending.current = false;
+    }
+    if (sent) reloadStock().catch(() => {});
+  }, [key, reloadStock]);
+
+  useEffect(() => {
+    if (online) sendOutbox();
+  }, [online, sendOutbox]);
+
+  useEffect(() => {
+    if (!signedIn) return undefined;
+    const tick = () => refresh().then(sendOutbox);
+    const timer = setInterval(tick, REFRESH_MS);
+    const onFocus = () => document.visibilityState === 'visible' && tick();
+    document.addEventListener('visibilitychange', onFocus);
+    window.addEventListener('online', tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onFocus);
+      window.removeEventListener('online', tick);
+    };
+  }, [signedIn, refresh, sendOutbox]);
 
   /** Stores a record the server sent back in one of the lists, and reloads stock when it changed. */
   const saved = useCallback(
@@ -167,18 +257,40 @@ export const StoreProvider = ({ session, children }) => {
   );
 
   const value = useMemo(() => {
-    const { stock } = data;
+    // bills still in the outbox show as made, until the server has them
+    const known = new Set(data.sales.map((s) => s.id));
+    const pending = outbox.map((x) => x.sale).filter((s) => !known.has(s.id));
+    const sales = pending.length ? [...data.sales, ...pending].sort(byAt) : data.sales;
+    const stock = lessPending(data.stock, pending);
     return {
       ...data,
+      sales,
+      stock,
       settings,
       stockOf: (location, code) => stock[location]?.[code] ?? 0,
+
+      /** Whether the server answered last time, how many bills made offline aren't on it yet, and those it
+       *  turned down (each with the reason in `error`). */
+      offline: { online, pending: outbox.length, failed: outbox.filter((x) => x.error) },
 
       /** Loads everything for the signed-in login (after sign-in, and on "Try again"). */
       load: fetchAll,
 
       /** A bill from the counter: { id, lines: [{ code, qty }], phone, name, payment }. The server prices it, numbers
-       *  it and takes it off stock; resolves to the saved sale. Send the same id again to retry safely. */
-      recordSale: async (bill) => saved('sales', await api('/sales', { method: 'POST', body: bill }), { stock: true }),
+       *  it and takes it off stock; resolves to the saved sale. Send the same id again to retry safely. When the
+       *  server can't be reached, a showroom counter keeps it to send later and resolves to it with its offline
+       *  number (offline: true). */
+      recordSale: async (bill) => {
+        try {
+          const sale = await api('/sales', { method: 'POST', body: bill });
+          setOnline(true);
+          return saved('sales', sale, { stock: true });
+        } catch (err) {
+          if (!key || !unreachable(err)) throw err;
+          setOnline(false);
+          return queueOfflineSale(key, session, bill);
+        }
+      },
 
       /** A return or exchange: { id, saleId | billNo, lines, reason, exchange?: { id, lines, payment } }.
        *  Resolves to { creditNote, sale } (sale: the new bill of an exchange). */
@@ -197,15 +309,12 @@ export const StoreProvider = ({ session, children }) => {
       /** A bill with what can still be returned from it: { sale, lines, returnableUntil, open }. */
       findBill: (billNo) => api(`/returns/bill?bill_no=${encodeURIComponent(billNo)}`),
 
-      /** Purchase orders, step by step (see lib/orders.js). Each resolves to the order as saved. */
+      /** Purchase orders: a showroom's requests (see lib/orders.js). Each resolves to the order as saved. */
       requestOrder: async ({ location, lines, note }) =>
         saved('orders', await api('/orders', { method: 'POST', body: { location, lines, note } })),
       updateOrder: async (id, { lines, note }) => saved('orders', await api(`/orders/${id}`, { method: 'PUT', body: { lines, note } })),
-      sendOrder: async (id, { lines, note }) => saved('orders', await api(`/orders/${id}/send`, { method: 'POST', body: { lines, note } })),
       rejectOrder: async (id, note) => saved('orders', await api(`/orders/${id}/reject`, { method: 'POST', body: { note } })),
       cancelOrder: async (id) => saved('orders', await api(`/orders/${id}/cancel`, { method: 'POST' })),
-      receiveOrder: async (id, counted, note) =>
-        saved('orders', await api(`/orders/${id}/receive`, { method: 'POST', body: { counted, note } }), { stock: true }),
 
       /** Stock from an Excel: { location?, file, source?, lines: [{ code, qty, rate? }] }; it is added to that
        *  showroom's stock. Resolves to the import as saved. */
@@ -219,24 +328,47 @@ export const StoreProvider = ({ session, children }) => {
       receiveStockBack: async (id, counted, note) =>
         saved('stockReturns', await api(`/purchase-returns/${id}/receive`, { method: 'POST', body: { counted, note } })),
 
-      /** Boxes: the admin saves one or many ({ id, boxNo, stockNo, shipment, supplier, location, lines }; the same id
-       *  edits a packed box) and tags them for a showroom; the showroom counts one in, which adds to its stock. */
+      /** Boxes (admin): saves one or many ({ id, boxNo, stockNo, shipment, supplier, lines }; the same id edits a box
+       *  still in the warehouse). They are added to the admin's own stock. */
       saveBoxes: async (boxes) => {
         const list = await api('/boxes', { method: 'POST', body: { boxes } });
         setData((d) => ({ ...d, boxes: merge(d.boxes, list) }));
-        return list;
-      },
-      tagBoxes: async (ids, location) => {
-        const list = await api('/boxes/tag', { method: 'POST', body: { ids, location } });
-        setData((d) => ({ ...d, boxes: merge(d.boxes, list) }));
+        reloadStock().catch(() => {});
         return list;
       },
       deleteBox: async (id) => {
         await api(`/boxes/${id}`, { method: 'DELETE' });
         setData((d) => ({ ...d, boxes: d.boxes.filter((b) => b.id !== id) }));
+        reloadStock().catch(() => {});
       },
-      receiveBox: async (id, counted, note) =>
-        saved('boxes', await api(`/boxes/${id}/receive`, { method: 'POST', body: { counted, note } }), { stock: true }),
+
+      /** Transfer invoices (admin raises them; a showroom sees its own). Each resolves to the invoice as saved. */
+      saveInvoice: async ({ location, boxIds, orderId, note }) => {
+        const invoice = await api('/transfer-invoices', { method: 'POST', body: { id: newId(), location, boxIds, orderId, note } });
+        const [boxes, orders] = await Promise.all([api('/boxes'), api('/orders')]);
+        setData((d) => ({ ...d, boxes, orders, invoices: upsert(d.invoices, invoice) }));
+        reloadStock().catch(() => {});
+        return invoice;
+      },
+      /** The e-way bill / bill numbers, and optionally the bill's PDF (docName + docBase64). */
+      saveInvoiceDocuments: async (id, body) => saved('invoices', await api(`/transfer-invoices/${id}/documents`, { method: 'PUT', body })),
+      payInvoice: async (id, { ref, note }) => saved('invoices', await api(`/transfer-invoices/${id}/pay`, { method: 'POST', body: { ref, note } })),
+      /** Adds a paid invoice's products to the showroom's stock. */
+      stockInvoice: async (id) => {
+        const invoice = await api(`/transfer-invoices/${id}/stock`, { method: 'POST' });
+        setData((d) => ({ ...d, boxes: d.boxes.map((b) => (invoice.boxIds.includes(b.id) ? { ...b, status: 'stocked' } : b)) }));
+        return saved('invoices', invoice, { stock: true });
+      },
+      /** Cancels an invoice not yet stocked: its boxes go back to the warehouse. */
+      cancelInvoice: async (id) => {
+        const invoice = await api(`/transfer-invoices/${id}/cancel`, { method: 'POST' });
+        const [boxes, orders] = await Promise.all([api('/boxes'), api('/orders')]);
+        setData((d) => ({ ...d, boxes, orders, invoices: upsert(d.invoices, invoice) }));
+        reloadStock().catch(() => {});
+        return invoice;
+      },
+      /** The invoice's uploaded bill as a PDF file. */
+      downloadInvoiceDocument: (invoice) => download(`/transfer-invoices/${invoice.id}/document`, invoice.docName || `${invoice.number}.pdf`),
 
       /** A quotation: { id, lines, name, phone, validDays, note }. Resolves to it with its number. */
       saveQuote: async (quote) => saved('quotes', await api('/quotes', { method: 'POST', body: quote })),
@@ -289,7 +421,7 @@ export const StoreProvider = ({ session, children }) => {
         return result.detail;
       },
     };
-  }, [data, settings, fetchAll, saved, keepSettings]);
+  }, [data, outbox, online, key, session, settings, fetchAll, saved, keepSettings, reloadStock]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };

@@ -1,8 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, false, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, false, func
+from sqlalchemy.orm import Mapped, deferred, mapped_column, relationship
 
 from app.core.database import Base
 from app.modules.locations.models import Location
@@ -27,6 +27,10 @@ class Product(Base):
     cost: Mapped[Decimal] = mapped_column(Money, default=0)
     gst: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=18)
     in_season: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # a small JPEG as a data: URL, printed on quotations. Deferred: the catalogue (~3,000 products) is loaded
+    # whole and must not drag every picture with it; has_image says whether there is one.
+    image: Mapped[str | None] = deferred(mapped_column(Text))
+    has_image: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     shop_location_id: Mapped[str | None] = mapped_column(ForeignKey('locations.id'))
     created_by: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

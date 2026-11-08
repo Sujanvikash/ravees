@@ -15,8 +15,7 @@ class OrderLineIn(ApiModel):
 
 
 class OrderIn(ApiModel):
-    """A new order. A showroom's goes to the admin as a request; the admin's is sent straight to the showroom
-    it names."""
+    """A showroom's request for stock, to the admin."""
 
     location: str | None = None
     lines: list[OrderLineIn] = Field(min_length=1, max_length=5000)
@@ -24,7 +23,7 @@ class OrderIn(ApiModel):
 
 
 class OrderEditIn(ApiModel):
-    """The lines as they are now, when a showroom edits its request or the admin approves and sends it."""
+    """The lines as they are now, when a showroom edits its request."""
 
     lines: list[OrderLineIn] = Field(min_length=1, max_length=5000)
     note: str = Field(default='', max_length=1000)
@@ -37,13 +36,6 @@ class NoteIn(ApiModel):
 class CountedLineIn(ApiModel):
     code: str = Field(min_length=1, max_length=32)
     qty: int = Field(ge=0, le=100_000)
-
-
-class ReceiveIn(ApiModel):
-    """What the showroom counted when the delivery came; only these quantities are added to stock."""
-
-    counted: list[CountedLineIn] = Field(max_length=5000)
-    note: str = Field(default='', max_length=1000)
 
 
 class OrderOut(ApiModel):

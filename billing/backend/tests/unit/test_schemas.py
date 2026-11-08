@@ -43,6 +43,7 @@ def test_product_out_has_numbers_and_shop():
         cost=Decimal('400.00'),
         gst=Decimal('18.00'),
         in_season=True,
+        has_image=False,
         shop_location_id='chennai',
         shop_location=Location(id='chennai', city='Chennai', area='Egmore', bill_prefix='CHN'),
         created_by=None,

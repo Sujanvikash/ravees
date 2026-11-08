@@ -6,19 +6,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.core.errors import Conflict, Forbidden, InvalidInput, NotFound
+from app.core.errors import Conflict, Forbidden, NotFound
 from app.modules.auth.access import acting_location, by_label, visible_location
 from app.modules.locations import repository as locations
-from app.modules.locations.constants import WAREHOUSE_ID
 from app.modules.numbering import service as numbering
 from app.modules.products import repository as products
-from app.modules.stock import repository as stock
-from app.modules.stock.models import StockLevel
 from app.modules.stock.service import merge_lines
 from app.modules.users.models import User
 
 from .models import PurchaseOrder, Status
-from .schemas import OrderEditIn, OrderIn, OrderLineIn, ReceiveIn
+from .schemas import OrderEditIn, OrderIn, OrderLineIn
 
 ONLY_SHOWROOM = 'Only the showroom that requested it can do this.'
 
@@ -54,35 +51,15 @@ def _lines(session: Session, lines: Sequence[OrderLineIn]) -> list[dict]:
     return merge_lines(lines, products.by_codes(session, (line.code for line in lines)))
 
 
-def _take_from_warehouse(session: Session, lines: list[dict]) -> None:
-    """Takes an order's lines out of the admin's own stock as it is sent. Refuses, naming each product, if the
-    admin doesn't have enough of it."""
-    wanted = {line['code']: line['qty'] for line in lines}
-    have = {
-        level.code: level.qty
-        for level in session.scalars(
-            select(StockLevel)
-            .where(StockLevel.location_id == WAREHOUSE_ID, StockLevel.code.in_(wanted))
-            .with_for_update()
-        )
-    }
-    short = [
-        f'{code} (have {max(have.get(code, 0), 0)}, sending {qty})'
-        for code, qty in wanted.items()
-        if qty > have.get(code, 0)
-    ]
-    if short:
-        raise InvalidInput(f'Not enough in the admin stock: {", ".join(short)}. Add stock to the admin first.')
-    stock.adjust(session, WAREHOUSE_ID, {code: -qty for code, qty in wanted.items()})
-
-
 def _expect(order: PurchaseOrder, status: Status, action: str) -> None:
     if order.status != status:
         raise Conflict(f'{order.number} is {order.status}, so it can’t be {action}.')
 
 
 def create_order(session: Session, user: User, data: OrderIn, *, at: datetime | None = None) -> PurchaseOrder:
-    """A showroom's request (to the admin), or an order the admin sends straight to a showroom."""
+    """A showroom's request for stock, to the admin. The admin answers it with a transfer invoice (or rejects it)."""
+    if user.is_admin:
+        raise Forbidden(ONLY_SHOWROOM)
     at = at or clock.now()
     location = acting_location(session, user, data.location)
     note = data.note.strip()
@@ -90,7 +67,7 @@ def create_order(session: Session, user: User, data: OrderIn, *, at: datetime | 
         id=uuid.uuid4(),
         number=numbering.next_order_no(session, location.id),
         location_id=location.id,
-        status=Status.SENT if user.is_admin else Status.REQUESTED,
+        status=Status.REQUESTED,
         lines=_lines(session, data.lines),
         note=note,
         counted=None,
@@ -98,9 +75,7 @@ def create_order(session: Session, user: User, data: OrderIn, *, at: datetime | 
         created_at=at,
         updated_at=at,
     )
-    _log(order, by_label(user, location), 'sent' if user.is_admin else 'requested', note, at)
-    if user.is_admin:
-        _take_from_warehouse(session, order.lines)
+    _log(order, by_label(user, location), 'requested', note, at)
     session.add(order)
     session.commit()
     return order
@@ -116,25 +91,6 @@ def update_request(session: Session, user: User, order_id: uuid.UUID, data: Orde
     order.lines = _lines(session, data.lines)
     order.note = note or order.note
     _log(order, _by(session, user), 'updated', note, clock.now())
-    session.commit()
-    return order
-
-
-def send(
-    session: Session, user: User, order_id: uuid.UUID, data: OrderEditIn, *, at: datetime | None = None
-) -> PurchaseOrder:
-    """The admin approves a request, as reviewed (quantities, rates, products), and sends it to the showroom. The
-    sent quantities come out of the admin's own stock."""
-    if not user.is_admin:
-        raise Forbidden()
-    order = _get(session, user, order_id)
-    _expect(order, Status.REQUESTED, 'sent')
-    note = data.note.strip()
-    order.lines = _lines(session, data.lines)
-    order.note = note or order.note
-    order.status = Status.SENT
-    _log(order, 'Admin', 'sent', note, at or clock.now())
-    _take_from_warehouse(session, order.lines)
     session.commit()
     return order
 
@@ -161,30 +117,5 @@ def cancel(session: Session, user: User, order_id: uuid.UUID, *, at: datetime | 
     _expect(order, Status.REQUESTED, 'cancelled')
     order.status = Status.CANCELLED
     _log(order, _by(session, user), 'cancelled', '', at or clock.now())
-    session.commit()
-    return order
-
-
-def receive(
-    session: Session, user: User, order_id: uuid.UUID, data: ReceiveIn, *, at: datetime | None = None
-) -> PurchaseOrder:
-    """The showroom counted the delivery in: what it counted is added to its stock, once. Products that weren't
-    on the order can't be counted in against it."""
-    if user.is_admin:
-        raise Forbidden(ONLY_SHOWROOM)
-    order = _get(session, user, order_id)
-    _expect(order, Status.SENT, 'counted in')
-    on_order = {line['code'] for line in order.lines}
-    counted: dict[str, int] = {}
-    for line in data.counted:
-        code = line.code.strip().upper()
-        if code not in on_order:
-            raise InvalidInput(f'{code} isn’t on {order.number}.')
-        counted[code] = counted.get(code, 0) + line.qty
-    counted = {code: qty for code, qty in counted.items() if qty > 0}
-    order.status = Status.RECEIVED
-    order.counted = [{'code': code, 'qty': qty} for code, qty in counted.items()]
-    _log(order, _by(session, user), 'received', data.note.strip(), at or clock.now())
-    stock.adjust(session, order.location_id, counted)
     session.commit()
     return order

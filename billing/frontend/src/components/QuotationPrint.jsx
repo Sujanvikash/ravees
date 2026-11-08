@@ -43,7 +43,7 @@ const NarrowNotice = () => (
  * plainly that this is not a bill and no payment is to be made against it. Printed on a narrow receipt printer,
  * only a blunt "not a bill" notice comes out.
  */
-const QuotationPrint = ({ quote }) => {
+const QuotationPrint = ({ quote, pictures = {} }) => {
   const shop = locationById(quote.location) ?? {};
   const settings = useStore().settings;
   const { showGst, composition } = settings;
@@ -54,6 +54,8 @@ const QuotationPrint = ({ quote }) => {
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;
   const { totals } = quote;
+  // the products' pictures ({ code: data URL }), colour on the otherwise black-and-white page; the column shows only if any has one
+  const withPictures = quote.lines.some((l) => pictures[l.code]);
   return (
     <div className="hidden text-[11.5px] leading-normal text-black [page:quote] print:block">
       <NarrowNotice />
@@ -111,6 +113,7 @@ const QuotationPrint = ({ quote }) => {
             <thead>
               <tr className="border-y-2 border-black text-left text-[9.5px] tracking-[0.14em] uppercase">
                 <th className="py-1.5 pr-2 font-bold">#</th>
+                {withPictures && <th className="py-1.5 pr-2 font-bold" aria-label="Picture" />}
                 <th className="py-1.5 pr-2 font-bold">Code</th>
                 <th className="py-1.5 pr-2 font-bold">Item</th>
                 <th className="py-1.5 pr-2 text-right font-bold">Qty</th>
@@ -121,8 +124,19 @@ const QuotationPrint = ({ quote }) => {
             </thead>
             <tbody>
               {quote.lines.map((l, i) => (
-                <tr key={l.code} className="border-b border-black/25 align-top">
+                <tr key={l.code} className="border-b border-black/25 align-top break-inside-avoid">
                   <td className="py-1.5 pr-2">{i + 1}</td>
+                  {withPictures && (
+                    <td className="py-1.5 pr-2">
+                      {pictures[l.code] && (
+                        <img
+                          src={pictures[l.code]}
+                          alt={l.name}
+                          className="size-16 border border-black/25 object-contain [print-color-adjust:exact]"
+                        />
+                      )}
+                    </td>
+                  )}
                   <td className="py-1.5 pr-2 font-mono text-[10.5px]">{l.code}</td>
                   <td className="py-1.5 pr-2">{l.name}</td>
                   <td className="py-1.5 pr-2 text-right">{l.qty}</td>

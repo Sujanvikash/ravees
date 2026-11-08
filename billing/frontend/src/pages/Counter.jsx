@@ -26,6 +26,7 @@ import { billNumber, buildBill, countLabel, nextSeq } from '../lib/bill.js';
 import { findProduct, SEASON, seasonCount } from '../lib/catalogue.js';
 import { isValidMobile, isValidName, phoneDigits } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
+import { offlineKey, peekOfflineNo } from '../lib/offline.js';
 import { printReceipt } from '../lib/print.js';
 import { newId } from '../lib/uid.js';
 
@@ -47,7 +48,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
   const now = useClock();
   const session = useSession();
   const bill = useBill(location);
-  const { recordSale, recordReturn, findBill, stockOf, sales, quotes, settings } = useStore();
+  const { recordSale, recordReturn, findBill, stockOf, sales, quotes, settings, offline } = useStore();
   const [held, setHeld] = useLocalStorage(`billing-held-${session?.demo ? 'demo-' : ''}${location}`, []);
   const [exchange, setExchange] = useState(null); // items coming back: { saleId, lines, reason, value, bill }
   const [refunded, setRefunded] = useState(null); // the credit note of a cash refund, for its dialog
@@ -75,7 +76,9 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
   const nameRef = useRef(null);
 
   const totals = useMemo(() => buildBill(bill.items, bill.discount), [bill.items, bill.discount]);
-  const billNo = billNumber(shop.billPrefix, nextSeq(sales, shop.billPrefix, now), now);
+  // offline, the next number of this counter's own offline series (lib/offline.js)
+  const billNo =
+    (!offline.online && peekOfflineNo(offlineKey(session), location, now)) || billNumber(shop.billPrefix, nextSeq(sales, shop.billPrefix, now), now);
   const credit = exchange ? Math.min(exchange.value, totals.payable) : 0;
   const due = totals.payable - credit;
   useEffect(() => {
@@ -207,7 +210,11 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     setCustomer();
     setExchange(null);
     setMethod('cash');
-    setNotice(null);
+    setNotice(
+      sale.offline
+        ? { tone: 'warn', text: `No connection to the server: ${sale.billNo} is kept on this counter and goes to the server by itself when the connection is back.` }
+        : null,
+    );
     setDialog('done');
     setPrintDoc({ sale });
     if (payment.print) setPrintJob((n) => n + 1);
@@ -378,6 +385,18 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+              {offline.failed.length > 0 && (
+                <div role="alert" className="mx-5 mb-2 rounded-xl bg-ruby-50 px-4 py-3 text-[13px] text-ruby-ink">
+                  <div className="font-semibold">The server didn’t accept {offline.failed.length === 1 ? 'a bill' : `${offline.failed.length} bills`} made offline. Tell the admin; {offline.failed.length === 1 ? 'it stays' : 'they stay'} on this counter until sorted.</div>
+                  <ul className="mt-1 flex flex-col gap-0.5">
+                    {offline.failed.map(({ sale, error }) => (
+                      <li key={sale.id}>
+                        <span className="font-mono text-xs">{sale.billNo}</span> · {inr(sale.totals.payable)} · {error}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
               <BillTable lines={totals.lines} lastCode={bill.lastCode} onQty={bill.setQty} inStock={inStock} />

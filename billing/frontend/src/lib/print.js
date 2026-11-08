@@ -10,7 +10,16 @@ const STYLE_ID = 'receipt-page-size';
 /** Prints the receipt (or credit note) on the page: the element marked data-receipt. */
 export const printReceipt = () => {
   const el = document.querySelector('[data-receipt]');
-  if (el) {
+  if (el?.dataset.paper === 'a4') {
+    // an A4 bill is a normal page: no measuring
+    let style = document.getElementById(STYLE_ID);
+    if (!style) {
+      style = Object.assign(document.createElement('style'), { id: STYLE_ID });
+      document.head.append(style);
+    }
+    style.textContent = '@page { size: A4; margin: 14mm; }';
+    window.addEventListener('afterprint', () => style.remove(), { once: true });
+  } else if (el) {
     // the receipt is hidden on screen: measure a copy laid out at print width, off screen
     const copy = el.cloneNode(true);
     Object.assign(copy.style, { display: 'block', position: 'absolute', left: '-10000px', top: '0', width: '72mm' });

@@ -7,7 +7,7 @@ from app.core.dependencies import DbSession
 from app.modules.auth.dependencies import CurrentUser
 
 from . import service
-from .schemas import CollectionIn, CustomerLookupIn, CustomerOut, SaleIn, SaleOut
+from .schemas import CollectionIn, CustomerLookupIn, CustomerOut, OfflineCounterOut, SaleIn, SaleOut
 
 router = APIRouter(prefix='/sales', tags=['sales'])
 
@@ -32,8 +32,16 @@ def find_customer(body: CustomerLookupIn, user: CurrentUser, session: DbSession)
 @router.post('', status_code=status.HTTP_201_CREATED)
 def create_sale(body: SaleIn, user: CurrentUser, session: DbSession) -> SaleOut:
     """A bill from a showroom counter. The server prices it, gives it the next bill number and takes the items
-    off the showroom's stock. Sending the same `id` again returns the saved bill instead of billing twice."""
+    off the showroom's stock. Sending the same `id` again returns the saved bill instead of billing twice. A bill
+    made offline (`offline`) keeps the number and time it was printed with."""
     return SaleOut.from_model(service.create_sale(session, user, body))
+
+
+@router.post('/offline-counter', status_code=status.HTTP_201_CREATED)
+def offline_counter(user: CurrentUser, session: DbSession) -> OfflineCounterOut:
+    """A new counter number for this browser at its showroom, asked for once while online, so the bills it makes
+    while the internet is down get numbers of their own (CHN2627OF020001…) that no other counter uses."""
+    return OfflineCounterOut(counter=service.offline_counter(session, user))
 
 
 @router.post(

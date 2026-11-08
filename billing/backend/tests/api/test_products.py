@@ -3,7 +3,21 @@ import uuid
 from .conftest import login
 from .test_sales import season_code, stock_of
 
-PRODUCT_FIELDS = {'code', 'name', 'type', 'dept', 'barcode', 'hsn', 'mrp', 'offer', 'cost', 'gst', 'inSeason', 'shop'}
+PRODUCT_FIELDS = {
+    'code',
+    'name',
+    'type',
+    'dept',
+    'barcode',
+    'hsn',
+    'mrp',
+    'offer',
+    'cost',
+    'gst',
+    'inSeason',
+    'hasImage',
+    'shop',
+}
 WREATH = {'name': 'Handmade  wreath 12 inch', 'dept': 'Wall decoration', 'mrp': 1200, 'offer': 999, 'cost': 400}
 
 
@@ -109,3 +123,15 @@ def test_a_new_product_can_keep_its_barcode(client, chennai):
     assert (
         again.status_code == 422 and again.json()['detail'] == f'That barcode is already on {p["code"]} · {p["name"]}.'
     )
+
+
+def test_product_picture(client, admin, chennai):
+    picture = 'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
+    assert client.put('/products/TA275/image', json={'image': picture}, headers=chennai).status_code == 403
+    assert client.put('/products/TA275/image', json={'image': 'http://x/y.png'}, headers=admin).status_code == 422
+    assert client.put('/products/ta275/image', json={'image': picture}, headers=admin).json()['hasImage'] is True
+    assert client.get('/products/images', params={'codes': ['TA275', 'TR0232']}, headers=chennai).json() == {
+        'TA275': picture
+    }
+    assert client.delete('/products/TA275/image', headers=admin).json()['hasImage'] is False
+    assert client.get('/products/images', params={'codes': ['TA275']}, headers=chennai).json() == {}

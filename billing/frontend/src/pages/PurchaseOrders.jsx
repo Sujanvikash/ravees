@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
-import { ChevronDown, ClipboardList, History, PackageCheck, PencilLine, Plus, Printer, Send } from 'lucide-react';
-import CountInDialog from '../components/CountInDialog.jsx';
+import { ChevronDown, ClipboardList, FileText, History, PencilLine, Plus, Printer, X } from 'lucide-react';
+import Dialog from '../components/Dialog.jsx';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import OrderEditor from '../components/OrderEditor.jsx';
 import OrderPrint from '../components/OrderPrint.jsx';
@@ -18,15 +18,13 @@ const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
 // Each login's tabs, most urgent first: what it needs to act on.
 const TABS = {
   location: [
-    { id: 'sent', label: 'To count in' },
     { id: 'requested', label: 'Requested' },
-    { id: 'received', label: 'Received' },
+    { id: 'fulfilled', label: 'Fulfilled' },
     { id: 'all', label: 'All' },
   ],
   admin: [
     { id: 'requested', label: 'To review' },
-    { id: 'sent', label: 'On the way' }, // approved, not counted in by the showroom yet
-    { id: 'received', label: 'Received' },
+    { id: 'fulfilled', label: 'Fulfilled' },
     { id: 'all', label: 'All' },
   ],
 };
@@ -34,6 +32,7 @@ const TABS = {
 const ACTION_LABEL = {
   requested: 'Requested',
   updated: 'Request updated',
+  fulfilled: 'Invoiced',
   sent: 'Approved and sent',
   received: 'Counted in',
   rejected: 'Rejected',
@@ -44,18 +43,48 @@ const primary =
   'inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900';
 const quiet = 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink';
 
+const RejectDialog = ({ order, onClose, onConfirm }) => {
+  const [reason, setReason] = useState('');
+  return (
+    <Dialog id="reject-order" title={`Reject ${order.number}`} subtitle="The showroom sees the reason." onClose={onClose} size="max-w-md">
+      <div className="flex flex-col gap-4 px-6 pb-5">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-ink-2">
+          Reason for rejecting <span className="sr-only">(optional)</span>
+          <textarea
+            rows={3}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Tell the showroom why"
+            autoFocus
+            className="resize-none rounded-xl border border-line px-3 py-2 font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
+          />
+        </label>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="h-10 rounded-xl px-3.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink">
+            Cancel
+          </button>
+          <button type="button" onClick={() => onConfirm(reason)} className="h-10 rounded-xl bg-ruby-50 px-3.5 text-[13px] font-semibold text-ruby-ink hover:bg-ruby/15">
+            Confirm reject
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+};
+
 /**
- * Purchase orders, the only way stock gets into a showroom:
- *   showroom requests stock → admin reviews, edits and sends it → showroom counts the delivery in.
- * A showroom sees its own orders and raises requests; the admin sees every showroom's and only reviews them.
+ * Purchase orders, a showroom's requests for stock:
+ *   showroom requests stock → admin raises a transfer invoice for it (or rejects it).
+ * A showroom sees its own orders and raises requests; the admin sees every showroom's. The stock itself reaches
+ * the showroom through the transfer invoice, once it is paid.
  */
 const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { orders, requestOrder, updateOrder, sendOrder, rejectOrder, cancelOrder, receiveOrder } = useStore();
+  const { orders, requestOrder, updateOrder, rejectOrder, cancelOrder } = useStore();
   const [tab, setTab] = useState(TABS[session.role][0].id);
   const [location, setLocation] = useState(admin ? null : session.location);
   const [editing, setEditing] = useState(null); // an order (new ones have no number yet)
-  const [counting, setCounting] = useState(null);
+  const [rejecting, setRejecting] = useState(null); // the request the admin is turning down
   const [open, setOpen] = useState(null);
   const [flash, setFlash] = useState(null);
   const [printing, setPrinting] = useState(null); // the order on the print page
@@ -77,7 +106,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const done = (text) => {
     setFlash(text);
     setEditing(null);
-    setCounting(null);
+    setRejecting(null);
   };
 
   // Each step goes to the server, which numbers the order and checks it may move on; its answer is what shows.
@@ -92,32 +121,21 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const save = ({ location: loc, lines, note }) =>
     attempt(async () => {
       const body = { lines: lines.map((l) => ({ code: l.code, qty: l.qty, rate: l.rate })), note };
-      const order = !editing.number
-        ? await requestOrder({ ...body, location: loc })
-        : admin
-          ? await sendOrder(editing.id, body)
-          : await updateOrder(editing.id, body);
-      done(admin ? `${order.number} approved and sent to ${locationById(order.location).city}.` : `${order.number} sent to the admin.`);
-      setTab(admin ? 'sent' : 'requested');
+      const order = !editing.number ? await requestOrder({ ...body, location: loc }) : await updateOrder(editing.id, body);
+      done(`${order.number} sent to the admin.`);
+      setTab('requested');
     });
 
-  const reject = (reason) =>
+  const reject = (order, reason) =>
     attempt(async () => {
-      await rejectOrder(editing.id, reason);
-      done(`${editing.number} rejected.`);
+      await rejectOrder(order.id, reason);
+      done(`${order.number} rejected.`);
     });
 
   const cancel = (o) =>
     attempt(async () => {
       await cancelOrder(o.id);
       setFlash(`${o.number} cancelled.`);
-    });
-
-  const receive = (counted, note) =>
-    attempt(async () => {
-      await receiveOrder(counting.id, counted, note);
-      done(`${counting.number} counted in: ${orderQty(counted).toLocaleString('en-IN')} units added to stock.`);
-      setTab('received');
     });
 
   const shop = locationById(session.location);
@@ -132,8 +150,8 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
             <div>
               <p className="text-[13px] text-ink-3">
                 {admin
-                  ? 'Review showroom requests, adjust them, then approve and send them. Stock is added when the showroom counts the delivery in.'
-                  : 'Request stock from the admin, and count deliveries in when they arrive. Counting in adds to your stock.'}
+                  ? 'Showroom requests for stock. Raise a transfer invoice for one to fulfil it; the stock is added to the showroom once the invoice is paid.'
+                  : 'Request stock from the admin. The admin sends it with a transfer invoice, and it is added to your stock once that is paid.'}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -178,9 +196,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                 <ClipboardList size={22} className="text-ink-3" aria-hidden="true" />
                 <div className="text-[15px] font-semibold">Nothing here</div>
                 <div className="max-w-sm text-[13px] text-ink-3">
-                  {tab === 'sent' && !admin
-                    ? 'When the admin sends you a purchase order, it shows up here to count in.'
-                    : tab === 'requested' && admin
+                  {tab === 'requested' && admin
                       ? 'Stock requests from the showrooms show up here for review.'
                       : 'No orders in this list yet.'}
                 </div>
@@ -236,11 +252,6 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                                 <button type="button" onClick={() => print(o)} className={quiet}>
                                   <Printer size={14} aria-hidden="true" /> Print
                                 </button>
-                                {!admin && o.status === 'sent' && (
-                                  <button type="button" onClick={() => setCounting(o)} className={primary}>
-                                    <PackageCheck size={14} aria-hidden="true" /> Count in
-                                  </button>
-                                )}
                                 {!admin && o.status === 'requested' && (
                                   <>
                                     <button type="button" onClick={() => cancel(o)} className={quiet}>
@@ -252,9 +263,14 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                                   </>
                                 )}
                                 {admin && o.status === 'requested' && (
-                                  <button type="button" onClick={() => setEditing(o)} className={primary}>
-                                    <Send size={14} aria-hidden="true" /> Review &amp; send
-                                  </button>
+                                  <>
+                                    <button type="button" onClick={() => setRejecting(o)} className={quiet}>
+                                      <X size={14} aria-hidden="true" /> Reject
+                                    </button>
+                                    <button type="button" onClick={() => onNavigate('transfers', { order: o })} className={primary}>
+                                      <FileText size={14} aria-hidden="true" /> Create invoice
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </td>
@@ -332,16 +348,9 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
       </div>
 
       {editing && (
-        <OrderEditor
-          key={editing.id ?? 'new'}
-          session={session}
-          order={editing}
-          onClose={() => setEditing(null)}
-          onSave={save}
-          onReject={admin && editing.status === 'requested' ? reject : null}
-        />
+        <OrderEditor key={editing.id ?? 'new'} order={editing} onClose={() => setEditing(null)} onSave={save} />
       )}
-      {counting && <CountInDialog order={counting} onClose={() => setCounting(null)} onConfirm={receive} />}
+      {rejecting && <RejectDialog order={rejecting} onClose={() => setRejecting(null)} onConfirm={(reason) => reject(rejecting, reason)} />}
     </div>
       {printing && <OrderPrint doc={printing} kind="order" />}
     </>

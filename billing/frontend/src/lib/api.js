@@ -13,6 +13,10 @@ export class ApiError extends Error {
   }
 }
 
+/** True when a request never got to the API: no internet, or the server (or the HTTPS proxy in front of it) is
+ *  down. The request did nothing, so a bill can be kept on the counter and sent again later. */
+export const unreachable = (err) => err instanceof ApiError && [0, 502, 503, 504].includes(err.status);
+
 export const setToken = (token) => {
   try {
     if (token) window.localStorage.setItem(TOKEN_KEY, token);
