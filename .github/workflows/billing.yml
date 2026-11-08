@@ -118,6 +118,7 @@ jobs:
           strip_components: 2
 
       - name: Pull and restart on the server
+        id: restart
         uses: appleboy/ssh-action@v1.2.0
         env:
           IMAGE: ${{ steps.image.outputs.name }}:${{ github.sha }}
@@ -128,6 +129,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           envs: IMAGE,GHCR_USER,GHCR_TOKEN
+          capture_stdout: true
           script: |
             set -e
             cd ~/billing
@@ -146,3 +148,10 @@ jobs:
             done
             docker compose logs --tail 80 api
             exit 1
+
+      # if the server step fails, put the end of what it printed into an annotation so the cause is readable
+      - name: Show why the restart failed
+        if: failure() && steps.restart.outcome == 'failure'
+        env:
+          OUT: ${{ steps.restart.outputs.stdout }}
+        run: echo "::error title=server restart failed::$(printf '%s' "$OUT" | tail -n 25 | paste -sd'|' - | cut -c1-1500)"
