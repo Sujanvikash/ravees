@@ -1,12 +1,19 @@
-import { Fragment } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { LogOut, PanelLeft, ShieldCheck, Store, X } from 'lucide-react';
 import logo from '../assets/logo.svg';
 import { BRAND, locationById } from '../config.js';
+import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { isDemo } from '../lib/auth.js';
 import { NAV } from '../lib/nav.js';
 import Kbd from './Kbd.jsx';
 
 const TOGGLE_KEYS = ['Ctrl', 'Shift', 'S'];
+
+// The open menu's width in px on a wide screen: dragged from its right edge, remembered per computer.
+const MIN_WIDTH = 176;
+const MAX_WIDTH = 320;
+const DEFAULT_WIDTH = 208;
+const clampWidth = (w) => Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(Number(w) || DEFAULT_WIDTH)));
 
 /** A dark label beside a control on hover or keyboard focus (wide screens only); the control needs `group relative`. */
 const Tip = ({ label, keys }) => (
@@ -32,13 +39,22 @@ const iconButton = 'group relative size-9 shrink-0 items-center justify-center r
 /**
  * The left menu. On a wide screen it collapses to an icon rail (remembered per computer, toggled from the
  * top or with Ctrl+Shift+S); in the rail the shop mark turns into the open button on hover, and every icon
- * shows its name on hover. Below lg it is a drawer that slides in over the page.
+ * shows its name on hover. When open, its right edge can be dragged (or moved with the arrow keys) to make it wider
+ * or narrower; a double click puts it back. Below lg it is a drawer that slides in over the page.
  */
 const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobileOpen, onMobileClose, onSignOut }) => {
   const shop = locationById(session.location);
   const items = NAV[session.role];
   const rail = collapsed; // icon-only on lg+; the mobile drawer always shows labels
   const who = shop ? `${shop.city} · ${shop.area}` : 'Admin';
+  const [saved, setSaved] = useLocalStorage('billing-menu-width', DEFAULT_WIDTH);
+  const width = clampWidth(saved);
+  const [dragging, setDragging] = useState(false);
+  const asideRef = useRef(null);
+
+  const drag = (e) => {
+    if (e.buttons) setSaved(clampWidth(e.clientX - asideRef.current.getBoundingClientRect().left));
+  };
 
   const nav = (
     <nav aria-label="Main" className="flex flex-col gap-0.5">
@@ -65,7 +81,7 @@ const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobi
                 on ? 'brand-gradient font-semibold shadow-[0_1px_2px_rgba(9,9,11,0.15)]' : 'text-ink-2 hover:bg-white/60 hover:text-ink'
               } ${rail ? 'lg:justify-center lg:px-0' : ''}`}
             >
-              <Icon size={17} strokeWidth={on ? 2.2 : 1.9} aria-hidden="true" />
+              <Icon size={17} className="shrink-0" strokeWidth={on ? 2.2 : 1.9} aria-hidden="true" />
               <span className={`whitespace-nowrap ${rail ? 'lg:sr-only' : ''}`}>{label}</span>
               {badge > 0 && (
                 <span
@@ -91,10 +107,12 @@ const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobi
         <div className="fixed inset-0 z-30 bg-zinc-950/30 backdrop-blur-[2px] lg:hidden print:hidden" onClick={onMobileClose} aria-hidden="true" />
       )}
       <aside
+        ref={asideRef}
         aria-label="Menu"
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r glass-heavy transition-[transform,width] duration-200 lg:static lg:z-20 lg:translate-x-0 print:hidden ${
+        style={{ '--menu-w': `${width}px` }}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r glass-heavy ${dragging ? '' : 'transition-[transform,width] duration-200'} lg:static lg:z-20 lg:translate-x-0 print:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${rail ? 'lg:w-17' : 'lg:w-52'}`}
+        } ${rail ? 'lg:w-17' : 'lg:w-(--menu-w)'}`}
       >
         <div className={`flex h-16 shrink-0 items-center gap-2 px-4 ${rail ? 'lg:justify-center lg:px-0' : 'lg:pr-3'}`}>
           {/* the logo goes home: the dashboard for the admin, the billing counter for a showroom */}
@@ -152,11 +170,38 @@ const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobi
               rail ? 'lg:w-9 lg:justify-center lg:px-0' : ''
             }`}
           >
-            <LogOut size={16} aria-hidden="true" />
+            <LogOut size={16} className="shrink-0" aria-hidden="true" />
             <span className={rail ? 'lg:sr-only' : ''}>Sign out</span>
             {rail && <Tip label="Sign out" />}
           </button>
         </div>
+        {!rail && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Menu width"
+            aria-valuemin={MIN_WIDTH}
+            aria-valuemax={MAX_WIDTH}
+            aria-valuenow={width}
+            tabIndex={0}
+            title="Drag to resize · double-click to reset"
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              setDragging(true);
+            }}
+            onPointerMove={drag}
+            onPointerUp={() => setDragging(false)}
+            onPointerCancel={() => setDragging(false)}
+            onDoubleClick={() => setSaved(DEFAULT_WIDTH)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                setSaved(clampWidth(width + (e.key === 'ArrowRight' ? 16 : -16)));
+              }
+            }}
+            className="absolute inset-y-0 -right-1 z-10 hidden w-2 cursor-col-resize touch-none after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:rounded-full after:bg-transparent hover:after:bg-evergreen-800/30 focus-visible:after:bg-evergreen-800/50 lg:block"
+          />
+        )}
       </aside>
     </>
   );
