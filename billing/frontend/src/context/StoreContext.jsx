@@ -173,8 +173,8 @@ export const StoreProvider = ({ session, children }) => {
         api('/stock'),
         api('/orders'),
         api('/purchase-returns'),
-        admin ? optional('/boxes') : [],
-        optional('/transfer-invoices'),
+        admin ? optional('/boxes', null) : null,
+        optional('/transfer-invoices', null),
         api('/cash/closes'),
       ]);
       lastSync.current = started;
