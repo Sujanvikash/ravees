@@ -25,6 +25,11 @@ def list_all(session: Session) -> Sequence[Product]:
     return session.scalars(select(Product).order_by(Product.dept, Product.name, Product.code)).all()
 
 
+def images(session: Session, codes: Sequence[str]) -> dict[str, str]:
+    rows = session.execute(select(Product.code, Product.image).where(Product.code.in_(codes), Product.has_image))
+    return {code: image for code, image in rows if image}
+
+
 def add(session: Session, product: Product) -> Product:
     session.add(product)
     session.flush()
