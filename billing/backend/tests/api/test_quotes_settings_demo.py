@@ -82,6 +82,31 @@ def test_settings(client, chennai, admin):
     client.patch('/settings', json={'theme': s['theme'], 'quotePrint': True}, headers=admin)
 
 
+def test_business_details_are_the_admins_alone(client, chennai, admin):
+    mine = {
+        'bizName': 'Raave Traders',
+        'bizGstin': '33ABCDE1234F1Z5',
+        'bankAccount': '123456789012',
+        'invoiceGst': True,
+    }
+    assert client.patch('/settings', json=mine, headers=chennai).status_code == 403  # a showroom can't set them
+    saved = client.patch('/settings', json=mine, headers=admin).json()
+    try:
+        assert saved['bizName'] == 'Raave Traders' and saved['invoiceGst'] is True
+        assert client.get('/settings', headers=admin).json()['bankAccount'] == '123456789012'
+        # neither the sign-in screen nor a showroom ever sees them, not even in the answer to its own change
+        for seen in (
+            client.get('/settings').json(),
+            client.get('/settings', headers=chennai).json(),
+            client.patch('/settings', json={'font': 'normal'}, headers=chennai).json(),
+        ):
+            assert seen['bizName'] == seen['bizGstin'] == seen['bankAccount'] == '' and seen['invoiceGst'] is False
+    finally:
+        client.patch(
+            '/settings', json={'bizName': '', 'bizGstin': '', 'bankAccount': '', 'invoiceGst': False}, headers=admin
+        )
+
+
 @pytest.fixture(scope='module')
 def demo_built():
     build_demo()

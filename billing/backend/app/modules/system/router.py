@@ -23,7 +23,8 @@ def get_settings(session: DbSession, user: OptionalUser, location: str | None = 
         loc = location
     else:
         loc = None
-    return settings.get(session, loc)
+    values = settings.get(session, loc)
+    return values if user and user.is_admin else settings.without_business(values)
 
 
 @settings_router.patch('')
@@ -32,7 +33,8 @@ def update_settings(
 ) -> AppSettingsOut:
     """The admin changes any switch (saved globally), or a given showroom's own appearance and bill details with
     `?location=`; a showroom changes only its own."""
-    return settings.update(session, body, user=user, location=location if user.is_admin else None)
+    values = settings.update(session, body, user=user, location=location if user.is_admin else None)
+    return values if user.is_admin else settings.without_business(values)
 
 
 class HealthOut(ApiModel):

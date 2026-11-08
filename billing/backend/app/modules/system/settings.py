@@ -29,6 +29,23 @@ KEY = 'ui'
 APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'strip', 'font', 'lang'})
 STORE = frozenset({'store_name', 'store_address', 'store_phone', 'gstin', 'composition'})
 SELF_EDITABLE = APPEARANCE | STORE
+# the admin's own business on a transfer invoice: bank details among them, so only the admin ever sees them
+BUSINESS = frozenset(
+    {
+        'biz_name',
+        'biz_address',
+        'biz_state',
+        'biz_phone',
+        'biz_email',
+        'biz_gstin',
+        'biz_pan',
+        'bank_name',
+        'bank_account',
+        'bank_ifsc',
+        'invoice_terms',
+        'invoice_gst',
+    }
+)
 
 
 class AppSettingsOut(ApiModel):
@@ -52,6 +69,22 @@ class AppSettingsOut(ApiModel):
     gstin: str = Field(default='', max_length=20)
     # every showroom is a composition dealer (a Bill of Supply, GST included and not shown on the customer bill)
     composition: bool = True
+
+    # The admin's own business, the seller on a transfer invoice (admin only; not a showroom's to set). The
+    # address may hold several lines. With invoice_gst on, the invoice adds each product's GST (CGST + SGST
+    # within the state, IGST across states) on top of the cost + 18% rate; off, it shows that rate as the total.
+    biz_name: str = Field(default='', max_length=80)
+    biz_address: str = Field(default='', max_length=300)
+    biz_state: str = Field(default='', max_length=40)
+    biz_phone: str = Field(default='', max_length=80)
+    biz_email: str = Field(default='', max_length=80)
+    biz_gstin: str = Field(default='', max_length=20)
+    biz_pan: str = Field(default='', max_length=12)
+    bank_name: str = Field(default='', max_length=80)
+    bank_account: str = Field(default='', max_length=30)
+    bank_ifsc: str = Field(default='', max_length=16)
+    invoice_terms: str = Field(default='', max_length=400)
+    invoice_gst: bool = False
 
     # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
     show_gst: bool = True
@@ -78,6 +111,18 @@ class AppSettingsPatch(ApiModel):
     store_phone: str | None = Field(default=None, max_length=80)
     gstin: str | None = Field(default=None, max_length=20)
     composition: bool | None = None
+    biz_name: str | None = Field(default=None, max_length=80)
+    biz_address: str | None = Field(default=None, max_length=300)
+    biz_state: str | None = Field(default=None, max_length=40)
+    biz_phone: str | None = Field(default=None, max_length=80)
+    biz_email: str | None = Field(default=None, max_length=80)
+    biz_gstin: str | None = Field(default=None, max_length=20)
+    biz_pan: str | None = Field(default=None, max_length=12)
+    bank_name: str | None = Field(default=None, max_length=80)
+    bank_account: str | None = Field(default=None, max_length=30)
+    bank_ifsc: str | None = Field(default=None, max_length=16)
+    invoice_terms: str | None = Field(default=None, max_length=400)
+    invoice_gst: bool | None = None
     show_gst: bool | None = None
     require_name: bool | None = None
     require_mobile: bool | None = None
@@ -113,6 +158,12 @@ def get(session: Session, location: str | None = None) -> AppSettingsOut:
             except ValueError:
                 pass
     return defaults.model_copy(update=clean)
+
+
+def without_business(values: AppSettingsOut) -> AppSettingsOut:
+    """The settings with the admin's business details blanked, for everyone but the admin (and the sign-in screen)."""
+    blank = AppSettingsOut()
+    return values.model_copy(update={name: getattr(blank, name) for name in BUSINESS})
 
 
 def _save_overrides(session: Session, location: str, changes: dict) -> AppSettingsOut:
