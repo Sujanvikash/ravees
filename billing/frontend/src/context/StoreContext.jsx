@@ -72,6 +72,10 @@ const cachedSettings = () => {
   }
 };
 
+/** A list the rest of the app doesn't depend on: if the server can't give it (say it is a version behind), the
+ * screens that need it are empty instead of the whole app failing to load. A server that can't be reached still fails. */
+const optional = (path, fallback = []) => api(path).catch((err) => (unreachable(err) ? Promise.reject(err) : fallback));
+
 const EMPTY = { sales: [], returns: [], stock: {}, orders: [], quotes: [], imports: [], stockReturns: [], boxes: [], invoices: [], closes: [] };
 
 /** Puts `item` in `list` in place of the one with its id, or at the end. */
@@ -131,8 +135,8 @@ export const StoreProvider = ({ session, children }) => {
         api('/quotes'),
         api('/stock/imports'),
         api('/purchase-returns'),
-        admin ? api('/boxes') : [],
-        api('/transfer-invoices'),
+        admin ? optional('/boxes') : [],
+        optional('/transfer-invoices'),
         api('/cash/closes'),
         api('/settings'),
       ]);
@@ -169,8 +173,8 @@ export const StoreProvider = ({ session, children }) => {
         api('/stock'),
         api('/orders'),
         api('/purchase-returns'),
-        admin ? api('/boxes') : [],
-        api('/transfer-invoices'),
+        admin ? optional('/boxes') : [],
+        optional('/transfer-invoices'),
         api('/cash/closes'),
       ]);
       lastSync.current = started;
@@ -182,8 +186,8 @@ export const StoreProvider = ({ session, children }) => {
         stock,
         orders,
         stockReturns,
-        boxes,
-        invoices,
+        boxes: boxes ?? d.boxes,
+        invoices: invoices ?? d.invoices,
         closes,
       }));
     } catch (err) {
