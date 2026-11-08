@@ -40,8 +40,8 @@ def product_images(
 
 
 @router.put('/{code}/image')
-def set_image(code: str, body: ImageIn, _: AdminUser, session: DbSession) -> ProductOut:
-    """Admin: sets a product's picture."""
+def set_image(code: str, body: ImageIn, _: CurrentUser, session: DbSession) -> ProductOut:
+    """Sets a product's picture: a showroom adds one while writing a quotation, and the picture is shared."""
     return ProductOut.from_model(service.set_image(session, code, body.image))
 
 

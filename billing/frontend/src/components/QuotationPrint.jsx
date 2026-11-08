@@ -84,7 +84,8 @@ const QuotationPrint = ({ quote, pictures = {} }) => {
                   <div key={a}>{a}</div>
                 ))}
                 {phone && <div>Ph: {phone}</div>}
-                {gst && gstin && <div>GSTIN: {gstin}</div>}
+                {composition && <div className="font-bold">Composition Dealer</div>}
+                {(gst || composition) && gstin && <div>GSTIN: {gstin}</div>}
                 {BRAND.email && <div>{BRAND.email}</div>}
               </div>
             </div>
@@ -98,13 +99,17 @@ const QuotationPrint = ({ quote, pictures = {} }) => {
           <div className="mt-5 grid grid-cols-2 gap-10">
             <div>
               <Label>Quoted for</Label>
-              <div className="text-[14px] font-semibold">{quote.name || '—'}</div>
+              {quote.company && <div className="text-[14px] font-bold uppercase">{quote.company}</div>}
+              <div className={quote.company ? 'font-semibold' : 'text-[14px] font-semibold'}>{quote.name || '—'}</div>
               <div>{quote.phone ? formatMobile(quote.phone) : '—'}</div>
+              {quote.address && quote.address.split('\n').map((a) => <div key={a}>{a}</div>)}
+              {quote.gstin && <div>GSTIN: {quote.gstin}</div>}
             </div>
             <div>
               <Label>Details</Label>
               <Meta label="Date" value={dateTime.format(new Date(quote.at))} />
               <Meta label="Valid until" value={date.format(new Date(quote.validUntil))} />
+              {quote.deliveryDate && <Meta label="Delivery by (approx.)" value={date.format(new Date(`${quote.deliveryDate}T00:00:00`))} />}
               <Meta label="Prepared by" value={`${quote.by} showroom`} />
             </div>
           </div>
@@ -152,7 +157,7 @@ const QuotationPrint = ({ quote, pictures = {} }) => {
             <div className="max-w-[55%] text-[11px]">
               {quote.note && (
                 <div className="mb-2">
-                  <span className="font-semibold">Note: </span>
+                  <span className="font-semibold">Instructions: </span>
                   {quote.note}
                 </div>
               )}

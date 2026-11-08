@@ -1,6 +1,7 @@
 import { Minus, Plus, ScanBarcode, X } from 'lucide-react';
 import { inr } from '../lib/money.js';
 import Kbd from './Kbd.jsx';
+import ProductPicture from './ProductPicture.jsx';
 
 const stepButton = 'inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist hover:text-ink';
 // Phones stack each line (name, then qty and amount); from sm up it is one row of four columns.
@@ -10,7 +11,7 @@ const cols = 'sm:grid sm:grid-cols-[minmax(0,1fr)_auto_7.5rem_2rem] sm:items-cen
  * The lines of the current bill. It fills the space left in the bill area and scrolls inside it, with
  * the column labels pinned. The last scanned line is highlighted.
  */
-const BillTable = ({ lines, lastCode, onQty, inStock, shortcuts = true }) => {
+const BillTable = ({ lines, lastCode, onQty, inStock, shortcuts = true, pictures = false }) => {
   if (!lines.length) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
@@ -59,7 +60,9 @@ const BillTable = ({ lines, lastCode, onQty, inStock, shortcuts = true }) => {
                 // layer so the row (and a qty being typed) is never remounted.
                 <span key={line.qty} aria-hidden="true" className="absolute inset-0 -z-10 animate-flash rounded-xl bg-evergreen-100 opacity-0" />
               )}
-              <div className="min-w-0 basis-full sm:basis-auto">
+              <div className="flex min-w-0 basis-full items-center gap-3 sm:basis-auto">
+                {pictures && <ProductPicture product={p} />}
+                <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="shrink-0 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
                   <span className="truncate text-sm font-medium">{p.name}</span>
@@ -79,6 +82,7 @@ const BillTable = ({ lines, lastCode, onQty, inStock, shortcuts = true }) => {
                   <span className={short ? 'font-medium text-ruby-ink' : ''}>
                     {short ? `Only ${Math.max(stock, 0)} in stock` : `${stock} in stock`}
                   </span>
+                </div>
                 </div>
               </div>
 

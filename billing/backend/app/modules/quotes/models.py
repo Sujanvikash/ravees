@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,6 +21,11 @@ class Quote(Base):
     by: Mapped[str] = mapped_column(String(64))
     name: Mapped[str] = mapped_column(String(120))
     phone: Mapped[str] = mapped_column(String(16))
+    # who it is quoted to when that is a business (a customer or a vendor), and when it is wanted
+    company: Mapped[str] = mapped_column(String(120), default='', server_default='')
+    address: Mapped[str] = mapped_column(Text, default='', server_default='')
+    gstin: Mapped[str] = mapped_column(String(15), default='', server_default='')
+    delivery_date: Mapped[date | None] = mapped_column(Date)
     valid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     note: Mapped[str] = mapped_column(Text, default='')
     lines: Mapped[list[dict]] = mapped_column(JSONB)

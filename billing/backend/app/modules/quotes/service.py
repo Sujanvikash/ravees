@@ -59,6 +59,10 @@ def create_quote(session: Session, user: User, data: QuoteIn, *, at: datetime | 
         phone=phone,
         valid_until=valid_until(at, data.valid_days),
         note=data.note.strip(),
+        company=' '.join(data.company.split()),
+        address='\n'.join(ln.strip() for ln in data.address.splitlines() if ln.strip()),
+        gstin=data.gstin,
+        delivery_date=data.delivery_date,
         lines=[
             {'code': ln.code, 'name': ln.name, 'qty': ln.qty, 'price': float(ln.price), 'mrp': float(ln.mrp)}
             for ln in lines

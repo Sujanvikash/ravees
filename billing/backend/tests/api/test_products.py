@@ -127,7 +127,8 @@ def test_a_new_product_can_keep_its_barcode(client, chennai):
 
 def test_product_picture(client, admin, chennai):
     picture = 'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
-    assert client.put('/products/TA275/image', json={'image': picture}, headers=chennai).status_code == 403
+    assert client.put('/products/TA275/image', json={'image': picture}, headers=chennai).status_code == 200
+    assert client.delete('/products/TA275/image', headers=chennai).status_code == 403
     assert client.put('/products/TA275/image', json={'image': 'http://x/y.png'}, headers=admin).status_code == 422
     assert client.put('/products/ta275/image', json={'image': picture}, headers=admin).json()['hasImage'] is True
     assert client.get('/products/images', params={'codes': ['TA275', 'TR0232']}, headers=chennai).json() == {

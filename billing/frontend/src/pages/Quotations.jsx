@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Archive, ArchiveRestore, CircleCheck, FileText, Lock, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
+import { Archive, ArchiveRestore, CircleCheck, Building2, CalendarDays, FileText, Lock, MapPin, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
 import BillTable from '../components/BillTable.jsx';
 import { CustomerStatus, CustomerSuggestions } from '../components/CustomerSuggest.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
@@ -296,6 +296,10 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const lookup = useCustomerLookup({ phone, name, setPhone, setName });
   const [days, setDays] = useState(7);
   const [note, setNote] = useState('');
+  const [company, setCompany] = useState('');
+  const [address, setAddress] = useState('');
+  const [gstin, setGstin] = useState('');
+  const [delivery, setDelivery] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(null);
   const scanRef = useRef(null);
@@ -325,6 +329,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
     if (!isValidName(name)) return setError('Enter the customer’s name.');
     if (!phone.trim()) return setError('Enter the customer’s mobile number.');
     if (!isValidMobile(phone)) return setError('That mobile number doesn’t look right (10 digits).');
+    if (gstin && !/^[0-9A-Z]{15}$/.test(gstin)) return setError('A GSTIN is 15 letters and digits.');
     setBusy(true);
     try {
       await onSave(
@@ -335,6 +340,10 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
           phone: phoneDigits(phone),
           validDays: days,
           note: note.trim(),
+          company: company.trim(),
+          address: address.trim(),
+          gstin,
+          deliveryDate: delivery || null,
         },
         andPrint,
       );
@@ -348,6 +357,10 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
     setName('');
     setPhone('');
     setNote('');
+    setCompany('');
+    setAddress('');
+    setGstin('');
+    setDelivery('');
     setDays(7);
     setError('');
   };
@@ -387,7 +400,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
               <Trash2 size={15} /> Clear
             </button>
           </div>
-          <BillTable lines={totals.lines} lastCode={draft.lastCode} onQty={draft.setQty} inStock={(code) => stockOf(location, code)} shortcuts={false} />
+          <BillTable lines={totals.lines} lastCode={draft.lastCode} onQty={draft.setQty} inStock={(code) => stockOf(location, code)} shortcuts={false} pictures />
         </section>
       </div>
 
@@ -445,17 +458,73 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
         </div>
 
         <div className="flex flex-col gap-2">
+          <h2 className="text-[13px] font-medium">
+            Business <span className="font-normal text-ink-3">(customer or vendor, optional)</span>
+          </h2>
+          <label className={field}>
+            <Building2 size={15} className="text-ink-3" aria-hidden="true" />
+            <span className="sr-only">Business name</span>
+            <input
+              value={company}
+              maxLength={120}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Business name"
+              className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-ink-3"
+            />
+          </label>
+          <label className="flex items-start gap-2 rounded-xl border border-line bg-white px-3 py-2">
+            <MapPin size={15} className="mt-0.5 text-ink-3" aria-hidden="true" />
+            <span className="sr-only">Business address</span>
+            <textarea
+              rows={2}
+              value={address}
+              maxLength={500}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Address"
+              className="min-w-0 flex-1 resize-none bg-transparent text-sm placeholder:text-ink-3"
+            />
+          </label>
+          <label className={field}>
+            <FileText size={15} className="text-ink-3" aria-hidden="true" />
+            <span className="sr-only">GSTIN</span>
+            <input
+              value={gstin}
+              maxLength={15}
+              onChange={(e) => {
+                setGstin(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ''));
+                setError('');
+              }}
+              placeholder="GSTIN"
+              className="min-w-0 flex-1 bg-transparent font-mono text-sm placeholder:font-sans placeholder:text-ink-3"
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-col gap-2">
           <h2 className="text-[13px] font-medium">Valid for</h2>
           <Segmented label="Valid for" options={VALIDITY} value={days} onChange={setDays} />
         </div>
 
         <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-          Note <span className="sr-only">(optional)</span>
+          Delivery date <span className="font-normal text-ink-3">(rough, optional)</span>
+          <span className={field}>
+            <CalendarDays size={15} className="text-ink-3" aria-hidden="true" />
+            <input
+              type="date"
+              value={delivery}
+              onChange={(e) => setDelivery(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-sm font-normal"
+            />
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+          Instructions <span className="sr-only">(optional)</span>
           <textarea
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional: e.g. delivery, installation"
+            placeholder="Optional: e.g. installation, packing, payment terms"
             className="resize-none rounded-xl border border-line bg-white px-3 py-2 font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
           />
         </label>

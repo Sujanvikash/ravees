@@ -18,6 +18,10 @@ def test_quotation(client, chennai, admin):
         **CUSTOMER,
         'validDays': 15,
         'note': ' Corporate ',
+        'company': ' Raj  Hotels ',
+        'address': '12 MG Road\n\n Goa ',
+        'gstin': '33aaaaa0000a1z5',
+        'deliveryDate': '2026-12-10',
     }
     q = client.post('/quotes', json=body, headers=chennai)
     assert q.status_code == 201, q.text
@@ -27,6 +31,12 @@ def test_quotation(client, chennai, admin):
         and '/' not in q['quoteNo']
         and q['by'] == 'Chennai'
         and q['note'] == 'Corporate'
+    )
+    assert q['company'] == 'Raj Hotels' and q['address'] == '12 MG Road\nGoa'
+    assert q['gstin'] == '33AAAAA0000A1Z5' and q['deliveryDate'] == '2026-12-10'
+    assert (
+        client.post('/quotes', json={**body, 'id': str(uuid.uuid4()), 'gstin': '123'}, headers=chennai).status_code
+        == 422
     )
     assert q['lines'][0]['qty'] == 2 and q['totals']['payable'] > 0
     assert client.post('/quotes', json=body, headers=chennai).json()['quoteNo'] == q['quoteNo']

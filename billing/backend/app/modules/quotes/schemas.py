@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.core.schemas import ApiModel
 from app.modules.sales.schemas import LineIn
@@ -19,7 +19,16 @@ class QuoteIn(ApiModel):
     name: str = Field(max_length=120)
     phone: str = Field(max_length=32)
     valid_days: Literal[7, 15, 30] = 7
-    note: str = Field(default='', max_length=1000)
+    note: str = Field(default='', max_length=1000)  # the instructions printed on the quotation
+    company: str = Field(default='', max_length=120)
+    address: str = Field(default='', max_length=500)
+    gstin: str = Field(default='', pattern=r'^([0-9A-Za-z]{15})?$')
+    delivery_date: date | None = None
+
+    @field_validator('gstin')
+    @classmethod
+    def _upper(cls, value: str) -> str:
+        return value.upper()
 
 
 class QuoteOut(ApiModel):
@@ -32,6 +41,10 @@ class QuoteOut(ApiModel):
     phone: str
     valid_until: datetime
     note: str
+    company: str
+    address: str
+    gstin: str
+    delivery_date: date | None
     lines: list[dict]
     totals: dict
     archived_at: datetime | None
@@ -48,6 +61,10 @@ class QuoteOut(ApiModel):
             phone=quote.phone,
             valid_until=quote.valid_until,
             note=quote.note,
+            company=quote.company,
+            address=quote.address,
+            gstin=quote.gstin,
+            delivery_date=quote.delivery_date,
             lines=quote.lines,
             totals=quote.totals,
             archived_at=quote.archived_at,
