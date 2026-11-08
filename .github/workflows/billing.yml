@@ -117,41 +117,19 @@ jobs:
           target: billing
           strip_components: 2
 
+      # Plain ssh from the runner: the appleboy ssh action downloads its own tool from GitHub releases on every run,
+      # and those downloads returned 504 and failed the deploy
       - name: Pull and restart on the server
-        id: restart
-        uses: appleboy/ssh-action@v1.2.0
         env:
           IMAGE: ${{ steps.image.outputs.name }}:${{ github.sha }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: IMAGE,GHCR_USER,GHCR_TOKEN
-          capture_stdout: true
-          script: |
-            set -e
-            cd ~/billing
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            # pin the exact image this run built, so a restart never picks up something else
-            sed -i "s|^API_IMAGE=.*|API_IMAGE=$IMAGE|" .env
-            docker compose pull api
-            docker compose up -d --remove-orphans
-            docker logout ghcr.io
-            # wait for the API to answer (migrations run on start)
-            for i in $(seq 1 30); do
-              if docker compose exec -T api python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"; then
-                echo "API is up"; docker image prune -f; exit 0
-              fi
-              sleep 4
-            done
-            docker compose logs --tail 80 api
-            exit 1
-
-      # if the server step fails, put the end of what it printed into an annotation so the cause is readable
-      - name: Show why the restart failed
-        if: failure() && steps.restart.outcome == 'failure'
-        env:
-          OUT: ${{ steps.restart.outputs.stdout }}
-        run: echo "::error title=server restart failed::$(printf '%s' "$OUT" | tail -n 25 | paste -sd'|' - | cut -c1-1500)"
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: |
+          install -m 600 /dev/null ~/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/deploy_key
+          {
+            printf 'IMAGE=%q GHCR_USER=%q GHCR_TOKEN=%q\n' "$IMAGE" "$GHCR_USER" "$GHCR_TOKEN"
+            cat billing/deploy/remote-deploy.sh
+          } | ssh -i ~/deploy_key -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 "$DEPLOY_TARGET" bash -s
