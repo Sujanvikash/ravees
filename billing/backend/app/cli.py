@@ -5,6 +5,7 @@ Commands for running the billing API.
     uv run python -m app.cli seed --season-from-excel      # also reset "in season" to the Excel's column
     uv run python -m app.cli seed --excel path/to/file.xlsx
     uv run python -m app.cli demo                          # build the demo again from scratch
+    uv run python -m app.cli refresh-demo                  # build it only if it is missing or out of date
 
 seed fills the database: the five showrooms, a login for each plus the admin (default passwords), and the
 product catalogue from seed/products-clean.xlsx. Safe to run again: it never changes a password, and it keeps
@@ -12,6 +13,9 @@ the admin's season choices unless --season-from-excel is given. If there is no d
 (--no-demo to skip).
 
 demo throws the demo's sample data away and builds a fresh month of it. The real data is never touched.
+
+refresh-demo is what the server runs on every start: it builds the demo only when there is none, or when a deploy
+changed the models so its tables no longer match. It never fails the start (a broken demo must not stop the API).
 """
 
 import argparse
@@ -21,6 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app import db_models  # noqa: F401  (registers every table, so relationships resolve)
+from app.core.config import get_settings
 from app.core.database import session_scope
 from app.modules.demo import builder as demo_builder
 from app.modules.locations import repository as locations
@@ -64,6 +69,22 @@ def seed(*, season_from_excel: bool = False, excel: Path = DEFAULT_EXCEL) -> See
         )
 
 
+def refresh_demo() -> None:
+    """Builds the demo when it is missing or out of date, else leaves it (and its data) alone. Any error is
+    printed and swallowed: this runs as the API starts."""
+    if not get_settings().demo_enabled:
+        print('Demo is switched off.')
+        return
+    try:
+        if demo_builder.demo_is_current():
+            print('Demo is up to date.')
+        else:
+            print('Demo is missing or out of date; building it.')
+            print(demo_builder.build_demo())
+    except Exception as error:  # noqa: BLE001  (a broken demo must not stop the API)
+        print(f'Could not build the demo: {error}', file=sys.stderr)
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='python -m app.cli', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -76,6 +97,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     seed_cmd.add_argument('--no-demo', action='store_true', help="don't build the demo when there isn't one")
     commands.add_parser('demo', help='build the demo (sample data, kept apart from the real data) again from scratch')
+    commands.add_parser('refresh-demo', help='build the demo only if it is missing or behind the models')
     return parser
 
 
@@ -88,6 +110,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(demo_builder.build_demo(args.excel))
         elif args.command == 'demo':
             print(demo_builder.build_demo())
+        elif args.command == 'refresh-demo':
+            refresh_demo()
     except (CatalogueFileError, FileNotFoundError) as error:
         print(f'Could not read the product Excel: {error}', file=sys.stderr)
         return 1

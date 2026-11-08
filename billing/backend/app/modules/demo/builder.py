@@ -25,7 +25,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from openpyxl import load_workbook
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app import db_models  # noqa: F401  (registers every table)
@@ -117,6 +117,22 @@ def demo_exists() -> bool:
                 {'s': DEMO_SCHEMA},
             )
         )
+
+
+def demo_is_current() -> bool:
+    """Whether the demo schema has every table and column the models now have. The demo isn't migrated (it is
+    built from the models), so after a deploy that changes a model it falls behind until it is built again."""
+    inspector = inspect(get_engine())
+    if DEMO_SCHEMA not in inspector.get_schema_names():
+        return False
+    have = set(inspector.get_table_names(schema=DEMO_SCHEMA))
+    for table in Base.metadata.sorted_tables:
+        if table.name not in have:
+            return False
+        columns = {c['name'] for c in inspector.get_columns(table.name, schema=DEMO_SCHEMA)}
+        if not {c.name for c in table.columns} <= columns:
+            return False
+    return True
 
 
 def _recreate_schema() -> None:

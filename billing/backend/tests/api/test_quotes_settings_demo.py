@@ -1,8 +1,11 @@
 import uuid
 
 import pytest
+from sqlalchemy import text
 
-from app.modules.demo.builder import build_demo
+from app import cli
+from app.core.database import get_engine
+from app.modules.demo.builder import build_demo, demo_is_current
 
 from .test_sales import CUSTOMER, season_code
 
@@ -132,3 +135,17 @@ def test_demo_reset(client, demo_built):
 def test_demo_discount_needs_no_password(client, demo_built):
     _, headers = demo(client, 'chennai')
     assert client.post('/auth/check-password', json={'password': ''}, headers=headers).status_code == 204
+
+
+def test_refresh_demo_builds_only_a_demo_that_is_out_of_date(demo_built, capsys):
+    assert demo_is_current()
+    cli.refresh_demo()
+    assert 'up to date' in capsys.readouterr().out
+
+    # a deploy that adds a column leaves the demo schema behind: the next start builds it again
+    with get_engine().begin() as conn:
+        conn.execute(text('ALTER TABLE demo.products DROP COLUMN image'))
+    assert not demo_is_current()
+    cli.refresh_demo()
+    assert 'building it' in capsys.readouterr().out
+    assert demo_is_current()

@@ -23,6 +23,8 @@ USER billing
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"
-# Migrations run on every start, so a new image brings its tables with it. One worker only: the wrong-password
-# brake is counted in memory. The proxy in front (Caddy) passes on the counter's real address.
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips='*'"]
+# Migrations run on every start, so a new image brings its tables with it. The demo isn't migrated, so it is built
+# again in the background when it is missing or behind the models (see `refresh-demo`); it never stops the API.
+# One worker only: the wrong-password brake is counted in memory. The proxy in front (Caddy) passes on the
+# counter's real address.
+CMD ["sh", "-c", "alembic upgrade head && (python -m app.cli refresh-demo &) && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips='*'"]
