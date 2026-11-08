@@ -44,7 +44,13 @@ jobs:
           version: '0.8.22'
           enable-cache: true
           cache-dependency-glob: billing/backend/uv.lock
-      - run: uv sync --frozen
+      - name: Install dependencies
+        run: |
+          # on failure, put the end of uv's output in an annotation so the cause shows without opening the log
+          uv sync --frozen 2>&1 | tee /tmp/uv-sync.log; status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then echo "::error title=uv sync failed::$(tail -n 12 /tmp/uv-sync.log | tr '
+' '|' | cut -c1-900)"; fi
+          exit $status
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest
