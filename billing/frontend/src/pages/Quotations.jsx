@@ -12,7 +12,7 @@ import { billKey, useBill } from '../hooks/useBill.js';
 import { useClock } from '../hooks/useClock.js';
 import { useCustomerLookup } from '../hooks/useCustomerLookup.js';
 import { useScanner } from '../hooks/useScanner.js';
-import { findProduct } from '../lib/catalogue.js';
+import { findProduct, productImages } from '../lib/catalogue.js';
 import { billNumber, buildBill, countLabel, gstLines, nextSeq } from '../lib/bill.js';
 import { customerLabel, isValidMobile, isValidName, phoneDigits, typedMobile } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
@@ -60,8 +60,10 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
   useEffect(() => {
     if (printJob) window.print();
   }, [printJob]);
-  const print = (quote) => {
-    setPrinting(quote);
+  const print = async (quote) => {
+    // the pictures come first, so they are on the page when the print dialog opens (printed without if they can't load)
+    const pictures = await productImages(quote.lines.map((l) => l.code)).catch(() => ({}));
+    setPrinting({ quote, pictures });
     setPrintJob((n) => n + 1);
   };
 
@@ -277,7 +279,7 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
           </div>
         </div>
       </div>
-      {printing && <QuotationPrint quote={printing} />}
+      {printing && <QuotationPrint quote={printing.quote} pictures={printing.pictures} />}
     </>
   );
 };

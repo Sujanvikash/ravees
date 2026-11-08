@@ -43,7 +43,7 @@ const DayFigures = ({ day, opening }) => (
 
 /** A showroom counts its drawer at the end of the day and closes it; the difference goes to the admin. */
 const CloseForm = ({ onClosed, onReopened }) => {
-  const { cashDay, closeDay, reopenDay, sales } = useStore();
+  const { cashDay, closeDay, reopenDay, sales, offline } = useStore();
   const [date, setDate] = useState(todayIST);
   const [day, setDay] = useState(null);
   const [error, setError] = useState('');
@@ -79,6 +79,8 @@ const CloseForm = ({ onClosed, onReopened }) => {
     e.preventDefault();
     setError('');
     if (!(total >= 0)) return setError('Count the cash in the drawer.');
+    // bills made offline aren't in the server's cash figures until they are sent
+    if (offline.pending) return setError(`${offline.pending} ${offline.pending === 1 ? 'bill made offline hasn’t' : 'bills made offline haven’t'} reached the server yet. Close the day once they have.`);
     setBusy(true);
     try {
       const saved = await closeDay({

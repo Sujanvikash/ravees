@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import Field, field_validator
+from pydantic import AwareDatetime, Field, field_validator
 
 from app.core.schemas import ApiModel
 
@@ -88,9 +88,18 @@ class PaymentIn(ApiModel):
     print: bool = False
 
 
+class OfflineIn(ApiModel):
+    """A bill the counter made while the internet was down and sends once it is back: the number printed on its
+    receipt (from the counter's own offline series, see numbering.check_offline_bill_no) and when it was made."""
+
+    bill_no: str = Field(max_length=32)
+    at: AwareDatetime
+
+
 class SaleIn(ApiModel):
-    """A bill from the counter. Prices, totals and the bill number come from the server. `id` is made by the
-    counter, so a bill sent twice (a retry after a dropped connection) is saved once."""
+    """A bill from the counter. Prices, totals and the bill number come from the server, except for a bill made
+    offline, which keeps the number it was printed with (`offline`). `id` is made by the counter, so a bill sent
+    twice (a retry after a dropped connection) is saved once."""
 
     id: uuid.UUID
     lines: list[LineIn] = Field(min_length=1, max_length=500)
@@ -98,6 +107,7 @@ class SaleIn(ApiModel):
     name: str = Field(max_length=120)
     payment: PaymentIn
     discount: DiscountIn | None = None
+    offline: OfflineIn | None = None
 
     @field_validator('name')
     @classmethod
@@ -111,6 +121,12 @@ class CollectionIn(ApiModel):
     id: uuid.UUID
     amount: Annotated[float, Field(gt=0, le=100_000_000)]
     payment: PaymentIn
+
+
+class OfflineCounterOut(ApiModel):
+    """This browser's own number at its showroom, for numbering the bills it makes offline."""
+
+    counter: int
 
 
 class CollectionOut(ApiModel):

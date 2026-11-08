@@ -23,6 +23,10 @@ from .schemas import CollectionIn, CustomerOut, PaymentIn, SaleIn, check_custome
 ADMIN_CANNOT_BILL = 'Bills are made at a showroom counter: sign in as the showroom.'
 ADMIN_CANNOT_COLLECT = 'A balance is collected at the showroom counter: sign in as the showroom.'
 CREDIT_NEEDS_CUSTOMER = 'A credit bill needs the customer’s name and mobile number, to collect the balance.'
+ADMIN_CANNOT_GO_OFFLINE = 'Only a showroom counter bills offline.'
+NO_MORE_COUNTERS = 'This showroom already has 99 offline counters; ask for help to reset them.'
+BAD_OFFLINE_NO = 'That offline bill number isn’t one this showroom’s counters were given.'
+OFFLINE_NO_TAKEN = 'That offline bill number is already used by another bill.'
 PAISA = Decimal('0.01')
 
 
@@ -56,15 +60,27 @@ def find_customer(session: Session, phone: str) -> CustomerOut | None:
     return CustomerOut(phone=digits, name=name or '', bills=bills, last=last)
 
 
-def _payment(payment: PaymentIn, payable: Decimal, credit: Decimal = Decimal(0), *, later: bool = True) -> dict:
+def _payment(
+    payment: PaymentIn,
+    payable: Decimal,
+    credit: Decimal = Decimal(0),
+    *,
+    later: bool = True,
+    lenient: bool = False,
+) -> dict:
     """The payment as kept on the sale, checked against the amount due. `credit` is the value of goods brought
     back in an exchange; it comes off the amount due first, and if it covers the whole bill nothing is paid.
     Then `payment.later` (a credit bill) is left to pay later, kept as 'later', and the method pays the rest;
-    when nothing is paid now the method is 'later'. later=False ignores it (a collection is paid in full)."""
+    when nothing is paid now the method is 'later'. later=False ignores it (a collection is paid in full).
+
+    lenient=True is for a bill made offline: the money has already changed hands, so it is recorded as it was
+    rather than refused, even if a price changed on the server since the counter last loaded the catalogue."""
     used = min(credit, payable)
     due = payable - used
     extra = {'credit': float(used)} if used else {}
     owed = Decimal(str(payment.later)).quantize(PAISA) if later else Decimal(0)
+    if owed > due and lenient:
+        owed = due
     if owed > due:
         raise InvalidInput('The amount left to pay later is more than the amount due.')
     if owed > 0:
@@ -82,12 +98,12 @@ def _payment(payment: PaymentIn, payable: Decimal, credit: Decimal = Decimal(0),
         }
     if payment.method == 'cash':
         received = Decimal(str(payment.received))
-        if received < due:
+        if received < due and not lenient:
             raise InvalidInput('The cash received is less than the amount due.')
         return {
             'method': 'cash',
             'received': float(received),
-            'change': float(received - due),
+            'change': float(max(received - due, Decimal(0))),
             'approval': '',
             'split': None,
             'print': payment.print,
@@ -97,10 +113,11 @@ def _payment(payment: PaymentIn, payable: Decimal, credit: Decimal = Decimal(0),
     if payment.method == 'split':
         parts = payment.split
         paid = [parts.cash, parts.upi, parts.card] if parts else []
-        if sum(v > 0 for v in paid) < 2 or abs(sum(paid) - float(due)) > 0.005:
+        if not lenient and (sum(v > 0 for v in paid) < 2 or abs(sum(paid) - float(due)) > 0.005):
             raise InvalidInput('Use at least two of cash, UPI and card, and make them add up to the amount due.')
+        cash, upi = (parts.cash, parts.upi) if parts else (0, 0)
         # the card part takes up any paisa of rounding
-        split = {'cash': parts.cash, 'upi': parts.upi, 'card': float(due) - parts.cash - parts.upi}
+        split = {'cash': cash, 'upi': upi, 'card': max(float(due) - cash - upi, 0)}
     approval = payment.approval.strip() if payment.method == 'card' else ''
     return {
         'method': payment.method,
@@ -135,6 +152,17 @@ def takings(payment: dict) -> tuple[Decimal, Decimal, Decimal]:
     return cash_in(payment), Decimal(0), Decimal(0)
 
 
+def offline_counter(session: Session, user: User) -> int:
+    """A new offline counter number for a browser at this showroom (see numbering.next_offline_counter)."""
+    if user.is_admin or not user.location_id:
+        raise Forbidden(ADMIN_CANNOT_GO_OFFLINE)
+    counter = numbering.next_offline_counter(session, user.location_id)
+    if counter is None:
+        raise Conflict(NO_MORE_COUNTERS)
+    session.commit()
+    return counter
+
+
 def _existing(session: Session, user: User, data: SaleIn) -> Sale | None:
     sale = session.get(Sale, data.id)
     if sale and sale.location_id != user.location_id:
@@ -156,12 +184,23 @@ def create_sale(
     number, and its items taken off the showroom's stock, all in one transaction. A bill whose id is already
     saved is returned as it was, so a retry never bills twice.
 
+    A bill made offline (data.offline) keeps the number and time printed on its receipt, and is recorded as it
+    was paid (see _payment's lenient): it happened already, so it is not turned away now.
+
     An exchange passes the returned goods' value as `credit` (and its credit note number), and commit=False so
     the return and the new bill are saved together."""
     if user.is_admin or not user.location_id:
         raise Forbidden(ADMIN_CANNOT_BILL)
     if existing := _existing(session, user, data):
         return existing
+    offline = data.offline
+    if offline:
+        # the counter's clock may run a little fast; a bill is never later than now
+        at = min(offline.at, clock.now())
+        if not numbering.check_offline_bill_no(session, user.location_id, offline.bill_no, at):
+            raise InvalidInput(BAD_OFFLINE_NO)
+        if session.scalar(select(Sale.id).where(Sale.bill_no == offline.bill_no)):
+            raise Conflict(OFFLINE_NO_TAKEN)
     prefs = app_settings.get(session)
     # a credit bill always needs the customer's name and mobile, whatever the admin's settings: it's who owes
     credit_bill = data.payment.later > 0
@@ -178,12 +217,12 @@ def create_sale(
     catalogue = products.by_codes(session, (line.code for line in data.lines))
     lines = bill.bill_lines(((line.code, line.qty) for line in data.lines), catalogue)
     totals = bill.totals(lines, data.discount)
-    payment = _payment(data.payment, Decimal(str(totals['payable'])), credit)
+    payment = _payment(data.payment, Decimal(str(totals['payable'])), credit, lenient=offline is not None)
     if credit_note:
         payment['creditNote'] = credit_note
 
     at = at or clock.now()
-    bill_no, _ = numbering.next_bill_no(session, user.location_id, at)
+    bill_no = offline.bill_no if offline else numbering.next_bill_no(session, user.location_id, at)[0]
     sale = Sale(
         id=data.id,
         bill_no=bill_no,
@@ -221,6 +260,8 @@ def create_sale(
         session.rollback()
         if existing := _existing(session, user, data):
             return existing
+        if offline:
+            raise Conflict(OFFLINE_NO_TAKEN) from None
         raise
     return sale
 
