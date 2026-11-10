@@ -5,10 +5,11 @@ those products the season: they get Y in "In Season 2026", every other product l
     python add_products.py products-2026.xls products-clean.xlsx
 
 Needs: pip install xlrd openpyxl. Cleans the rows the same way as clean_products.py, but prices them the way the
-list means: a customer pays the retail price (Ret.Rate) less the discount column (DiscP), so the Offer Price is
-worked out from those (S.Price isn't used); a discount below 0 is dropped. It also puts back the last 0 of a 7-digit
-HSN. Refuses a list whose codes are already in the catalogue, so running it twice does nothing. What was changed or
-still needs checking goes in a "Review <file>" sheet.
+list means: a customer pays the S.Price, and the Discount % is worked out from it and the retail price (Ret.Rate),
+so the two always agree (the list's DiscP doesn't always lead to the S.Price); an S.Price above the Ret.Rate sells
+at the Ret.Rate. It also puts back the last 0 of a 7-digit HSN, rows whose cells were moved one column to the left,
+and the fixes the client confirmed (CONFIRMED). Refuses a list whose codes are already in the catalogue, so running
+it twice does nothing. What was changed or still needs checking goes in a "Review <file>" sheet.
 """
 import sys, re, unicodedata
 from collections import Counter
@@ -23,9 +24,29 @@ SRC, OUT = Path(sys.argv[1]), Path(sys.argv[2])
 YEAR = 2026
 SEASON = f'In Season {YEAR}'
 
-sh = xlrd.open_workbook(SRC).sheet_by_index(0)
+sh = xlrd.open_workbook(SRC, formatting_info=True).sheet_by_index(0)
 H = [h.strip() for h in sh.row_values(2)]
 col = {h: i for i, h in enumerate(H) if h}
+merged = {(r, c): sh.cell_value(r0, c0)
+          for r0, r1, c0, c1 in sh.merged_cells for r in range(r0, r1) for c in range(c0, c1)}
+TAXES = {5.0, 12.0, 18.0, 28.0}
+# where the list itself is wrong, as the client confirmed: code -> {column: value}
+CONFIRMED = {
+    'SR26005': {'S.Price': 1440},  # the list has 14.4 (10 Nov 2026)
+}
+
+
+def cells(r):
+    """Row r's cells by column name, and whether they had to be put back. A merged cell belongs to every row it covers
+    (LL2611 and LL2612 share one Product Name). A row whose cells from Mfr.Date on were moved one column to the left
+    (the 18% tax under Mfr.Date, the S.Price under P.Tax%) is put back."""
+    v = [merged.get((r, c), x) for c, x in enumerate(sh.row_values(r))]
+    v += [''] * (sh.ncols - len(v))
+    m = col['Mfr.Date']
+    shifted = v[m] in TAXES and v[col['P.Tax%']] not in TAXES | {0.0, ''}
+    if shifted:
+        v = v[:m] + [''] + v[m:-1]
+    return {h: v[i] for h, i in col.items()}, shifted
 
 
 def txt(v):
@@ -52,8 +73,10 @@ have = {str(ws.cell(r, 1).value).strip().upper() for r in range(2, ws.max_row + 
 
 new, review = [], []
 for r in range(3, sh.nrows):
+    row, shifted = cells(r)
+
     def g(h):
-        return sh.cell_value(r, col[h])
+        return row[h]
 
     code, name = txt(g('Code')).upper(), txt(g('Product Name'))
     if not code:
@@ -61,21 +84,34 @@ for r in range(3, sh.nrows):
     if code in have:
         sys.exit(f'{code} (row {r + 1}) is already in {OUT.name}: nothing added.')
     issues = []
-    # a customer pays the retail price (MRP) less the discount column; the cost (D.Rate) is what a showroom is invoiced
-    mrp, cost, disc = num(g('Ret.Rate')), round(num(g('D.Rate')), 2), num(g('DiscP'))  # the discount unrounded: 9.589041...
+    if shifted:
+        issues.append('Cells from Mfr.Date on were one column to the left: put back')
+    for h, value in CONFIRMED.get(code, {}).items():
+        issues.append(f'{h} {txt(row[h])} in the list, {value:g} as the client confirmed')
+        row[h] = value
+    # a customer pays the S.Price, the discount is what that takes off the retail price (MRP); the cost (D.Rate) is
+    # what a showroom is invoiced
+    mrp, cost, listed, given = num(g('Ret.Rate')), round(num(g('D.Rate')), 2), num(g('S.Price')), num(g('DiscP'))
     if mrp == 0:
         issues.append('MRP is 0')
     if cost == 0:
         issues.append('Cost (D.Rate) is 0')
-    if disc < 0 or disc >= 100:
-        issues.append(f'Discount {disc:.2f}% would sell it at {mrp * (1 - disc / 100):.2f}: no discount, sells at the MRP {mrp:g}')
-        disc = 0
-    elif disc > 50:
-        issues.append(f'Discount {disc:.2f}% looks too large: sells at {mrp * (1 - disc / 100):.2f}')
-    offer = round(mrp * (1 - disc / 100), 2) if disc and mrp else 0.0
-    listed = num(g('S.Price'))
-    if offer and listed and abs(offer - listed) >= 0.5:
-        issues.append(f'Sells at {offer:g} (MRP less {disc:.2f}%), not the S.Price {listed:g}')
+    if not listed:
+        offer = round(mrp * (1 - given / 100), 2) if 0 < given < 100 else mrp
+        issues.append(f'No S.Price: sells at {offer:g} (MRP less the DiscP)')
+    elif listed > mrp:
+        issues.append(f'S.Price {listed:g} is above the MRP {mrp:g}: sells at the MRP')
+        offer = mrp
+    else:
+        offer = listed
+    disc = (1 - offer / mrp) * 100 if mrp else 0.0
+    if 0 < listed <= mrp and abs(mrp * (1 - given / 100) - offer) >= 0.5:
+        issues.append(f'DiscP {given:.2f}% doesn\'t give the S.Price {offer:g}: the discount is {disc:.2f}%')
+    if disc > 50:
+        issues.append(f'Discount {disc:.2f}% looks too large')
+    if cost and offer and cost >= offer:
+        issues.append(f'Cost (D.Rate) {cost:g} is not below the price {offer:g}')
+    offer = offer if offer < mrp else 0.0  # no discount: sells at the MRP
     disc = round(disc, 2) or None
     barcode = txt(g('Supl Code'))
     if isinstance(g('Supl Code'), float) and len(barcode) >= 12 and re.search(r'0{5,}$', barcode):
@@ -158,7 +194,8 @@ notes = wb['Notes']
 notes.append(('', '', ''))
 notes.append((SRC.name, f'Season {YEAR} list',
               f'{len(new)} new products added (Source File = {SRC.name}, Source Row = its row), and made the season: '
-              f'only they have Y in "{SEASON}". {len(review)} flagged in "{title}".'))
+              f'only they have Y in "{SEASON}". Priced at the S.Price, with the Discount % worked out from it. '
+              f'{len(review)} flagged in "{title}".'))
 wb.save(OUT)
 
 print(f'added={len(new)} review={len(review)} catalogue={len(have) + len(new)}')

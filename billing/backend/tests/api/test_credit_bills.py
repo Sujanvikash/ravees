@@ -2,7 +2,13 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from .conftest import login
-from .test_sales import CUSTOMER, sale, season_code
+from .test_sales import CUSTOMER, sale
+
+
+def dear_code(client, headers):
+    """A season product of ₹1,000 or more, so the parts paid now and later below fit inside its bill."""
+    products = client.get('/products', headers=headers).json()['products']
+    return next(p['code'] for p in products if p['inSeason'] and (p['offer'] or p['mrp']) >= 1000)
 
 
 def payable_of(client, headers, lines):
@@ -16,7 +22,7 @@ def collect(client, headers, sale_id, amount, method='cash', **payment):
 
 
 def test_a_credit_bill_takes_part_now_and_owes_the_rest(client, chennai):
-    lines = [{'code': season_code(client, chennai), 'qty': 3}]
+    lines = [{'code': dear_code(client, chennai), 'qty': 3}]
     total = payable_of(client, chennai, lines)
 
     r = client.post('/sales', json=sale(lines, 'cash', received=1000, later=total - 1000), headers=chennai)
@@ -35,7 +41,7 @@ def test_a_credit_bill_takes_part_now_and_owes_the_rest(client, chennai):
 
 
 def test_credit_bill_rules(client, chennai):
-    lines = [{'code': season_code(client, chennai), 'qty': 1}]
+    lines = [{'code': dear_code(client, chennai), 'qty': 1}]
     total = payable_of(client, chennai, lines)
 
     def refused(body):
@@ -51,7 +57,7 @@ def test_credit_bill_rules(client, chennai):
 
 
 def test_collecting_the_balance_in_parts(client, chennai, admin):
-    lines = [{'code': season_code(client, chennai), 'qty': 3}]
+    lines = [{'code': dear_code(client, chennai), 'qty': 3}]
     total = payable_of(client, chennai, lines)
     s = client.post('/sales', json=sale(lines, 'upi', later=total), headers=chennai).json()
 
@@ -91,7 +97,7 @@ def test_collecting_the_balance_in_parts(client, chennai, admin):
 
 def test_collections_count_in_the_days_cash(client):
     mumbai = login(client, 'mumbai')
-    lines = [{'code': season_code(client, mumbai), 'qty': 2}]
+    lines = [{'code': dear_code(client, mumbai), 'qty': 2}]
     total = payable_of(client, mumbai, lines)
     before = client.get('/cash/day', headers=mumbai).json()
 
@@ -107,7 +113,7 @@ def test_collections_count_in_the_days_cash(client):
 
 def test_a_return_on_a_credit_bill_pays_off_the_balance_first(client):
     goa = login(client, 'goa')
-    code = season_code(client, goa)
+    code = dear_code(client, goa)
     lines = [{'code': code, 'qty': 2}]
     total = payable_of(client, goa, lines)
     s = client.post('/sales', json=sale(lines, 'upi', received=0, later=total - 100), headers=goa).json()

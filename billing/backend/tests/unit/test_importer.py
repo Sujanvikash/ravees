@@ -63,6 +63,21 @@ def test_a_2026_product_row(catalogue):
     }
 
 
+def test_2026_prices_are_the_client_s_final_list(catalogue):
+    by_code = {p['code']: p for p in catalogue.products}
+
+    def price(code):
+        p = by_code[code]
+        return p['mrp'], p['offer'], p['cost']
+
+    assert price('FD26001') == (140, 120, Decimal('40.72'))  # the S.Price, though its DiscP gave 113.68
+    assert price('SR26015') == (7650, 6200, Decimal('1882.58'))  # the D.Rate put back on its own row
+    assert price('SR26005') == (1750, 1440, Decimal('423.58'))  # 14.4 in the list, 1440 as the client confirmed
+    assert price('SR26039')[1] == 0  # an S.Price above the MRP: sells at the MRP
+    assert price('LL2601') == (1600, 1440, Decimal('394.45'))  # its cells were a column to the left in the list
+    assert by_code['LL2612']['name'] == by_code['LL2611']['name']  # one merged cell names both
+
+
 def test_departments_are_sentence_case(catalogue):
     assert sentence_case('TREE HANGINGS') == 'Tree hangings'
     assert all(p['dept'] == sentence_case(p['dept']) for p in catalogue.products)
