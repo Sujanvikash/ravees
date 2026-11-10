@@ -139,9 +139,9 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
     { products: 0, units: 0, value: 0, low: 0, out: 0, onOrder: 0 },
   );
   const matrix = admin && !location;
-  // A quick "+ Add stock" top-up (no Excel): a showroom for any product into its own stock (its own shop-added
-  // products, or any catalogue product); the admin for any product in its own warehouse stock.
-  const canAddStock = (p) => (admin ? warehouse : !p.shop || p.shop.location === session.location);
+  // A quick "+ Add stock" top-up (no Excel): a showroom only for its own shop-added products (catalogue products
+  // reach it through purchase orders and the admin's invoices); the admin for any product in its own warehouse stock.
+  const canAddStock = (p) => (admin ? warehouse : p.shop?.location === session.location);
   const crumb = location ? `${locationById(location).city} · ${locationById(location).area}` : 'All showrooms';
 
   return (
@@ -425,7 +425,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
         <AddOwnStockDialog
           product={addingTo}
           location={admin ? 'warehouse' : session.location}
-          source={!admin && addingTo.shop ? 'own-product' : 'manual'}
+          source={admin ? 'manual' : 'own-product'}
           onClose={() => setAddingTo(null)}
           onDone={(product, units) => {
             setAddingTo(null);
