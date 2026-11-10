@@ -15,7 +15,8 @@ the admin's season choices unless --season-from-excel is given. If there is no d
 demo throws the demo's sample data away and builds a fresh month of it. The real data is never touched.
 
 refresh-demo is what the server runs on every start: it builds the demo only when there is none, or when a deploy
-changed the models so its tables no longer match. It never fails the start (a broken demo must not stop the API).
+changed the models so its tables no longer match, or changed the product Excel or opening stock it was built from.
+It never fails the start (a broken demo must not stop the API).
 """
 
 import argparse
@@ -97,7 +98,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     seed_cmd.add_argument('--no-demo', action='store_true', help="don't build the demo when there isn't one")
     commands.add_parser('demo', help='build the demo (sample data, kept apart from the real data) again from scratch')
-    commands.add_parser('refresh-demo', help='build the demo only if it is missing or behind the models')
+    commands.add_parser('refresh-demo', help='build the demo only if it is missing or behind the models or seed files')
     return parser
 
 

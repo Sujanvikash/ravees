@@ -16,6 +16,7 @@ and a month of sample activity made through the same services the app uses, so e
 It is made the same way every time (a seeded random generator), relative to now.
 """
 
+import hashlib
 import math
 import random
 import uuid
@@ -55,12 +56,14 @@ from app.modules.sales.schemas import LineIn, PaymentIn, SaleIn, SplitIn
 from app.modules.stock import repository as stock
 from app.modules.stock import service as stock_service
 from app.modules.stock.schemas import ImportLineIn, StockImportIn
+from app.modules.system import repository as app_settings
 from app.modules.transfers import service as transfers
 from app.modules.transfers.schemas import StockReturnIn, StockReturnReceiveIn
 from app.modules.users import repository as users
 from app.modules.users import service as users_service
 
 OPENING_DIR = BACKEND_DIR / 'seed' / 'opening-stock-2026'
+SEED_KEY = 'demo_seed'  # in the demo's own app_settings: seed_fingerprint() of the files it was built from
 DAYS = 30
 FLOAT = 2000  # cash kept in each drawer overnight
 SMALL_RETURN = 1500  # the most a sample return refunds
@@ -119,9 +122,18 @@ def demo_exists() -> bool:
         )
 
 
+def seed_fingerprint(excel: Path = DEFAULT_EXCEL) -> str:
+    """A hash of the files the demo is built from: the product Excel and the opening-stock sheets."""
+    digest = hashlib.sha256(excel.read_bytes())
+    for path in sorted(OPENING_DIR.glob('*.xlsx')):
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
 def demo_is_current() -> bool:
-    """Whether the demo schema has every table and column the models now have. The demo isn't migrated (it is
-    built from the models), so after a deploy that changes a model it falls behind until it is built again."""
+    """Whether the demo schema has every table and column the models now have, and was built from the seed files
+    as they are now. The demo isn't migrated (it is built from the models and the files), so after a deploy that
+    changes a model or the product list it falls behind until it is built again."""
     inspector = inspect(get_engine())
     if DEMO_SCHEMA not in inspector.get_schema_names():
         return False
@@ -132,7 +144,8 @@ def demo_is_current() -> bool:
         columns = {c['name'] for c in inspector.get_columns(table.name, schema=DEMO_SCHEMA)}
         if not {c.name for c in table.columns} <= columns:
             return False
-    return True
+    with get_session_factory(demo=True)() as session:
+        return app_settings.get_value(session, SEED_KEY) == seed_fingerprint()
 
 
 def _recreate_schema() -> None:
@@ -420,11 +433,11 @@ class _Builder:
                 )
 
     def pack_boxes(self) -> None:
-        """A shipment of supplier-packed boxes (the products on a real box label) in the admin warehouse. Three go
+        """A shipment of supplier-packed boxes (a few of the season's products) in the admin warehouse. Three go
         to Chennai on a transfer invoice (answering its purchase order): one paid and added to its stock, one
         only raised. Two more are billed to Mumbai."""
-        label = ['BR175', 'TA003', 'TA033', 'TA125', 'TA151', 'TA166', 'TA181', 'TA188', 'TA207', 'TA223', 'TA252']
-        codes = sorted(products.by_codes(self.s, label))
+        season = sorted(p.code for p in products.list_all(self.s) if p.in_season)
+        codes = sorted(self.rand.sample(season, k=min(11, len(season))))
         if not codes:
             return
         packed = [
@@ -473,6 +486,7 @@ def build_demo(excel: Path = DEFAULT_EXCEL, *, now: datetime | None = None) -> D
         locations.add_missing_showrooms(session)
         users_service.add_missing_logins(session)
         products_service.import_catalogue(session, catalogue, season_from_excel=True)
+        app_settings.set_value(session, SEED_KEY, seed_fingerprint(excel))
         session.commit()
 
         b = _Builder(session, now or clock.now())

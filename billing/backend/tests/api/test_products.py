@@ -24,10 +24,10 @@ WREATH = {'name': 'Handmade  wreath 12 inch', 'dept': 'Wall decoration', 'mrp': 
 def test_catalogue(client, chennai):
     data = client.get('/products', headers=chennai).json()
     assert data['season'] == '2026'
-    assert len(data['products']) >= 2922
+    assert len(data['products']) >= 2922 + 477
     assert set(data['products'][0]) == PRODUCT_FIELDS
     season = [p for p in data['products'] if p['inSeason']]
-    assert len(season) == 25
+    assert len(season) == 477
     tr = next(p for p in data['products'] if p['code'] == 'TR0232')
     assert tr['dept'] == 'Trees' and tr['mrp'] > 0 and tr['shop'] is None
     assert isinstance(tr['mrp'], int | float) and isinstance(tr['gst'], int | float)

@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 from app import cli
 from app.core.database import get_engine
-from app.modules.demo.builder import build_demo, demo_is_current
+from app.modules.demo.builder import SEED_KEY, build_demo, demo_is_current
 
 from .test_sales import CUSTOMER, season_code
 
@@ -184,3 +184,20 @@ def test_refresh_demo_builds_only_a_demo_that_is_out_of_date(demo_built, capsys)
     cli.refresh_demo()
     assert 'building it' in capsys.readouterr().out
     assert demo_is_current()
+
+    # so does a deploy that changes the product Excel (or the opening stock) the demo was built from
+    with get_engine().begin() as conn:
+        conn.execute(text(f"UPDATE demo.app_settings SET value = 'old' WHERE key = '{SEED_KEY}'"))
+    assert not demo_is_current()
+    cli.refresh_demo()
+    assert 'building it' in capsys.readouterr().out
+    assert demo_is_current()
+
+
+def test_the_demo_season_is_the_2026_list(client, demo_built):
+    _, d_admin = demo(client, 'admin')
+    season = {p['code'] for p in client.get('/products', headers=d_admin).json()['products'] if p['inSeason']}
+    assert len(season) == 477 and 'CT26020' in season and 'TR0232' not in season
+    # the showrooms' opening stock and the sample deliveries are all from that list
+    stock = client.get('/stock', headers=d_admin).json()
+    assert {code for levels in stock.values() for code in levels} <= season

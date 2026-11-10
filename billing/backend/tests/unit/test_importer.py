@@ -20,9 +20,11 @@ def catalogue():
 
 def test_reads_the_real_product_excel(catalogue):
     assert catalogue.season == '2026'
-    assert len(catalogue.products) == 2922
-    assert sum(p['in_season'] for p in catalogue.products) == 25
-    assert len({p['code'] for p in catalogue.products}) == 2922
+    assert len(catalogue.products) == 2922 + 477
+    assert len({p['code'] for p in catalogue.products}) == 2922 + 477
+    # the season is exactly the 2026 list (seed/products-2026.xls), whose codes all carry the year
+    season = [p['code'] for p in catalogue.products if p['in_season']]
+    assert len(season) == 477 and all('26' in code for code in season)
 
 
 def test_a_product_row(catalogue):
@@ -41,7 +43,24 @@ def test_a_product_row(catalogue):
         'in_season': False,
     }
     tr = next(p for p in catalogue.products if p['code'] == 'TR0232')
-    assert tr['dept'] == 'Trees' and tr['mrp'] > 0
+    assert tr['dept'] == 'Trees' and tr['mrp'] > 0 and not tr['in_season']
+
+
+def test_a_2026_product_row(catalogue):
+    ct = next(p for p in catalogue.products if p['code'] == 'CT26020')
+    assert ct == {
+        'code': 'CT26020',
+        'name': '120 CM PINE NEEDLE +PVC CONE TREE',
+        'type': 'Product',
+        'dept': '',
+        'barcode': '',
+        'hsn': '95051000',
+        'mrp': Decimal(7300),
+        'offer': Decimal(6600),
+        'cost': Decimal('1930.48'),
+        'gst': Decimal(18),
+        'in_season': True,
+    }
 
 
 def test_departments_are_sentence_case(catalogue):

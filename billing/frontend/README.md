@@ -54,8 +54,8 @@ The menu shows a red badge when something needs doing: requests to review for th
 **Purchase Excel format:** one row per product, with a `Code` column and a `Qty` column, plus an optional `Purchase rate` (or `Rate` / `Cost`). If there is no rate, the product's cost price is used. The header row is found by name, so a title row above it, extra columns or a different column order are fine. A code that appears twice is added up. Unknown codes and bad quantities are listed and skipped. It must be an `.xlsx` file: re-save old `.xls` files from Excel.
 
 - `public/purchase-template.xlsx` is a blank template (also linked from the app).
-- `billing/backend/seed/sample-purchase-2026.xlsx` is a sample with the 25 season products, for testing.
-- `billing/backend/seed/opening-stock-2026/` has one sample opening-stock file per showroom (all 25 season products, a few left out as out of stock). Import each in Inventory → Import stock, choosing that showroom.
+- `billing/backend/seed/sample-purchase-2026.xlsx` is a sample with 25 of the season's products, for testing.
+- `billing/backend/seed/opening-stock-2026/` has one sample opening-stock file per showroom (60 of the season's products each). Import each in Inventory → Import stock, choosing that showroom.
 
 ## Returns and exchanges
 

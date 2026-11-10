@@ -26,7 +26,7 @@ dev = [
 [tool.ruff]
 line-length = 120
 # the one-off cleaning script from before the backend; left as it was
-extend-exclude = ["seed/clean_products.py"]
+extend-exclude = ["seed/clean_products.py", "seed/add_products.py"]
 
 [tool.ruff.format]
 quote-style = "single"
