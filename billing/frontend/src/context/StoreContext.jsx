@@ -395,7 +395,7 @@ export const StoreProvider = ({ session, children }) => {
       /** The invoice's uploaded bill as a PDF file. */
       downloadInvoiceDocument: (invoice) => download(`/transfer-invoices/${invoice.id}/document`, invoice.docName || `${invoice.number}.pdf`),
 
-      /** A quotation: { id, lines, name, phone, validDays, note }. Resolves to it with its number. */
+      /** A quotation: { id, lines, name, phone, validUntil (a date), note, … }. Resolves to it with its number. */
       saveQuote: async (quote) => saved('quotes', await api('/quotes', { method: 'POST', body: quote })),
       /** Archives a quotation — it is never edited or deleted, only archived (kept) and brought back. */
       archiveQuote: async (id) => saved('quotes', await api(`/quotes/${id}/archive`, { method: 'POST' })),

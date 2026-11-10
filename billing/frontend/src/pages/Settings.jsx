@@ -472,8 +472,8 @@ const Settings = ({ onMenu }) => {
             <Toggle
               id="setting-quote-print"
               Icon={Printer}
-              title="Allow printing quotations"
-              description="When on, showrooms can print a quotation for the customer (an A4 page with a large QUOTATION watermark that says it is not a bill). When off, quotations can still be written and saved, but not printed."
+              title="Allow printing and sharing quotations"
+              description="When on, showrooms can print a quotation for the customer, or download it as a PDF and share it (an A4 page with a large QUOTATION watermark that says it is not a bill). When off, quotations can still be written, saved and previewed, but not printed, downloaded or shared."
               on={settings.quotePrint}
               onChange={(v) => setSetting('quotePrint', v)}
             />

@@ -18,7 +18,8 @@ class QuoteIn(ApiModel):
     lines: list[LineIn] = Field(min_length=1, max_length=500)
     name: str = Field(max_length=120)
     phone: str = Field(max_length=32)
-    valid_days: Literal[7, 15, 30] = 7
+    valid_until: date | None = None  # its last valid day; 25 December when not given (service.last_valid_day)
+    valid_days: Literal[7, 15, 30] | None = None  # how an older app sends it: 7, 15 or 30 days
     note: str = Field(default='', max_length=1000)  # the instructions printed on the quotation
     company: str = Field(default='', max_length=120)
     address: str = Field(default='', max_length=500)

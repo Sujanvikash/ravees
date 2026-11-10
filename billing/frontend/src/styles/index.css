@@ -197,8 +197,8 @@ html[data-lang="ta"] button {
   margin: 14mm;
 }
 
-/* Bills and quotations print in pure black and white: the logo is thresholded to black ink on white paper,
-   whatever its colours. */
+/* Bills, invoices and black-and-white quotations print in pure black and white: the logo is thresholded to black
+   ink on white paper, whatever its colours. */
 .print-ink {
   filter: grayscale(1) contrast(12);
 }

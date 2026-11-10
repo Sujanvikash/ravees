@@ -24,7 +24,7 @@ The **Demo** switch at the top right of the sign-in screen shows the same five s
 
 ## Quotations
 
-**Quotations** (under Selling) work like the billing counter but end in a saved quotation instead of a payment. A quotation never changes stock or the sales figures. It is numbered per showroom (`QT-CHN/26-27/00001`), needs the customer's name and mobile number, a validity of 7, 15 or 30 days and an optional note. It prints on A4 with a large diagonal QUOTATION watermark, "NOT A BILL · NOT A TAX INVOICE", and a boxed notice that no payment is to be made against it. **Bill this** loads a saved quotation's items into the billing counter when the customer buys. The admin sees every showroom's quotations (under Reports) and, in **Settings**, can turn printing quotations on or off.
+**Quotations** (under Selling) work like the billing counter but end in a saved quotation instead of a payment. A quotation never changes stock or the sales figures. It is numbered per showroom (`QT-CHN/26-27/00001`), needs the customer's name and mobile number, the date it is valid until (25 December unless another is picked) and an optional note. A product's photo (the **Add photo** box beside it, click or drop a picture) prints with it. It comes out on A4 with a large diagonal QUOTATION watermark, "NOT A BILL · NOT A TAX INVOICE", and a boxed notice that no payment is to be made against it, in evergreen, red, gold, navy or black and white (picked on the preview, remembered per computer). **Preview** shows it page by page, a new one before it is saved too; from there it can be printed, downloaded as a PDF or shared (a phone's share sheet: WhatsApp, mail…). **Bill this** loads a saved quotation's items into the billing counter when the customer buys. The admin sees every showroom's quotations (under Reports) and, in **Settings**, can turn printing, downloading and sharing quotations on or off. An invoice has a **Preview** too, with the same print, download and share.
 
 ## The season list
 
@@ -89,7 +89,7 @@ A note is asked for when it doesn't balance. The admin's **Cash check** has a pe
 
 ## Printing
 
-The bill and the credit note print on the 80mm thermal (POS) roll, 72mm wide and only as long as the bill (the page length is measured just before printing, in `src/lib/print.js`), **black and white only**, and every bill ends with a Christmas wish. The same bill always gets the same wish. A quotation prints on A4, black and white, with a QUOTATION watermark. If it is sent to the narrow receipt printer, it prints only "QUOTATION · NOT A BILL · print this on A4", so it can never pass for a bill. **Quotation** at the counter loads a saved quotation into the bill (at today's prices) when the customer buys.
+The bill and the credit note print on the 80mm thermal (POS) roll, 72mm wide and only as long as the bill (the page length is measured just before printing, in `src/lib/print.js`), **black and white only**, and every bill ends with a Christmas wish. The same bill always gets the same wish. A quotation prints on A4, in the colours picked on its preview, with a QUOTATION watermark. If it is sent to the narrow receipt printer, it prints only "QUOTATION · NOT A BILL · print this on A4", so it can never pass for a bill. **Quotation** at the counter loads a saved quotation into the bill (at today's prices) when the customer buys.
 
 ## Data
 

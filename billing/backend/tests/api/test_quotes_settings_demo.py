@@ -1,11 +1,14 @@
 import uuid
+from datetime import date, datetime, time, timedelta
 
 import pytest
 from sqlalchemy import text
 
 from app import cli
+from app.core import clock
 from app.core.database import get_engine
 from app.modules.demo.builder import SEED_KEY, build_demo, demo_is_current
+from app.modules.quotes.service import last_valid_day
 
 from .test_sales import CUSTOMER, season_code
 
@@ -54,6 +57,36 @@ def test_quotation(client, chennai, admin):
     assert q['id'] in kept and kept[q['id']]['archivedAt']  # still there, just archived
     # and it can be brought back
     assert client.post(f'/quotes/{q["id"]}/unarchive', headers=chennai).json()['archivedAt'] is None
+
+
+def test_a_quotation_is_valid_until_a_date(client, chennai):
+    today = clock.now().astimezone(clock.IST).date()
+    body = {'lines': [{'code': season_code(client, chennai), 'qty': 1}], **CUSTOMER}
+
+    def until(**extra):
+        r = client.post('/quotes', json={**body, 'id': str(uuid.uuid4()), **extra}, headers=chennai)
+        assert r.status_code == 201, r.text
+        return datetime.fromisoformat(r.json()['validUntil']).astimezone(clock.IST)
+
+    picked = today + timedelta(days=10)
+    end = until(validUntil=picked.isoformat())
+    assert end.date() == picked and end.time() == time(23, 59, 59)  # to the end of that day
+    assert until(validDays=15).date() == today + timedelta(days=15)  # an older app's 7, 15 or 30 days
+    for wrong in (today - timedelta(days=1), today + timedelta(days=367)):
+        r = client.post(
+            '/quotes', json={**body, 'id': str(uuid.uuid4()), 'validUntil': wrong.isoformat()}, headers=chennai
+        )
+        assert r.status_code == 422
+
+
+def test_a_quotation_is_valid_until_christmas_unless_a_date_is_picked():
+    def on(day):
+        return datetime.combine(day, time(11, 0), clock.IST)
+
+    assert last_valid_day(on(date(2026, 11, 10))) == date(2026, 12, 25)
+    assert last_valid_day(on(date(2026, 12, 25))) == date(2026, 12, 25)
+    assert last_valid_day(on(date(2026, 12, 26))) == date(2027, 1, 2)  # after Christmas: a week
+    assert last_valid_day(on(date(2026, 11, 10)), date(2026, 11, 20)) == date(2026, 11, 20)
 
 
 def test_settings(client, chennai, admin):

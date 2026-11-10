@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Archive, ArchiveRestore, CircleCheck, Building2, CalendarDays, FileText, Lock, MapPin, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
+import { Archive, ArchiveRestore, CircleCheck, Building2, CalendarDays, Eye, FileText, Lock, MapPin, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
 import BillTable from '../components/BillTable.jsx';
 import { CustomerStatus, CustomerSuggestions } from '../components/CustomerSuggest.jsx';
+import DocumentPreview from '../components/DocumentPreview.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import QuotationPrint from '../components/QuotationPrint.jsx';
+import QuotationPrint, { QuotationDocument } from '../components/QuotationPrint.jsx';
 import ScanBar from '../components/ScanBar.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
@@ -16,15 +17,19 @@ import { findProduct, productImages } from '../lib/catalogue.js';
 import { billNumber, buildBill, countLabel, gstLines, nextSeq } from '../lib/bill.js';
 import { customerLabel, isValidMobile, isValidName, phoneDigits, typedMobile } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
+import { QUOTE_COLOURS, setQuoteColour, useQuoteColour } from '../lib/quoteColour.js';
 import { newId } from '../lib/uid.js';
 import Pager from '../components/Pager.jsx';
 import { usePages } from '../hooks/usePages.js';
 
-const VALIDITY = [
-  { id: 7, label: '7 days' },
-  { id: 15, label: '15 days' },
-  { id: 30, label: '30 days' },
-];
+const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const daysOn = (now, days) => isoDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + days));
+/** The date a new quotation is valid until unless another is picked: 25 December, the season's end, or a week on once
+ *  that has passed (the server's rule too). */
+const defaultValidUntil = (now = new Date()) => {
+  const christmas = `${now.getFullYear()}-12-25`;
+  return isoDay(now) <= christmas ? christmas : daysOn(now, 7);
+};
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const day = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 // Quotation lines carry no cost, so the admin's figure is at today's cost prices.
@@ -41,10 +46,11 @@ const Row = ({ label, value, className = 'text-ink-2' }) => (
 
 /**
  * Quotations: like the billing counter, but it ends in a saved quotation instead of a payment. A quotation
- * never touches stock or the sales figures; it is numbered on its own (QT-CHN262700001), and printed on
- * A4 with a QUOTATION watermark and a plain "not a bill, do not pay" notice, when the admin allows printing.
- * A saved quotation can be loaded into the billing counter when the customer buys. Showrooms write and see
- * their own; the admin sees every showroom's.
+ * never touches stock or the sales figures; it is numbered on its own (QT-CHN262700001), valid until a date
+ * (25 December unless another is picked), and comes out on A4 in the colours picked, with a QUOTATION watermark
+ * and a plain "not a bill, do not pay" notice. Any quotation can be previewed, a new one before it is saved too;
+ * when the admin allows it, it can be printed, downloaded as a PDF and shared. A saved quotation can be loaded into
+ * the billing counter when the customer buys. Showrooms write and see their own; the admin sees every showroom's.
  */
 const Quotations = ({ session, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
@@ -56,16 +62,18 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
   const [flash, setFlash] = useState(null); // { tone, text }
   const [printing, setPrinting] = useState(null); // the quotation on the print page
   const [printJob, setPrintJob] = useState(0);
+  const [preview, setPreview] = useState(null); // { quote, pictures, save? }: save is set while it isn't saved yet
 
   useEffect(() => {
     if (printJob) window.print();
   }, [printJob]);
-  const print = async (quote) => {
-    // the pictures come first, so they are on the page when the print dialog opens (printed without if they can't load)
-    const pictures = await productImages(quote.lines.map((l) => l.code)).catch(() => ({}));
-    setPrinting({ quote, pictures });
+  // the pictures come first, so they are on the page when it prints (it prints without them if they can't load)
+  const picturesOf = (quote) => productImages(quote.lines.map((l) => l.code)).catch(() => ({}));
+  const print = async (quote, pictures) => {
+    setPrinting({ quote, pictures: pictures ?? (await picturesOf(quote)) });
     setPrintJob((n) => n + 1);
   };
+  const openPreview = async (quote, save = null) => setPreview({ quote, pictures: await picturesOf(quote), save });
 
   const mine = useMemo(
     () => quotes.filter((q) => !location || q.location === location).sort((a, b) => new Date(b.at) - new Date(a.at)),
@@ -143,7 +151,7 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
               {admin && <LocationPicker value={location} onChange={setLocation} />}
               <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-3">
                 {canPrint ? <Printer size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
-                {canPrint ? 'Printing quotations is allowed' : 'Printing quotations is turned off by the admin'}
+                {canPrint ? 'Printing and sharing quotations is allowed' : 'Printing and sharing quotations is turned off by the admin'}
               </span>
             </div>
 
@@ -161,11 +169,13 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                 location={session.location}
                 stockOf={stockOf}
                 canPrint={canPrint}
-                onSave={async (body, andPrint) => {
+                onSave={async (body, then) => {
                   const quote = await saveQuote(body);
                   setFlash({ tone: 'ok', text: `${quote.quoteNo} saved for ${quote.name}.` });
-                  if (andPrint) print(quote);
+                  if (then === 'print') print(quote);
+                  if (then === 'preview') openPreview(quote);
                 }}
+                onPreview={openPreview}
               />
             ) : (
               <section className="overflow-clip rounded-2xl border glass">
@@ -225,6 +235,13 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                               </td>
                               <td className="py-1.5 pr-4">
                                 <div className="flex justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => openPreview(x)}
+                                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-white hover:text-ink"
+                                  >
+                                    <Eye size={14} aria-hidden="true" /> Preview
+                                  </button>
                                   {canPrint && (
                                     <button
                                       type="button"
@@ -280,12 +297,93 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
         </div>
       </div>
       {printing && <QuotationPrint quote={printing.quote} pictures={printing.pictures} />}
+      {preview && (
+        <QuotePreview
+          key={preview.save ? 'new' : preview.quote.id}
+          {...preview}
+          canPrint={canPrint}
+          onPrint={() => print(preview.quote, preview.pictures)}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </>
   );
 };
 
+/** The colours a quotation can come out in, as swatches. */
+const ColourPicker = ({ value, onChange }) => (
+  <div role="radiogroup" aria-label="Colour" className="flex items-center gap-1.5">
+    <span className="mr-1 text-[13px] font-medium text-ink-2">Colour</span>
+    {QUOTE_COLOURS.map((c) => (
+      <button
+        key={c.id}
+        type="button"
+        role="radio"
+        aria-checked={value === c.id}
+        aria-label={c.label}
+        title={c.label}
+        onClick={() => onChange(c.id)}
+        style={{ background: c.mono ? 'linear-gradient(135deg, #000 50%, #fff 50%)' : c.accent }}
+        className={`size-7 rounded-full border border-black/15 transition-shadow ${value === c.id ? 'shadow-[0_0_0_2px_#fff,0_0_0_4px_var(--color-ink)]' : 'hover:shadow-[0_0_0_2px_#fff,0_0_0_4px_var(--color-line-strong)]'}`}
+      />
+    ))}
+  </div>
+);
+
+/** A quotation's preview, in the colour picked. Not saved yet (`save` set), it offers to save it; once saved, to
+ *  print, download and share it, when the admin allows that. */
+const QuotePreview = ({ quote, pictures, save, canPrint, onPrint, onClose }) => {
+  const colour = useQuoteColour();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const keep = async () => {
+    setSaving(true);
+    setError('');
+    const problem = await save(); // once saved, this preview is replaced by the saved quotation's
+    if (problem) {
+      setSaving(false);
+      setError(`Not saved: ${problem}`);
+    }
+  };
+  return (
+    <DocumentPreview
+      id="quote-preview"
+      title={save ? 'New quotation · not saved yet' : `Quotation ${quote.quoteNo}`}
+      subtitle={`${customerLabel(quote.phone, quote.name)} · ${inr(quote.totals.payable)}`}
+      stamp={`${quote.id}|${quote.quoteNo}|${quote.at}|${colour.id}`}
+      fileName={`${quote.quoteNo}.pdf`}
+      watermark={{ text: 'QUOTATION', color: colour.mark }}
+      footer={`${quote.quoteNo} · ${quote.name}`}
+      onClose={onClose}
+      onPrint={canPrint ? onPrint : null}
+      canExport={canPrint}
+      toolbar={<ColourPicker value={colour.id} onChange={setQuoteColour} />}
+      actions={
+        save && (
+          <button
+            type="button"
+            onClick={keep}
+            disabled={saving}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-evergreen-800 px-3.5 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3"
+          >
+            <Save size={15} aria-hidden="true" /> {saving ? 'Saving…' : 'Save quotation'}
+          </button>
+        )
+      }
+      note={
+        error ||
+        (save
+          ? `The number ${quote.quoteNo} is given when it is saved. Save it to ${canPrint ? 'print, download or share' : 'keep'} it.`
+          : !canPrint && 'Printing, downloading and sharing quotations is turned off by the admin.')
+      }
+    >
+      <QuotationDocument quote={quote} pictures={pictures} colour={colour} />
+    </DocumentPreview>
+  );
+};
+
 /** Writing a new quotation: the counter's scan box and item list, and a panel with the customer and total. */
-const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
+const QuoteWriter = ({ location, stockOf, canPrint, onSave, onPreview }) => {
   const shop = locationById(location);
   const now = useClock();
   const draft = useBill(location, 'quote');
@@ -294,7 +392,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   const [name, setName] = useState(() => draft.customer?.name ?? '');
   const [phone, setPhone] = useState(() => draft.customer?.phone ?? '');
   const lookup = useCustomerLookup({ phone, name, setPhone, setName });
-  const [days, setDays] = useState(7);
+  const [validUntil, setValidUntil] = useState(() => defaultValidUntil());
   const [note, setNote] = useState('');
   const [company, setCompany] = useState('');
   const [address, setAddress] = useState('');
@@ -324,12 +422,24 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
   // the server prices it and gives it its number; saving the same id again keeps one
   const id = useRef(newId());
   const [busy, setBusy] = useState(false);
-  const save = async (andPrint) => {
-    if (!totals.count) return setError('Add at least one product.');
-    if (!isValidName(name)) return setError('Enter the customer’s name.');
-    if (!phone.trim()) return setError('Enter the customer’s mobile number.');
-    if (!isValidMobile(phone)) return setError('That mobile number doesn’t look right (10 digits).');
-    if (gstin && !/^[0-9A-Z]{15}$/.test(gstin)) return setError('A GSTIN is 15 letters and digits.');
+  const today = isoDay(now);
+  const problem = () => {
+    if (!totals.count) return 'Add at least one product.';
+    if (!isValidName(name)) return 'Enter the customer’s name.';
+    if (!phone.trim()) return 'Enter the customer’s mobile number.';
+    if (!isValidMobile(phone)) return 'That mobile number doesn’t look right (10 digits).';
+    if (gstin && !/^[0-9A-Z]{15}$/.test(gstin)) return 'A GSTIN is 15 letters and digits.';
+    if (!validUntil) return 'Pick the date the quotation is valid until.';
+    if (validUntil < today) return 'That valid-until date has passed: pick today or a later date.';
+    return '';
+  };
+  // Saves it, then prints it or opens its preview (`then`). Resolves to what went wrong, or '' once saved.
+  const save = async (then) => {
+    const wrong = problem();
+    if (wrong) {
+      setError(wrong);
+      return wrong;
+    }
     setBusy(true);
     try {
       await onSave(
@@ -338,18 +448,19 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
           lines: totals.lines.map((l) => ({ code: l.code, qty: l.qty })),
           name: name.trim(),
           phone: phoneDigits(phone),
-          validDays: days,
+          validUntil,
           note: note.trim(),
           company: company.trim(),
           address: address.trim(),
           gstin,
           deliveryDate: delivery || null,
         },
-        andPrint,
+        then,
       );
     } catch (err) {
       setBusy(false);
-      return setError(err.message);
+      setError(err.message);
+      return err.message;
     }
     setBusy(false);
     id.current = newId();
@@ -361,8 +472,32 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
     setAddress('');
     setGstin('');
     setDelivery('');
-    setDays(7);
+    setValidUntil(defaultValidUntil());
     setError('');
+    return '';
+  };
+  // the quotation as it will be, before it is saved (its number may still change if another is saved first)
+  const preview = () => {
+    const wrong = problem();
+    if (wrong) return setError(wrong);
+    const draft = {
+      id: id.current,
+      quoteNo,
+      location,
+      at: now.toISOString(),
+      by: shop.city,
+      name: name.trim(),
+      phone: phoneDigits(phone),
+      validUntil: `${validUntil}T23:59:59+05:30`,
+      note: note.trim(),
+      company: company.trim(),
+      address: address.trim(),
+      gstin,
+      deliveryDate: delivery || null,
+      lines: totals.lines.map((l) => ({ code: l.code, name: l.product.name, qty: l.qty, price: l.price, mrp: l.product.mrp })),
+      totals,
+    };
+    onPreview(draft, () => save('preview'));
   };
 
   const primary =
@@ -500,10 +635,24 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
           </label>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <h2 className="text-[13px] font-medium">Valid for</h2>
-          <Segmented label="Valid for" options={VALIDITY} value={days} onChange={setDays} />
-        </div>
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+          Valid until
+          <span className={field}>
+            <CalendarDays size={15} className="text-ink-3" aria-hidden="true" />
+            <input
+              type="date"
+              value={validUntil}
+              min={today}
+              max={daysOn(now, 366)}
+              required
+              onChange={(e) => {
+                setValidUntil(e.target.value);
+                setError('');
+              }}
+              className="min-w-0 flex-1 bg-transparent text-sm font-normal"
+            />
+          </span>
+        </label>
 
         <label className="flex flex-col gap-1.5 text-[13px] font-medium">
           Delivery date <span className="font-normal text-ink-3">(rough, optional)</span>
@@ -550,18 +699,23 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave }) => {
             </p>
           )}
           <div className="flex gap-2">
-            <button type="button" onClick={() => save(false)} disabled={!totals.count || busy} className={canPrint ? secondary : primary}>
+            <button type="button" onClick={preview} disabled={!totals.count || busy} className={secondary}>
+              <Eye size={16} aria-hidden="true" /> Preview
+            </button>
+            <button type="button" onClick={() => save()} disabled={!totals.count || busy} className={canPrint ? secondary : primary}>
               <Save size={16} aria-hidden="true" /> Save
             </button>
-            {canPrint && (
-              <button type="button" onClick={() => save(true)} disabled={!totals.count || busy} className={primary}>
+          </div>
+          {canPrint && (
+            <div className="flex">
+              <button type="button" onClick={() => save('print')} disabled={!totals.count || busy} className={primary}>
                 <Printer size={16} aria-hidden="true" /> Save &amp; print
               </button>
-            )}
-          </div>
+            </div>
+          )}
           {!canPrint && (
             <p className="flex items-center gap-1.5 text-xs text-ink-3">
-              <Lock size={12} aria-hidden="true" /> Printing quotations is turned off by the admin.
+              <Lock size={12} aria-hidden="true" /> Printing, downloading and sharing quotations is turned off by the admin.
             </p>
           )}
         </div>

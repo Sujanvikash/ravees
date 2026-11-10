@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -26,9 +26,24 @@ def list_quotes(session: Session, user: User, location: str | None = None) -> Se
     return session.scalars(stmt).all()
 
 
-def valid_until(at: datetime, days: int) -> datetime:
-    """The end of the last valid day (IST), `days` from `at`."""
-    last = (at.astimezone(clock.IST) + timedelta(days=days)).date()
+def last_valid_day(at: datetime, until: date | None = None, days: int | None = None) -> date:
+    """A quotation's last valid day: the date picked (today at the earliest, a year ahead at the latest), or `days`
+    from `at` (an older app), or else 25 December, the season's end (a week from `at` once that has passed)."""
+    today = at.astimezone(clock.IST).date()
+    if until:
+        if until < today:
+            raise InvalidInput('That valid-until date has passed: pick today or a later date.')
+        if until > today + timedelta(days=366):
+            raise InvalidInput('A quotation can be valid for a year at most.')
+        return until
+    if days:
+        return today + timedelta(days=days)
+    christmas = date(today.year, 12, 25)
+    return christmas if today <= christmas else today + timedelta(days=7)
+
+
+def valid_until(last: date) -> datetime:
+    """The end of the last valid day (IST)."""
     return datetime.combine(last, time(23, 59, 59), clock.IST)
 
 
@@ -48,6 +63,7 @@ def create_quote(session: Session, user: User, data: QuoteIn, *, at: datetime | 
     catalogue = products.by_codes(session, (line.code for line in data.lines))
     lines = bill.bill_lines(((line.code, line.qty) for line in data.lines), catalogue)
     at = at or clock.now()
+    last_day = last_valid_day(at, data.valid_until, data.valid_days)
     location = locations.get(session, user.location_id)
     quote = Quote(
         id=data.id,
@@ -57,7 +73,7 @@ def create_quote(session: Session, user: User, data: QuoteIn, *, at: datetime | 
         by=location.city if location else user.username,
         name=name,
         phone=phone,
-        valid_until=valid_until(at, data.valid_days),
+        valid_until=valid_until(last_day),
         note=data.note.strip(),
         company=' '.join(data.company.split()),
         address='\n'.join(ln.strip() for ln in data.address.splitlines() if ln.strip()),

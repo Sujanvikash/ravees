@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { FileText, Plus } from 'lucide-react';
 import { InvoiceDetail, InvoiceEditor } from '../components/InvoiceDialogs.jsx';
-import InvoicePrint from '../components/InvoicePrint.jsx';
+import DocumentPreview from '../components/DocumentPreview.jsx';
+import InvoicePrint, { InvoiceDocument } from '../components/InvoicePrint.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import Pager from '../components/Pager.jsx';
@@ -32,6 +33,7 @@ const TransferInvoices = ({ intent, onMenu }) => {
   const { invoices, settings } = useStore();
   const [printing, setPrinting] = useState(null); // { invoice, buyer } on the print page
   const [printJob, setPrintJob] = useState(0);
+  const [preview, setPreview] = useState(null); // { invoice, buyer } in the preview
   const [tab, setTab] = useState('raised');
   const [location, setLocation] = useState(null);
   const [query, setQuery] = useState('');
@@ -54,10 +56,12 @@ const TransferInvoices = ({ intent, onMenu }) => {
   }, [printJob]);
 
   // The showroom is the buyer, as the invoice names it; one raised before that takes the showroom's details as they are now.
+  const buyerOf = async (invoice) => invoice.buyer ?? (await storeBuyer(invoice.location));
   const print = async (invoice) => {
-    setPrinting({ invoice, buyer: invoice.buyer ?? (await storeBuyer(invoice.location)) });
+    setPrinting({ invoice, buyer: await buyerOf(invoice) });
     setPrintJob((n) => n + 1);
   };
+  const openPreview = async (invoice) => setPreview({ invoice, buyer: await buyerOf(invoice) });
 
   const created = (invoice) => {
     setCreating(null);
@@ -190,7 +194,21 @@ const TransferInvoices = ({ intent, onMenu }) => {
 
         {creating && <InvoiceEditor order={creating.order} onClose={() => setCreating(null)} onDone={created} />}
         {editing && <InvoiceEditor invoice={editing} onClose={() => setEditing(null)} onDone={edited} />}
-        {openId && <InvoiceDetail id={openId} onClose={() => setOpenId(null)} onPrint={print} onEdit={edit} />}
+        {openId && <InvoiceDetail id={openId} onClose={() => setOpenId(null)} onPreview={openPreview} onPrint={print} onEdit={edit} />}
+        {preview && (
+          <DocumentPreview
+            id="invoice-preview"
+            title={`Invoice ${preview.invoice.number}`}
+            subtitle={`${preview.buyer.name} · ${inr(preview.invoice.total)}`}
+            stamp={`${preview.invoice.id}|${preview.invoice.updatedAt}`}
+            fileName={`${preview.invoice.number}.pdf`}
+            footer={`${preview.invoice.number} · ${preview.buyer.name}`}
+            onClose={() => setPreview(null)}
+            onPrint={() => print(preview.invoice)}
+          >
+            <InvoiceDocument invoice={preview.invoice} seller={settings} buyer={preview.buyer} />
+          </DocumentPreview>
+        )}
       </div>
       {printing && <InvoicePrint invoice={printing.invoice} seller={settings} buyer={printing.buyer} />}
     </>

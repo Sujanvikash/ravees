@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, FileText, Minus, PackageCheck, Pencil, Plus, Printer, ScanBarcode, Search, Upload, X } from 'lucide-react';
+import { Download, Eye, FileText, Minus, PackageCheck, Pencil, Plus, Printer, ScanBarcode, Search, Upload, X } from 'lucide-react';
 import { activeLocations, locationById, WAREHOUSE } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { useScanner } from '../hooks/useScanner.js';
@@ -546,7 +546,7 @@ const readPdf = (file) =>
  * the products to the store's stock. Raised and paid invoices can still be cancelled: their products go back to
  * the admin stock and their boxes to the warehouse.
  */
-export const InvoiceDetail = ({ id, onClose, onPrint, onEdit }) => {
+export const InvoiceDetail = ({ id, onClose, onPreview, onPrint, onEdit }) => {
   const { invoices, saveInvoiceDocuments, payInvoice, stockInvoice, cancelInvoice, downloadInvoiceDocument } = useStore();
   const invoice = invoices.find((i) => i.id === id);
   const [form, setForm] = useState(() => ({ ewayNo: invoice?.ewayNo ?? '', billNo: invoice?.billNo ?? '' }));
@@ -639,6 +639,11 @@ export const InvoiceDetail = ({ id, onClose, onPrint, onEdit }) => {
             {invoice.status === 'raised' && onEdit && (
               <button type="button" onClick={() => onEdit(invoice)} disabled={busy} className={secondary}>
                 <Pencil size={15} aria-hidden="true" /> Edit invoice
+              </button>
+            )}
+            {onPreview && (
+              <button type="button" onClick={() => run(() => onPreview(invoice))} disabled={busy} className={secondary}>
+                <Eye size={15} aria-hidden="true" /> Preview
               </button>
             )}
             {onPrint && (
