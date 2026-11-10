@@ -11,7 +11,7 @@ from app.core.database import Base
 class Box(Base):
     """A box the supplier packed (box 154.GOA, stock no PUA000445, in the shipment "GOA-1 VELANKA 2026"), kept in
     the admin's warehouse. The admin enters what is in it, lines [{code, name, qty}], which adds the items to the
-    warehouse stock. Scanning it onto a transfer invoice for a showroom moves it to `invoiced` (location and
+    warehouse stock. Scanning it onto an invoice for a showroom moves it to `invoiced` (location and
     invoice_id set); when the admin adds the paid invoice's items to the showroom's stock it is `stocked`.
     history [{at, by, action, note?}] as on purchase orders."""
 

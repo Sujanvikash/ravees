@@ -4,9 +4,11 @@ those products the season: they get Y in "In Season 2026", every other product l
 
     python add_products.py products-2026.xls products-clean.xlsx
 
-Needs: pip install xlrd openpyxl. Cleans the rows the same way as clean_products.py, and also puts back the last 0
-of a 7-digit HSN and drops an offer price above the MRP. Refuses a list whose codes are already in the catalogue, so
-running it twice does nothing. What was changed or still needs checking goes in a "Review <file>" sheet.
+Needs: pip install xlrd openpyxl. Cleans the rows the same way as clean_products.py, but prices them the way the
+list means: a customer pays the retail price (Ret.Rate) less the discount column (DiscP), so the Offer Price is
+worked out from those (S.Price isn't used); a discount below 0 is dropped. It also puts back the last 0 of a 7-digit
+HSN. Refuses a list whose codes are already in the catalogue, so running it twice does nothing. What was changed or
+still needs checking goes in a "Review <file>" sheet.
 """
 import sys, re, unicodedata
 from collections import Counter
@@ -59,15 +61,22 @@ for r in range(3, sh.nrows):
     if code in have:
         sys.exit(f'{code} (row {r + 1}) is already in {OUT.name}: nothing added.')
     issues = []
-    mrp, cost, offer = num(g('Ret.Rate')), round(num(g('D.Rate')), 2), num(g('S.Price'))
+    # a customer pays the retail price (MRP) less the discount column; the cost (D.Rate) is what a showroom is invoiced
+    mrp, cost, disc = num(g('Ret.Rate')), round(num(g('D.Rate')), 2), num(g('DiscP'))  # the discount unrounded: 9.589041...
     if mrp == 0:
         issues.append('MRP is 0')
     if cost == 0:
         issues.append('Cost (D.Rate) is 0')
-    if offer and mrp and offer > mrp:
-        issues.append(f'Offer price {offer:g} was above the MRP: dropped, sells at the MRP {mrp:g}')
-        offer = 0.0
-    disc = round((1 - offer / mrp) * 100, 2) if offer and mrp else None
+    if disc < 0 or disc >= 100:
+        issues.append(f'Discount {disc:.2f}% would sell it at {mrp * (1 - disc / 100):.2f}: no discount, sells at the MRP {mrp:g}')
+        disc = 0
+    elif disc > 50:
+        issues.append(f'Discount {disc:.2f}% looks too large: sells at {mrp * (1 - disc / 100):.2f}')
+    offer = round(mrp * (1 - disc / 100), 2) if disc and mrp else 0.0
+    listed = num(g('S.Price'))
+    if offer and listed and abs(offer - listed) >= 0.5:
+        issues.append(f'Sells at {offer:g} (MRP less {disc:.2f}%), not the S.Price {listed:g}')
+    disc = round(disc, 2) or None
     barcode = txt(g('Supl Code'))
     if isinstance(g('Supl Code'), float) and len(barcode) >= 12 and re.search(r'0{5,}$', barcode):
         issues.append(f'Barcode damaged by Excel ({barcode}), re-scan needed')
@@ -156,6 +165,6 @@ print(f'added={len(new)} review={len(review)} catalogue={len(have) + len(new)}')
 cnt = Counter()
 for x in review:
     for i in x[3].split('; '):
-        cnt[re.sub(r'\(.*', '', re.sub(r'HSN \d+', 'HSN', i)).strip()] += 1
+        cnt[re.sub(r'-?\d[\d.]*', '#', re.sub(r'\(.*', '', i)).strip()] += 1
 for k, v in cnt.most_common():
     print(f'  {v:5}  {k}')

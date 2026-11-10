@@ -441,7 +441,7 @@ const Settings = ({ onMenu }) => {
               <div>
                 <div className="text-[14px] font-semibold">Business details for invoices</div>
                 <p className="mt-0.5 text-[13px] text-ink-3">
-                  Your own business, printed as the seller on every transfer invoice (the showroom is the buyer, with the details from its Shop on the bill).
+                  Your own business, printed as the seller on every invoice (the showroom is the buyer, with the details from its Shop on the bill).
                 </p>
               </div>
             </div>
@@ -461,15 +461,11 @@ const Settings = ({ onMenu }) => {
                 <StoreField label="IFSC" value={settings.bankIfsc} onSave={(v) => setSetting('bankIfsc', v.toUpperCase())} placeholder="IFSC" />
               </div>
               <StoreField label="Terms" hint="printed at the foot of the invoice" value={settings.invoiceTerms} onSave={(v) => setSetting('invoiceTerms', v)} textarea placeholder="Payment terms, jurisdiction…" />
+              <p className="text-xs text-ink-3">
+                An invoice to a showroom is a tax invoice: each product at its cost price (D.Rate) with its GST (18%) on top, split into CGST + SGST inside a
+                state and IGST across states.
+              </p>
             </div>
-            <Toggle
-              id="setting-invoice-gst"
-              Icon={Store}
-              title="Add GST to transfer invoices"
-              description="Off: an invoice totals cost price + 18% and prints as an “Invoice”. On: each product’s own GST (from its HSN and rate) is added on top, split into CGST + SGST inside a state and IGST across states, and it prints as a “Tax invoice”."
-              on={settings.invoiceGst}
-              onChange={(v) => setSetting('invoiceGst', v)}
-            />
           </section>
 
           <section className="overflow-hidden rounded-2xl border glass">
@@ -527,8 +523,8 @@ const Settings = ({ onMenu }) => {
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-semibold">Demo data</div>
                 <p className="mt-0.5 text-[13px] text-ink-3">
-                  Throws away everything done in the demo and starts it again clean: the five showrooms and the product list,
-                  with no stock, sales, customers or orders. The real data is never touched.
+                  Throws away everything done in the demo and starts it again clean: the five showrooms, the product list and the
+                  season’s stock in the admin stock, with no sales, customers or orders. The real data is never touched.
                 </p>
                 {resetting && <p className="mt-2 text-[13px] font-medium text-ink-2">{resetting}</p>}
               </div>

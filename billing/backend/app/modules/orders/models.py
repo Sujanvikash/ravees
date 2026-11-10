@@ -11,7 +11,7 @@ from app.core.database import Base
 
 class Status(StrEnum):
     REQUESTED = 'requested'  # a showroom asked for stock; the admin reviews it
-    FULFILLED = 'fulfilled'  # the admin raised a transfer invoice for it
+    FULFILLED = 'fulfilled'  # the admin raised an invoice for it
     REJECTED = 'rejected'  # the admin turned the request down
     CANCELLED = 'cancelled'  # the showroom withdrew its request before it was answered
     SENT = 'sent'  # legacy: sent by the admin, to be counted in by the showroom (old rows only)

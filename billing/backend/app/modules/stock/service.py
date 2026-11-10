@@ -15,7 +15,7 @@ from .schemas import StockImportIn
 
 # Stock a showroom adds by hand for its own products (no barcode, coded CHN-0001...): with the new product, or
 # later when more units come in. Only for that showroom's own products; all other stock reaches a showroom through
-# the admin's transfer invoice. The admin adds any product to any stock by hand or Excel.
+# the admin's invoice. The admin adds any product to any stock by hand or Excel.
 OWN_PRODUCT_SOURCES = frozenset({'new-product', 'own-product'})
 
 
@@ -55,7 +55,7 @@ def import_stock(session: Session, user: User, data: StockImportIn, *, at: datet
             raise Conflict('That import id is already used.')
         return existing
     if not user.is_admin and data.source not in OWN_PRODUCT_SOURCES:
-        raise Forbidden('Stock reaches a showroom through the admin’s transfer invoice.')
+        raise Forbidden('Stock reaches a showroom through the admin’s invoice.')
     location = acting_location(session, user, data.location, warehouse=True)
     catalogue = products.by_codes(session, (line.code for line in data.lines))
     lines = merge_lines(data.lines, catalogue)

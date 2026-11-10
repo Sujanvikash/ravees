@@ -26,7 +26,7 @@ export const NAV = {
     { id: 'inventory', label: 'Inventory', Icon: Boxes, group: 'Stock' },
     { id: 'orders', label: 'Purchase orders', Icon: PackagePlus, group: 'Stock' },
     { id: 'boxes', label: 'Boxes', Icon: Package, group: 'Stock' },
-    { id: 'transfers', label: 'Transfer invoices', Icon: FileSpreadsheet, group: 'Stock' },
+    { id: 'transfers', label: 'Invoices', Icon: FileSpreadsheet, group: 'Stock' },
     { id: 'returns', label: 'Purchase returns', Icon: Undo2, group: 'Stock' },
     { id: 'customers', label: 'Customers', Icon: Users, group: 'CRM' },
     { id: 'stores', label: 'Stores', Icon: Store, group: 'Settings' },

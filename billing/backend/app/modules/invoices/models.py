@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, LargeBinary, Numeric, String, Text, Uuid
+from sqlalchemy import Boolean, DateTime, ForeignKey, LargeBinary, Numeric, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,8 +10,13 @@ from app.core.database import Base
 
 
 class TransferInvoice(Base):
-    """What the admin bills a showroom for stock sent to it, at cost price plus the markup (18%): lines
-    [{code, name, qty, cost, rate, amount}] from the scanned boxes. The admin records the e-way bill number and/or
+    """An invoice: what the admin bills a showroom for stock sent to it, at each product's cost price (D.Rate) with
+    its GST (18%) on top: lines [{code, name, qty, cost, rate, amount, gst, tax}] from the scanned boxes and single
+    products, rate = cost, subtotal = the amounts (taxable value), total = subtotal + the tax. Invoices raised
+    before 2026-11-10 were cost + an 18% markup (markup_pct 18) with no GST on their lines.
+    buyer {name, address, phone, gstin, state} is the showroom as printed on the invoice (state: its GST state code,
+    the place of supply); inter_state is true when that isn't the admin's own state (IGST, else CGST + SGST). Both
+    are empty on invoices raised before 2026-11-10. The admin records the e-way bill number and/or
     the bill number (and may keep the PDF), marks it paid, and then adds its items to the showroom's stock.
     history [{at, by, action, note?}] as on purchase orders."""
 
@@ -33,6 +38,8 @@ class TransferInvoice(Base):
     paid_ref: Mapped[str] = mapped_column(String(100), default='')
     note: Mapped[str] = mapped_column(Text, default='')
     order_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('purchase_orders.id'), index=True)
+    buyer: Mapped[dict | None] = mapped_column(JSONB)
+    inter_state: Mapped[bool | None] = mapped_column(Boolean)
     history: Mapped[list[dict]] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

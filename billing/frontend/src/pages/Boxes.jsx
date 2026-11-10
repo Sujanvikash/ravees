@@ -35,7 +35,7 @@ const small = 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px
 /**
  * The admin's boxes: the supplier's boxes, with the products in each. The admin enters each box and what is in
  * it, by hand or from the packing-list Excel; that adds them to the admin's own stock (the warehouse). A box
- * leaves the warehouse when it goes on a transfer invoice to a showroom, and reaches the showroom's stock when
+ * leaves the warehouse when it goes on an invoice to a showroom, and reaches the showroom's stock when
  * that invoice is paid and the admin adds it.
  */
 const Boxes = ({ onMenu }) => {
@@ -103,7 +103,7 @@ const Boxes = ({ onMenu }) => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="max-w-3xl text-[13px] text-ink-3">
               Your boxes from the supplier. Enter each box and the products inside (or import the packing list): they are added to your own stock. To send boxes to
-              a showroom, put them on a transfer invoice.
+              a showroom, put them on an invoice (Invoices → New invoice).
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={() => setImporting(true)} className={secondary}>

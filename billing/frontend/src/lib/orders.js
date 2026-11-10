@@ -1,9 +1,9 @@
 /**
  * Purchase orders: a showroom's requests for stock. The server numbers them (PO-CHN-0007). The admin fulfils one
- * by raising a transfer invoice for it; stock reaches the showroom through that invoice, not through the order.
+ * by raising an invoice for it; stock reaches the showroom through that invoice, not through the order.
  *
  *   requested  a showroom asked for stock; the admin reviews it
- *   fulfilled  the admin raised a transfer invoice for it
+ *   fulfilled  the admin raised an invoice for it
  *   rejected   the admin turned the request down
  *   cancelled  the showroom withdrew its request
  *   sent, received  older orders, from when the admin sent stock on a purchase order (kept for the record)

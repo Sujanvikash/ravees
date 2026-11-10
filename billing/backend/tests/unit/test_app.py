@@ -36,6 +36,7 @@ EXPECTED_ROUTES = {
     ('DELETE', '/api/v1/boxes/{box_id}'),
     ('GET', '/api/v1/transfer-invoices'),
     ('POST', '/api/v1/transfer-invoices'),
+    ('PUT', '/api/v1/transfer-invoices/{invoice_id}'),
     ('PUT', '/api/v1/transfer-invoices/{invoice_id}/documents'),
     ('GET', '/api/v1/transfer-invoices/{invoice_id}/document'),
     ('POST', '/api/v1/transfer-invoices/{invoice_id}/pay'),

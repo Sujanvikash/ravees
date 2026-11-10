@@ -11,7 +11,7 @@ import Dialog from './Dialog.jsx';
  * Adds stock straight from an Excel (opening stock, or goods that came outside a purchase order). Same sheet
  * as a purchase: a Code and a Qty column, Rate optional. Shows each product's stock now and after, and only
  * changes stock when confirmed. Only the admin imports, into the admin's own stock (the warehouse): a showroom's
- * stock arrives through a transfer invoice.
+ * stock arrives through an invoice.
  */
 const ImportStockDialog = ({ onClose, onDone }) => {
   const { stockOf, importStock } = useStore();

@@ -8,7 +8,7 @@ from app.modules.auth.dependencies import CurrentUser
 
 from . import service
 from .models import TransferInvoice
-from .schemas import DocumentsIn, InvoiceIn, InvoiceOut, PayIn
+from .schemas import DocumentsIn, InvoiceChangeIn, InvoiceIn, InvoiceOut, PayIn
 
 router = APIRouter(prefix='/transfer-invoices', tags=['transfer-invoices'])
 
@@ -22,19 +22,27 @@ def _out(session: DbSession, invoices: Sequence[TransferInvoice]) -> list[Invoic
 
 @router.get('')
 def list_invoices(user: CurrentUser, session: DbSession, location: str | None = None) -> list[InvoiceOut]:
-    """Transfer invoices, oldest first: a showroom's own (read only), or for the admin every one."""
+    """Invoices, oldest first: a showroom's own (read only), or for the admin every one."""
     return _out(session, service.list_invoices(session, user, location))
 
 
 @router.post('', status_code=status.HTTP_201_CREATED, responses={409: {'description': 'A box is already invoiced'}})
 def raise_invoice(body: InvoiceIn, user: CurrentUser, session: DbSession) -> InvoiceOut:
-    """Admin: bills the scanned boxes to a showroom at cost + 18%; the items leave the admin's stock."""
+    """Admin: bills the scanned boxes and single products to a showroom at cost price (D.Rate) plus GST; the items
+    leave the admin's stock."""
     return _out(session, [service.raise_invoice(session, user, body)])[0]
+
+
+@router.put('/{invoice_id}', responses=CONFLICT)
+def edit_invoice(invoice_id: uuid.UUID, body: InvoiceChangeIn, user: CurrentUser, session: DbSession) -> InvoiceOut:
+    """Admin: changes an invoice not paid yet (showroom and its details, boxes, single products, note); the admin
+    stock and the boxes change by the difference."""
+    return _out(session, [service.edit_invoice(session, user, invoice_id, body)])[0]
 
 
 @router.put('/{invoice_id}/documents', responses=CONFLICT)
 def set_documents(invoice_id: uuid.UUID, body: DocumentsIn, user: CurrentUser, session: DbSession) -> InvoiceOut:
-    """Admin: records the e-way bill and/or bill number, and optionally keeps the PDF."""
+    """Admin: once paid, records the e-way bill and/or bill number, and optionally keeps the PDF."""
     return _out(session, [service.set_documents(session, user, invoice_id, body)])[0]
 
 

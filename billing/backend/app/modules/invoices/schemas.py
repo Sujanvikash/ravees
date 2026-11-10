@@ -4,19 +4,39 @@ from datetime import datetime
 from pydantic import Field
 
 from app.core.schemas import ApiModel
+from app.modules.sales.schemas import LineIn
 
 from .models import TransferInvoice
 
 
-class InvoiceIn(ApiModel):
-    """A transfer invoice for the scanned boxes, to one showroom. `id` is made by the frontend, so sending it
-    twice raises one invoice. `order_id` is the showroom's purchase order this answers, if any."""
+class BuyerIn(ApiModel):
+    """The showroom as the invoice names it: its business name (e.g. Spark Christmas), address, phone and GSTIN, and
+    its state's GST code, the place of supply (33 is Tamil Nadu)."""
+
+    name: str = Field(min_length=1, max_length=120)
+    address: str = Field(default='', max_length=300)
+    phone: str = Field(default='', max_length=80)
+    gstin: str = Field(default='', max_length=20)
+    state: str = Field(pattern=r'^\d{2}$')
+
+
+class InvoiceChangeIn(ApiModel):
+    """What an invoice holds: the showroom and its details as printed (`buyer`; left out, the showroom's own
+    details are used), the scanned boxes and/or single products (`lines`, at least one of the two) and a note."""
+
+    location: str = Field(min_length=1, max_length=32)
+    buyer: BuyerIn | None = None
+    box_ids: list[uuid.UUID] = Field(default_factory=list, max_length=2000)
+    lines: list[LineIn] = Field(default_factory=list, max_length=500)
+    note: str = Field(default='', max_length=1000)
+
+
+class InvoiceIn(InvoiceChangeIn):
+    """A new invoice. `id` is made by the frontend, so sending it twice raises one invoice. `order_id` is the
+    showroom's purchase order this answers, if any."""
 
     id: uuid.UUID
-    location: str = Field(min_length=1, max_length=32)
-    box_ids: list[uuid.UUID] = Field(min_length=1, max_length=2000)
     order_id: uuid.UUID | None = None
-    note: str = Field(default='', max_length=1000)
 
 
 class DocumentsIn(ApiModel):
@@ -51,6 +71,8 @@ class InvoiceOut(ApiModel):
     note: str
     order_id: uuid.UUID | None
     box_ids: list[uuid.UUID]
+    buyer: dict | None
+    inter_state: bool | None
     history: list[dict]
     created_at: datetime
     updated_at: datetime
@@ -75,6 +97,8 @@ class InvoiceOut(ApiModel):
             note=inv.note,
             order_id=inv.order_id,
             box_ids=box_ids,
+            buyer=inv.buyer,
+            inter_state=inv.inter_state,
             history=inv.history,
             created_at=inv.created_at,
             updated_at=inv.updated_at,

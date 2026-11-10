@@ -74,9 +74,9 @@ const RejectDialog = ({ order, onClose, onConfirm }) => {
 
 /**
  * Purchase orders, a showroom's requests for stock:
- *   showroom requests stock → admin raises a transfer invoice for it (or rejects it).
+ *   showroom requests stock → admin raises an invoice for it (or rejects it).
  * A showroom sees its own orders and raises requests; the admin sees every showroom's. The stock itself reaches
- * the showroom through the transfer invoice, once it is paid.
+ * the showroom through the invoice, once it is paid.
  */
 const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
@@ -150,8 +150,8 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
             <div>
               <p className="text-[13px] text-ink-3">
                 {admin
-                  ? 'Showroom requests for stock. Raise a transfer invoice for one to fulfil it; the stock is added to the showroom once the invoice is paid.'
-                  : 'Request stock from the admin. The admin sends it with a transfer invoice, and it is added to your stock once that is paid.'}
+                  ? 'Showroom requests for stock. Raise an invoice for one to fulfil it; the stock is added to the showroom once the invoice is paid.'
+                  : 'Request stock from the admin. The admin sends it with an invoice, and it is added to your stock once that is paid.'}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

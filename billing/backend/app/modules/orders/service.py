@@ -57,7 +57,7 @@ def _expect(order: PurchaseOrder, status: Status, action: str) -> None:
 
 
 def create_order(session: Session, user: User, data: OrderIn, *, at: datetime | None = None) -> PurchaseOrder:
-    """A showroom's request for stock, to the admin. The admin answers it with a transfer invoice (or rejects it)."""
+    """A showroom's request for stock, to the admin. The admin answers it with an invoice (or rejects it)."""
     if user.is_admin:
         raise Forbidden(ONLY_SHOWROOM)
     at = at or clock.now()

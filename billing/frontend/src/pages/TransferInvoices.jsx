@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FileText, Plus } from 'lucide-react';
-import { InvoiceDetail, NewInvoice } from '../components/InvoiceDialogs.jsx';
+import { InvoiceDetail, InvoiceEditor } from '../components/InvoiceDialogs.jsx';
 import InvoicePrint from '../components/InvoicePrint.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -8,8 +8,7 @@ import Pager from '../components/Pager.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { usePages } from '../hooks/usePages.js';
-import { api } from '../lib/api.js';
-import { STATUS } from '../lib/invoices.js';
+import { STATUS, storeBuyer } from '../lib/invoices.js';
 import { inr } from '../lib/money.js';
 import { rowClick } from '../lib/rowClick.js';
 
@@ -24,8 +23,8 @@ const TABS = [
 ];
 
 /**
- * Transfer invoices, how stock goes from the admin's warehouse to a showroom: the admin scans boxes and raises an
- * invoice for a showroom (cost price + 18% on every product), records the e-way bill or bill from the GST portal,
+ * Invoices, how stock goes from the admin's warehouse to a showroom: the admin scans boxes and single products and
+ * raises an invoice for a showroom (each product at its cost price, D.Rate, with 18% GST on top), records the e-way bill or bill from the GST portal,
  * marks it paid, then adds the products to the showroom's stock. A showroom's purchase order can be answered by
  * an invoice (Create invoice on the order opens this page with the order filled in).
  */
@@ -38,6 +37,7 @@ const TransferInvoices = ({ intent, onMenu }) => {
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(() => (intent?.order ? { order: intent.order } : null)); // { order? }
   const [openId, setOpenId] = useState(null);
+  const [editing, setEditing] = useState(null); // an invoice not paid yet, being changed
   const [flash, setFlash] = useState(null);
 
   const mine = invoices.filter((i) => !location || i.location === location);
@@ -53,18 +53,9 @@ const TransferInvoices = ({ intent, onMenu }) => {
     if (printJob) window.print();
   }, [printJob]);
 
-  // The showroom is the buyer: its own name, address and GSTIN come from its Settings, the built-in details fill any gap.
+  // The showroom is the buyer, as the invoice names it; one raised before that takes the showroom's details as they are now.
   const print = async (invoice) => {
-    const shop = locationById(invoice.location) ?? {};
-    const own = await api(`/settings?location=${encodeURIComponent(invoice.location)}`).catch(() => ({}));
-    const lines = own.storeAddress?.trim() ? own.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
-    const buyer = {
-      name: own.storeName?.trim() || (shop.city ? `${shop.city} showroom · ${shop.area}` : ''),
-      lines,
-      phone: own.storePhone?.trim() || shop.phone,
-      gstin: own.gstin?.trim() || shop.gstin,
-    };
-    setPrinting({ invoice, buyer });
+    setPrinting({ invoice, buyer: invoice.buyer ?? (await storeBuyer(invoice.location)) });
     setPrintJob((n) => n + 1);
   };
 
@@ -72,19 +63,30 @@ const TransferInvoices = ({ intent, onMenu }) => {
     setCreating(null);
     setTab('raised');
     setOpenId(invoice.id);
-    setFlash(`${invoice.number} raised for ${locationById(invoice.location)?.city}. Record its e-way bill or bill next.`);
+    setFlash(`${invoice.number} raised for ${locationById(invoice.location)?.city}. Mark it paid when the money comes in.`);
+  };
+
+  const edit = (invoice) => {
+    setOpenId(null);
+    setEditing(invoice);
+  };
+
+  const edited = (invoice) => {
+    setEditing(null);
+    setOpenId(invoice.id);
+    setFlash(`${invoice.number} saved.`);
   };
 
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col print:hidden">
-        <PageHeader crumbs={['Admin', 'Transfer invoices']} onMenu={onMenu} />
+        <PageHeader crumbs={['Admin', 'Invoices']} onMenu={onMenu} />
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-3xl text-[13px] text-ink-3">
-                Send boxes to a showroom: scan them onto an invoice at cost price + 18%, record the e-way bill or bill, and mark it paid. Then add the
-                products to the showroom’s stock.
+                Send stock to a showroom: scan boxes and single products onto an invoice at cost price (D.Rate) plus 18% GST, record the e-way bill or bill, and mark it
+                paid. Then add the products to the showroom’s stock.
               </p>
               <button
                 type="button"
@@ -119,7 +121,7 @@ const TransferInvoices = ({ intent, onMenu }) => {
                 <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
                   <FileText size={22} className="text-ink-3" aria-hidden="true" />
                   <div className="text-[15px] font-semibold">{q ? 'No invoice matches that search' : 'No invoices here'}</div>
-                  <div className="max-w-sm text-[13px] text-ink-3">Raise an invoice to send boxes to a showroom.</div>
+                  <div className="max-w-sm text-[13px] text-ink-3">Raise an invoice to send boxes or single products to a showroom.</div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -171,7 +173,7 @@ const TransferInvoices = ({ intent, onMenu }) => {
                             </span>
                           </td>
                           <td className="py-2 pr-3 font-mono text-xs text-ink-2">{[i.ewayNo, i.billNo].filter(Boolean).join(' · ') || '—'}</td>
-                          <td className="py-2 pr-3 text-right">{i.boxIds.length}</td>
+                          <td className="py-2 pr-3 text-right">{i.boxIds.length || '—'}</td>
                           <td className="py-2 pr-3 text-right">{i.lines.reduce((s, l) => s + l.qty, 0)}</td>
                           <td className="py-2 pr-3 text-right font-medium">{inr(i.total)}</td>
                           <td className="py-2 pr-4 whitespace-nowrap text-ink-2">{when.format(new Date(i.updatedAt))}</td>
@@ -186,8 +188,9 @@ const TransferInvoices = ({ intent, onMenu }) => {
           </div>
         </div>
 
-        {creating && <NewInvoice order={creating.order} onClose={() => setCreating(null)} onDone={created} />}
-        {openId && <InvoiceDetail id={openId} onClose={() => setOpenId(null)} onPrint={print} />}
+        {creating && <InvoiceEditor order={creating.order} onClose={() => setCreating(null)} onDone={created} />}
+        {editing && <InvoiceEditor invoice={editing} onClose={() => setEditing(null)} onDone={edited} />}
+        {openId && <InvoiceDetail id={openId} onClose={() => setOpenId(null)} onPrint={print} onEdit={edit} />}
       </div>
       {printing && <InvoicePrint invoice={printing.invoice} seller={settings} buyer={printing.buyer} />}
     </>

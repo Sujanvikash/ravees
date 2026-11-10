@@ -1,7 +1,7 @@
 import logo from '../assets/logo.svg';
 import { BRAND } from '../config.js';
 import { findProduct } from '../lib/catalogue.js';
-import { MARKUP_PCT } from '../lib/invoices.js';
+import { sellerState, stateName, stateOfGstin } from '../lib/gst.js';
 import { amount, inr, inWords } from '../lib/money.js';
 
 const date = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -21,32 +21,23 @@ const Sum = ({ label, value, className = '' }) => (
   </div>
 );
 
-// The first two digits of a GSTIN are the state's code; the same code on both sides means the sale is inside one state.
-const stateCode = (gstin) => (/^\d{2}/.test(gstin ?? '') ? gstin.slice(0, 2) : '');
-
-/** The tax on the lines: each product's own GST rate, CGST + SGST inside a state and IGST across states. */
-const taxOf = (lines, sameState) => {
-  const rows = lines.map((l) => {
-    const rate = findProduct(l.code)?.gst ?? 18;
-    return { rate, tax: Math.round(l.amount * rate) / 100 };
-  });
-  const tax = rows.reduce((s, r) => s + r.tax, 0);
-  return { rows, tax, half: Math.round(tax * 50) / 100, sameState };
-};
-
 /**
- * A transfer invoice on an A4 page (the `quote` page in index.css), black and white only. Hidden on screen; it is the
+ * An invoice on an A4 page (the `quote` page in index.css), black and white only. Hidden on screen; it is the
  * only thing that prints while it is on the page. `seller` is the admin's business (Settings → Business details for
- * invoices), `buyer` the showroom's own details ({ name, lines, phone, gstin }). The amounts are the invoice's: cost
- * price + 18%. With "add GST to the invoice" on in Settings, each product's GST goes on top.
+ * invoices), `buyer` the showroom as the invoice names it ({ name, address, phone, gstin, state }). The amounts are the
+ * invoice's, as the server worked them out: each product at its cost price (D.Rate) with its GST on top, CGST + SGST
+ * when the showroom is in the admin's state (Tamil Nadu) and IGST to any other. (An invoice raised before that has no
+ * GST on its lines: it prints its amounts with GST 0.) The e-way bill isn't on it: that is made after payment.
  */
 const InvoicePrint = ({ invoice, seller, buyer }) => {
-  const lines = invoice.lines.map((l) => ({ ...l, hsn: findProduct(l.code)?.hsn ?? '' }));
-  const withGst = Boolean(seller.invoiceGst);
-  const same = !stateCode(seller.bizGstin) || !stateCode(buyer.gstin) || stateCode(seller.bizGstin) === stateCode(buyer.gstin);
-  const gst = taxOf(lines, same);
+  const lines = invoice.lines.map((l) => ({ ...l, hsn: findProduct(l.code)?.hsn ?? '', gst: l.gst ?? 0, tax: l.tax ?? 0 }));
+  const place = buyer.state || stateOfGstin(buyer.gstin);
+  const same = invoice.interState != null ? !invoice.interState : place === sellerState(seller);
+  const buyerLines = (buyer.address ?? '').split('\n').filter(Boolean);
   const taxable = lines.reduce((s, l) => s + l.amount, 0);
-  const grand = withGst ? taxable + gst.tax : taxable;
+  const tax = Math.round(lines.reduce((s, l) => s + l.tax, 0) * 100) / 100;
+  const half = Math.round(tax * 50) / 100;
+  const grand = invoice.total;
   const sellerName = seller.bizName?.trim() || BRAND.name;
   const sellerLines = (seller.bizAddress ?? '').split('\n').filter(Boolean);
   const bank = [seller.bankName, seller.bankAccount && `A/c ${seller.bankAccount}`, seller.bankIfsc && `IFSC ${seller.bankIfsc}`].filter(Boolean);
@@ -76,7 +67,7 @@ const InvoicePrint = ({ invoice, seller, buyer }) => {
             </div>
           </div>
           <div className="text-right">
-            <div className="font-display text-[24px] leading-none font-bold tracking-[0.12em]">{withGst ? 'TAX INVOICE' : 'INVOICE'}</div>
+            <div className="font-display text-[24px] leading-none font-bold tracking-[0.12em]">TAX INVOICE</div>
             <div className="mt-2 font-mono text-[12px] font-semibold">{invoice.number}</div>
             <div className="mt-0.5 text-[10px]">Original for recipient</div>
           </div>
@@ -86,7 +77,7 @@ const InvoicePrint = ({ invoice, seller, buyer }) => {
           <div>
             <Label>Bill to / Ship to</Label>
             <div className="text-[11.5px] font-bold">{buyer.name}</div>
-            {buyer.lines.map((l) => (
+            {buyerLines.map((l) => (
               <div key={l}>{l}</div>
             ))}
             {buyer.phone && <div>Ph: {buyer.phone}</div>}
@@ -96,17 +87,14 @@ const InvoicePrint = ({ invoice, seller, buyer }) => {
             <Label>Invoice</Label>
             <Meta label="Date" value={date.format(new Date(invoice.createdAt))} />
             <Meta label="Invoice no." value={invoice.number} />
-            <Meta label="Boxes" value={String(invoice.boxIds.length)} />
+            {invoice.boxIds.length > 0 && <Meta label="Boxes" value={String(invoice.boxIds.length)} />}
+            <Meta label="Place of supply" value={place ? `${stateName(place)} (${place})` : ''} />
             <Meta label="Supply" value={same ? 'Within the state' : 'Inter-state'} />
           </div>
           <div>
-            <Label>Transport / bill</Label>
-            <Meta label="E-way bill no." value={invoice.ewayNo} />
-            <Meta label="Bill no." value={invoice.billNo} />
+            <Label>Payment</Label>
             <Meta label="Payment" value={invoice.status === 'raised' ? 'Due' : invoice.status === 'cancelled' ? '—' : 'Paid'} />
             <Meta label="Reference" value={invoice.paidRef} />
-            {!invoice.ewayNo && <div>E-way bill no.: ____________</div>}
-            <div>Vehicle no.: ____________</div>
           </div>
         </div>
 
@@ -119,9 +107,9 @@ const InvoicePrint = ({ invoice, seller, buyer }) => {
               <th className="py-1.5 pr-2 text-right font-bold">Qty</th>
               <th className="py-1.5 pr-2 text-right font-bold">Rate</th>
               <th className="py-1.5 pr-2 text-right font-bold">Amount</th>
-              {withGst && <th className="py-1.5 pr-2 text-right font-bold">GST %</th>}
-              {withGst && <th className="py-1.5 pr-2 text-right font-bold">GST</th>}
-              {withGst && <th className="py-1.5 text-right font-bold">Total</th>}
+              <th className="py-1.5 pr-2 text-right font-bold">GST %</th>
+              <th className="py-1.5 pr-2 text-right font-bold">GST</th>
+              <th className="py-1.5 text-right font-bold">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -136,9 +124,9 @@ const InvoicePrint = ({ invoice, seller, buyer }) => {
                 <td className="py-1.5 pr-2 text-right">{l.qty} Nos</td>
                 <td className="py-1.5 pr-2 text-right">{amount(l.rate)}</td>
                 <td className="py-1.5 pr-2 text-right font-semibold">{amount(l.amount)}</td>
-                {withGst && <td className="py-1.5 pr-2 text-right">{gst.rows[i].rate}%</td>}
-                {withGst && <td className="py-1.5 pr-2 text-right">{amount(gst.rows[i].tax)}</td>}
-                {withGst && <td className="py-1.5 text-right font-semibold">{amount(l.amount + gst.rows[i].tax)}</td>}
+                <td className="py-1.5 pr-2 text-right">{l.gst}%</td>
+                <td className="py-1.5 pr-2 text-right">{amount(l.tax)}</td>
+                <td className="py-1.5 text-right font-semibold">{amount(l.amount + l.tax)}</td>
               </tr>
             ))}
             <tr className="border-b-2 border-black font-bold">
@@ -148,9 +136,9 @@ const InvoicePrint = ({ invoice, seller, buyer }) => {
               <td className="py-1.5 pr-2 text-right">{lines.reduce((s, l) => s + l.qty, 0)} Nos</td>
               <td />
               <td className="py-1.5 pr-2 text-right">{amount(taxable)}</td>
-              {withGst && <td />}
-              {withGst && <td className="py-1.5 pr-2 text-right">{amount(gst.tax)}</td>}
-              {withGst && <td className="py-1.5 text-right">{amount(grand)}</td>}
+              <td />
+              <td className="py-1.5 pr-2 text-right">{amount(tax)}</td>
+              <td className="py-1.5 text-right">{amount(grand)}</td>
             </tr>
           </tbody>
         </table>
@@ -165,23 +153,17 @@ const InvoicePrint = ({ invoice, seller, buyer }) => {
                 {invoice.note}
               </div>
             )}
-            {!withGst && (
-              <div className="mt-2 text-[10px]">
-                Rate is cost price + {MARKUP_PCT}%. {invoice.lines.length} {invoice.lines.length === 1 ? 'product' : 'products'}.
-              </div>
-            )}
           </div>
           <div className="w-64">
-            <Sum label={withGst ? 'Taxable value' : 'Invoice value'} value={amount(taxable)} />
-            {withGst &&
-              (gst.sameState ? (
-                <>
-                  <Sum label="CGST" value={amount(gst.half)} />
-                  <Sum label="SGST" value={amount(gst.tax - gst.half)} />
-                </>
-              ) : (
-                <Sum label="IGST" value={amount(gst.tax)} />
-              ))}
+            <Sum label="Taxable value" value={amount(taxable)} />
+            {same ? (
+              <>
+                <Sum label="CGST" value={amount(half)} />
+                <Sum label="SGST" value={amount(tax - half)} />
+              </>
+            ) : (
+              <Sum label="IGST" value={amount(tax)} />
+            )}
             <Sum label="Total" value={inr(grand)} className="mt-1.5 border-y-2 border-black py-1.5 text-[14px] font-bold" />
           </div>
         </div>

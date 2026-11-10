@@ -97,12 +97,11 @@ def test_business_details_are_the_admins_alone(client, chennai, admin):
         'bizName': 'Raave Traders',
         'bizGstin': '33ABCDE1234F1Z5',
         'bankAccount': '123456789012',
-        'invoiceGst': True,
     }
     assert client.patch('/settings', json=mine, headers=chennai).status_code == 403  # a showroom can't set them
     saved = client.patch('/settings', json=mine, headers=admin).json()
     try:
-        assert saved['bizName'] == 'Raave Traders' and saved['invoiceGst'] is True
+        assert saved['bizName'] == 'Raave Traders' and 'invoiceGst' not in saved  # an invoice always adds GST
         assert client.get('/settings', headers=admin).json()['bankAccount'] == '123456789012'
         # neither the sign-in screen nor a showroom ever sees them, not even in the answer to its own change
         for seen in (
@@ -110,11 +109,9 @@ def test_business_details_are_the_admins_alone(client, chennai, admin):
             client.get('/settings', headers=chennai).json(),
             client.patch('/settings', json={'font': 'normal'}, headers=chennai).json(),
         ):
-            assert seen['bizName'] == seen['bizGstin'] == seen['bankAccount'] == '' and seen['invoiceGst'] is False
+            assert seen['bizName'] == seen['bizGstin'] == seen['bankAccount'] == ''
     finally:
-        client.patch(
-            '/settings', json={'bizName': '', 'bizGstin': '', 'bankAccount': '', 'invoiceGst': False}, headers=admin
-        )
+        client.patch('/settings', json={'bizName': '', 'bizGstin': '', 'bankAccount': ''}, headers=admin)
 
 
 @pytest.fixture(scope='module')
@@ -190,9 +187,13 @@ def test_the_demo_starts_clean_with_the_2026_season(client, demo_built):
     _, d_admin = demo(client, 'admin')
     season = {p['code'] for p in client.get('/products', headers=d_admin).json()['products'] if p['inSeason']}
     assert len(season) == 477 and 'CT26020' in season and 'TR0232' not in season
+    # the season's total quantities are in the admin stock, imported from the stock sheet
+    stock = client.get('/stock', headers=d_admin).json()
+    assert set(stock) == {'warehouse'} and set(stock['warehouse']) == season
+    assert sum(stock['warehouse'].values()) == 166190 and stock['warehouse']['CT26020'] == 130
+    assert [i['file'] for i in client.get('/stock/imports', headers=d_admin).json()] == ['admin-stock-2026.xlsx']
     # nothing else, as on the real side before its first day: every workflow is tried from its first step
-    for path in ('/sales', '/returns', '/orders', '/quotes', '/cash/closes', '/stock/imports', '/boxes'):
+    for path in ('/sales', '/returns', '/orders', '/quotes', '/cash/closes', '/boxes'):
         assert client.get(path, headers=d_admin).json() == [], path
     for path in ('/transfer-invoices', '/purchase-returns'):
         assert client.get(path, headers=d_admin).json() == [], path
-    assert client.get('/stock', headers=d_admin).json() == {}

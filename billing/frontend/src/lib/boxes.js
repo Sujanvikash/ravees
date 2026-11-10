@@ -5,7 +5,7 @@ import { findProduct } from './catalogue.js';
  * product. The header row is found by name: it needs "Box No", "Code" and "Qty" columns; "Stock No", "Shipment"
  * (or Batch) and "Supplier" are optional. A box's number and details can be on its first row only: blank cells
  * below take the box above, as a printed packing list does. (A Showroom column in an older sheet is ignored: the
- * showroom is chosen when the box goes on a transfer invoice.)
+ * showroom is chosen when the box goes on an invoice.)
  *
  * Returns { boxes: [{ boxNo, stockNo, shipment, supplier, lines: [{ code, name, qty }], rows }],
  * problems: [{ row, box, code, reason }], error }.

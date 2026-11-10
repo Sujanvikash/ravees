@@ -21,7 +21,7 @@ def list_orders(user: CurrentUser, session: DbSession, location: str | None = No
 
 @router.post('', status_code=status.HTTP_201_CREATED)
 def create_order(body: OrderIn, user: CurrentUser, session: DbSession) -> OrderOut:
-    """A showroom requests stock (status requested); the admin answers with a transfer invoice."""
+    """A showroom requests stock (status requested); the admin answers with an invoice."""
     return OrderOut.from_model(service.create_order(session, user, body))
 
 

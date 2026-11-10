@@ -12,8 +12,8 @@ product catalogue from seed/products-clean.xlsx. Safe to run again: it never cha
 the admin's season choices unless --season-from-excel is given. If there is no demo yet it builds one too
 (--no-demo to skip).
 
-demo throws everything done in the demo away and builds it again clean: the showrooms, logins and catalogue, with
-no stock or sales. The real data is never touched.
+demo throws everything done in the demo away and builds it again clean: the showrooms, logins, catalogue and the
+admin's stock of the season, with no sales. The real data is never touched.
 
 refresh-demo is what the server runs on every start: it builds the demo only when there is none, or when a deploy
 changed the models so its tables no longer match, or changed the product Excel it was built from.

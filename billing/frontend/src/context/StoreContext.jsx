@@ -22,13 +22,13 @@ import { newId } from '../lib/uid.js';
  *   returns  credit notes: [{ id, returnNo, saleId, billNo, location, at, kind: return | exchange, lines, amount,
  *              refund, balanceOff, exchangeBillNo }]
  *   stock    { [location]: { [code]: qty } }     (can go negative if billed beyond what was counted in)
- *   orders   purchase orders, see lib/orders.js: a showroom's request → fulfilled by the admin's transfer invoice
+ *   orders   purchase orders, see lib/orders.js: a showroom's request → fulfilled by the admin's invoice
  *   quotes   quotations: priced lists for a customer, never a bill
  *   imports  stock added straight from an Excel: [{ id, at, by, username, location, file, lines, source? }]
  *   stockReturns  stock a showroom sent back to the admin: [{ id, number, location, status: sent | received, … }]
  *   boxes    the admin's boxes (admin only; a showroom gets none): [{ id, boxNo, stockNo, shipment, supplier,
  *              location, invoiceId, status: in_stock | invoiced | stocked, lines: [{ code, name, qty }], history }]
- *   invoices transfer invoices, the admin's bills to a showroom for boxes at cost + 18%: [{ id, number, location,
+ *   invoices the admin's bills to a showroom for boxes and single products at cost price + GST: [{ id, number, location,
  *              status: raised | paid | stocked | cancelled, lines: [{ code, name, qty, cost, rate, amount }],
  *              markupPct, subtotal, total, ewayNo, billNo, docName, hasDocument, paidAt, paidRef, orderId, boxIds,
  *              history }]
@@ -67,7 +67,6 @@ export const DEFAULT_SETTINGS = {
   bankAccount: '',
   bankIfsc: '',
   invoiceTerms: '',
-  invoiceGst: false,
   showGst: true,
   requireName: true,
   requireMobile: true,
@@ -358,15 +357,25 @@ export const StoreProvider = ({ session, children }) => {
         reloadStock().catch(() => {});
       },
 
-      /** Transfer invoices (admin raises them; a showroom sees its own). Each resolves to the invoice as saved. */
-      saveInvoice: async ({ location, boxIds, orderId, note }) => {
-        const invoice = await api('/transfer-invoices', { method: 'POST', body: { id: newId(), location, boxIds, orderId, note } });
+      /** Invoices (admin raises them for boxes and single products; a showroom sees its own). Each resolves to the
+       *  invoice as saved. */
+      saveInvoice: async ({ location, buyer, boxIds, lines, orderId, note }) => {
+        const invoice = await api('/transfer-invoices', { method: 'POST', body: { id: newId(), location, buyer, boxIds, lines, orderId, note } });
         const [boxes, orders] = await Promise.all([api('/boxes'), api('/orders')]);
         setData((d) => ({ ...d, boxes, orders, invoices: upsert(d.invoices, invoice) }));
         reloadStock().catch(() => {});
         return invoice;
       },
-      /** The e-way bill / bill numbers, and optionally the bill's PDF (docName + docBase64). */
+      /** Changes an invoice not paid yet (showroom and its details, boxes, single products, note); the boxes and the
+       *  admin stock change with it. */
+      updateInvoice: async (id, { location, buyer, boxIds, lines, note }) => {
+        const invoice = await api(`/transfer-invoices/${id}`, { method: 'PUT', body: { location, buyer, boxIds, lines, note } });
+        const boxes = await api('/boxes');
+        setData((d) => ({ ...d, boxes, invoices: upsert(d.invoices, invoice) }));
+        reloadStock().catch(() => {});
+        return invoice;
+      },
+      /** The e-way bill / bill numbers (once paid), and optionally the bill's PDF (docName + docBase64). */
       saveInvoiceDocuments: async (id, body) => saved('invoices', await api(`/transfer-invoices/${id}/documents`, { method: 'PUT', body })),
       payInvoice: async (id, { ref, note }) => saved('invoices', await api(`/transfer-invoices/${id}/pay`, { method: 'POST', body: { ref, note } })),
       /** Adds a paid invoice's products to the showroom's stock. */
@@ -375,7 +384,7 @@ export const StoreProvider = ({ session, children }) => {
         setData((d) => ({ ...d, boxes: d.boxes.map((b) => (invoice.boxIds.includes(b.id) ? { ...b, status: 'stocked' } : b)) }));
         return saved('invoices', invoice, { stock: true });
       },
-      /** Cancels an invoice not yet stocked: its boxes go back to the warehouse. */
+      /** Cancels an invoice not yet stocked: its products go back to the admin stock, its boxes to the warehouse. */
       cancelInvoice: async (id) => {
         const invoice = await api(`/transfer-invoices/${id}/cancel`, { method: 'POST' });
         const [boxes, orders] = await Promise.all([api('/boxes'), api('/orders')]);

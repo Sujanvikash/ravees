@@ -1,5 +1,6 @@
 import base64
 import binascii
+import re
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
@@ -13,16 +14,19 @@ from app.core.errors import Conflict, Forbidden, InvalidInput, NotFound
 from app.modules.auth.access import acting_location, visible_location
 from app.modules.boxes.models import Box
 from app.modules.boxes.service import adjust_warehouse
+from app.modules.locations.constants import ADMIN_STATE, HOME_STATE
+from app.modules.locations.models import Location
 from app.modules.numbering import service as numbering
 from app.modules.orders.models import PurchaseOrder, Status
 from app.modules.products import repository as products
+from app.modules.sales.schemas import LineIn
 from app.modules.stock import repository as stock
+from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
 from .models import TransferInvoice
-from .schemas import DocumentsIn, InvoiceIn, PayIn
+from .schemas import BuyerIn, DocumentsIn, InvoiceChangeIn, InvoiceIn, PayIn
 
-MARKUP_PCT = Decimal(18)  # the admin bills a showroom the cost price plus this
 MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
 CENT = Decimal('0.01')
 
@@ -60,7 +64,7 @@ def _get(session: Session, invoice_id: uuid.UUID) -> TransferInvoice:
     """The invoice, locked until the caller commits so two clicks can't move it on twice."""
     invoice = session.get(TransferInvoice, invoice_id, with_for_update=True)
     if not invoice:
-        raise NotFound('No such transfer invoice.')
+        raise NotFound('No such invoice.')
     return invoice
 
 
@@ -99,8 +103,91 @@ def _boxes(session: Session, invoice_id: uuid.UUID) -> list[Box]:
     return list(session.scalars(select(Box).where(Box.invoice_id == invoice_id).with_for_update()))
 
 
+def _seller_state(session: Session) -> str:
+    """The admin's own state's GST code: from the business GSTIN when it is set, else Tamil Nadu."""
+    gstin = app_settings.get(session).biz_gstin.strip()
+    return gstin[:2] if gstin[:2].isdigit() else ADMIN_STATE
+
+
+def _buyer(session: Session, location: Location, given: BuyerIn | None) -> dict:
+    """Who the invoice is to: the details entered on it, else the showroom's own (its Settings), with its state (the
+    place of supply) from its GSTIN or where the store is. A GSTIN must belong to the state chosen."""
+    if given:
+        name, address, phone = ' '.join(given.name.split()), given.address.strip(), given.phone.strip()
+        gstin, state = given.gstin.strip().upper(), given.state
+    else:
+        own = app_settings.get(session, location.id)
+        name = own.store_name.strip() or f'{location.city} showroom'
+        address, phone, gstin = own.store_address.strip(), own.store_phone.strip(), own.gstin.strip().upper()
+        state = gstin[:2] if gstin[:2].isdigit() else HOME_STATE.get(location.id, '')
+    if not name:
+        raise InvalidInput('Enter the showroom’s name for the invoice.')
+    if not re.fullmatch(r'\d{2}', state):
+        raise InvalidInput(f'Choose {location.city}’s state: it decides between IGST and CGST + SGST.')
+    if gstin[:2].isdigit() and gstin[:2] != state:
+        raise InvalidInput(f'The GSTIN {gstin} belongs to state code {gstin[:2]}, not {state}.')
+    return {'name': name, 'address': address, 'phone': phone, 'gstin': gstin, 'state': state}
+
+
+def _locked_boxes(session: Session, ids: set[uuid.UUID]) -> list[Box]:
+    boxes = list(session.scalars(select(Box).where(Box.id.in_(ids)).with_for_update().order_by(Box.box_no)))
+    if len(boxes) != len(ids):
+        raise NotFound('Some of those boxes no longer exist.')
+    return boxes
+
+
+def _priced(session: Session, boxes: Sequence[Box], singles: Sequence[LineIn]) -> tuple[dict[str, int], list[dict]]:
+    """What the boxes and single products add up to, by code, and the invoice lines for it: each product at its cost
+    price (D.Rate) with its own GST (18%) on top; nothing else is added."""
+    wanted: dict[str, int] = {}
+    for box in boxes:
+        for line in box.lines:
+            wanted[line['code']] = wanted.get(line['code'], 0) + line['qty']
+    for single in singles:  # single products, scanned outside a box
+        code = single.code.strip().upper()
+        wanted[code] = wanted.get(code, 0) + single.qty
+    catalogue = products.by_codes(session, wanted)
+    unknown = sorted(set(wanted) - set(catalogue))
+    if unknown:
+        raise InvalidInput(f'Not in the product list: {", ".join(unknown)}.')
+    lines = []
+    for code, qty in wanted.items():
+        product = catalogue[code]
+        rate = _money(Decimal(product.cost))
+        amount = _money(rate * qty)
+        lines.append(
+            {
+                'code': code,
+                'name': product.name,
+                'qty': qty,
+                'cost': float(product.cost),
+                'rate': float(rate),
+                'amount': float(amount),
+                'gst': float(product.gst),
+                'tax': float(_money(amount * Decimal(product.gst) / 100)),
+            }
+        )
+    return wanted, lines
+
+
+def _fill(
+    session: Session, invoice: TransferInvoice, location: Location, data: InvoiceChangeIn, lines: list[dict]
+) -> None:
+    """Puts the showroom, its details, the lines and their totals, and the note on the invoice."""
+    buyer = _buyer(session, location, data.buyer)
+    invoice.location_id = location.id
+    invoice.buyer = buyer
+    invoice.inter_state = buyer['state'] != _seller_state(session)
+    invoice.lines = lines
+    invoice.markup_pct = Decimal(0)
+    invoice.subtotal = sum((Decimal(str(line['amount'])) for line in lines), Decimal(0))
+    invoice.total = invoice.subtotal + sum((Decimal(str(line['tax'])) for line in lines), Decimal(0))
+    invoice.note = data.note.strip()
+
+
 def raise_invoice(session: Session, user: User, data: InvoiceIn, *, at: datetime | None = None) -> TransferInvoice:
-    """Bills the scanned boxes to a showroom at cost + the markup. The items leave the admin's stock now and the
+    """Bills the scanned boxes and single products to a showroom at their cost price (D.Rate) with each product's
+    GST on top: IGST to another state, CGST + SGST inside the admin's. The items leave the admin's stock now and the
     boxes are `invoiced`. The same id sent again returns the first invoice."""
     _admin(user)
     existing = session.get(TransferInvoice, data.id)
@@ -110,11 +197,10 @@ def raise_invoice(session: Session, user: User, data: InvoiceIn, *, at: datetime
         return existing
     at = at or clock.now()
     location = acting_location(session, user, data.location)
+    if not data.box_ids and not data.lines:
+        raise InvalidInput('Scan a box or a product to put on the invoice.')
 
-    ids = set(data.box_ids)
-    boxes = list(session.scalars(select(Box).where(Box.id.in_(ids)).with_for_update().order_by(Box.box_no)))
-    if len(boxes) != len(ids):
-        raise NotFound('Some of those boxes no longer exist.')
+    boxes = _locked_boxes(session, set(data.box_ids))
     taken = sorted(b.box_no for b in boxes if b.status != 'in_stock')
     if taken:
         raise Conflict(f'Already on an invoice: box {", ".join(taken)}.')
@@ -127,51 +213,24 @@ def raise_invoice(session: Session, user: User, data: InvoiceIn, *, at: datetime
         if order.status != Status.REQUESTED:
             raise Conflict(f'{order.number} is {order.status}, so it can’t be answered.')
 
-    wanted: dict[str, int] = {}
-    for box in boxes:
-        for line in box.lines:
-            wanted[line['code']] = wanted.get(line['code'], 0) + line['qty']
-    catalogue = products.by_codes(session, wanted)
-    factor = 1 + MARKUP_PCT / 100
-    lines, subtotal = [], Decimal(0)
-    for code, qty in wanted.items():
-        product = catalogue[code]
-        rate = _money(Decimal(product.cost) * factor)
-        amount = _money(rate * qty)
-        subtotal += amount
-        lines.append(
-            {
-                'code': code,
-                'name': product.name,
-                'qty': qty,
-                'cost': float(product.cost),
-                'rate': float(rate),
-                'amount': float(amount),
-            }
-        )
-    note = data.note.strip()
+    wanted, lines = _priced(session, boxes, data.lines)
     invoice = TransferInvoice(
         id=data.id,
-        number=numbering.next_transfer_no(session),
-        location_id=location.id,
+        number=numbering.next_invoice_no(session),
         status='raised',
-        lines=lines,
-        markup_pct=MARKUP_PCT,
-        subtotal=subtotal,
-        total=subtotal,
         eway_no='',
         bill_no='',
         doc_name='',
         doc_data=None,
         paid_at=None,
         paid_ref='',
-        note=note,
         order_id=order.id if order else None,
         history=[],
         created_at=at,
         updated_at=at,
     )
-    _log(invoice, 'raised', note, at)
+    _fill(session, invoice, location, data, lines)
+    _log(invoice, 'raised', invoice.note, at)
     session.add(invoice)
     session.flush()  # the boxes point at it
     adjust_warehouse(session, {code: -qty for code, qty in wanted.items()})
@@ -184,13 +243,60 @@ def raise_invoice(session: Session, user: User, data: InvoiceIn, *, at: datetime
     return invoice
 
 
+def edit_invoice(
+    session: Session, user: User, invoice_id: uuid.UUID, data: InvoiceChangeIn, *, at: datetime | None = None
+) -> TransferInvoice:
+    """Changes an invoice that isn't paid yet: its showroom and their details, its boxes, single products and note.
+    The admin stock and the boxes change by the difference. An invoice answering a purchase order keeps its
+    showroom."""
+    _admin(user)
+    invoice = _get(session, invoice_id)
+    _expect(invoice, ('raised',), 'edited')
+    at = at or clock.now()
+    location = acting_location(session, user, data.location)
+    if invoice.order_id and location.id != invoice.location_id:
+        raise InvalidInput('This invoice answers a showroom’s purchase order, so its showroom can’t change.')
+    if not data.box_ids and not data.lines:
+        raise InvalidInput('Scan a box or a product to put on the invoice.')
+
+    ids = set(data.box_ids)
+    current = _boxes(session, invoice.id)
+    boxes = _locked_boxes(session, ids)
+    taken = sorted(b.box_no for b in boxes if b.status != 'in_stock' and b.invoice_id != invoice.id)
+    if taken:
+        raise Conflict(f'Already on an invoice: box {", ".join(taken)}.')
+
+    wanted, lines = _priced(session, boxes, data.lines)
+    had = {line['code']: line['qty'] for line in invoice.lines}
+    adjust_warehouse(session, {code: had.get(code, 0) - wanted.get(code, 0) for code in had.keys() | wanted.keys()})
+    _move_boxes([b for b in current if b.id not in ids], 'in_stock', None, None, 'released', invoice.number, at)
+    _move_boxes(
+        [b for b in boxes if b.invoice_id != invoice.id],
+        'invoiced',
+        location.id,
+        invoice.id,
+        'invoiced',
+        f'{invoice.number} to {location.city}',
+        at,
+    )
+    for box in boxes:
+        box.location_id = location.id
+    _fill(session, invoice, location, data, lines)
+    _log(invoice, 'edited', '', at)
+    session.commit()
+    return invoice
+
+
 def set_documents(
     session: Session, user: User, invoice_id: uuid.UUID, data: DocumentsIn, *, at: datetime | None = None
 ) -> TransferInvoice:
-    """Records the e-way bill number and/or the bill number, and keeps the PDF if one is sent."""
+    """Records the e-way bill number and/or the bill number, and keeps the PDF if one is sent. Only once the invoice
+    is paid: the goods move, and the e-way bill is made, after payment."""
     _admin(user)
     invoice = _get(session, invoice_id)
-    _expect(invoice, ('raised', 'paid'), 'changed')
+    if invoice.status == 'raised':
+        raise Conflict(f'{invoice.number} isn’t paid yet: record the e-way bill once it is.')
+    _expect(invoice, ('paid', 'stocked'), 'changed')
     eway, bill = data.eway_no.strip().upper(), data.bill_no.strip()
     if data.doc_base64:
         try:
@@ -219,12 +325,10 @@ def get_document(session: Session, user: User, invoice_id: uuid.UUID) -> tuple[b
 def pay(
     session: Session, user: User, invoice_id: uuid.UUID, data: PayIn, *, at: datetime | None = None
 ) -> TransferInvoice:
-    """The admin marks the invoice paid, once the e-way bill or bill number is on it."""
+    """The admin marks the invoice paid; the e-way bill is recorded after this."""
     _admin(user)
     invoice = _get(session, invoice_id)
     _expect(invoice, ('raised',), 'marked paid')
-    if not (invoice.eway_no or invoice.bill_no):
-        raise InvalidInput('Record the e-way bill or bill number first.')
     at = at or clock.now()
     invoice.status = 'paid'
     invoice.paid_at = at

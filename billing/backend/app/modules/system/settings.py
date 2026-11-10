@@ -29,7 +29,7 @@ KEY = 'ui'
 APPEARANCE = frozenset({'theme', 'wash', 'effect', 'snow', 'strip', 'font', 'lang'})
 STORE = frozenset({'store_name', 'store_address', 'store_phone', 'gstin', 'composition'})
 SELF_EDITABLE = APPEARANCE | STORE
-# the admin's own business on a transfer invoice: bank details among them, so only the admin ever sees them
+# the admin's own business on an invoice: bank details among them, so only the admin ever sees them
 BUSINESS = frozenset(
     {
         'biz_name',
@@ -43,7 +43,6 @@ BUSINESS = frozenset(
         'bank_account',
         'bank_ifsc',
         'invoice_terms',
-        'invoice_gst',
     }
 )
 
@@ -70,9 +69,9 @@ class AppSettingsOut(ApiModel):
     # every showroom is a composition dealer (a Bill of Supply, GST included and not shown on the customer bill)
     composition: bool = True
 
-    # The admin's own business, the seller on a transfer invoice (admin only; not a showroom's to set). The
-    # address may hold several lines. With invoice_gst on, the invoice adds each product's GST (CGST + SGST
-    # within the state, IGST across states) on top of the cost + 18% rate; off, it shows that rate as the total.
+    # The admin's own business, the seller on an invoice (admin only; not a showroom's to set). The
+    # address may hold several lines. An invoice is always a tax invoice: each product's cost price with its GST
+    # on top (CGST + SGST within the state, IGST across states).
     biz_name: str = Field(default='', max_length=80)
     biz_address: str = Field(default='', max_length=300)
     biz_state: str = Field(default='', max_length=40)
@@ -84,7 +83,6 @@ class AppSettingsOut(ApiModel):
     bank_account: str = Field(default='', max_length=30)
     bank_ifsc: str = Field(default='', max_length=16)
     invoice_terms: str = Field(default='', max_length=400)
-    invoice_gst: bool = False
 
     # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
     show_gst: bool = True
@@ -122,7 +120,6 @@ class AppSettingsPatch(ApiModel):
     bank_account: str | None = Field(default=None, max_length=30)
     bank_ifsc: str | None = Field(default=None, max_length=16)
     invoice_terms: str | None = Field(default=None, max_length=400)
-    invoice_gst: bool | None = None
     show_gst: bool | None = None
     require_name: bool | None = None
     require_mobile: bool | None = None

@@ -75,7 +75,7 @@ def test_a_showroom_cannot_import_stock_except_its_own_products(client, chennai)
     before = stock_of(client, chennai, 'chennai', code)
     body = {'id': str(uuid.uuid4()), 'file': 'x.xlsx', 'lines': [{'code': code, 'qty': 3}]}
     r = client.post('/stock/imports', json=body, headers=chennai)
-    assert r.status_code == 403 and 'transfer invoice' in r.json()['detail']
+    assert r.status_code == 403 and 'admin’s invoice' in r.json()['detail']
     manual = client.post('/stock/imports', json={**body, 'id': str(uuid.uuid4()), 'source': 'manual'}, headers=chennai)
     assert manual.status_code == 403
     assert stock_of(client, chennai, 'chennai', code) == before

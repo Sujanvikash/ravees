@@ -106,8 +106,8 @@ def next_stock_return_no(session: Session, location_id: str) -> str:
     return f'PR-{_prefix(session, location_id)}-{seq:04d}'
 
 
-def next_transfer_no(session: Session) -> str:
-    """TI-ADM-0001: a transfer invoice the admin raises for stock going to a showroom, numbered on the admin's own
-    series."""
+def next_invoice_no(session: Session) -> str:
+    """INV-ADM-0001: an invoice the admin raises for stock going to a showroom, numbered on the admin's own series
+    (the one that numbered them TI-ADM-0001 before)."""
     seq = take_next(session, WAREHOUSE_ID, TRANSFER)
-    return f'TI-{_prefix(session, WAREHOUSE_ID)}-{seq:04d}'
+    return f'INV-{_prefix(session, WAREHOUSE_ID)}-{seq:04d}'

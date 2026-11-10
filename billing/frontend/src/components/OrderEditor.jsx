@@ -13,7 +13,7 @@ const LOW = 5; // matches Inventory's low-stock line
 const RESTOCK_TO = 10; // "Add low stock" suggests topping each item up to this many units
 
 /**
- * A showroom's stock request (quantities only; the admin fulfils it with a transfer invoice). Lines can be picked from the product list
+ * A showroom's stock request (quantities only; the admin fulfils it with an invoice). Lines can be picked from the product list
  * (shown as soon as the search box is clicked: this season's products, lowest stock first), searched,
  * suggested from low stock, or imported from a purchase Excel.
  */
@@ -74,7 +74,7 @@ const OrderEditor = ({ order, onClose, onSave }) => {
   const setQty = (code, qty) => setLines((prev) => (qty > 0 ? prev.map((l) => (l.code === code ? { ...l, qty } : l)) : prev.filter((l) => l.code !== code)));
 
   const title = existing ? `Edit request ${order.number}` : 'Request stock';
-  const subtitle = 'The admin reviews your request and sends the stock with a transfer invoice.';
+  const subtitle = 'The admin reviews your request and sends the stock with an invoice.';
   const action = existing ? 'Update request' : 'Send request to admin';
 
   return (

@@ -14,17 +14,18 @@ export const BRAND = {
 /** The fixed policy note printed at the foot of every bill, the same for every showroom (not editable). */
 export const BILL_FOOTER = ['*NO EXCHANGE *NO RETURN', '*NO GUARANTEE ON COLOURS'];
 
-// Receipt fall-back address / phone for the original showrooms, by id. A store added later fills in its own on
-// Settings → Shop on the bill (there is nothing to fall back to, and that's fine).
+// Receipt fall-back address / phone for the original showrooms, by id, and the GST code of the state each is in (the
+// place of supply on an invoice to it). A store added later fills in its own on Settings → Shop on the bill (there is
+// nothing to fall back to, and that's fine); its state comes from its GSTIN or is chosen on the invoice.
 const DETAILS = {
-  chennai: { address: ['No. 14, Pantheon Road, Egmore,', 'Chennai, Tamil Nadu - 600008'], phone: '+91 98407 88950 / +91 44 2819 3715' },
-  bengaluru: { address: ['Indiranagar 100ft Road, Stage 2,', 'Bengaluru, Karnataka - 560038'], phone: '+91 98407 88950' },
-  goa: { address: ['MG Road, Near Municipal Garden,', 'Panaji, Goa - 403001'], phone: '+91 98407 88950' },
-  mumbai: { address: ['Hill Road, Near Mehboob Studio, Bandra West,', 'Mumbai, Maharashtra - 400050'], phone: '+91 98407 88950' },
-  pune: { address: ['Lane 7, Koregaon Park,', 'Pune, Maharashtra - 411001'], phone: '+91 98407 88950' },
+  chennai: { address: ['No. 14, Pantheon Road, Egmore,', 'Chennai, Tamil Nadu - 600008'], phone: '+91 98407 88950 / +91 44 2819 3715', state: '33' },
+  bengaluru: { address: ['Indiranagar 100ft Road, Stage 2,', 'Bengaluru, Karnataka - 560038'], phone: '+91 98407 88950', state: '29' },
+  goa: { address: ['MG Road, Near Municipal Garden,', 'Panaji, Goa - 403001'], phone: '+91 98407 88950', state: '30' },
+  mumbai: { address: ['Hill Road, Near Mehboob Studio, Bandra West,', 'Mumbai, Maharashtra - 400050'], phone: '+91 98407 88950', state: '27' },
+  pune: { address: ['Lane 7, Koregaon Park,', 'Pune, Maharashtra - 411001'], phone: '+91 98407 88950', state: '27' },
 };
 
-/** The showrooms, filled from the server at start-up. Each: { id, city, area, billPrefix, active, address, phone }.
+/** The showrooms, filled from the server at start-up. Each: { id, city, area, billPrefix, active, address, phone, state }.
  *  Mutated in place by loadLocations so modules that imported it see the update. */
 export const LOCATIONS = [];
 
@@ -40,7 +41,7 @@ export const STOCK_PLACES = [WAREHOUSE];
 export const loadLocations = (stores) => {
   LOCATIONS.length = 0;
   for (const s of stores) {
-    LOCATIONS.push({ ...s, address: DETAILS[s.id]?.address ?? [], phone: DETAILS[s.id]?.phone ?? '', gstin: '', upiId: '' });
+    LOCATIONS.push({ ...s, address: DETAILS[s.id]?.address ?? [], phone: DETAILS[s.id]?.phone ?? '', state: DETAILS[s.id]?.state ?? '', gstin: '', upiId: '' });
   }
   STOCK_PLACES.length = 0;
   STOCK_PLACES.push(WAREHOUSE, ...LOCATIONS);
