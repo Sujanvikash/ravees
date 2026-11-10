@@ -430,7 +430,7 @@ export const StoreProvider = ({ session, children }) => {
         }
       },
 
-      /** Demo admin: builds the demo's sample data again from scratch, then reloads it. */
+      /** Demo admin: starts the demo again from scratch, then reloads it. */
       resetDemo: async () => {
         const result = await api('/demo/reset', { method: 'POST' });
         await fetchAll();

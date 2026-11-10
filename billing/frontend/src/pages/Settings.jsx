@@ -276,7 +276,7 @@ const AdminStoreDetails = () => {
 
 /** Admin only: the app's look, and switches that change what the showrooms can do. They are kept on the server,
  * so they apply on every computer; a change that the server refuses is put back. In the demo, the demo admin can
- * also start the demo's sample data again from scratch. */
+ * also start the demo again from scratch. */
 const Settings = ({ onMenu }) => {
   const { settings, setSetting: save, resetDemo } = useStore();
   const session = useSession();
@@ -289,7 +289,7 @@ const Settings = ({ onMenu }) => {
     save(key, value).catch((e) => setError(`Not saved: ${e.message}`));
   };
   const reset = async () => {
-    setResetting('Building a fresh month of sample data…');
+    setResetting('Starting the demo again…');
     try {
       setResetting(await resetDemo());
     } catch (e) {
@@ -527,8 +527,8 @@ const Settings = ({ onMenu }) => {
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-semibold">Demo data</div>
                 <p className="mt-0.5 text-[13px] text-ink-3">
-                  Throws away everything done in the demo and builds a fresh month of sample sales, returns, stock, orders,
-                  quotations and cash closes for all five showrooms. The real data is never touched.
+                  Throws away everything done in the demo and starts it again clean: the five showrooms and the product list,
+                  with no stock, sales, customers or orders. The real data is never touched.
                 </p>
                 {resetting && <p className="mt-2 text-[13px] font-medium text-ink-2">{resetting}</p>}
               </div>

@@ -128,20 +128,12 @@ def demo(client, username):
     return r.json(), {'Authorization': f'Bearer {r.json()["token"]}'}
 
 
-def test_demo_has_the_same_logins_on_its_own_data(client, admin, demo_built):
+def test_demo_has_the_same_logins_on_its_own_data(client, demo_built):
     for username in ('chennai', 'bengaluru', 'goa', 'mumbai', 'pune', 'admin'):
         body, _ = demo(client, username)
         assert body['session']['demo'] is True and body['session']['username'] == username
     _, d_admin = demo(client, 'admin')
     assert client.get('/auth/me', headers=d_admin).json()['demo'] is True
-    assert len(client.get('/sales', headers=d_admin).json()) > 300
-    assert {o['status'] for o in client.get('/orders', headers=d_admin).json()} == {
-        'requested', 'fulfilled', 'rejected', 'cancelled'
-    }  # fmt: skip
-    assert client.get('/cash/closes', headers=d_admin).json()
-    # the real data never sees the demo's bills
-    real = {s['id'] for s in client.get('/sales', headers=admin).json()}
-    assert not real & {s['id'] for s in client.get('/sales', headers=d_admin).json()}
     assert client.post('/auth/demo', json={'username': 'nobody'}).status_code == 404
 
 
@@ -185,7 +177,7 @@ def test_refresh_demo_builds_only_a_demo_that_is_out_of_date(demo_built, capsys)
     assert 'building it' in capsys.readouterr().out
     assert demo_is_current()
 
-    # so does a deploy that changes the product Excel (or the opening stock) the demo was built from
+    # so does a deploy that changes the product Excel the demo was built from
     with get_engine().begin() as conn:
         conn.execute(text(f"UPDATE demo.app_settings SET value = 'old' WHERE key = '{SEED_KEY}'"))
     assert not demo_is_current()
@@ -194,10 +186,13 @@ def test_refresh_demo_builds_only_a_demo_that_is_out_of_date(demo_built, capsys)
     assert demo_is_current()
 
 
-def test_the_demo_season_is_the_2026_list(client, demo_built):
+def test_the_demo_starts_clean_with_the_2026_season(client, demo_built):
     _, d_admin = demo(client, 'admin')
     season = {p['code'] for p in client.get('/products', headers=d_admin).json()['products'] if p['inSeason']}
     assert len(season) == 477 and 'CT26020' in season and 'TR0232' not in season
-    # the showrooms' opening stock and the sample deliveries are all from that list
-    stock = client.get('/stock', headers=d_admin).json()
-    assert {code for levels in stock.values() for code in levels} <= season
+    # nothing else, as on the real side before its first day: every workflow is tried from its first step
+    for path in ('/sales', '/returns', '/orders', '/quotes', '/cash/closes', '/stock/imports', '/boxes'):
+        assert client.get(path, headers=d_admin).json() == [], path
+    for path in ('/transfer-invoices', '/purchase-returns'):
+        assert client.get(path, headers=d_admin).json() == [], path
+    assert client.get('/stock', headers=d_admin).json() == {}

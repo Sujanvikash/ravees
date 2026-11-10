@@ -109,7 +109,7 @@ const Login = ({ onSignedIn }) => {
             </h1>
             {demo && (
               <p className="mt-1 max-w-md text-center text-[13px] text-balance text-ink-3">
-                The same stores and the admin, on sample data. No password needed, and nothing you do here touches the real sales or stock.
+                The same stores and the admin, on a practice copy. No password needed, and nothing you do here touches the real sales or stock.
               </p>
             )}
             {demoError && (

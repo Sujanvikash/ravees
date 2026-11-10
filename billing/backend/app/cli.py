@@ -12,10 +12,11 @@ product catalogue from seed/products-clean.xlsx. Safe to run again: it never cha
 the admin's season choices unless --season-from-excel is given. If there is no demo yet it builds one too
 (--no-demo to skip).
 
-demo throws the demo's sample data away and builds a fresh month of it. The real data is never touched.
+demo throws everything done in the demo away and builds it again clean: the showrooms, logins and catalogue, with
+no stock or sales. The real data is never touched.
 
 refresh-demo is what the server runs on every start: it builds the demo only when there is none, or when a deploy
-changed the models so its tables no longer match, or changed the product Excel or opening stock it was built from.
+changed the models so its tables no longer match, or changed the product Excel it was built from.
 It never fails the start (a broken demo must not stop the API).
 """
 
@@ -97,8 +98,10 @@ def _parser() -> argparse.ArgumentParser:
         '--excel', type=Path, default=DEFAULT_EXCEL, help=f'the product Excel (default: {DEFAULT_EXCEL})'
     )
     seed_cmd.add_argument('--no-demo', action='store_true', help="don't build the demo when there isn't one")
-    commands.add_parser('demo', help='build the demo (sample data, kept apart from the real data) again from scratch')
-    commands.add_parser('refresh-demo', help='build the demo only if it is missing or behind the models or seed files')
+    commands.add_parser('demo', help='build the demo (kept apart from the real data) again from scratch, clean')
+    commands.add_parser(
+        'refresh-demo', help='build the demo only if it is missing or behind the models or the product Excel'
+    )
     return parser
 
 

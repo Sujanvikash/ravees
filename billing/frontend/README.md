@@ -20,7 +20,7 @@ Logins are checked by the billing API (`billing/backend`), which keeps the passw
 
 ## Demo
 
-The **Demo** switch at the top right of the sign-in screen shows the same five showrooms and the admin. One click signs in, with no password, to the **demo**: its own copy of everything (a separate schema in the database) filled with a month of sample sales, returns, stock, purchase orders in every state, quotations, purchase returns and cash closes. Nothing done in the demo touches the real data, and the menu shows a DEMO tag. The demo admin can start it again from scratch under **Settings → Demo data → Reset demo**. On the server it is built by `python -m app.cli demo` (and by `seed` the first time).
+The **Demo** switch at the top right of the sign-in screen shows the same five showrooms and the admin. One click signs in, with no password, to the **demo**: its own copy of everything (a separate schema in the database) with the same showrooms, logins and product list, and nothing else: no stock, sales, customers, orders or quotations, so every workflow can be tried from its first step. Nothing done in the demo touches the real data, and the menu shows a DEMO tag. The demo admin can start it again from scratch under **Settings → Demo data → Reset demo**. On the server it is built by `python -m app.cli demo` (and by `seed` the first time).
 
 ## Quotations
 

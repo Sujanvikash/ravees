@@ -24,7 +24,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"
 # Migrations run on every start, so a new image brings its tables with it. The demo isn't migrated, so it is built
-# again in the background when it is missing or behind the models or the seed files (see `refresh-demo`); it never
+# again in the background when it is missing or behind the models or the product Excel (see `refresh-demo`); it never
 # stops the API.
 # One worker only: the wrong-password brake is counted in memory. The proxy in front (Caddy) passes on the
 # counter's real address.

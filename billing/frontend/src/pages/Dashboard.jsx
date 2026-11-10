@@ -113,8 +113,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
               <LayoutDashboard size={22} className="text-ink-3" aria-hidden="true" />
               <div className="text-[15px] font-semibold">No sales yet</div>
               <p className="max-w-md text-[13px] text-ink-3">
-                Bills from the five showroom counters show up here as they are made. To see the dashboard with a month of
-                sample sales, sign out and turn on Demo on the sign-in screen.
+                Bills from the five showroom counters show up here as they are made.
               </p>
             </section>
           ) : (
