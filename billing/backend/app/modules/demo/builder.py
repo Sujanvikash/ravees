@@ -6,28 +6,21 @@ closes, so the demo starts where the real data does and every workflow can be tr
 """
 
 import hashlib
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
-from openpyxl import load_workbook
 from sqlalchemy import inspect, text
 
 from app import db_models  # noqa: F401  (registers every table)
-from app.core.config import BACKEND_DIR
 from app.core.database import DEMO_SCHEMA, Base, get_demo_engine, get_engine, get_session_factory
 from app.modules.locations import repository as locations
-from app.modules.locations.constants import ADMIN_USERNAME, WAREHOUSE_ID
 from app.modules.products import repository as products
 from app.modules.products import service as products_service
 from app.modules.products.importer import DEFAULT_EXCEL, read_catalogue
-from app.modules.stock import service as stock_service
-from app.modules.stock.schemas import ImportLineIn, StockImportIn
+from app.modules.stock.importer import ADMIN_STOCK, import_admin_stock
 from app.modules.system import repository as app_settings
-from app.modules.users import repository as users
 from app.modules.users import service as users_service
 
-ADMIN_STOCK = BACKEND_DIR / 'seed' / 'admin-stock-2026.xlsx'  # made by seed/stock_from_list.py from the season's list
 SEED_KEY = 'demo_seed'  # in the demo's own app_settings: seed_fingerprint() of what it was built from
 BUILD = 'clean-2'  # what the demo holds; change it when that changes, so the server builds the demo again on start
 
@@ -60,22 +53,6 @@ def seed_fingerprint(excel: Path = DEFAULT_EXCEL) -> str:
     """A hash of what the demo is built from: the product Excel, the admin's stock sheet, and BUILD."""
     stock = ADMIN_STOCK.read_bytes() if ADMIN_STOCK.exists() else b''
     return hashlib.sha256(BUILD.encode() + excel.read_bytes() + stock).hexdigest()
-
-
-def _stock_sheet(path: Path) -> list[ImportLineIn]:
-    """The rows of a stock sheet in the purchase format: Code, Qty and Purchase rate."""
-    workbook = load_workbook(path, read_only=True, data_only=True)
-    try:
-        rows = list(workbook.active.iter_rows(values_only=True))
-    finally:
-        workbook.close()
-    header = [str(h or '').strip().lower() for h in rows[0]]
-    code, qty, rate = header.index('code'), header.index('qty'), header.index('purchase rate')
-    return [
-        ImportLineIn(code=str(r[code]).strip().upper(), qty=int(r[qty]), rate=r[rate] or None)
-        for r in rows[1:]
-        if r[code] and r[qty]
-    ]
 
 
 def demo_is_current() -> bool:
@@ -117,17 +94,10 @@ def build_demo(excel: Path = DEFAULT_EXCEL) -> DemoReport:
         app_settings.set_value(session, SEED_KEY, seed_fingerprint(excel))
         session.commit()
 
-        lines = _stock_sheet(ADMIN_STOCK) if ADMIN_STOCK.exists() else []
-        if lines:
-            admin = users.get(session, ADMIN_USERNAME)
-            stock_service.import_stock(
-                session,
-                admin,
-                StockImportIn(id=uuid.uuid4(), location=WAREHOUSE_ID, file=ADMIN_STOCK.name, lines=lines),
-            )
+        units = import_admin_stock(session, ADMIN_STOCK)[0] if ADMIN_STOCK.exists() else 0
         return DemoReport(
             products=products.count(session),
             in_season=products.count(session, in_season_only=True),
             season=catalogue.season,
-            admin_units=sum(line.qty for line in lines),
+            admin_units=units,
         )

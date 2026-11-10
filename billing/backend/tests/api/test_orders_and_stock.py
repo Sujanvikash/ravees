@@ -1,5 +1,9 @@
 import uuid
 
+from openpyxl import Workbook
+
+from app import cli
+
 from .conftest import login
 from .test_sales import season_code, stock_of
 
@@ -113,6 +117,30 @@ def test_stock_goes_back_to_the_admin(client, admin):
     assert got.json()['status'] == 'received' and got.json()['counted'] == [{'code': code, 'qty': 2}]
     assert stock_of(client, admin, 'warehouse', code) == in_admin + 2  # back in the admin's stock
     assert client.post(f'/purchase-returns/{r["id"]}/receive', json={'counted': []}, headers=admin).status_code == 409
+
+
+def test_seed_adds_a_stock_sheet_to_the_admin_stock_once(client, admin, tmp_path):
+    one, two = season_code(client, admin, 14), season_code(client, admin, 15)
+    sheet = Workbook()
+    sheet.active.append(['Code', 'Product name', 'Qty', 'Purchase rate'])
+    sheet.active.append([one.lower(), 'x', 7, 100.5])
+    sheet.active.append([two, 'y', 3, None])
+    path = tmp_path / 'admin-stock-test.xlsx'
+    sheet.save(path)
+    before = {c: stock_of(client, admin, 'warehouse', c) for c in (one, two)}
+
+    report = str(cli.seed(admin_stock=path))
+    assert 'admin-stock-test.xlsx: 10 units added to the admin stock' in report
+    assert {c: stock_of(client, admin, 'warehouse', c) for c in (one, two)} == {
+        one: before[one] + 7,
+        two: before[two] + 3,
+    }
+    imported = next(i for i in client.get('/stock/imports', headers=admin).json() if i['file'] == path.name)
+    assert imported['location'] == 'warehouse'
+
+    # run again (by mistake, or after a failed step): the same sheet adds nothing
+    assert 'nothing was added' in str(cli.seed(admin_stock=path))
+    assert stock_of(client, admin, 'warehouse', one) == before[one] + 7
 
 
 def test_admin_stock(client, admin, chennai):
