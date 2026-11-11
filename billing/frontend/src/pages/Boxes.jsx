@@ -68,7 +68,7 @@ const Boxes = ({ onMenu }) => {
     setTab('all');
     setQuery('');
     setOpen(box.id);
-    setFlash({ tone: 'ok', text: `Box ${box.boxNo}: ${STATUS[box.status].label.toLowerCase()}${box.location ? ` · ${locationById(box.location)?.city}` : ''}.` });
+    setFlash({ tone: 'ok', text: `Box ${box.boxNo}: ${STATUS[box.status].label.toLowerCase()}${box.location ? ` · ${locationById(box.location)?.label}` : ''}.` });
   };
   useScanner(find, !editing && !importing);
 
@@ -210,7 +210,7 @@ const Boxes = ({ onMenu }) => {
                             <td className="max-w-56 truncate py-1.5 pr-3 text-ink-2" title={b.supplier ? `${b.shipment} · ${b.supplier}` : b.shipment}>
                               {b.shipment || '—'}
                             </td>
-                            <td className="py-1.5 pr-3 text-ink-2">{b.location ? locationById(b.location)?.city : '—'}</td>
+                            <td className="py-1.5 pr-3 text-ink-2">{b.location ? locationById(b.location)?.label : '—'}</td>
                             <td className="py-1.5 pr-3 text-right">{b.lines.length}</td>
                             <td className="py-1.5 pr-3 text-right">{boxUnits(b.lines)}</td>
                             <td className="py-1.5 pr-3">

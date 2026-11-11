@@ -1,3 +1,5 @@
+from collections import Counter
+
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
@@ -7,6 +9,13 @@ from .models import Location
 
 def get(session: Session, location_id: str) -> Location | None:
     return session.get(Location, location_id)
+
+
+def labels(session: Session) -> dict[str, str]:
+    """Every store's label (Location.label: the city, or city and area where two share it) by id, in one query."""
+    stores = session.scalars(select(Location)).all()
+    shared = Counter(s.city for s in stores)
+    return {s.id: f'{s.city} {s.area}' if shared[s.city] > 1 else s.city for s in stores}
 
 
 def add_missing_showrooms(session: Session) -> int:

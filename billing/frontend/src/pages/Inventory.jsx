@@ -7,7 +7,7 @@ import NewProductDialog from '../components/NewProductDialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import StockSummary from '../components/StockSummary.jsx';
 import StockHistory from '../components/StockHistory.jsx';
-import { STOCK_PLACES, locationById } from '../config.js';
+import { STOCK_PLACES, locationById, stockPlaces } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { useCatalogue } from '../hooks/useCatalogue.js';
 import { priceOf } from '../lib/bill.js';
@@ -61,7 +61,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
   const [view, setView] = useState('all');
   const [scope, setScope] = useState('tracked');
   const [query, setQuery] = useState('');
-  const shops = useMemo(() => (location ? [locationById(location)] : STOCK_PLACES), [location]);
+  const shops = useMemo(() => (location ? [locationById(location)] : stockPlaces()), [location]);
   const warehouse = location === 'warehouse';
 
   // Per showroom and product: units received (counted in from orders, or imported from Excel), sold, on order
@@ -92,7 +92,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
 
   const imported = (record) => {
     setImporting(false);
-    setFlash({ text: `${orderQty(record.lines).toLocaleString('en-IN')} units from ${record.file} added to ${locationById(record.location).city} stock.`, history: true });
+    setFlash({ text: `${orderQty(record.lines).toLocaleString('en-IN')} units from ${record.file} added to ${locationById(record.location).label} stock.`, history: true });
   };
 
   const added = (product, qty) => {
@@ -160,7 +160,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                 {admin && (
                   <Segmented
                     label="Stock at"
-                    options={[{ id: null, label: 'Everywhere' }, ...STOCK_PLACES.map((l) => ({ id: l.id, label: l.id === 'warehouse' ? 'Admin stock' : l.city }))]}
+                    options={[{ id: null, label: 'Everywhere' }, ...stockPlaces().map((l) => ({ id: l.id, label: l.id === 'warehouse' ? 'Admin stock' : l.label }))]}
                     value={location}
                     onChange={setLocation}
                   />
@@ -237,7 +237,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
           )}
 
           {tab === 'stock' && (
-            <StockSummary totals={totals} where={location ? locationById(location).city : 'All showrooms'} atCost={admin} low={LOW} />
+            <StockSummary totals={totals} where={location ? locationById(location).label : 'All showrooms'} atCost={admin} low={LOW} />
           )}
 
           <section className="overflow-clip rounded-2xl border glass lg:flex lg:flex-1 lg:flex-col">
@@ -291,7 +291,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                       {matrix ? (
                         shops.map((l) => (
                           <th key={l.id} scope="col" className="py-1.5 pr-3 text-right font-medium">
-                            {l.city}
+                            {l.label}
                           </th>
                         ))
                       ) : (

@@ -66,12 +66,15 @@ export const returnStatus = (row, soldQty) => {
   return row.qty >= soldQty ? 'returned' : 'part';
 };
 
+// the stores a report lists: those in use, and one removed only while it has something in the report
+const listed = (l, has) => l.active !== false || has;
+
 /** Each showroom's returns for a period: [{ location, amount, count }] in LOCATIONS order. */
 export const returnsByLocation = (returns, { period = 'all', now = new Date() } = {}) =>
   LOCATIONS.map((l) => {
     const rs = filterSales(returns, { location: l.id, period, now });
     return { location: l, amount: rs.reduce((s, r) => s + r.amount, 0), count: rs.length };
-  });
+  }).filter((r) => listed(r.location, r.count > 0));
 
 /** Totals for a set of sales. With gst false (the admin's Show GST switch off), profit and margin are on the
  *  selling price rather than on the value without GST. */
@@ -134,7 +137,7 @@ export const salesByDay = (sales, days, now = new Date(), { gst = true } = {}) =
 
 /** Each showroom's totals, in the order of LOCATIONS. */
 export const byLocation = (sales, { gst = true } = {}) =>
-  LOCATIONS.map((l) => ({ location: l, ...summarize(sales.filter((s) => s.location === l.id), { gst }) }));
+  LOCATIONS.map((l) => ({ location: l, ...summarize(sales.filter((s) => s.location === l.id), { gst }) })).filter((r) => listed(r.location, r.bills > 0));
 
 /** Products ranked by sales value: units, sales (incl. GST), cost and profit. */
 export const topProducts = (sales, limit = 8, { gst = true } = {}) => {

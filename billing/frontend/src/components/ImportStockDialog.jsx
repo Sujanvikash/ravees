@@ -53,7 +53,7 @@ const ImportStockDialog = ({ onClose, onDone }) => {
     <Dialog
       id="import-stock"
       title="Import stock from Excel"
-      subtitle={`Adds the quantities in the sheet to the ${shop.city} stock (${shop.area}). Use it for opening stock or goods that came without a box.`}
+      subtitle={`Adds the quantities in the sheet to the ${shop.label} stock. Use it for opening stock or goods that came without a box.`}
       onClose={onClose}
     >
       <div className="flex flex-col gap-4 px-6 pb-5">
@@ -147,7 +147,7 @@ const ImportStockDialog = ({ onClose, onDone }) => {
             disabled={!lines.length || saving}
             className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3 disabled:shadow-none"
           >
-            <PackageCheck size={15} aria-hidden="true" /> Add {units ? `${units.toLocaleString('en-IN')} units ` : ''}to {shop.city} stock
+            <PackageCheck size={15} aria-hidden="true" /> Add {units ? `${units.toLocaleString('en-IN')} units ` : ''}to {shop.label} stock
           </button>
         </div>
       </div>

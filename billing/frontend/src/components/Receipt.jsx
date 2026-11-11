@@ -74,7 +74,7 @@ const ThermalReceipt = ({ sale }) => {
       <div className="mb-1.5 text-center text-[12px] font-bold">Bill No. {sale.billNo}</div>
 
       <Line label="Date" value={when.format(new Date(sale.at)).replace(',', '')} />
-      <Line label="Showroom" value={shop.city} />
+      <Line label="Showroom" value={shop.label} />
       {sale.name && <Line label="Customer" value={sale.name} />}
       {sale.phone && <Line label="Mobile" value={formatMobile(sale.phone)} />}
 
@@ -229,7 +229,7 @@ const A4Bill = ({ sale }) => {
         </div>
         <div>
           <div className="mb-1 text-[9.5px] font-bold tracking-[0.16em] uppercase">Showroom</div>
-          <div className="text-[14px] font-semibold">{shop.city}</div>
+          <div className="text-[14px] font-semibold">{shop.label}</div>
         </div>
       </div>
 

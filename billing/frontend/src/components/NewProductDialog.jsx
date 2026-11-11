@@ -126,7 +126,7 @@ const NewProductDialog = ({ session, defaultLocation, initial = {}, onClose, onD
             <div className="leading-tight">
               <div className="font-mono text-base font-semibold text-evergreen-900">{code}</div>
               <div className="text-xs text-ink-3">
-                Next product code for {shop.city}; confirmed when you add it. Write it on the item or its tag, and type it at the billing counter.
+                Next product code for {shop.label}; confirmed when you add it. Write it on the item or its tag, and type it at the billing counter.
               </div>
             </div>
           </div>

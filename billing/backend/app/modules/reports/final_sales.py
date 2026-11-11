@@ -17,12 +17,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import clock
+from app.modules.locations import repository as locations
 from app.modules.locations.constants import SHOWROOMS
 from app.modules.returns.models import SaleReturn
 from app.modules.sales.models import Sale
 from app.modules.system import settings as app_settings
 
-from .sales_excel import CITY, _bounds, _local, _sheet
+from .sales_excel import _bounds, _local, _sheet
 
 TITLE = 'Final sales'
 HEADER = [
@@ -52,6 +53,7 @@ def _total(label: str, rows: list[list]) -> list:
 def build(session: Session, *, location: str | None, since: date | None, until: date | None) -> tuple[bytes, str]:
     """The workbook's bytes and a file name such as final-sales-all-showrooms-2026-11-01-to-2026-11-30.xlsx."""
     gst = app_settings.get(session).show_gst
+    city = locations.labels(session)
     start, end = _bounds(since, until)
 
     stmt = select(Sale).order_by(Sale.at)
@@ -81,7 +83,7 @@ def build(session: Session, *, location: str | None, since: date | None, until: 
             [
                 s.bill_no,
                 _local(s.at),
-                CITY.get(s.location_id, s.location_id),
+                city.get(s.location_id, s.location_id),
                 s.name,
                 s.phone,
                 t['qty'],
@@ -101,7 +103,7 @@ def build(session: Session, *, location: str | None, since: date | None, until: 
         bills = by_shop.get(shop, [])
         if not bills:
             continue
-        total = _total(f'Total · {CITY[shop]}', bills)
+        total = _total(f'Total · {city.get(shop, shop)}', bills)
         rows += bills + [total]
         totals.append(total)
     if len(shops) > 1:

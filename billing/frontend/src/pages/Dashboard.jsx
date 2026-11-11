@@ -77,7 +77,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader crumbs={[location ? locationById(location).city : 'All showrooms', 'Dashboard']} onMenu={onMenu} />
+      <PageHeader crumbs={[location ? locationById(location).label : 'All showrooms', 'Dashboard']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -120,7 +120,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
             <>
               <SummaryStrip
                 figures={[
-                  { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: `${sum.bills.toLocaleString('en-IN')} bills${gst ? ' · incl. GST' : ''}` },
+                  { label: `Sales · ${location ? locationById(location).label : 'All showrooms'}`, value: inrWhole(sum.total), note: `${sum.bills.toLocaleString('en-IN')} bills${gst ? ' · incl. GST' : ''}` },
                   { label: 'Gross profit', value: inrWhole(sum.profit), note: `${pct(sum.margin)} margin`, tone: sum.profit < 0 ? 'bad' : undefined },
                   { label: 'Purchase cost', value: inrWhole(sum.cost), note: 'of the goods sold' },
                   ...(gst ? [{ label: 'GST collected', value: inrWhole(sum.tax) }] : []),
@@ -172,7 +172,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                 {costView === 'shops' ? (
                   <CostBars
                     gst={gst}
-                    rows={shops.map((s) => ({ key: s.location.id, label: s.location.city, base: gst ? s.taxable : s.total, cost: s.cost }))}
+                    rows={shops.map((s) => ({ key: s.location.id, label: s.location.label, base: gst ? s.taxable : s.total, cost: s.cost }))}
                     selected={location}
                     onSelect={(id) => setLocation(location === id ? null : id)}
                   />
@@ -205,7 +205,7 @@ const Dashboard = ({ onMenu, onNavigate }) => {
                         >
                           <td className="py-1.5 pr-3">
                             <button type="button" onClick={() => setLocation(location === s.location.id ? null : s.location.id)} className="font-medium hover:underline">
-                              {s.location.city}
+                              {s.location.label}
                             </button>
                           </td>
                           <td className="py-1.5 pr-4">

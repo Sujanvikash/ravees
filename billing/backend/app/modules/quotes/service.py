@@ -70,7 +70,7 @@ def create_quote(session: Session, user: User, data: QuoteIn, *, at: datetime | 
         quote_no=numbering.next_quote_no(session, user.location_id, at),
         location_id=user.location_id,
         at=at,
-        by=location.city if location else user.username,
+        by=location.label if location else user.username,
         name=name,
         phone=phone,
         valid_until=valid_until(last_day),

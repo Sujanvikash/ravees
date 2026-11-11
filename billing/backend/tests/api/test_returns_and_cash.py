@@ -168,7 +168,7 @@ def test_sales_report_excel(client, admin, chennai):
 
     mine = load_workbook(BytesIO(client.get('/reports/sales.xlsx', headers=chennai).content))
     assert 'Gross profit' not in [c.value for c in mine['Summary'][1]]
-    assert {row[2] for row in mine['Bills'].iter_rows(min_row=2, values_only=True)} <= {'Chennai'}
+    assert {row[2] for row in mine['Bills'].iter_rows(min_row=2, values_only=True)} <= {'Chennai Egmore'}
 
 
 def test_report_without_gst(client, admin):
@@ -198,4 +198,4 @@ def test_final_sales_register(client, admin, chennai):
 
     one = load_workbook(BytesIO(client.get('/reports/final-sales.xlsx?location=chennai', headers=admin).content))
     rows = list(one['Final sales'].iter_rows(min_row=2, values_only=True))
-    assert rows[-1][0] == 'Total · Chennai' and {row[2] for row in rows[:-1]} == {'Chennai'}
+    assert rows[-1][0] == 'Total · Chennai Egmore' and {row[2] for row in rows[:-1]} == {'Chennai Egmore'}

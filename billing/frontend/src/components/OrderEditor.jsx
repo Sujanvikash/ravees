@@ -78,7 +78,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
 
   const setQty = (code, qty) => setLines((prev) => (qty > 0 ? prev.map((l) => (l.code === code ? { ...l, qty } : l)) : prev.filter((l) => l.code !== code)));
 
-  const title = review ? `Review ${order.number} from ${shop.city}` : existing ? `Edit request ${order.number}` : 'Request stock';
+  const title = review ? `Review ${order.number} from ${shop.label}` : existing ? `Edit request ${order.number}` : 'Request stock';
   const subtitle = review
     ? 'Change the quantities, remove or add products, then raise the invoice: it starts with the products as reviewed here.'
     : 'The admin reviews your request and sends the stock with an invoice.';
@@ -114,7 +114,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
               <ul className="absolute inset-x-0 top-11 z-10 max-h-80 animate-pop overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">
                 {!query.trim() && (
                   <li className="px-3 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-ink-3 uppercase">
-                    Season products at {shop.city} · lowest stock first
+                    Season products at {shop.label} · lowest stock first
                   </li>
                 )}
                 {list.map(({ p, stock }) => (
@@ -133,7 +133,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
                       <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
                       <span className="text-xs text-ink-2 tabular-nums">{inr(p.cost ?? 0)}</span>
                       <span className={`w-20 text-right text-xs tabular-nums ${stock <= 0 ? 'text-ruby-ink' : stock <= LOW ? 'text-warn-ink' : 'text-ink-3'}`}>
-                        {review ? `${stock} at ${shop.city}` : `${stock} in stock`}
+                        {review ? `${stock} at ${shop.label}` : `${stock} in stock`}
                       </span>
                       {review && <span className="w-24 text-right text-xs text-ink-3 tabular-nums">{adminStock(p.code)} with admin</span>}
                     </button>
@@ -146,7 +146,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
             type="button"
             onClick={() => addLines(lowStock.map((p) => lineFor(p, Math.max(RESTOCK_TO - Math.max(stockOf(location, p.code), 0), 1))))}
             disabled={!lowStock.length}
-            title={`Season products at ${shop.city} with ${LOW} or fewer units, topped up to ${RESTOCK_TO}`}
+            title={`Season products at ${shop.label} with ${LOW} or fewer units, topped up to ${RESTOCK_TO}`}
             className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-line px-3 text-[13px] font-medium text-ink-2 enabled:hover:bg-mist enabled:hover:text-ink disabled:opacity-40"
           >
             <Sparkles size={15} aria-hidden="true" /> Add low stock ({lowStock.length})
@@ -193,7 +193,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
               <thead className="sticky top-0 z-1 bg-mist-2 text-left text-xs text-ink-3">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">Product</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">{review ? `At ${shop.city}` : 'In stock'}</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">{review ? `At ${shop.label}` : 'In stock'}</th>
                   {review && <th scope="col" className="px-3 py-2 text-right font-medium">Admin stock</th>}
                   <th scope="col" className="px-3 py-2 text-center font-medium">Qty</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Rate</th>
@@ -265,7 +265,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
 
         {review && order.note && (
           <p className="rounded-xl bg-mist-2 px-4 py-2.5 text-[13px] text-ink-2">
-            <span className="font-semibold">{shop.city}&rsquo;s note:</span> {order.note}
+            <span className="font-semibold">{shop.label}&rsquo;s note:</span> {order.note}
           </p>
         )}
 
@@ -275,7 +275,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={review ? `Optional: for ${shop.city}, kept in the order’s history` : 'Optional: anything the admin should know'}
+            placeholder={review ? `Optional: for ${shop.label}, kept in the order’s history` : 'Optional: anything the admin should know'}
             className="resize-none rounded-xl border border-line px-3 py-2 font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
           />
         </label>

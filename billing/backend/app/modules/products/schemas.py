@@ -72,7 +72,7 @@ class ProductOut(ApiModel):
     def from_model(cls, product: Product) -> 'ProductOut':
         shop = None
         if product.shop_location_id:
-            city = product.shop_location.city if product.shop_location else ''
+            city = product.shop_location.label if product.shop_location else ''
             shop = ShopOut(location=product.shop_location_id, by=product.created_by or city, at=product.created_at)
         return cls(
             code=product.code,

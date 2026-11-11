@@ -183,7 +183,7 @@ const Credit = ({ session, onMenu, onNavigate }) => {
           <SummaryStrip
             figures={[
               {
-                label: `Owed to ${location ? locationById(location)?.city : 'all showrooms'}`,
+                label: `Owed to ${location ? locationById(location)?.label : 'all showrooms'}`,
                 value: inrWhole(outstanding),
                 note: `${open.length} ${open.length === 1 ? 'bill' : 'bills'} · ${owingCustomers} ${owingCustomers === 1 ? 'customer' : 'customers'}`,
               },
@@ -291,7 +291,7 @@ const Credit = ({ session, onMenu, onNavigate }) => {
                             <td className="py-2 pr-3 pl-4 font-mono text-xs">{s.billNo}</td>
                             <td className="py-2 pr-3 whitespace-nowrap text-ink-2">{day.format(new Date(s.at))}</td>
                             <td className={`py-2 pr-3 text-right whitespace-nowrap ${AGE_TONE[ageBand(age).id]}`}>{age === 0 ? 'today' : `${age} d`}</td>
-                            {admin && <td className="py-2 pr-3 text-ink-2">{locationById(s.location)?.city ?? '—'}</td>}
+                            {admin && <td className="py-2 pr-3 text-ink-2">{locationById(s.location)?.label ?? '—'}</td>}
                             <td className="py-2 pr-3">
                               <div className="font-medium">{s.name || 'Walk-in'}</div>
                               {s.phone && <div className="text-xs text-ink-3">{formatMobile(s.phone)}</div>}
@@ -368,7 +368,7 @@ const Credit = ({ session, onMenu, onNavigate }) => {
                         <tr key={c.id} className="border-b border-line-soft row-hover">
                           <td className="py-2 pr-3 pl-4 font-mono text-xs">{c.receiptNo}</td>
                           <td className="py-2 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(c.at))}</td>
-                          {admin && <td className="py-2 pr-3 text-ink-2">{locationById(c.sale.location)?.city ?? '—'}</td>}
+                          {admin && <td className="py-2 pr-3 text-ink-2">{locationById(c.sale.location)?.label ?? '—'}</td>}
                           <td className="py-2 pr-3 font-mono text-xs">{c.sale.billNo}</td>
                           <td className="py-2 pr-3">{c.sale.name || (c.sale.phone ? formatMobile(c.sale.phone) : 'Walk-in')}</td>
                           <td className="py-2 pr-3 text-ink-2">{methodLabel(c.payment.method)}</td>

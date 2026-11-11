@@ -257,7 +257,7 @@ const ClosesTable = ({ list, showShop }) => {
           {paged.rows.map((c) => (
             <tr key={c.id} className="row-hover border-b border-line-soft">
               <td className="py-1.5 pr-3 pl-4 whitespace-nowrap">{dayLabel.format(new Date(c.day))}</td>
-              {showShop && <td className="py-1.5 pr-3 font-medium">{locationById(c.location)?.city}</td>}
+              {showShop && <td className="py-1.5 pr-3 font-medium">{locationById(c.location)?.label}</td>}
               <td className="py-1.5 pr-3 text-right text-ink-2">{inr(c.opening)}</td>
               <td className="py-1.5 pr-3 text-right text-ink-2">{inr(c.cashSales)}</td>
               <td className="py-1.5 pr-3 text-right text-ink-2">{inr(c.cashRefunds)}</td>
@@ -303,7 +303,7 @@ const CashClose = ({ session, onMenu }) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader crumbs={[admin ? (location ? locationById(location).city : 'All showrooms') : `${shop.city} · ${shop.area}`, admin ? 'Cash check' : 'Cash close']} onMenu={onMenu} />
+      <PageHeader crumbs={[admin ? (location ? locationById(location).label : 'All showrooms') : `${shop.city} · ${shop.area}`, admin ? 'Cash check' : 'Cash close']} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
           {admin ? (
@@ -318,7 +318,7 @@ const CashClose = ({ session, onMenu }) => {
                   { label: 'Not balanced', value: month.filter((c) => Math.abs(c.difference) >= 0.5).length.toLocaleString('en-IN'), note: 'days with a difference' },
                   { label: 'Cash short', value: inr(-short), tone: short < 0 ? 'bad' : undefined },
                   { label: 'Cash over', value: inr(over) },
-                  { label: 'Not closed today', value: notClosed.length ? notClosed.map((l) => l.city).join(', ') : 'All closed' },
+                  { label: 'Not closed today', value: notClosed.length ? notClosed.map((l) => l.label).join(', ') : 'All closed' },
                 ]}
               />
               <CashComparison location={location} sales={filterSales(sales, { period })} returns={filterSales(returns, { period })} closes={closes.filter(inPeriod)} />

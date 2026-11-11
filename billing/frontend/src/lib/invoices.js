@@ -44,7 +44,7 @@ export const storeBuyer = async (location) => {
   const own = await api(`/settings?location=${encodeURIComponent(location)}`).catch(() => ({}));
   const gstin = (own.gstin?.trim() || shop.gstin || '').toUpperCase();
   return {
-    name: own.storeName?.trim() || shop.name || (shop.city ? `${shop.city} showroom` : ''),
+    name: own.storeName?.trim() || shop.name || (shop.label ? `${shop.label} showroom` : ''),
     address: own.storeAddress?.trim() || (shop.address ?? []).join('\n'),
     phone: own.storePhone?.trim() || shop.phone || '',
     gstin,

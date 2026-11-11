@@ -54,7 +54,7 @@ def test_shop_products_get_their_showrooms_codes(client, admin, chennai):
     a = a.json()
     b = client.post('/products', json=WREATH, headers=chennai).json()
     assert a['code'] == 'CHN-0001' and b['code'] == 'CHN-0002'
-    assert a['name'] == 'Handmade wreath 12 inch' and a['shop']['by'] == 'Chennai' and a['inSeason']
+    assert a['name'] == 'Handmade wreath 12 inch' and a['shop']['by'] == 'Chennai Egmore' and a['inSeason']
     assert set(a) == PRODUCT_FIELDS
 
     c = client.post('/products', json={**WREATH, 'location': 'palavakkam'}, headers=admin).json()

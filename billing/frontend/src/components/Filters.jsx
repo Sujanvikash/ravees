@@ -20,17 +20,14 @@ export const Segmented = ({ label, options, value, onChange }) => (
 
 export const PeriodTabs = ({ value, onChange }) => <Segmented label="Period" options={PERIODS} value={value} onChange={onChange} />;
 
-/** Showroom picker for the admin; `all` adds an "All showrooms" option whose value is null. Two stores that
- *  share a city (Chennai · Egmore, Chennai · ECR) show their area so they can be told apart. */
+/** Showroom picker for the admin; `all` adds an "All showrooms" option whose value is null. Each store shows its
+ *  label, so two in one city are told apart (Chennai Egmore, Chennai Palavakkam). */
 export const LocationPicker = ({ value, onChange, all = true }) => {
   const stores = activeLocations();
-  const perCity = {};
-  for (const l of stores) perCity[l.city] = (perCity[l.city] ?? 0) + 1;
-  const label = (l) => (perCity[l.city] > 1 ? `${l.city} · ${l.area}` : l.city);
   return (
     <Segmented
       label="Showroom"
-      options={[...(all ? [{ id: null, label: 'All showrooms' }] : []), ...stores.map((l) => ({ id: l.id, label: label(l) }))]}
+      options={[...(all ? [{ id: null, label: 'All showrooms' }] : []), ...stores.map((l) => ({ id: l.id, label: l.label }))]}
       value={value}
       onChange={onChange}
     />

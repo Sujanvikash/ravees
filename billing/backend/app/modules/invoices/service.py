@@ -118,13 +118,13 @@ def _buyer(session: Session, location: Location, given: BuyerIn | None) -> dict:
         gstin, state = given.gstin.strip().upper(), given.state
     else:
         own = app_settings.get(session, location.id)
-        name = own.store_name.strip() or f'{location.city} showroom'
+        name = own.store_name.strip() or f'{location.label} showroom'
         address, phone, gstin = own.store_address.strip(), own.store_phone.strip(), own.gstin.strip().upper()
         state = gstin[:2] if gstin[:2].isdigit() else HOME_STATE.get(location.id, '')
     if not name:
         raise InvalidInput('Enter the showroom’s name for the invoice.')
     if not re.fullmatch(r'\d{2}', state):
-        raise InvalidInput(f'Choose {location.city}’s state: it decides between IGST and CGST + SGST.')
+        raise InvalidInput(f'Choose {location.label}’s state: it decides between IGST and CGST + SGST.')
     if gstin[:2].isdigit() and gstin[:2] != state:
         raise InvalidInput(f'The GSTIN {gstin} belongs to state code {gstin[:2]}, not {state}.')
     return {'name': name, 'address': address, 'phone': phone, 'gstin': gstin, 'state': state}
@@ -245,7 +245,7 @@ def raise_invoice(session: Session, user: User, data: InvoiceIn, *, at: datetime
     session.add(invoice)
     session.flush()  # the boxes point at it
     adjust_warehouse(session, {code: -qty for code, qty in wanted.items()})
-    _move_boxes(boxes, 'invoiced', location.id, invoice.id, 'invoiced', f'{invoice.number} to {location.city}', at)
+    _move_boxes(boxes, 'invoiced', location.id, invoice.id, 'invoiced', f'{invoice.number} to {location.label}', at)
     if order:
         order.status = Status.FULFILLED
         order.history = [*order.history, _entry('fulfilled', invoice.number, at)]
@@ -287,7 +287,7 @@ def edit_invoice(
         location.id,
         invoice.id,
         'invoiced',
-        f'{invoice.number} to {location.city}',
+        f'{invoice.number} to {location.label}',
         at,
     )
     for box in boxes:

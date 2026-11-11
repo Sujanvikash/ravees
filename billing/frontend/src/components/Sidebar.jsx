@@ -154,7 +154,7 @@ const Sidebar = ({ session, page, onPage, badges = {}, collapsed, onToggle, mobi
             </span>
             <span className={`min-w-0 leading-tight ${rail ? 'lg:sr-only' : ''}`}>
               <span className="flex items-center gap-1.5 truncate text-[13px] font-medium">
-                {shop ? shop.city : 'Admin'}
+                {shop ? shop.label : 'Admin'}
                 {isDemo(session) && (
                   <span className="rounded-full bg-warn-50 px-1.5 py-px text-[10px] font-semibold tracking-wide text-warn-ink uppercase">Demo</span>
                 )}

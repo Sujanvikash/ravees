@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from app.core import clock
 from app.modules.auth.access import visible_location
 from app.modules.cash.models import CashClose
+from app.modules.locations import repository as locations
 from app.modules.locations.constants import SHOWROOMS
 from app.modules.returns.models import SaleReturn
 from app.modules.sales.models import Sale, SaleCollection
@@ -34,7 +35,6 @@ from app.modules.users.models import User
 HEAD = Font(bold=True, color='FFFFFF')
 HEAD_FILL = PatternFill('solid', fgColor='175C26')
 MONEY = '#,##0.00'
-CITY = {s.id: s.city for s in SHOWROOMS}
 METHOD = {
     'cash': 'Cash',
     'upi': 'UPI',
@@ -120,6 +120,7 @@ def build(
     gst = app_settings.get(session).show_gst
     drop = frozenset() if gst else GST_COLUMNS
     location_id = visible_location(user, location)
+    city = locations.labels(session)  # Chennai Egmore and Chennai Palavakkam, not two Chennais
     start, end = _bounds(since, until)
 
     stmt = select(Sale).order_by(Sale.at)
@@ -179,7 +180,7 @@ def build(
     for shop in shops:
         p = per.get(shop, defaultdict(float))
         row = [
-            CITY[shop],
+            city.get(shop, shop),
             int(p['bills']),
             int(p['units']),
             p['discount'],
@@ -255,7 +256,7 @@ def build(
         row = [
             s.bill_no,
             _local(s.at),
-            CITY.get(s.location_id, s.location_id),
+            city.get(s.location_id, s.location_id),
             s.name,
             s.phone,
             t['count'],
@@ -293,7 +294,7 @@ def build(
             row = [
                 s.bill_no,
                 _local(s.at),
-                CITY.get(s.location_id, s.location_id),
+                city.get(s.location_id, s.location_id),
                 ln.code,
                 ln.name,
                 ln.qty,
@@ -326,7 +327,7 @@ def build(
         [
             r.return_no,
             _local(r.at),
-            CITY.get(r.location_id, r.location_id),
+            city.get(r.location_id, r.location_id),
             r.sale.bill_no,
             r.kind.title(),
             r.sale.name,
@@ -364,7 +365,7 @@ def build(
             [
                 c.receipt_no,
                 _local(c.at),
-                CITY.get(c.location_id, c.location_id),
+                city.get(c.location_id, c.location_id),
                 s.bill_no,
                 s.name,
                 s.phone,
@@ -395,7 +396,7 @@ def build(
     rows = [
         [
             c.day,
-            CITY.get(c.location_id, c.location_id),
+            city.get(c.location_id, c.location_id),
             float(c.opening),
             float(c.cash_sales),
             float(c.cash_refunds),

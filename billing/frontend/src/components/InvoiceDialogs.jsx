@@ -158,7 +158,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
   }, [location, detailsOf]);
 
   const shop = locationById(location);
-  const city = shop?.city ?? 'the showroom';
+  const city = shop?.label ?? 'the showroom';
   const home = sellerState(settings);
   const gstinState = stateOfGstin(buyer?.gstin);
   const ready = Boolean(buyer) && detailsOf === location;
@@ -269,7 +269,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
         editing
           ? 'Change the showroom’s details, the boxes or the products. The admin stock changes by the difference.'
           : order
-            ? `For ${order.number}, requested by ${locationById(order.location)?.city}. The products as reviewed are on it: check them and raise it.`
+            ? `For ${order.number}, requested by ${locationById(order.location)?.label}. The products as reviewed are on it: check them and raise it.`
             : 'Choose the showroom, then scan the boxes or single products that go to it.'
       }
       onClose={onClose}
@@ -634,7 +634,7 @@ export const InvoiceDetail = ({ id, focus, onClose, onPreview, onPrint, onEdit }
       title={invoice.number}
       subtitle={
         <>
-          {shop?.city} · {when.format(new Date(invoice.createdAt))}{' '}
+          {shop?.label} · {when.format(new Date(invoice.createdAt))}{' '}
           <span className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS[invoice.status].className}`}>{STATUS[invoice.status].label}</span>
         </>
       }
@@ -760,16 +760,16 @@ export const InvoiceDetail = ({ id, focus, onClose, onPreview, onPrint, onEdit }
           <section className="flex flex-wrap items-center gap-3 rounded-xl border border-evergreen-800/20 bg-evergreen-50 p-4">
             <div className="mr-auto text-[13px]">
               <div className="font-semibold text-evergreen-900">Paid{invoice.paidAt ? ` on ${when.format(new Date(invoice.paidAt))}` : ''}</div>
-              <div className="text-ink-2">{invoice.paidRef ? `Reference ${invoice.paidRef}. ` : ''}Add the products to {shop?.city}’s stock now.</div>
+              <div className="text-ink-2">{invoice.paidRef ? `Reference ${invoice.paidRef}. ` : ''}Add the products to {shop?.label}’s stock now.</div>
             </div>
             {confirm === 'stock' ? (
               <button
                 type="button"
-                onClick={() => run(() => stockInvoice(invoice.id), `Added to ${shop?.city}’s stock.`)}
+                onClick={() => run(() => stockInvoice(invoice.id), `Added to ${shop?.label}’s stock.`)}
                 disabled={busy}
                 className={primary}
               >
-                <PackageCheck size={15} aria-hidden="true" /> Yes, add to {shop?.city} stock
+                <PackageCheck size={15} aria-hidden="true" /> Yes, add to {shop?.label} stock
               </button>
             ) : (
               <button type="button" onClick={() => setConfirm('stock')} disabled={busy} className={primary}>

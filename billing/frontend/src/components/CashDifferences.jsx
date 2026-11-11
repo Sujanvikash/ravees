@@ -38,7 +38,7 @@ const CashDifferences = ({ closes, location, onOpen }) => {
               .map((c) => (
                 <li key={c.id} className="flex items-center gap-3 py-1.5">
                   <span className="w-28 text-ink-3">{day.format(new Date(c.day))}</span>
-                  <span className="flex-1 font-medium">{locationById(c.location)?.city}</span>
+                  <span className="flex-1 font-medium">{locationById(c.location)?.label}</span>
                   {c.note && <span className="hidden max-w-64 truncate text-xs text-ink-3 sm:inline">{c.note}</span>}
                   <span className={`w-32 text-right font-semibold tabular-nums ${differenceTone(c.difference)}`}>{differenceLabel(c.difference)}</span>
                 </li>

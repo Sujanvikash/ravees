@@ -248,7 +248,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                               </button>
                             </td>
                             <td className="py-1.5 pr-3 font-mono text-xs">{o.number}</td>
-                            {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(o.location).city}</td>}
+                            {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(o.location).label}</td>}
                             <td className="py-1.5 pr-3">
                               <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS[o.status].className}`}>{STATUS[o.status].label}</span>
                             </td>

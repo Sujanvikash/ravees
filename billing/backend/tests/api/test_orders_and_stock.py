@@ -27,7 +27,7 @@ def test_purchase_order_is_a_request(client, chennai, admin):
     assert o.status_code == 201, o.text
     o = o.json()
     assert o['status'] == 'requested' and o['number'].startswith('PO-CHN-') and o['lines'][0]['name']
-    assert o['history'][0]['action'] == 'requested' and o['history'][0]['by'] == 'Chennai'
+    assert o['history'][0]['action'] == 'requested' and o['history'][0]['by'] == 'Chennai Egmore'
 
     edited = client.put(f'/orders/{o["id"]}', json={'lines': [{'code': code, 'qty': 6}]}, headers=chennai).json()
     assert edited['lines'][0]['qty'] == 6 and edited['history'][-1]['action'] == 'updated'

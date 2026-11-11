@@ -224,7 +224,7 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
                             <tr key={x.quoteNo} className="row-hover border-b border-line-soft">
                               <td className="py-1.5 pr-3 pl-4 font-mono text-xs">{x.quoteNo}</td>
                               <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(x.at)).replace(' at ', ', ')}</td>
-                              {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(x.location)?.city}</td>}
+                              {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(x.location)?.label}</td>}
                               <td className="py-1.5 pr-3 font-medium">{customerLabel(x.phone, x.name)}</td>
                               <td className="py-1.5 pr-3 text-right text-ink-2">{x.totals.count}</td>
                               <td className="py-1.5 pr-3 text-right font-semibold">{inr(x.totals.payable)}</td>
@@ -466,7 +466,7 @@ const QuoteWriter = ({ location, stockOf, canPrint, onSave, onPreview }) => {
       quoteNo,
       location,
       at: now.toISOString(),
-      by: shop.city,
+      by: shop.label,
       name: name.trim(),
       phone: phoneDigits(phone),
       validUntil: `${validUntil}T23:59:59+05:30`,

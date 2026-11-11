@@ -28,7 +28,7 @@ class StockImport(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
     location_id: Mapped[str] = mapped_column(ForeignKey('locations.id'), index=True)
-    by: Mapped[str] = mapped_column(String(64))  # "Admin" or the showroom's city, as order history shows it
+    by: Mapped[str] = mapped_column(String(64))  # "Admin" or the showroom (Location.label), as order history shows it
     username: Mapped[str] = mapped_column(String(32))
     file: Mapped[str] = mapped_column(String(200))
     source: Mapped[str | None] = mapped_column(String(32))

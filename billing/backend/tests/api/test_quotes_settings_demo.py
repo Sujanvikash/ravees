@@ -32,7 +32,7 @@ def test_quotation(client, chennai, admin):
     assert (
         q['quoteNo'].startswith('QT-CHN')
         and '/' not in q['quoteNo']
-        and q['by'] == 'Chennai'
+        and q['by'] == 'Chennai Egmore'
         and q['note'] == 'Corporate'
     )
     assert q['company'] == 'Raj Hotels' and q['address'] == '12 MG Road\nGoa'

@@ -207,7 +207,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
 
           <SummaryStrip
             figures={[
-              { label: `Sales · ${location ? locationById(location).city : 'All showrooms'}`, value: inrWhole(sum.total), note: gst ? 'incl. GST' : 'selling price' },
+              { label: `Sales · ${location ? locationById(location).label : 'All showrooms'}`, value: inrWhole(sum.total), note: gst ? 'incl. GST' : 'selling price' },
               { label: 'Bills', value: sum.bills.toLocaleString('en-IN'), note: `${sum.units.toLocaleString('en-IN')} units sold` },
               { label: 'Returns', value: inrWhole(returned), note: `net sales ${inrWhole(sum.total - returned)}` },
               ...(sum.discount > 0 ? [{ label: 'Discounts given', value: inrWhole(sum.discount), note: 'manual discounts' }] : []),
@@ -264,14 +264,14 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                   type="button"
                                   onClick={() => setOpenLoc(isOpen ? null : r.location.id)}
                                   aria-expanded={isOpen}
-                                  aria-label={`${isOpen ? 'Hide' : 'Show'} ${r.location.city} returns`}
+                                  aria-label={`${isOpen ? 'Hide' : 'Show'} ${r.location.label} returns`}
                                   className="inline-flex size-6 items-center justify-center rounded-md text-ink-3 hover:bg-mist hover:text-ink"
                                 >
                                   <ChevronDown size={15} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                 </button>
                               )}
                             </td>
-                            <td className="py-2 pr-3 font-medium">{r.location.city}</td>
+                            <td className="py-2 pr-3 font-medium">{r.location.label}</td>
                             <td className="py-2 pr-3 text-right text-ink-2">{r.count}</td>
                             <td className="py-2 pr-4 text-right font-medium">{inrWhole(r.amount)}</td>
                           </tr>
@@ -416,7 +416,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                               {rs.origin && <span className="ml-2 rounded bg-mist px-1 font-sans text-[10px] font-medium text-ink-2">EXCHANGE BILL</span>}
                             </td>
                             <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(s.at))}</td>
-                            {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(s.location)?.city ?? '—'}</td>}
+                            {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(s.location)?.label ?? '—'}</td>}
                             <td className="py-1.5 pr-3">
                               <div className="font-medium">{s.name || 'Walk-in'}</div>
                               {s.phone && <div className="text-xs text-ink-3">{formatMobile(s.phone)}</div>}

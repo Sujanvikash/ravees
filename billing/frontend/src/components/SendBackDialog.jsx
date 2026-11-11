@@ -59,7 +59,7 @@ const SendBackDialog = ({ location, onClose, onDone }) => {
   };
 
   return (
-    <Dialog id="send-back" title="New purchase return" subtitle={`From ${shop.city} to the admin · the units leave your stock when you send them`} onClose={onClose} size="max-w-2xl">
+    <Dialog id="send-back" title="New purchase return" subtitle={`From ${shop.label} to the admin · the units leave your stock when you send them`} onClose={onClose} size="max-w-2xl">
       <div className="flex flex-col gap-3 px-6 pb-5">
         <div className="flex flex-wrap gap-2">
           {REASONS.map((r) => (

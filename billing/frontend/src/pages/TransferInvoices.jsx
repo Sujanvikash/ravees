@@ -58,7 +58,7 @@ const TransferInvoices = ({ intent, onMenu }) => {
   const q = query.trim().toLowerCase();
   const list = mine
     .filter((i) => tab === 'all' || i.status === tab)
-    .filter((i) => !q || `${i.number} ${i.ewayNo} ${i.billNo} ${locationById(i.location)?.city ?? ''}`.toLowerCase().includes(q))
+    .filter((i) => !q || `${i.number} ${i.ewayNo} ${i.billNo} ${locationById(i.location)?.label ?? ''}`.toLowerCase().includes(q))
     // by invoice number, newest first
     .sort((a, b) => b.number.localeCompare(a.number, 'en', { numeric: true }));
   const paged = usePages(list, 50, `${tab}|${location}|${q}`);
@@ -87,7 +87,7 @@ const TransferInvoices = ({ intent, onMenu }) => {
     setCreating(null);
     setTab('all');
     setOpenId(invoice.id);
-    setFlash(`${invoice.number} raised for ${locationById(invoice.location)?.city}. Mark it paid when the money comes in.`);
+    setFlash(`${invoice.number} raised for ${locationById(invoice.location)?.label}. Mark it paid when the money comes in.`);
   };
 
   const edit = (invoice) => {

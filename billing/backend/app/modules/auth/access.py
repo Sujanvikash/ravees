@@ -32,7 +32,7 @@ def acting_location(session: Session, user: User, location: str | None = None, *
 
 
 def by_label(user: User, location: Location | None = None) -> str:
-    """Who did it, as order history and stock records show it: "Admin" or the showroom's city."""
+    """Who did it, as order history and stock records show it: "Admin" or the showroom (Location.label)."""
     if user.is_admin:
         return 'Admin'
-    return location.city if location else (user.location_id or user.username)
+    return location.label if location else (user.location_id or user.username)

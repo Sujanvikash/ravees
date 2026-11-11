@@ -63,7 +63,7 @@ def send_back(session: Session, user: User, data: StockReturnIn, *, at: datetime
     }
     for code, qty in wanted.items():
         if qty > max(have.get(code, 0), 0):
-            raise InvalidInput(f'Only {max(have.get(code, 0), 0)} of {code} in stock at {location.city}.')
+            raise InvalidInput(f'Only {max(have.get(code, 0), 0)} of {code} in stock at {location.label}.')
 
     at = at or clock.now()
     note = data.note.strip()
@@ -83,7 +83,7 @@ def send_back(session: Session, user: User, data: StockReturnIn, *, at: datetime
         created_at=at,
         updated_at=at,
     )
-    _log(record, location.city, 'sent', note, at)
+    _log(record, location.label, 'sent', note, at)
     session.add(record)
     stock.adjust(session, location.id, {c: -q for c, q in wanted.items()})
     session.commit()

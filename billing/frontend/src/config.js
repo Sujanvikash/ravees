@@ -69,13 +69,15 @@ const DETAILS = {
   },
 };
 
-/** The showrooms, filled from the server at start-up. Each: { id, city, area, billPrefix, active, name, address, phone,
- *  gstin, state }. Mutated in place by loadLocations so modules that imported it see the update. */
+/** The showrooms, filled from the server at start-up. Each: { id, city, area, label, billPrefix, active, name, address,
+ *  phone, gstin, state }. `label` is how screens name it: the city, or the city and area where two stores share the city
+ *  (Chennai Egmore, Chennai Palavakkam), as the server's history does. Mutated in place by loadLocations so modules that
+ *  imported it see the update. */
 export const LOCATIONS = [];
 
 /** The admin's own stock (the warehouse): purchase returns by the showrooms go in, purchase orders to the
  *  showrooms come out. Not a showroom: no login, no bills, no cash close. */
-export const WAREHOUSE = { id: 'warehouse', city: 'Admin', area: 'Warehouse', billPrefix: 'ADM', address: [], phone: '', gstin: '', upiId: '' };
+export const WAREHOUSE = { id: 'warehouse', city: 'Admin', area: 'Warehouse', label: 'Admin', billPrefix: 'ADM', address: [], phone: '', gstin: '', upiId: '' };
 
 /** Every place that holds stock: the admin's first, then the showrooms. Rebuilt whenever the stores load. */
 export const STOCK_PLACES = [WAREHOUSE];
@@ -84,9 +86,12 @@ export const STOCK_PLACES = [WAREHOUSE];
  *  STOCK_PLACES as the same array objects so existing imports stay valid. */
 export const loadLocations = (stores) => {
   LOCATIONS.length = 0;
+  const perCity = {};
+  for (const s of stores) perCity[s.city] = (perCity[s.city] ?? 0) + 1;
   for (const s of stores) {
     const own = DETAILS[s.id] ?? {};
-    LOCATIONS.push({ ...s, name: own.name ?? '', address: own.address ?? [], phone: own.phone ?? '', gstin: own.gstin ?? '', state: own.state ?? '', upiId: '' });
+    const label = perCity[s.city] > 1 ? `${s.city} ${s.area}` : s.city;
+    LOCATIONS.push({ ...s, label, name: own.name ?? '', address: own.address ?? [], phone: own.phone ?? '', gstin: own.gstin ?? '', state: own.state ?? '', upiId: '' });
   }
   STOCK_PLACES.length = 0;
   STOCK_PLACES.push(WAREHOUSE, ...LOCATIONS);
@@ -97,6 +102,9 @@ export const locationById = (id) => STOCK_PLACES.find((l) => l.id === id);
 
 /** The stores still in use (not removed): shown on the sign-in screen and in the pickers. */
 export const activeLocations = () => LOCATIONS.filter((l) => l.active !== false);
+
+/** The admin's stock and the stores still in use: the places Inventory lists. */
+export const stockPlaces = () => STOCK_PLACES.filter((l) => l.active !== false);
 
 /** MRP and offer prices already include GST (the usual case for retail MRP), so GST is taken out, not added. */
 export const PRICES_INCLUDE_GST = true;

@@ -184,7 +184,7 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
                               </button>
                             </td>
                             <td className="py-1.5 pr-3 font-mono text-xs">{r.number}</td>
-                            {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(r.location)?.city}</td>}
+                            {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(r.location)?.label}</td>}
                             <td className="py-1.5 pr-3">
                               <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${RETURN_STATUS[r.status].className}`}>{RETURN_STATUS[r.status].label}</span>
                             </td>
@@ -291,7 +291,7 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
       {counting && (
         <CountInDialog
           order={counting}
-          subtitle={`Stock sent back by ${locationById(counting.location)?.city}. Count what arrived; any shortfall is kept on the return.`}
+          subtitle={`Stock sent back by ${locationById(counting.location)?.label}. Count what arrived; any shortfall is kept on the return.`}
           onClose={() => setCounting(null)}
           onConfirm={receive}
         />

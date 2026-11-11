@@ -9,7 +9,7 @@ import { inr, inrWhole } from '../lib/money.js';
  * `location`, only that showroom's row.
  */
 const CashComparison = ({ sales, returns, closes, location = null }) => {
-  const rows = LOCATIONS.filter((l) => !location || l.id === location).map((l) => {
+  const rows = LOCATIONS.filter((l) => (!location || l.id === location) && (l.active !== false || sales.some((s) => s.location === l.id))).map((l) => {
     const mine = sales.filter((s) => s.location === l.id);
     const shut = closes.filter((c) => c.location === l.id);
     return {
@@ -50,7 +50,7 @@ const CashComparison = ({ sales, returns, closes, location = null }) => {
   return (
     <section className="rounded-2xl border glass p-4">
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h2 className="text-[15px] font-semibold tracking-tight">{location ? `${rows[0].l.city}: sales and cash` : 'Showrooms compared'}</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight">{location ? `${rows[0].l.label}: sales and cash` : 'Showrooms compared'}</h2>
         <div className="flex items-center gap-3 text-xs text-ink-2" aria-hidden="true">
           <span className="inline-flex items-center gap-1.5">
             <span className="size-2.5 rounded-sm bg-ok" /> Cash sales
@@ -79,13 +79,13 @@ const CashComparison = ({ sales, returns, closes, location = null }) => {
           <tbody>
             {rows.map((r) => (
               <tr key={r.l.id} className="border-b border-line-soft">
-                <td className="py-2 pr-3 font-medium">{r.l.city}</td>
+                <td className="py-2 pr-3 font-medium">{r.l.label}</td>
                 <td className="py-2 pr-3">
                   <span
                     className="flex h-3 overflow-hidden rounded-full bg-line-strong"
                     style={{ width: `${Math.max((r.total / max) * 100, r.total ? 2 : 0)}%` }}
                     role="img"
-                    aria-label={`${r.l.city}: ${inrWhole(r.cash)} cash of ${inrWhole(r.total)} sales`}
+                    aria-label={`${r.l.label}: ${inrWhole(r.cash)} cash of ${inrWhole(r.total)} sales`}
                   >
                     <span className="h-full bg-ok" style={{ width: `${r.total ? (r.cash / r.total) * 100 : 0}%` }} />
                   </span>

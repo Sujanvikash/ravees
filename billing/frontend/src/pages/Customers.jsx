@@ -44,7 +44,7 @@ const History = ({ customer, showShop, onOpenBill }) => (
             <div className="flex flex-wrap items-baseline gap-x-3 text-[13px]">
               <span className="font-mono text-xs text-ink-2">{s.billNo}</span>
               <span className="text-ink-3">{when.format(new Date(s.at))}</span>
-              {showShop && <span className="text-ink-3">{locationById(s.location)?.city}</span>}
+              {showShop && <span className="text-ink-3">{locationById(s.location)?.label}</span>}
               <span className="ml-auto font-semibold tabular-nums">{inr(s.totals.payable)}</span>
             </div>
             <div className="mt-0.5 text-xs text-ink-3">{s.lines.map((l) => `${l.name} × ${l.qty}`).join(' · ')}</div>
@@ -103,7 +103,7 @@ const Customers = ({ session, onMenu, onNavigate }) => {
   const repeat = all.filter((c) => c.bills > 1).length;
   const net = all.reduce((t, c) => t + c.net, 0);
   const shop = locationById(session.location);
-  const crumb = admin ? (location ? locationById(location).city : 'All showrooms') : `${shop.city} · ${shop.area}`;
+  const crumb = admin ? (location ? locationById(location).label : 'All showrooms') : `${shop.city} · ${shop.area}`;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -189,7 +189,7 @@ const Customers = ({ session, onMenu, onNavigate }) => {
                             <td className="py-2 pr-3 whitespace-nowrap text-ink-2">{day.format(new Date(c.first))}</td>
                             <td className="py-2 pr-3 whitespace-nowrap text-ink-2">{day.format(new Date(c.last))}</td>
                             {admin && !location && (
-                              <td className="py-2 pr-4 text-ink-2">{c.showrooms.map((id) => locationById(id)?.city).join(', ')}</td>
+                              <td className="py-2 pr-4 text-ink-2">{c.showrooms.map((id) => locationById(id)?.label).join(', ')}</td>
                             )}
                           </tr>
                           {isOpen && (

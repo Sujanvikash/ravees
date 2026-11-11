@@ -96,7 +96,7 @@ def add_shop_product(session: Session, user: User, data: NewProductIn) -> Produc
             gst=data.gst,
             in_season=True,
             shop_location_id=location.id,
-            created_by='Admin' if user.is_admin else location.city,
+            created_by='Admin' if user.is_admin else location.label,
         ),
     )
     session.commit()

@@ -62,7 +62,7 @@ def import_stock(session: Session, user: User, data: StockImportIn, *, at: datet
     if data.source in OWN_PRODUCT_SOURCES:
         others = [line['code'] for line in lines if catalogue[line['code']].shop_location_id != location.id]
         if others:
-            raise InvalidInput(f'Only {location.city}’s own products can be added by hand: not {", ".join(others)}.')
+            raise InvalidInput(f'Only {location.label}’s own products can be added by hand: not {", ".join(others)}.')
     record = StockImport(
         id=data.id,
         at=at or clock.now(),

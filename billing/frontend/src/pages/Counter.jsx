@@ -98,7 +98,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     const available = inStock(product.code);
     // products from earlier seasons (leftover stock) bill like any other; the note just says so
     const earlier = seasonCount() > 0 && !product.inSeason ? ` · from an earlier season (not in ${SEASON}’s list)` : '';
-    const short = qty > available ? ` · only ${Math.max(available, 0)} in stock at ${shop.city}` : '';
+    const short = qty > available ? ` · only ${Math.max(available, 0)} in stock at ${shop.label}` : '';
     setNotice({ tone: short ? 'warn' : 'ok', text: `Added ${product.name} · qty ${qty}${short}${earlier}` });
   };
 
