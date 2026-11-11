@@ -4,7 +4,7 @@ import { keep, kept } from './snapshots.js';
 /**
  * The product catalogue, loaded from the billing API after sign-in (loadCatalogue) and kept in memory: every
  * product from every year, plus the showrooms' own products (items without a barcode, coded with the
- * showroom's bill prefix: CHN-0001, BLR-0001…). `inSeason` marks what is on sale this season; the admin can
+ * showroom's bill prefix: CHN-0001, PLK-0001…). `inSeason` marks what is on sale this season; the admin can
  * change it (setInSeason). Screens that list products re-render through hooks/useCatalogue.js.
  */
 

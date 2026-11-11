@@ -1,5 +1,15 @@
 import uuid
 
+from sqlalchemy import select
+
+from app.core.database import session_scope
+from app.modules.locations import repository as locations
+from app.modules.locations import service as locations_service
+from app.modules.locations.models import Location
+from app.modules.products.models import Product
+from app.modules.stock.models import StockLevel
+from app.modules.users import service as users
+
 from .conftest import login
 from .test_sales import CUSTOMER, season_code
 
@@ -7,7 +17,7 @@ from .test_sales import CUSTOMER, season_code
 def test_list_stores_is_public(client):
     stores = client.get('/locations').json()
     ids = {s['id'] for s in stores}
-    assert {'chennai', 'bengaluru', 'goa', 'mumbai', 'pune'} <= ids
+    assert {'chennai', 'palavakkam', 'cochin', 'mumbai', 'pune'} <= ids
     assert 'warehouse' not in ids  # the admin's warehouse is not a store
     assert all(s['active'] for s in stores if s['id'] in {'chennai', 'pune'})
 
@@ -79,3 +89,29 @@ def test_remove_store_with_history_deactivates_it(client, admin):
     assert {s['id']: s['active'] for s in client.get('/locations').json()}['hst'] is False
     # and it can be brought back
     assert client.post('/locations/hst/reactivate', headers=admin).json()['active'] is True
+
+
+def test_seed_brings_the_store_list_up_to_date(client):
+    # as a server seeded with the first list has it: Goa never used, Bengaluru with stock, Pune in Koregaon Park
+    with session_scope() as session:
+        for location_id, city, area, prefix in (
+            ('goa', 'Goa', 'Panaji', 'GOA'),
+            ('bengaluru', 'Bengaluru', 'Indiranagar', 'BLR'),
+        ):
+            session.add(Location(id=location_id, city=city, area=area, bill_prefix=prefix))
+            session.flush()
+            users.create_login(session, location_id)
+        session.add(StockLevel(location_id='bengaluru', code=session.scalar(select(Product.code).limit(1)), qty=3))
+        session.get(Location, 'pune').area = 'Koregaon Park'
+
+    # what seed does: the list's stores with their city and area, and the old two taken off, once
+    with session_scope() as session:
+        assert locations.add_missing_showrooms(session) == 0
+        assert locations_service.retire_old_showrooms(session) == ['Bengaluru', 'Goa']
+        assert locations_service.retire_old_showrooms(session) == []
+
+    stores = {s['id']: s for s in client.get('/locations').json()}
+    assert 'goa' not in stores  # never used: deleted, login and all
+    assert client.post('/auth/login', json={'username': 'goa', 'password': 'goa@2026'}).status_code == 401
+    assert stores['bengaluru']['active'] is False  # it has stock: kept, hidden from sign-in
+    assert stores['pune']['area'] == 'Camp' and stores['cochin']['billPrefix'] == 'COK'

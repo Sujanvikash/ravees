@@ -46,11 +46,11 @@ def test_a_bill_is_priced_numbered_and_comes_off_stock(client, chennai, admin):
 
 def test_who_sees_and_makes_bills(client, chennai, admin):
     code = season_code(client, chennai)
-    goa = login(client, 'goa')
-    client.post('/sales', json=sale([{'code': code, 'qty': 1}]), headers=goa)
+    cochin = login(client, 'cochin')
+    client.post('/sales', json=sale([{'code': code, 'qty': 1}]), headers=cochin)
     assert {x['location'] for x in client.get('/sales', headers=chennai).json()} <= {'chennai'}
-    assert 'goa' in {x['location'] for x in client.get('/sales', headers=admin).json()}
-    assert {x['location'] for x in client.get('/sales?location=goa', headers=admin).json()} == {'goa'}
+    assert 'cochin' in {x['location'] for x in client.get('/sales', headers=admin).json()}
+    assert {x['location'] for x in client.get('/sales?location=cochin', headers=admin).json()} == {'cochin'}
     r = client.post('/sales', json=sale([{'code': code, 'qty': 1}]), headers=admin)
     assert r.status_code == 403
     assert client.get('/stock', headers=chennai).json().keys() <= {'chennai'}

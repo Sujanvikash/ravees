@@ -10,14 +10,17 @@ def get(session: Session, location_id: str) -> Location | None:
 
 
 def add_missing_showrooms(session: Session) -> int:
-    """Adds any of the five showrooms not in the table yet, and the admin's warehouse. Existing rows are left
-    alone. Returns how many showrooms were added."""
-    existing = set(session.scalars(select(Location.id)))
+    """Adds any of the five showrooms not in the table yet, and the admin's warehouse. One already there keeps its
+    row (and its numbering) but takes the list's city and area. Returns how many showrooms were added."""
+    existing = {location.id: location for location in session.scalars(select(Location))}
     if WAREHOUSE.id not in existing:
         session.add(
             Location(id=WAREHOUSE.id, city=WAREHOUSE.city, area=WAREHOUSE.area, bill_prefix=WAREHOUSE.bill_prefix)
         )
     missing = [s for s in SHOWROOMS if s.id not in existing]
+    for s in SHOWROOMS:
+        if s.id in existing:
+            existing[s.id].city, existing[s.id].area = s.city, s.area
     session.add_all(Location(id=s.id, city=s.city, area=s.area, bill_prefix=s.bill_prefix) for s in missing)
     session.flush()
     return len(missing)

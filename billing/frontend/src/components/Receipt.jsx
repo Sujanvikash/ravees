@@ -51,7 +51,7 @@ const ThermalReceipt = ({ sale }) => {
   // built-in showroom details when a field is left blank.
   const composition = Boolean(settings.composition);
   const gst = settings.showGst && !composition;
-  const storeName = settings.storeName?.trim();
+  const storeName = settings.storeName?.trim() || shop.name;
   const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;
@@ -192,7 +192,7 @@ const A4Bill = ({ sale }) => {
   const shop = locationById(sale.location) ?? {};
   const composition = Boolean(settings.composition);
   const gst = settings.showGst && !composition;
-  const storeName = settings.storeName?.trim();
+  const storeName = settings.storeName?.trim() || shop.name;
   const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;

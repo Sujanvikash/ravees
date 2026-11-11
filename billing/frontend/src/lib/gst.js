@@ -1,3 +1,5 @@
+import { SELLER } from '../config.js';
+
 /**
  * GST places of supply. A GSTIN starts with its state's two-digit code. An invoice to a showroom in the admin's own
  * state (Tamil Nadu) takes CGST + SGST; to any other state, IGST. The server decides it the same way.
@@ -54,5 +56,5 @@ export const stateOfGstin = (gstin) => {
   return NAMES.has(code) ? code : '';
 };
 
-/** The admin's state: from its business GSTIN when set (Settings → Business details), else Tamil Nadu. */
-export const sellerState = (settings) => stateOfGstin(settings?.bizGstin) || ADMIN_STATE;
+/** The admin's state: from its business GSTIN (Settings → Business details, else Tree Classics Trader's), else Tamil Nadu. */
+export const sellerState = (settings) => stateOfGstin(settings?.bizGstin?.trim() || SELLER.gstin) || ADMIN_STATE;

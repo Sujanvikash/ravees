@@ -22,7 +22,7 @@ const CreditNotePrint = ({ note }) => {
   const settings = useStore().settings;
   const composition = Boolean(settings.composition);
   // Same header identity as the bill (components/Receipt.jsx): the Raave's logo on top, the showroom's own name larger below.
-  const storeName = settings.storeName?.trim();
+  const storeName = settings.storeName?.trim() || shop.name;
   const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;

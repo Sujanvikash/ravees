@@ -91,8 +91,14 @@ const LinesTable = ({ lines, total }) => {
         </div>
         <div className="flex justify-between text-ink-2">
           <span>GST</span>
-          <span>{inr(sum - taxable)}</span>
+          <span>{inr(tax)}</span>
         </div>
+        {Math.abs(sum - taxable - tax) >= 0.005 && (
+          <div className="flex justify-between text-ink-2">
+            <span>Round off</span>
+            <span>{inr(sum - taxable - tax)}</span>
+          </div>
+        )}
         <div className="flex justify-between border-t border-line-soft pt-1 font-semibold">
           <span>Total</span>
           <span>{inr(sum)}</span>
@@ -514,7 +520,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-mist-2 px-6 py-4">
         <span className="text-[13px] text-ink-3 tabular-nums">
           {lines.length} products · {lines.reduce((s, l) => s + l.qty, 0).toLocaleString('en-IN')} units ·{' '}
-          {inr(lines.reduce((s, l) => s + l.amount + l.tax, 0))} with GST
+          {inr(Math.round(lines.reduce((s, l) => s + l.amount + l.tax, 0)))} with GST
         </span>
         <div className="flex items-center gap-2">
           <button type="button" onClick={onClose} className={quiet}>

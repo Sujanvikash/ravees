@@ -10,7 +10,9 @@ Commands for running the billing API.
 
 seed fills the database: the five showrooms, a login for each plus the admin (default passwords), and the
 product catalogue from seed/products-clean.xlsx. Safe to run again: it never changes a password, and it keeps
-the admin's season choices unless --season-from-excel is given. If there is no demo yet it builds one too
+the admin's season choices unless --season-from-excel is given. Run again after the showroom list changes, it adds
+the new showrooms with their logins and takes off the ones no longer used (Bengaluru and Goa), as Remove on the
+Stores page would. If there is no demo yet it builds one too
 (--no-demo to skip). --admin-stock also imports the season's stock sheet (seed/admin-stock-2026.xlsx) into the
 admin's own stock, as Inventory -> Import stock would; the same sheet is only ever added once.
 
@@ -34,6 +36,7 @@ from app.core.config import get_settings
 from app.core.database import get_session_factory, session_scope
 from app.modules.demo import builder as demo_builder
 from app.modules.locations import repository as locations
+from app.modules.locations import service as locations_service
 from app.modules.products import repository as products
 from app.modules.products import service as products_service
 from app.modules.products.importer import DEFAULT_EXCEL, CatalogueFileError, read_catalogue
@@ -50,10 +53,12 @@ class SeedReport:
     products_in_season: int
     season: str
     admin_stock: str = ''  # what --admin-stock did
+    showrooms_retired: tuple[str, ...] = ()
 
     def __str__(self) -> str:
+        retired = f'{", ".join(self.showrooms_retired)} taken off, ' if self.showrooms_retired else ''
         return (
-            f'{self.showrooms_added} new showrooms, {self.logins_added} new logins, '
+            f'{self.showrooms_added} new showrooms, {retired}{self.logins_added} new logins, '
             f'{self.products_in_excel} products from the Excel '
             f'({self.products_total} in the catalogue, {self.products_in_season} in Season {self.season}).'
             f'{self.admin_stock}'
@@ -68,10 +73,12 @@ def seed(
     catalogue = read_catalogue(excel)
     with session_scope() as session:
         showrooms_added = locations.add_missing_showrooms(session)
+        showrooms_retired = tuple(locations_service.retire_old_showrooms(session))
         logins_added = users_service.add_missing_logins(session)
         products_service.import_catalogue(session, catalogue, season_from_excel=season_from_excel)
         report = SeedReport(
             showrooms_added=showrooms_added,
+            showrooms_retired=showrooms_retired,
             logins_added=logins_added,
             products_in_excel=len(catalogue.products),
             products_total=products.count(session),

@@ -57,15 +57,15 @@ def test_shop_products_get_their_showrooms_codes(client, admin, chennai):
     assert a['name'] == 'Handmade wreath 12 inch' and a['shop']['by'] == 'Chennai' and a['inSeason']
     assert set(a) == PRODUCT_FIELDS
 
-    c = client.post('/products', json={**WREATH, 'location': 'bengaluru'}, headers=admin).json()
-    assert c['code'] == 'BLR-0001' and c['shop'] == {'location': 'bengaluru', 'by': 'Admin', 'at': c['shop']['at']}
+    c = client.post('/products', json={**WREATH, 'location': 'palavakkam'}, headers=admin).json()
+    assert c['code'] == 'PLK-0001' and c['shop'] == {'location': 'palavakkam', 'by': 'Admin', 'at': c['shop']['at']}
 
     # a showroom can't add to another showroom
-    d = client.post('/products', json={**WREATH, 'location': 'goa'}, headers=chennai).json()
+    d = client.post('/products', json={**WREATH, 'location': 'cochin'}, headers=chennai).json()
     assert d['code'] == 'CHN-0003'
 
     codes = {p['code'] for p in client.get('/products', headers=chennai).json()['products']}
-    assert {'CHN-0001', 'CHN-0002', 'CHN-0003', 'BLR-0001'} <= codes
+    assert {'CHN-0001', 'CHN-0002', 'CHN-0003', 'PLK-0001'} <= codes
 
 
 def test_shop_product_defaults(client, chennai):
@@ -104,7 +104,9 @@ def test_a_showroom_adds_stock_for_its_own_products(client, chennai):
 
     # not for catalogue products, nor another showroom's own
     other = client.post(
-        '/products', json={'name': 'Goa shell wreath', 'dept': 'Wreaths', 'mrp': 500}, headers=login(client, 'goa')
+        '/products',
+        json={'name': 'Cochin shell wreath', 'dept': 'Wreaths', 'mrp': 500},
+        headers=login(client, 'cochin'),
     ).json()
     for code in (season_code(client, chennai), other['code']):
         r = client.post(

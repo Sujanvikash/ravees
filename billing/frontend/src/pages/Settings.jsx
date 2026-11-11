@@ -3,7 +3,7 @@ import { FileText, FlaskConical, Palette, Phone, Printer, Store, User } from 'lu
 import logo from '../assets/logo.svg';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { BILL_FOOTER, BRAND, LOCATIONS, locationById } from '../config.js';
+import { BILL_FOOTER, BRAND, LOCATIONS, SELLER, locationById } from '../config.js';
 import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 import { api } from '../lib/api.js';
@@ -52,7 +52,7 @@ const StoreField = ({ label, hint, value, onSave, textarea, placeholder }) => {
       </span>
       <div className="flex items-start gap-2">
         {textarea ? (
-          <textarea rows={2} value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder} className={`${cls} min-w-0 flex-1 resize-none font-normal`} />
+          <textarea rows={Math.min(5, Math.max(2, (v || placeholder || '').split('\n').length))} value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder} className={`${cls} min-w-0 flex-1 resize-none font-normal`} />
         ) : (
           <input
             value={v}
@@ -119,10 +119,10 @@ const Row = ({ label, value, className = '' }) => (
  *  details land on the receipt as it edits them. Black-and-white, like the print. */
 const BillPreview = ({ values, shop }) => {
   const composition = Boolean(values.composition);
-  const name = values.storeName?.trim();
+  const name = values.storeName?.trim() || shop?.name;
   const address = values.storeAddress?.trim() ? values.storeAddress.split('\n').filter(Boolean) : (shop?.address ?? []);
   const phone = values.storePhone?.trim() || shop?.phone;
-  const gstin = values.gstin?.trim();
+  const gstin = values.gstin?.trim() || shop?.gstin;
   const title = composition ? 'BILL OF SUPPLY' : 'TAX INVOICE';
   return (
     <div className="mx-auto w-[264px] rounded-md bg-white p-4 font-mono text-[10px] leading-snug text-black shadow-[0_8px_24px_-12px_rgba(0,0,0,0.4)] ring-1 ring-black/10">
@@ -192,23 +192,24 @@ const BillPreview = ({ values, shop }) => {
 };
 
 /** The shop-on-the-bill fields and the composition toggle, bound to `values` and saved through onSave(key, value).
- *  The live sample bill on the right mirrors every field (`shop` gives the built-in fall-backs). */
+ *  The live sample bill on the right mirrors every field (`shop` gives the built-in fall-backs, shown greyed in each
+ *  box, which print while it is blank). */
 const ShopFields = ({ values, onSave, shop }) => (
   <>
     <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="flex min-w-0 flex-col gap-4">
-        <StoreField label="Shop name" value={values.storeName} onSave={(v) => onSave('storeName', v)} placeholder="Shop name as printed on the bill" />
+        <StoreField label="Shop name" value={values.storeName} onSave={(v) => onSave('storeName', v)} placeholder={shop?.name || 'Shop name as printed on the bill'} />
         <StoreField
           label="Address"
           hint="one line per line"
           value={values.storeAddress}
           onSave={(v) => onSave('storeAddress', v)}
           textarea
-          placeholder="Shop address"
+          placeholder={shop?.address?.join('\n') || 'Shop address'}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <StoreField label="Phone" value={values.storePhone} onSave={(v) => onSave('storePhone', v)} placeholder="Phone number" />
-          <StoreField label="GSTIN" value={values.gstin} onSave={(v) => onSave('gstin', v)} placeholder="GSTIN" />
+          <StoreField label="Phone" value={values.storePhone} onSave={(v) => onSave('storePhone', v)} placeholder={shop?.phone || 'Phone number'} />
+          <StoreField label="GSTIN" value={values.gstin} onSave={(v) => onSave('gstin', v)} placeholder={shop?.gstin || 'GSTIN'} />
         </div>
         <p className="rounded-xl bg-mist-2 px-3 py-2 text-xs text-ink-3">
           Every bill ends with the fixed note <span className="font-medium text-ink-2">*NO EXCHANGE *NO RETURN · *NO GUARANTEE ON COLOURS</span> and a Christmas wish.
@@ -441,18 +442,20 @@ const Settings = ({ onMenu }) => {
               <div>
                 <div className="text-[14px] font-semibold">Business details for invoices</div>
                 <p className="mt-0.5 text-[13px] text-ink-3">
-                  Your own business, printed as the seller on every invoice (the showroom is the buyer, with the details from its Shop on the bill).
+                  Your own business, printed as the seller on every tax invoice (the showroom is the buyer, with the details from its Shop on the bill). A
+                  blank name, address, phone or GSTIN prints Tree Classics Trader&rsquo;s, shown greyed in each box. Email, PAN, bank and terms print
+                  only when filled in.
                 </p>
               </div>
             </div>
             <div className="flex flex-col gap-4 p-5">
-              <StoreField label="Business name" value={settings.bizName} onSave={(v) => setSetting('bizName', v)} placeholder="Legal name as on your GST registration" />
-              <StoreField label="Address" hint="one line per line" value={settings.bizAddress} onSave={(v) => setSetting('bizAddress', v)} textarea placeholder="Street, area, city, PIN" />
+              <StoreField label="Business name" value={settings.bizName} onSave={(v) => setSetting('bizName', v)} placeholder={SELLER.name} />
+              <StoreField label="Address" hint="one line per line" value={settings.bizAddress} onSave={(v) => setSetting('bizAddress', v)} textarea placeholder={SELLER.address} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <StoreField label="State" value={settings.bizState} onSave={(v) => setSetting('bizState', v)} placeholder="e.g. Tamil Nadu" />
-                <StoreField label="GSTIN" value={settings.bizGstin} onSave={(v) => setSetting('bizGstin', v.toUpperCase())} placeholder="15-character GSTIN" />
+                <StoreField label="State" value={settings.bizState} onSave={(v) => setSetting('bizState', v)} placeholder="Tamil Nadu" />
+                <StoreField label="GSTIN" value={settings.bizGstin} onSave={(v) => setSetting('bizGstin', v.toUpperCase())} placeholder={SELLER.gstin} />
                 <StoreField label="PAN" value={settings.bizPan} onSave={(v) => setSetting('bizPan', v.toUpperCase())} placeholder="PAN" />
-                <StoreField label="Phone" value={settings.bizPhone} onSave={(v) => setSetting('bizPhone', v)} placeholder="Phone number" />
+                <StoreField label="Phone" value={settings.bizPhone} onSave={(v) => setSetting('bizPhone', v)} placeholder={SELLER.phone} />
                 <StoreField label="Email" value={settings.bizEmail} onSave={(v) => setSetting('bizEmail', v)} placeholder="Email" />
               </div>
               <div className="grid gap-4 sm:grid-cols-3">

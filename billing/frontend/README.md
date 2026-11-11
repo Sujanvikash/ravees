@@ -13,8 +13,10 @@ npm run lint
 
 | Login | Password | Sees |
 |---|---|---|
-| Chennai, Bengaluru, Goa, Mumbai, Pune | `chennai@2026`, `bengaluru@2026`, `goa@2026`, `mumbai@2026`, `pune@2026` | Billing, returns, its own sales, inventory, purchase orders and cash close |
+| Chennai (Egmore), Palavakkam (Chennai), Cochin, Mumbai, Pune | `chennai@2026`, `palavakkam@2026`, `cochin@2026`, `mumbai@2026`, `pune@2026` | Billing, returns, its own sales, inventory, purchase orders and cash close |
 | Admin | `admin@2026` | Dashboard, all sales with purchase cost and profit, every showroom's inventory, all purchase orders, every cash close |
+
+Each store bills under its own business (Sianna Collection for both Chennai stores, Christmas Celebrations in Cochin, Christmas Mart in Mumbai, Sparkel Christmas in Pune), with its address, phone and GSTIN built in (`src/config.js`); a store's **Settings → Shop on the bill** can change any of them. The admin is Tree Classics Trader, the seller on every tax invoice to a store. The first list's Bengaluru and Goa are gone: on the server, `python -m app.cli seed` adds the new stores and takes those two off.
 
 Logins are checked by the billing API (`billing/backend`), which keeps the passwords hashed. The admin can set a new password for any login, or put it back to the default, under **Logins**; it works on every computer straight away. Showroom logins cannot change passwords.
 

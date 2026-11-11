@@ -51,7 +51,7 @@ def test_return_refunds_cash_and_restocks(client, chennai, admin):
     # another showroom, or the admin, can't take it
     assert (
         client.post(
-            '/returns', json={**more, 'lines': [{'code': code, 'qty': 1}]}, headers=login(client, 'goa')
+            '/returns', json={**more, 'lines': [{'code': code, 'qty': 1}]}, headers=login(client, 'cochin')
         ).status_code
         == 404
     )
@@ -122,7 +122,7 @@ def test_cash_reopen(client):
     close_id = client.post('/cash/closes', json=body, headers=pune).json()['id']
 
     # a showroom can't reopen another showroom's close
-    assert client.delete(f'/cash/closes/{close_id}', headers=login(client, 'bengaluru')).status_code == 403
+    assert client.delete(f'/cash/closes/{close_id}', headers=login(client, 'palavakkam')).status_code == 403
     # reopening its own close opens the day again and drops the close
     r = client.delete(f'/cash/closes/{close_id}', headers=pune)
     assert r.status_code == 200, r.text
@@ -135,27 +135,27 @@ def test_cash_reopen(client):
 
 
 def test_cash_auto_close(client):
-    goa = login(client, 'goa')
-    code = season_code(client, goa)
-    s = client.post('/sales', json=sale([{'code': code, 'qty': 1}], 'cash', received=100000), headers=goa).json()
+    cochin = login(client, 'cochin')
+    code = season_code(client, cochin)
+    s = client.post('/sales', json=sale([{'code': code, 'qty': 1}], 'cash', received=100000), headers=cochin).json()
 
     today = cash.today()
     yesterday = today - timedelta(days=1)
-    # move the bill to yesterday and arm the marker, as if goa billed yesterday and never closed
+    # move the bill to yesterday and arm the marker, as if cochin billed yesterday and never closed
     with session_scope() as session:
         session.get(Sale, uuid.UUID(s['id'])).at = datetime.combine(yesterday, time(12, 0), clock.IST)
         marker = json.loads(system_repo.get_value(session, AUTO_KEY, '{}'))
-        marker['goa'] = (today - timedelta(days=2)).isoformat()
+        marker['cochin'] = (today - timedelta(days=2)).isoformat()
         system_repo.set_value(session, AUTO_KEY, json.dumps(marker))
 
     # reading the cash closes the day that ended without a count
-    closes = client.get('/cash/closes', headers=goa).json()
-    auto = next(c for c in closes if c['location'] == 'goa' and c['day'] == yesterday.isoformat())
+    closes = client.get('/cash/closes', headers=cochin).json()
+    auto = next(c for c in closes if c['location'] == 'cochin' and c['day'] == yesterday.isoformat())
     assert auto['by'] == 'auto' and auto['difference'] == 0 and auto['counted'] == auto['expected']
     # today is never auto-closed, and reading again doesn't double up
-    assert not any(c['location'] == 'goa' and c['day'] == today.isoformat() for c in closes)
-    again = client.get('/cash/closes', headers=goa).json()
-    assert sum(1 for c in again if c['location'] == 'goa' and c['day'] == yesterday.isoformat()) == 1
+    assert not any(c['location'] == 'cochin' and c['day'] == today.isoformat() for c in closes)
+    again = client.get('/cash/closes', headers=cochin).json()
+    assert sum(1 for c in again if c['location'] == 'cochin' and c['day'] == yesterday.isoformat()) == 1
 
 
 def test_sales_report_excel(client, admin, chennai):

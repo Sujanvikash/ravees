@@ -51,7 +51,7 @@ export const QuotationDocument = ({ quote, pictures = {}, colour }) => {
   const { showGst, composition } = settings;
   const gst = showGst && !composition; // a composition dealer shows no GST
   // Same identity as the bill: the showroom's own name is the prominent line, with Raave's as the house brand under it.
-  const storeName = settings.storeName?.trim();
+  const storeName = settings.storeName?.trim() || shop.name;
   const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;

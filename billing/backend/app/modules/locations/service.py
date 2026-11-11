@@ -16,7 +16,7 @@ from app.modules.stock.models import StockLevel
 from app.modules.users import service as users
 
 from . import repository
-from .constants import WAREHOUSE_ID
+from .constants import RETIRED_SHOWROOMS, WAREHOUSE_ID
 from .models import Location
 
 
@@ -56,21 +56,42 @@ def create_store(session: Session, city: str, area: str, prefix: str) -> Locatio
     return location
 
 
+def _remove(session: Session, location: Location) -> bool:
+    """Deactivates a store with history (kept, hidden from sign-in), or deletes an empty one with its login.
+    Returns whether it was deleted; the caller commits."""
+    if _has_history(session, location.id):
+        location.active = False
+        return False
+    users.remove_login(session, location.id)
+    session.delete(location)
+    session.flush()
+    return True
+
+
 def remove_store(session: Session, location_id: str) -> tuple[bool, Location | None]:
     """Removes a store. With history it is deactivated (kept, hidden from sign-in) and returned; empty, it and
     its login are deleted. Returns (deleted, store): (False, store) when deactivated, (True, None) when deleted."""
     location = repository.get(session, location_id)
     if not location or location.id == WAREHOUSE_ID:
         raise NotFound('No such store.')
-    if _has_history(session, location_id):
-        location.active = False
-        session.commit()
-        session.refresh(location)
-        return False, location
-    users.remove_login(session, location_id)
-    session.delete(location)
+    deleted = _remove(session, location)
     session.commit()
-    return True, None
+    if deleted:
+        return True, None
+    session.refresh(location)
+    return False, location
+
+
+def retire_old_showrooms(session: Session) -> list[str]:
+    """Takes off the showrooms no longer used (RETIRED_SHOWROOMS: Bengaluru and Goa) as Remove on the Stores page
+    would, if they are still on. Returns their cities; the caller commits."""
+    retired = []
+    for location_id in RETIRED_SHOWROOMS:
+        location = repository.get(session, location_id)
+        if location and location.active:
+            retired.append(location.city)
+            _remove(session, location)
+    return retired
 
 
 def reactivate(session: Session, location_id: str) -> Location:

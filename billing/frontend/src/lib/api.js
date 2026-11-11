@@ -42,7 +42,7 @@ const message = (body, status) => {
   return `The billing server answered with an error (${status}).`;
 };
 
-/** api('/products'), api('/users/goa/password', { method: 'PUT', body: { password } }) → the JSON reply. */
+/** api('/products'), api('/users/pune/password', { method: 'PUT', body: { password } }) → the JSON reply. */
 export const api = async (path, { method = 'GET', body } = {}) => {
   const token = getToken();
   let res;

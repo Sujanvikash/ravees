@@ -22,7 +22,7 @@ const PaymentReceiptPrint = ({ sale, collection }) => {
   const shop = locationById(sale.location) ?? {};
   const settings = useStore().settings;
   // Same header identity as the bill (components/Receipt.jsx).
-  const storeName = settings.storeName?.trim();
+  const storeName = settings.storeName?.trim() || shop.name;
   const address = settings.storeAddress?.trim() ? settings.storeAddress.split('\n').filter(Boolean) : (shop.address ?? []);
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;

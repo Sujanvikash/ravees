@@ -29,6 +29,7 @@ from .schemas import BuyerIn, DocumentsIn, InvoiceChangeIn, InvoiceIn, PayIn
 
 MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
 CENT = Decimal('0.01')
+RUPEE = Decimal(1)
 
 
 def _admin(user: User) -> None:
@@ -138,7 +139,8 @@ def _locked_boxes(session: Session, ids: set[uuid.UUID]) -> list[Box]:
 
 def _priced(session: Session, boxes: Sequence[Box], singles: Sequence[LineIn]) -> tuple[dict[str, int], list[dict]]:
     """What the boxes and single products add up to, by code, and the invoice lines for it: each product at its cost
-    price (D.Rate) with its own GST (18%) on top; nothing else is added."""
+    price (D.Rate) with its own GST rate (18%); nothing else is added. The tax itself is worked out in _fill, once
+    it is known whether the showroom is in another state."""
     wanted: dict[str, int] = {}
     for box in boxes:
         for line in box.lines:
@@ -164,7 +166,6 @@ def _priced(session: Session, boxes: Sequence[Box], singles: Sequence[LineIn]) -
                 'rate': float(rate),
                 'amount': float(amount),
                 'gst': float(product.gst),
-                'tax': float(_money(amount * Decimal(product.gst) / 100)),
             }
         )
     return wanted, lines
@@ -173,15 +174,22 @@ def _priced(session: Session, boxes: Sequence[Box], singles: Sequence[LineIn]) -
 def _fill(
     session: Session, invoice: TransferInvoice, location: Location, data: InvoiceChangeIn, lines: list[dict]
 ) -> None:
-    """Puts the showroom, its details, the lines and their totals, and the note on the invoice."""
+    """Puts the showroom, its details, the lines with their GST and the totals, and the note on the invoice. To
+    another state a line's GST is IGST at its full rate; inside the admin's own, CGST + SGST at half the rate each,
+    worked out on the line so the two are always the same. The total is rounded to the rupee (the round-off)."""
     buyer = _buyer(session, location, data.buyer)
     invoice.location_id = location.id
     invoice.buyer = buyer
     invoice.inter_state = buyer['state'] != _seller_state(session)
+    for line in lines:
+        amount, rate = Decimal(str(line['amount'])), Decimal(str(line['gst']))
+        tax = _money(amount * rate / 100) if invoice.inter_state else 2 * _money(amount * rate / 200)
+        line['tax'] = float(tax)
     invoice.lines = lines
     invoice.markup_pct = Decimal(0)
     invoice.subtotal = sum((Decimal(str(line['amount'])) for line in lines), Decimal(0))
-    invoice.total = invoice.subtotal + sum((Decimal(str(line['tax'])) for line in lines), Decimal(0))
+    taxed = invoice.subtotal + sum((Decimal(str(line['tax'])) for line in lines), Decimal(0))
+    invoice.total = taxed.quantize(RUPEE, rounding=ROUND_HALF_UP)
     invoice.note = data.note.strip()
 
 

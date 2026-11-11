@@ -10,7 +10,7 @@ import { customerLabel } from './customer.js';
  * counter number and its own running number), printed as usual, and put in the outbox. StoreContext sends the
  * outbox in order once the server answers again; the server keeps each bill's offline number and time.
  *
- * Everything is per showroom and apart for the demo: `key` is "goa" or "demo-goa" (offlineKey).
+ * Everything is per showroom and apart for the demo: `key` is "pune" or "demo-pune" (offlineKey).
  */
 
 export const offlineKey = (session) => (session?.location ? `${session.demo ? 'demo-' : ''}${session.location}` : null);

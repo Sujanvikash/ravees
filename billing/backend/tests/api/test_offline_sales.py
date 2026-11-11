@@ -57,7 +57,7 @@ def test_offline_numbers_must_be_ones_the_showroom_was_given(client, chennai):
     def status(bill_no):
         return client.post('/sales', json=offline(sale([{'code': code, 'qty': 1}]), bill_no), headers=chennai)
 
-    assert status(offline_no(counter, 1, prefix='GOA')).status_code == 422  # another showroom's
+    assert status(offline_no(counter, 1, prefix='COK')).status_code == 422  # another showroom's
     assert status(offline_no(99, 1)).status_code == 422  # a counter never handed out
     assert status(offline_no(counter, 0)).status_code == 422
     assert status(f'CHN2627{counter:02d}0001').status_code == 422  # no OF
@@ -66,8 +66,8 @@ def test_offline_numbers_must_be_ones_the_showroom_was_given(client, chennai):
     taken = status(offline_no(counter, 7))  # a different bill with the same number
     assert taken.status_code == 409, taken.text
 
-    goa = login(client, 'goa')
-    r = client.post('/sales', json=offline(sale([{'code': code, 'qty': 1}]), offline_no(counter, 8)), headers=goa)
+    cochin = login(client, 'cochin')
+    r = client.post('/sales', json=offline(sale([{'code': code, 'qty': 1}]), offline_no(counter, 8)), headers=cochin)
     assert r.status_code == 422
 
 

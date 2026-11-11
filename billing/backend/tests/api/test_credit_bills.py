@@ -86,7 +86,7 @@ def test_collecting_the_balance_in_parts(client, chennai, admin):
     assert done['collections'][1]['receiptNo'] != c['receiptNo']
 
     assert collect(client, chennai, s['id'], 1).status_code == 409  # paid in full
-    assert collect(client, login(client, 'goa'), s['id'], 1).status_code == 404  # another store's bill
+    assert collect(client, login(client, 'cochin'), s['id'], 1).status_code == 404  # another store's bill
     assert collect(client, admin, s['id'], 1).status_code == 403  # the admin doesn't collect
 
     # a refresh of the list picks up the bill whose balance changed, though it was made earlier
@@ -112,17 +112,17 @@ def test_collections_count_in_the_days_cash(client):
 
 
 def test_a_return_on_a_credit_bill_pays_off_the_balance_first(client):
-    goa = login(client, 'goa')
-    code = dear_code(client, goa)
+    cochin = login(client, 'cochin')
+    code = dear_code(client, cochin)
     lines = [{'code': code, 'qty': 2}]
-    total = payable_of(client, goa, lines)
-    s = client.post('/sales', json=sale(lines, 'upi', received=0, later=total - 100), headers=goa).json()
+    total = payable_of(client, cochin, lines)
+    s = client.post('/sales', json=sale(lines, 'upi', received=0, later=total - 100), headers=cochin).json()
     owed = s['balance']
 
     r = client.post(
         '/returns',
         json={'id': str(uuid.uuid4()), 'saleId': s['id'], 'lines': [{'code': code, 'qty': 1}], 'reason': ''},
-        headers=goa,
+        headers=cochin,
     )
     assert r.status_code == 201, r.text
     note, original = r.json()['creditNote'], r.json()['original']

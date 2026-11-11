@@ -12,7 +12,8 @@ from app.core.database import Base
 class TransferInvoice(Base):
     """An invoice: what the admin bills a showroom for stock sent to it, at each product's cost price (D.Rate) with
     its GST (18%) on top: lines [{code, name, qty, cost, rate, amount, gst, tax}] from the scanned boxes and single
-    products, rate = cost, subtotal = the amounts (taxable value), total = subtotal + the tax. Invoices raised
+    products, rate = cost, subtotal = the amounts (taxable value), total = subtotal + the tax (CGST + SGST at half
+    the rate each, or IGST), rounded to the rupee from 2026-11-11 (to the paisa before). Invoices raised
     before 2026-11-10 were cost + an 18% markup (markup_pct 18) with no GST on their lines.
     buyer {name, address, phone, gstin, state} is the showroom as printed on the invoice (state: its GST state code,
     the place of supply); inter_state is true when that isn't the admin's own state (IGST, else CGST + SGST). Both

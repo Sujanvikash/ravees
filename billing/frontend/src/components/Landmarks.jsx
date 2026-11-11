@@ -15,26 +15,29 @@ const PATHS = {
     'M14 46V40Q16 37 18 40V46M22 46V40Q24 37 26 40V46M54 46V40Q56 37 58 40V46M62 46V40Q64 37 66 40V46',
     'M37 46V40Q40 36 43 40V46',
   ],
-  // Vidhana Soudha: wide base, columned portico, the central dome and two small side domes
-  bengaluru: [
-    'M6 46V30H74V46',
-    'M28 30V22H52V30',
-    'M30 22H50',
-    'M32 22Q32 9 40 9Q48 9 48 22',
-    'M40 9V4',
-    'M10 30Q10 24 14 24Q18 24 18 30M62 30Q62 24 66 24Q70 24 70 30',
-    'M31 46V34M36 46V34M40 46V34M44 46V34M49 46V34',
-    'M28 34H52',
+  // The East Coast Road shore: a banded lighthouse with its lantern shining, the sea at its foot
+  palavakkam: [
+    'M34 46L36.5 14H43.5L46 46',
+    'M34 14H46',
+    'M37 14V9H43V14',
+    'M36 9L40 5L44 9',
+    'M34.8 36H45.2M35.6 26H44.4',
+    'M38.5 46V41H41.5V46',
+    'M31 9L24 6M31 12L24 15M49 9L56 6M49 12L56 15',
+    'M4 46Q8 42.5 12 46Q16 42.5 20 46M60 46Q64 42.5 68 46Q72 42.5 76 46',
   ],
-  // Our Lady of the Immaculate Conception, Panaji: twin towers, the bell gable and the criss-cross steps
-  goa: [
-    'M18 38H62',
-    'M26 38V18L40 10L54 18V38',
-    'M18 38V14H26M54 14H62V38',
-    'M18 14L22 9L26 14M54 14L58 9L62 14',
-    'M22 9V4M20.5 5.5H23.5M58 9V4M56.5 5.5H59.5M40 10V5M38.5 6.5H41.5',
-    'M37 38V30Q40 26.5 43 30V38',
-    'M12 46H20V44H24V42H28V40H32V38M48 38V40H52V42H56V44H60V46H68',
+  // Cochin's Chinese fishing net: the platform on stilts, the mast, the long boom and the net hanging over the water
+  cochin: [
+    'M6 36H30',
+    'M10 36V46M18 36V46M26 36V46',
+    'M22 36L32 8L36 36',
+    'M12 30L70 12',
+    'M32 8L70 12M32 8L12 30',
+    'M12 30V34M10 34H14V37H10Z',
+    'M70 12L60 30M70 12L78 30',
+    'M60 30Q69 38 78 30',
+    'M64 33.5L70 30M69 35L75 30.5',
+    'M40 46Q44 43 48 46Q52 43 56 46Q60 43 64 46Q68 43 72 46',
   ],
   // Gateway of India: the great central arch, two side arches and four domed turrets
   mumbai: [

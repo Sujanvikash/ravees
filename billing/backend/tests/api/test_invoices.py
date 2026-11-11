@@ -1,4 +1,5 @@
 import uuid
+from decimal import ROUND_HALF_UP, Decimal
 
 from .conftest import login
 from .test_boxes import box
@@ -33,11 +34,14 @@ def test_boxes_to_a_paid_invoice_to_the_store_stock(client, admin, chennai):
     assert r.status_code == 201, r.text
     inv = r.json()
     assert inv['status'] == 'raised' and inv['number'].startswith('INV-ADM-') and inv['location'] == 'chennai'
-    # billed at the cost price (D.Rate) with 18% GST on top, nothing else
+    # billed at the cost price (D.Rate) with 18% GST on top (CGST 9% + SGST 9%, the same each), nothing else; the
+    # total is rounded to the rupee
     line = inv['lines'][0]
     assert line['qty'] == 10 and line['cost'] == line['rate'] == cost and line['amount'] == round(cost * 10, 2)
-    assert line['gst'] == 18 and line['tax'] == round(line['amount'] * 0.18, 2)
-    assert inv['subtotal'] == line['amount'] and inv['total'] == round(line['amount'] + line['tax'], 2)
+    half = (Decimal(str(line['amount'])) * Decimal('0.09')).quantize(Decimal('0.01'), ROUND_HALF_UP)
+    assert line['gst'] == 18 and line['tax'] == float(2 * half)
+    total = (Decimal(str(line['amount'])) + 2 * half).quantize(Decimal(1), ROUND_HALF_UP)
+    assert inv['subtotal'] == line['amount'] and inv['total'] == float(total)
     assert inv['markupPct'] == 0 and set(inv['boxIds']) == {one['id'], two['id']}
     assert stock_of(client, admin, 'warehouse', code) == in_admin - 10  # out of the admin stock now
     assert stock_of(client, chennai, 'chennai', code) == in_chennai  # not in the store until stocked
@@ -132,24 +136,26 @@ def test_the_store_on_the_invoice_and_the_place_of_supply(client, admin, chennai
     # left out, the store's own details are used; Chennai is in Tamil Nadu like the admin: CGST + SGST
     home = invoice(client, admin, [], lines=single).json()
     assert home['buyer']['state'] == '33' and home['buyer']['name'] and home['interState'] is False
-    # Bengaluru is another state: IGST
-    away = invoice(client, admin, [], location='bengaluru', lines=single).json()
-    assert away['buyer']['state'] == '29' and away['interState'] is True
+    # Cochin is in Kerala, another state: IGST, at the full rate on the line
+    away = invoice(client, admin, [], location='cochin', lines=single).json()
+    assert away['buyer']['state'] == '32' and away['interState'] is True
+    igst = (Decimal(str(away['lines'][0]['amount'])) * Decimal('0.18')).quantize(Decimal('0.01'), ROUND_HALF_UP)
+    assert away['lines'][0]['tax'] == float(igst) and away['total'] == round(away['total'])
 
     # the details as entered on the invoice, e.g. the store's business name
-    spark = {'name': 'Spark  Christmas', 'address': 'Indiranagar', 'gstin': '29abcde1234f1z5', 'state': '29'}
-    r = invoice(client, admin, [], location='bengaluru', lines=single, buyer=spark)
+    spark = {'name': 'Spark  Christmas', 'address': 'Kacheripady', 'gstin': '32abcde1234f1z5', 'state': '32'}
+    r = invoice(client, admin, [], location='cochin', lines=single, buyer=spark)
     assert r.status_code == 201, r.text
     assert r.json()['buyer'] == {
         'name': 'Spark Christmas',
-        'address': 'Indiranagar',
+        'address': 'Kacheripady',
         'phone': '',
-        'gstin': '29ABCDE1234F1Z5',
-        'state': '29',
+        'gstin': '32ABCDE1234F1Z5',
+        'state': '32',
     }
     # a GSTIN from another state than the one chosen is refused
-    wrong = invoice(client, admin, [], location='bengaluru', lines=single, buyer={**spark, 'state': '33'})
-    assert wrong.status_code == 422 and 'state code 29' in wrong.json()['detail']
+    wrong = invoice(client, admin, [], location='cochin', lines=single, buyer={**spark, 'state': '33'})
+    assert wrong.status_code == 422 and 'state code 32' in wrong.json()['detail']
 
 
 def test_editing_an_invoice_before_it_is_paid(client, admin, chennai):
@@ -161,28 +167,28 @@ def test_editing_an_invoice_before_it_is_paid(client, admin, chennai):
     inv = invoice(client, admin, [one]).json()
     assert stock_of(client, admin, 'warehouse', code) == in_admin[code] - 3
 
-    # swap box A for box B, add single products, and move it to Goa under another name
+    # swap box A for box B, add single products, and move it to Cochin under another name
     url = f'/transfer-invoices/{inv["id"]}'
     change = {
-        'location': 'goa',
+        'location': 'cochin',
         'boxIds': [two['id']],
         'lines': [{'code': other, 'qty': 4}],
-        'buyer': {'name': 'Goa Xmas House', 'state': '30'},
+        'buyer': {'name': 'Cochin Xmas House', 'state': '32'},
         'note': 'changed',
     }
     r = client.put(url, json=change, headers=admin)
     assert r.status_code == 200, r.text
     edited = r.json()
-    assert edited['number'] == inv['number'] and edited['location'] == 'goa' and edited['interState'] is True
+    assert edited['number'] == inv['number'] and edited['location'] == 'cochin' and edited['interState'] is True
     assert {ln['code']: ln['qty'] for ln in edited['lines']} == {code: 2, other: 4} and edited['boxIds'] == [two['id']]
-    assert edited['buyer']['name'] == 'Goa Xmas House' and edited['note'] == 'changed'
+    assert edited['buyer']['name'] == 'Cochin Xmas House' and edited['note'] == 'changed'
     assert edited['history'][-1]['action'] == 'edited'
     # the admin stock and the boxes change by the difference
     assert stock_of(client, admin, 'warehouse', code) == in_admin[code] - 2
     assert stock_of(client, admin, 'warehouse', other) == in_admin[other] - 4
     boxes = {b['id']: b for b in client.get('/boxes', headers=admin).json()}
     assert boxes[one['id']]['status'] == 'in_stock' and boxes[one['id']]['invoiceId'] is None
-    assert boxes[two['id']]['status'] == 'invoiced' and boxes[two['id']]['location'] == 'goa'
+    assert boxes[two['id']]['status'] == 'invoiced' and boxes[two['id']]['location'] == 'cochin'
 
     # more than the admin holds is refused, and nothing changes
     too_many = {**change, 'lines': [{'code': other, 'qty': in_admin[other] + 1}]}
@@ -243,7 +249,7 @@ def test_what_an_invoice_refuses(client, admin, chennai):
     assert invoice(client, admin, [one], location='warehouse').status_code == 422
     assert invoice(client, admin, [one], location='nowhere').status_code == 422
     assert invoice(client, admin, [{'id': str(uuid.uuid4())}]).status_code == 404
-    other = client.post('/orders', json={'lines': [{'code': code, 'qty': 1}]}, headers=login(client, 'goa')).json()
+    other = client.post('/orders', json={'lines': [{'code': code, 'qty': 1}]}, headers=login(client, 'cochin')).json()
     assert invoice(client, admin, [one], orderId=other['id']).status_code == 404  # another showroom's order
     assert invoice(client, admin, [one], orderId=str(uuid.uuid4())).status_code == 404
 

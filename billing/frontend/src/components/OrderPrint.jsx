@@ -1,5 +1,5 @@
 import logo from '../assets/logo.svg';
-import { BRAND, WAREHOUSE, locationById } from '../config.js';
+import { BRAND, SELLER, locationById } from '../config.js';
 import { amount, inr } from '../lib/money.js';
 import { orderGst, orderQty, orderTotal, orderValue, PO_GST, STATUS } from '../lib/orders.js';
 
@@ -55,9 +55,9 @@ const Party = ({ label, party }) => (
 const OrderPrint = ({ doc, kind = 'order' }) => {
   const meta = DOC[kind];
   const shop = locationById(doc.location) ?? {};
-  // The admin's warehouse (the head office / supplier). Its config details are sparse, so the brand name carries it.
-  const warehouse = { name: BRAND.name, lines: ['Warehouse · Head office'], phone: WAREHOUSE.phone, gstin: WAREHOUSE.gstin, email: BRAND.email };
-  const store = { name: shop.city ? `${shop.city} showroom · ${shop.area}` : BRAND.name, lines: shop.address ?? [], phone: shop.phone, gstin: shop.gstin };
+  // The admin's warehouse is Tree Classics Trader (the head office / supplier); the store is its own business.
+  const warehouse = { name: SELLER.name, lines: [SELLER.address], phone: SELLER.phone, gstin: SELLER.gstin };
+  const store = { name: shop.name || (shop.city ? `${shop.city} showroom · ${shop.area}` : BRAND.name), lines: shop.address ?? [], phone: shop.phone, gstin: shop.gstin };
   const from = kind === 'return' ? store : warehouse;
   const to = kind === 'return' ? warehouse : store;
   const received = doc.status === 'received';

@@ -50,7 +50,7 @@ def test_quotation(client, chennai, admin):
     # archiving (never deleting): not another showroom's, then by its own showroom — it is kept, archived
     from .conftest import login
 
-    assert client.post(f'/quotes/{q["id"]}/archive', headers=login(client, 'goa')).status_code == 404
+    assert client.post(f'/quotes/{q["id"]}/archive', headers=login(client, 'cochin')).status_code == 404
     archived = client.post(f'/quotes/{q["id"]}/archive', headers=chennai)
     assert archived.status_code == 200 and archived.json()['archivedAt']
     kept = {x['id']: x for x in client.get('/quotes', headers=admin).json()}
@@ -159,7 +159,7 @@ def demo(client, username):
 
 
 def test_demo_has_the_same_logins_on_its_own_data(client, demo_built):
-    for username in ('chennai', 'bengaluru', 'goa', 'mumbai', 'pune', 'admin'):
+    for username in ('chennai', 'palavakkam', 'cochin', 'mumbai', 'pune', 'admin'):
         body, _ = demo(client, username)
         assert body['session']['demo'] is True and body['session']['username'] == username
     _, d_admin = demo(client, 'admin')
@@ -176,8 +176,8 @@ def test_demo_work_stays_in_the_demo(client, chennai, demo_built):
     assert len(client.get('/sales', headers=chennai).json()) == before
 
     _, d_admin = demo(client, 'admin')
-    assert client.put('/users/goa/password', json={'password': 'secret99'}, headers=d_admin).status_code == 403
-    assert client.post('/users/goa/password/reset', headers=d_admin).status_code == 403
+    assert client.put('/users/cochin/password', json={'password': 'secret99'}, headers=d_admin).status_code == 403
+    assert client.post('/users/cochin/password/reset', headers=d_admin).status_code == 403
     # a demo token is no good for the real sign-in's data, and the real admin can't reset the demo
     assert client.post('/demo/reset', headers=chennai).status_code == 403
 

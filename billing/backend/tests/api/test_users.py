@@ -3,9 +3,9 @@ from .conftest import login
 
 def test_only_admin_manages_passwords(client, chennai):
     assert client.get('/users', headers=chennai).status_code == 403
-    r = client.put('/users/goa/password', json={'password': 'secret99'}, headers=chennai)
+    r = client.put('/users/cochin/password', json={'password': 'secret99'}, headers=chennai)
     assert r.status_code == 403 and r.json() == {'detail': 'Only the admin can do this.'}
-    assert client.post('/users/goa/password/reset', headers=chennai).status_code == 403
+    assert client.post('/users/cochin/password/reset', headers=chennai).status_code == 403
     assert client.get('/users').status_code == 401
 
 
@@ -14,7 +14,7 @@ def test_admin_lists_logins_in_order(client, admin):
     usernames = [u['username'] for u in users]
     # the seeded showrooms come first in the frontend's order, and the admin is always last (stores added later
     # sit in between)
-    assert usernames[:5] == ['chennai', 'bengaluru', 'goa', 'mumbai', 'pune']
+    assert usernames[:5] == ['chennai', 'palavakkam', 'cochin', 'mumbai', 'pune']
     assert usernames[-1] == 'admin'
     assert set(users[0]) == {'username', 'role', 'location', 'passwordChangedAt'}
     assert users[-1]['role'] == 'admin' and users[-1]['location'] is None
