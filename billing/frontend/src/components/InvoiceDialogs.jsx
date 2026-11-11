@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Eye, FileText, Minus, PackageCheck, Pencil, Plus, Printer, ScanBarcode, Search, Upload, X } from 'lucide-react';
-import { activeLocations, locationById, WAREHOUSE } from '../config.js';
+import { activeLocations, locationById, SELLER, WAREHOUSE } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { useScanner } from '../hooks/useScanner.js';
 import { api } from '../lib/api.js';
@@ -17,7 +17,7 @@ const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
 
 const ACTION = {
   raised: 'Invoice raised',
-  documents: 'Bill details saved',
+  documents: 'E-way bill recorded',
   paid: 'Marked paid',
   stocked: 'Added to store stock',
   cancelled: 'Cancelled',
@@ -135,6 +135,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
   const [query, setQuery] = useState('');
   const [scan, setScan] = useState('');
   const [note, setNote] = useState(invoice?.note ?? '');
+  const [from, setFrom] = useState(invoice?.sellerAddress || SELLER.addresses[0].text); // the admin's address it is from
   const [notice, setNotice] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -238,6 +239,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
       boxIds: chosen.map((b) => b.id),
       lines: singles.map((l) => ({ code: l.code, qty: l.qty })),
       note: note.trim(),
+      sellerAddress: from,
     };
     try {
       if (keep) {
@@ -250,6 +252,13 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
       setError(err.message);
     }
   };
+
+  // the addresses it can be from: the two built in, the one in Settings, and the one an older invoice already has
+  const froms = [
+    ...SELLER.addresses,
+    { label: 'Business address in Settings', text: settings.bizAddress?.trim() },
+    { label: 'As on this invoice', text: invoice?.sellerAddress?.trim() },
+  ].filter((o, i, all) => o.text && all.findIndex((x) => x.text === o.text) === i);
 
   const supply = !buyer?.state
     ? { text: 'Choose the state', className: 'bg-mist text-ink-3' }
@@ -326,6 +335,24 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
             )}
           </form>
         </div>
+
+        <fieldset className="flex flex-col gap-2 rounded-xl border border-line-soft p-4">
+          <legend className="px-1 text-[13px] font-semibold">From: {settings.bizName?.trim() || SELLER.name}’s address on the invoice</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {froms.map((o) => (
+              <label
+                key={o.text}
+                className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-[13px] ${from === o.text ? 'border-evergreen-800/50 bg-evergreen-50' : 'border-line hover:bg-mist'}`}
+              >
+                <input type="radio" name="invoice-from" checked={from === o.text} onChange={() => setFrom(o.text)} className="mt-0.5 size-4 shrink-0 accent-evergreen-800" />
+                <span className="min-w-0">
+                  <span className="block font-medium">{o.label}</span>
+                  <span className="block text-xs whitespace-pre-line text-ink-3">{o.text}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         {location && (
           <section aria-label={`${city} on the invoice`} className="flex flex-col gap-3 rounded-xl border border-line-soft p-4">
@@ -547,13 +574,14 @@ const readPdf = (file) =>
   });
 
 /**
- * One invoice: what is on it and who it is to. While it is raised it can be edited, and marked paid. Once paid, the
- * goods go: the admin records the e-way bill and bill numbers (and the bill's PDF) from the GST portal, then adds
- * the products to the store's stock. Raised and paid invoices can still be cancelled: their products go back to
- * the admin stock and their boxes to the warehouse.
+ * One invoice: what is on it and who it is to. While it is raised it can be edited, and marked paid. From the moment
+ * it is raised the admin records its e-way bill (made by hand on the GST portal before the goods go): the number,
+ * and its PDF to view again any time; then, once paid, adds the products to the store's stock. Raised and paid
+ * invoices can still be cancelled: their products go back to the admin stock and their boxes to the warehouse.
+ * `focus` 'eway' opens it at the e-way bill (from the E-way bills page).
  */
-export const InvoiceDetail = ({ id, onClose, onPreview, onPrint, onEdit }) => {
-  const { invoices, saveInvoiceDocuments, payInvoice, stockInvoice, cancelInvoice, downloadInvoiceDocument } = useStore();
+export const InvoiceDetail = ({ id, focus, onClose, onPreview, onPrint, onEdit }) => {
+  const { invoices, saveInvoiceDocuments, payInvoice, stockInvoice, cancelInvoice, downloadInvoiceDocument, viewInvoiceDocument } = useStore();
   const invoice = invoices.find((i) => i.id === id);
   const [form, setForm] = useState(() => ({ ewayNo: invoice?.ewayNo ?? '', billNo: invoice?.billNo ?? '' }));
   const [pdf, setPdf] = useState(null); // { name, base64 }
@@ -563,10 +591,15 @@ export const InvoiceDetail = ({ id, onClose, onPreview, onPrint, onEdit }) => {
   const [message, setMessage] = useState(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
+  const ewayRef = useRef(null);
+
+  useEffect(() => {
+    if (focus === 'eway') ewayRef.current?.scrollIntoView({ block: 'center' });
+  }, [focus]);
 
   if (!invoice) return null;
   const open = invoice.status === 'raised' || invoice.status === 'paid'; // can still be cancelled
-  const docsOpen = invoice.status === 'paid' || invoice.status === 'stocked'; // the e-way bill comes after payment
+  const docsOpen = invoice.status !== 'cancelled'; // the e-way bill is made before the goods go, paid or not
   const changed = form.ewayNo.trim() !== invoice.ewayNo || form.billNo.trim() !== invoice.billNo || Boolean(pdf);
   const shop = locationById(invoice.location);
   const buyer = invoice.buyer;
@@ -606,7 +639,7 @@ export const InvoiceDetail = ({ id, onClose, onPreview, onPrint, onEdit }) => {
         ...(pdf ? { docName: pdf.name, docBase64: pdf.base64 } : {}),
       });
       setPdf(null);
-    }, 'Bill details saved.');
+    }, 'E-way bill saved.');
 
   return (
     <Dialog
@@ -660,6 +693,51 @@ export const InvoiceDetail = ({ id, onClose, onPreview, onPrint, onEdit }) => {
           </div>
         </div>
 
+        {docsOpen && (
+          <section ref={ewayRef} aria-label="E-way bill" className="flex flex-col gap-3 rounded-xl border border-line-soft p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-[13px] font-semibold">E-way bill</h3>
+              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${invoice.ewayNo || invoice.hasDocument ? 'bg-evergreen-50 text-evergreen-900' : 'bg-warn-50 text-warn-ink'}`}>
+                {invoice.ewayNo || invoice.hasDocument ? 'Recorded' : 'Not recorded yet'}
+              </span>
+            </div>
+            <p className="text-xs text-ink-3">
+              Make the e-way bill on the GST portal (ewaybillgst.gov.in) before the goods leave, then record its number and attach its PDF here. It can be viewed
+              again any time, here or under E-way bills.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+                E-way bill number
+                <input value={form.ewayNo} onChange={(e) => setForm((f) => ({ ...f, ewayNo: e.target.value }))} placeholder="12-digit number" className={`${field} font-mono`} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+                Bill number
+                <input value={form.billNo} onChange={(e) => setForm((f) => ({ ...f, billNo: e.target.value }))} placeholder="Optional: your regular bill’s number" className={field} />
+              </label>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className={`${secondary} cursor-pointer`}>
+                <Upload size={15} aria-hidden="true" /> {pdf ? 'Choose another PDF' : invoice.hasDocument ? 'Replace the e-way bill PDF' : 'Attach the e-way bill PDF'}
+                <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => pick(e.target.files[0])} />
+              </label>
+              {pdf && <span className="text-xs text-ink-2">{pdf.name} ready to save</span>}
+              {invoice.hasDocument && !pdf && (
+                <>
+                  <button type="button" onClick={() => run(() => viewInvoiceDocument(invoice))} className={secondary}>
+                    <Eye size={15} aria-hidden="true" /> View e-way bill
+                  </button>
+                  <button type="button" onClick={() => run(() => downloadInvoiceDocument(invoice))} className={secondary} title={invoice.docName}>
+                    <Download size={15} aria-hidden="true" /> Download
+                  </button>
+                </>
+              )}
+              <button type="button" onClick={saveDocs} disabled={busy || !changed} className={`${primary} ml-auto`}>
+                Save
+              </button>
+            </div>
+          </section>
+        )}
+
         {invoice.status === 'raised' && (
           <section className="flex flex-col gap-3 rounded-xl border border-line-soft p-4">
             <h3 className="text-[13px] font-semibold">Payment</h3>
@@ -679,45 +757,13 @@ export const InvoiceDetail = ({ id, onClose, onPreview, onPrint, onEdit }) => {
                 onClick={() =>
                   run(
                     () => payInvoice(invoice.id, { ref: payRef.trim(), note: payNote.trim() }),
-                    'Marked paid. Record the e-way bill when the goods go, then add them to the store stock.',
+                    'Marked paid. Add the products to the store stock once they reach it.',
                   )
                 }
                 disabled={busy}
                 className={primary}
               >
                 Mark paid
-              </button>
-            </div>
-          </section>
-        )}
-
-        {docsOpen && (
-          <section className="flex flex-col gap-3 rounded-xl border border-line-soft p-4">
-            <h3 className="text-[13px] font-semibold">E-way bill / bill</h3>
-            <p className="text-xs text-ink-3">The goods go once the invoice is paid: make the e-way bill (or your regular bill) on the GST portal and record its number here.</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-                E-way bill number
-                <input value={form.ewayNo} onChange={(e) => setForm((f) => ({ ...f, ewayNo: e.target.value }))} placeholder="12-digit number" className={`${field} font-mono`} />
-              </label>
-              <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-                Bill number
-                <input value={form.billNo} onChange={(e) => setForm((f) => ({ ...f, billNo: e.target.value }))} placeholder="Your regular bill’s number" className={field} />
-              </label>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <label className={`${secondary} cursor-pointer`}>
-                <Upload size={15} aria-hidden="true" /> {pdf ? 'Choose another PDF' : invoice.hasDocument ? 'Replace the PDF' : 'Upload the PDF'}
-                <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => pick(e.target.files[0])} />
-              </label>
-              {pdf && <span className="text-xs text-ink-2">{pdf.name} ready to save</span>}
-              {invoice.hasDocument && !pdf && (
-                <button type="button" onClick={() => run(() => downloadInvoiceDocument(invoice))} className={secondary}>
-                  <Download size={15} aria-hidden="true" /> {invoice.docName || 'Download the PDF'}
-                </button>
-              )}
-              <button type="button" onClick={saveDocs} disabled={busy || !changed} className={`${primary} ml-auto`}>
-                Save
               </button>
             </div>
           </section>

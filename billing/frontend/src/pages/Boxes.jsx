@@ -131,7 +131,7 @@ const Boxes = ({ onMenu }) => {
               ref={scanRef}
               value={scan}
               onChange={(e) => setScan(e.target.value)}
-              placeholder="Scan a box label, or type the box number (154.GOA) and press Enter, to find it"
+              placeholder="Scan a box label, or type the box number (154.CHN) and press Enter, to find it"
               autoComplete="off"
               autoFocus
               className="min-w-0 flex-1 bg-transparent text-[15px] placeholder:text-ink-3"

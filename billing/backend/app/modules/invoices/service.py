@@ -161,6 +161,7 @@ def _priced(session: Session, boxes: Sequence[Box], singles: Sequence[LineIn]) -
             {
                 'code': code,
                 'name': product.name,
+                'hsn': product.hsn,
                 'qty': qty,
                 'cost': float(product.cost),
                 'rate': float(rate),
@@ -174,9 +175,10 @@ def _priced(session: Session, boxes: Sequence[Box], singles: Sequence[LineIn]) -
 def _fill(
     session: Session, invoice: TransferInvoice, location: Location, data: InvoiceChangeIn, lines: list[dict]
 ) -> None:
-    """Puts the showroom, its details, the lines with their GST and the totals, and the note on the invoice. To
-    another state a line's GST is IGST at its full rate; inside the admin's own, CGST + SGST at half the rate each,
-    worked out on the line so the two are always the same. The total is rounded to the rupee (the round-off)."""
+    """Puts the showroom, its details, the lines with their GST and the totals, the note and the address it is
+    from on the invoice. To another state a line's GST is IGST at its full rate; inside the admin's own, CGST + SGST
+    at half the rate each, worked out on the line so the two are always the same. The total is rounded to the rupee
+    (the round-off)."""
     buyer = _buyer(session, location, data.buyer)
     invoice.location_id = location.id
     invoice.buyer = buyer
@@ -191,6 +193,7 @@ def _fill(
     taxed = invoice.subtotal + sum((Decimal(str(line['tax'])) for line in lines), Decimal(0))
     invoice.total = taxed.quantize(RUPEE, rounding=ROUND_HALF_UP)
     invoice.note = data.note.strip()
+    invoice.seller_address = data.seller_address.strip()
 
 
 def raise_invoice(session: Session, user: User, data: InvoiceIn, *, at: datetime | None = None) -> TransferInvoice:
@@ -298,13 +301,12 @@ def edit_invoice(
 def set_documents(
     session: Session, user: User, invoice_id: uuid.UUID, data: DocumentsIn, *, at: datetime | None = None
 ) -> TransferInvoice:
-    """Records the e-way bill number and/or the bill number, and keeps the PDF if one is sent. Only once the invoice
-    is paid: the goods move, and the e-way bill is made, after payment."""
+    """Records the e-way bill number and/or the bill number, and keeps the e-way bill's PDF if one is sent. From the
+    moment the invoice is raised (the e-way bill is made on the GST portal before the goods go, paid or not), but not
+    once it is cancelled."""
     _admin(user)
     invoice = _get(session, invoice_id)
-    if invoice.status == 'raised':
-        raise Conflict(f'{invoice.number} isn’t paid yet: record the e-way bill once it is.')
-    _expect(invoice, ('paid', 'stocked'), 'changed')
+    _expect(invoice, ('raised', 'paid', 'stocked'), 'changed')
     eway, bill = data.eway_no.strip().upper(), data.bill_no.strip()
     if data.doc_base64:
         try:
@@ -313,6 +315,8 @@ def set_documents(
             raise InvalidInput('The document could not be read; attach the PDF again.') from None
         if len(raw) > MAX_DOCUMENT_BYTES:
             raise InvalidInput('The document is over 2 MB.')
+        if not raw.startswith(b'%PDF'):
+            raise InvalidInput('That file isn’t a PDF; attach the e-way bill as a PDF.')
         invoice.doc_data = raw
         invoice.doc_name = data.doc_name.strip() or 'document.pdf'
     invoice.eway_no, invoice.bill_no = eway, bill

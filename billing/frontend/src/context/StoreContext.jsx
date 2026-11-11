@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { api, download, unreachable } from '../lib/api.js';
+import { api, download, unreachable, view } from '../lib/api.js';
 import { ensureOfflineCounter, markOutbox, offlineKey, queueOfflineSale, readOutbox, removeFromOutbox, subscribeOutbox } from '../lib/offline.js';
 import { keep, kept } from '../lib/snapshots.js';
 import { newId } from '../lib/uid.js';
@@ -394,6 +394,7 @@ export const StoreProvider = ({ session, children }) => {
       },
       /** The invoice's uploaded bill as a PDF file. */
       downloadInvoiceDocument: (invoice) => download(`/transfer-invoices/${invoice.id}/document`, invoice.docName || `${invoice.number}.pdf`),
+      viewInvoiceDocument: (invoice) => view(`/transfer-invoices/${invoice.id}/document`, invoice.docName || `${invoice.number}.pdf`),
 
       /** A quotation: { id, lines, name, phone, validUntil (a date), note, … }. Resolves to it with its number. */
       saveQuote: async (quote) => saved('quotes', await api('/quotes', { method: 'POST', body: quote })),

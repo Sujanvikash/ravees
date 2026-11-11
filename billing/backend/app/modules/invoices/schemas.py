@@ -29,6 +29,7 @@ class InvoiceChangeIn(ApiModel):
     box_ids: list[uuid.UUID] = Field(default_factory=list, max_length=2000)
     lines: list[LineIn] = Field(default_factory=list, max_length=500)
     note: str = Field(default='', max_length=1000)
+    seller_address: str = Field(default='', max_length=300)  # the admin's address it is from, as printed
 
 
 class InvoiceIn(InvoiceChangeIn):
@@ -73,6 +74,7 @@ class InvoiceOut(ApiModel):
     box_ids: list[uuid.UUID]
     buyer: dict | None
     inter_state: bool | None
+    seller_address: str
     history: list[dict]
     created_at: datetime
     updated_at: datetime
@@ -99,6 +101,7 @@ class InvoiceOut(ApiModel):
             box_ids=box_ids,
             buyer=inv.buyer,
             inter_state=inv.inter_state,
+            seller_address=inv.seller_address,
             history=inv.history,
             created_at=inv.created_at,
             updated_at=inv.updated_at,

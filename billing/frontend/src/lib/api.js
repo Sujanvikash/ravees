@@ -67,8 +67,8 @@ export const api = async (path, { method = 'GET', body } = {}) => {
   return data;
 };
 
-/** Downloads a file the API makes (e.g. the sales report) and saves it under the name the server gives it. */
-export const download = async (path, fallbackName) => {
+/** A file the API makes or keeps, as { blob, name }: the name the server gives it, else `fallbackName`. */
+const fetchFile = async (path, fallbackName) => {
   const token = getToken();
   let res;
   try {
@@ -81,10 +81,37 @@ export const download = async (path, fallbackName) => {
     throw new ApiError(message(data, res.status), res.status);
   }
   const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? fallbackName;
-  const url = URL.createObjectURL(await res.blob());
+  return { blob: await res.blob(), name };
+};
+
+const save = (blob, name) => {
+  const url = URL.createObjectURL(blob);
   const a = Object.assign(document.createElement('a'), { href: url, download: name });
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+/** Downloads a file the API makes (e.g. the sales report) and saves it under the name the server gives it. */
+export const download = async (path, fallbackName) => {
+  const { blob, name } = await fetchFile(path, fallbackName);
+  save(blob, name);
+};
+
+/** Opens a file the API keeps (an e-way bill's PDF) in a new tab, to read or print. The tab opens straight away,
+ *  while the click still counts, and shows the file once it has come; where the browser won't open a tab, the file
+ *  is saved instead. */
+export const view = async (path, fallbackName) => {
+  const tab = window.open('', '_blank');
+  try {
+    const { blob, name } = await fetchFile(path, fallbackName);
+    if (!tab) return save(blob, name);
+    const url = URL.createObjectURL(blob);
+    tab.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) {
+    tab?.close();
+    throw err;
+  }
 };

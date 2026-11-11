@@ -65,7 +65,7 @@ export const BoxEditor = ({ box, onClose, onSave }) => {
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 text-[13px] font-medium">
             Box number <span className="sr-only">(required)</span>
-            <input value={form.boxNo} onChange={set('boxNo')} placeholder="e.g. 154.GOA" autoFocus className={`${field} font-mono uppercase placeholder:font-sans placeholder:normal-case`} />
+            <input value={form.boxNo} onChange={set('boxNo')} placeholder="e.g. 154.CHN" autoFocus className={`${field} font-mono uppercase placeholder:font-sans placeholder:normal-case`} />
           </label>
           <label className="flex flex-col gap-1.5 text-[13px] font-medium">
             <span className="flex items-baseline gap-1.5">
@@ -77,7 +77,7 @@ export const BoxEditor = ({ box, onClose, onSave }) => {
             <span className="flex items-baseline gap-1.5">
               Shipment <span className="text-xs font-normal text-ink-3">optional</span>
             </span>
-            <input value={form.shipment} onChange={set('shipment')} placeholder="e.g. GOA-1 VELANKA 2026" className={field} />
+            <input value={form.shipment} onChange={set('shipment')} placeholder="e.g. CHN-1 VELANKA 2026" className={field} />
           </label>
           <label className="flex flex-col gap-1.5 text-[13px] font-medium">
             <span className="flex items-baseline gap-1.5">

@@ -7,6 +7,7 @@ Commands for running the billing API.
     uv run python -m app.cli seed --admin-stock                # also the season's stock into the admin stock, once
     uv run python -m app.cli demo                          # build the demo again from scratch
     uv run python -m app.cli refresh-demo                  # build it only if it is missing or out of date
+    uv run python -m app.cli import-invoices               # the invoices issued before the app, once
 
 seed fills the database: the five showrooms, a login for each plus the admin (default passwords), and the
 product catalogue from seed/products-clean.xlsx. Safe to run again: it never changes a password, and it keeps
@@ -18,6 +19,10 @@ admin's own stock, as Inventory -> Import stock would; the same sheet is only ev
 
 demo throws everything done in the demo away and builds it again clean: the showrooms, logins, catalogue and the
 admin's stock of the season, with no sales. The real data is never touched.
+
+import-invoices brings in the tax invoices the admin's business issued before the app numbered them (ICC000004 to
+ICC000007, in seed/invoices-before-the-app.json) as printed, raised, with their goods taken from the admin stock.
+Run once on the server; again, it changes nothing. The app numbers its own invoices from ICC000008.
 
 refresh-demo is what the server runs on every start: it builds the demo only when there is none, or when a deploy
 changed the models so its tables no longer match, or changed the product Excel it was built from.
@@ -34,7 +39,9 @@ from pathlib import Path
 from app import db_models  # noqa: F401  (registers every table, so relationships resolve)
 from app.core.config import get_settings
 from app.core.database import get_session_factory, session_scope
+from app.core.errors import AppError
 from app.modules.demo import builder as demo_builder
+from app.modules.invoices.issued import ISSUED, import_issued
 from app.modules.locations import repository as locations
 from app.modules.locations import service as locations_service
 from app.modules.products import repository as products
@@ -109,6 +116,19 @@ def refresh_demo() -> None:
         print(f'Could not build the demo: {error}', file=sys.stderr)
 
 
+def import_invoices(path: Path) -> int:
+    """Brings in the invoices issued before the app, all or none, and says what happened to each."""
+    try:
+        with session_scope() as session:
+            done = import_issued(session, path)
+    except (AppError, FileNotFoundError) as error:
+        print(f'Could not bring the invoices in: {getattr(error, "message", error)}', file=sys.stderr)
+        return 1
+    for brought in done:
+        print(brought)
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog='python -m app.cli', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -131,6 +151,8 @@ def _parser() -> argparse.ArgumentParser:
     commands.add_parser(
         'refresh-demo', help='build the demo only if it is missing or behind the models or the product Excel'
     )
+    invoices_cmd = commands.add_parser('import-invoices', help='bring in the invoices issued before the app, once')
+    invoices_cmd.add_argument('--file', type=Path, default=ISSUED, help=f'the invoices (default: {ISSUED.name})')
     return parser
 
 
@@ -145,6 +167,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(demo_builder.build_demo())
         elif args.command == 'refresh-demo':
             refresh_demo()
+        elif args.command == 'import-invoices':
+            return import_invoices(args.file)
     except (CatalogueFileError, FileNotFoundError) as error:
         print(f'Could not read the product Excel: {error}', file=sys.stderr)
         return 1

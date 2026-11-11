@@ -42,7 +42,7 @@ def edit_invoice(invoice_id: uuid.UUID, body: InvoiceChangeIn, user: CurrentUser
 
 @router.put('/{invoice_id}/documents', responses=CONFLICT)
 def set_documents(invoice_id: uuid.UUID, body: DocumentsIn, user: CurrentUser, session: DbSession) -> InvoiceOut:
-    """Admin: once paid, records the e-way bill and/or bill number, and optionally keeps the PDF."""
+    """Admin: once raised, records the e-way bill and/or bill number, and optionally keeps the e-way bill's PDF."""
     return _out(session, [service.set_documents(session, user, invoice_id, body)])[0]
 
 

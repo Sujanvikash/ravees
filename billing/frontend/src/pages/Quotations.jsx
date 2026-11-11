@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Archive, ArchiveRestore, CircleCheck, Building2, CalendarDays, Eye, FileText, Lock, MapPin, Phone, Printer, ReceiptText, Save, Trash2, User } from 'lucide-react';
 import BillTable from '../components/BillTable.jsx';
+import ColourPicker from '../components/ColourPicker.jsx';
 import { CustomerStatus, CustomerSuggestions } from '../components/CustomerSuggest.jsx';
 import DocumentPreview from '../components/DocumentPreview.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
@@ -17,7 +18,7 @@ import { findProduct, productImages } from '../lib/catalogue.js';
 import { billNumber, buildBill, countLabel, gstLines, nextSeq } from '../lib/bill.js';
 import { customerLabel, isValidMobile, isValidName, phoneDigits, typedMobile } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
-import { QUOTE_COLOURS, setQuoteColour, useQuoteColour } from '../lib/quoteColour.js';
+import { setQuoteColour, useQuoteColour } from '../lib/quoteColour.js';
 import { newId } from '../lib/uid.js';
 import Pager from '../components/Pager.jsx';
 import { usePages } from '../hooks/usePages.js';
@@ -309,26 +310,6 @@ const Quotations = ({ session, onMenu, onNavigate }) => {
     </>
   );
 };
-
-/** The colours a quotation can come out in, as swatches. */
-const ColourPicker = ({ value, onChange }) => (
-  <div role="radiogroup" aria-label="Colour" className="flex items-center gap-1.5">
-    <span className="mr-1 text-[13px] font-medium text-ink-2">Colour</span>
-    {QUOTE_COLOURS.map((c) => (
-      <button
-        key={c.id}
-        type="button"
-        role="radio"
-        aria-checked={value === c.id}
-        aria-label={c.label}
-        title={c.label}
-        onClick={() => onChange(c.id)}
-        style={{ background: c.mono ? 'linear-gradient(135deg, #000 50%, #fff 50%)' : c.accent }}
-        className={`size-7 rounded-full border border-black/15 transition-shadow ${value === c.id ? 'shadow-[0_0_0_2px_#fff,0_0_0_4px_var(--color-ink)]' : 'hover:shadow-[0_0_0_2px_#fff,0_0_0_4px_var(--color-line-strong)]'}`}
-      />
-    ))}
-  </div>
-);
 
 /** A quotation's preview, in the colour picked. Not saved yet (`save` set), it offers to save it; once saved, to
  *  print, download and share it, when the admin allows that. */

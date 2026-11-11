@@ -1,5 +1,10 @@
+import json
+import re
 import uuid
 from decimal import ROUND_HALF_UP, Decimal
+
+from app.core.database import session_scope
+from app.modules.invoices.issued import import_issued
 
 from .conftest import login
 from .test_boxes import box
@@ -33,7 +38,12 @@ def test_boxes_to_a_paid_invoice_to_the_store_stock(client, admin, chennai):
     r = invoice(client, admin, [one, two], note='Monday van')
     assert r.status_code == 201, r.text
     inv = r.json()
-    assert inv['status'] == 'raised' and inv['number'].startswith('INV-ADM-') and inv['location'] == 'chennai'
+    assert (
+        inv['status'] == 'raised'
+        and re.fullmatch(r'ICC\d{6}', inv['number'])
+        and int(inv['number'][3:]) >= 8
+        and inv['location'] == 'chennai'
+    )
     # billed at the cost price (D.Rate) with 18% GST on top (CGST 9% + SGST 9%, the same each), nothing else; the
     # total is rounded to the rupee
     line = inv['lines'][0]
@@ -56,9 +66,10 @@ def test_boxes_to_a_paid_invoice_to_the_store_stock(client, admin, chennai):
     assert listed[one['id']]['status'] == 'invoiced' and listed[one['id']]['location'] == 'chennai'
     assert listed[one['id']]['invoiceId'] == inv['id']
 
-    # the e-way bill comes after payment; adding to stock needs it paid
+    # the e-way bill can be recorded as soon as it is raised; adding to stock needs it paid
     url = f'/transfer-invoices/{inv["id"]}'
-    assert client.put(f'{url}/documents', json={'ewayNo': '271012345678'}, headers=admin).status_code == 409
+    early = client.put(f'{url}/documents', json={'ewayNo': '271012345678'}, headers=admin)
+    assert early.status_code == 200 and early.json()['status'] == 'raised' and early.json()['ewayNo'] == '271012345678'
     assert client.post(f'{url}/stock', headers=admin).status_code == 409
     paid = client.post(f'{url}/pay', json={'ref': 'NEFT 1'}, headers=admin)
     assert paid.status_code == 200 and paid.json()['status'] == 'paid' and paid.json()['paidRef'] == 'NEFT 1'
@@ -77,6 +88,8 @@ def test_boxes_to_a_paid_invoice_to_the_store_stock(client, admin, chennai):
     got = client.get(f'{url}/document', headers=admin)
     assert got.status_code == 200 and got.content == b'%PDF-1.4\n' and got.headers['content-type'] == 'application/pdf'
     assert client.put(f'{url}/documents', json={'docBase64': '!!!'}, headers=admin).status_code == 422
+    not_pdf = client.put(f'{url}/documents', json={'docName': 'eway.jpg', 'docBase64': 'aGVsbG8='}, headers=admin)
+    assert not_pdf.status_code == 422 and client.get(f'{url}/document', headers=admin).content == b'%PDF-1.4\n'
 
     done = client.post(f'{url}/stock', headers=admin)
     assert done.status_code == 200 and done.json()['status'] == 'stocked'
@@ -85,7 +98,14 @@ def test_boxes_to_a_paid_invoice_to_the_store_stock(client, admin, chennai):
     assert client.post(f'{url}/cancel', headers=admin).status_code == 409
     listed = {b['id']: b for b in client.get('/boxes', headers=admin).json()}
     assert listed[two['id']]['status'] == 'stocked'
-    assert [h['action'] for h in done.json()['history']] == ['raised', 'paid', 'documents', 'documents', 'stocked']
+    assert [h['action'] for h in done.json()['history']] == [
+        'raised',
+        'documents',
+        'paid',
+        'documents',
+        'documents',
+        'stocked',
+    ]
 
 
 def test_single_products_with_or_without_boxes(client, admin, chennai):
@@ -273,3 +293,50 @@ def test_a_showroom_cannot_work_invoices_only_read_its_own(client, admin, chenna
     pune = login(client, 'pune')
     assert inv['id'] in {i['id'] for i in client.get('/transfer-invoices', headers=pune).json()}
     assert inv['id'] in {i['id'] for i in client.get('/transfer-invoices?location=pune', headers=admin).json()}
+
+
+def test_invoices_issued_before_the_app_come_in_once(client, admin, chennai, tmp_path):
+    a, b = season_code(client, chennai, 7), season_code(client, chennai, 8)
+    stock_admin(client, admin, a, 5)
+    in_admin_a, in_admin_b = stock_of(client, admin, 'warehouse', a), stock_of(client, admin, 'warehouse', b)
+    more = in_admin_b + 4  # more of b than the admin stock holds
+    taxable = Decimal('30.00') + Decimal('2.50') * more
+    tax = (taxable * Decimal('0.18')).quantize(Decimal('0.01'), ROUND_HALF_UP)  # as printed: on the total
+    buyer = {'name': 'SIANNA COLLECTION', 'address': 'Egmore', 'phone': '', 'gstin': '33AFUPE5958A1ZF', 'state': '33'}
+    lines = [
+        {'code': a, 'hsn': '95051000', 'qty': 3, 'rate': '10.00', 'amount': '30.00'},
+        {'code': b, 'hsn': '9505', 'qty': more, 'rate': '2.50', 'amount': f'{Decimal("2.50") * more:.2f}'},
+    ]
+    issued = {
+        'number': 'ICC000099',
+        'date': '2026-11-09',
+        'location': 'chennai',
+        'buyer': buyer,
+        'sellerAddress': 'Manali, Chennai – 600 068',
+        'taxable': str(taxable),
+        'tax': str(tax),
+        'total': str((taxable + tax).quantize(Decimal(1), ROUND_HALF_UP)),
+        'lines': lines,
+    }
+    path = tmp_path / 'issued.json'
+    path.write_text(json.dumps({'invoices': [issued]}), encoding='utf-8')
+
+    with session_scope() as session:
+        [first] = import_issued(session, path)
+    assert first.added and first.taken == 3 + in_admin_b and first.short == [f'{b} (had {in_admin_b}, billed {more})']
+    inv = next(i for i in client.get('/transfer-invoices', headers=admin).json() if i['number'] == 'ICC000099')
+    assert inv['status'] == 'raised' and inv['location'] == 'chennai' and inv['buyer'] == buyer
+    assert inv['sellerAddress'] == 'Manali, Chennai – 600 068' and inv['createdAt'].startswith('2026-11-09')
+    # the printed totals, the lines' GST adding up to the printed GST
+    assert inv['subtotal'] == float(taxable) and inv['total'] == float(issued['total'])
+    assert round(sum(line['tax'] for line in inv['lines']), 2) == float(tax)
+    assert [(line['code'], line['hsn'], line['qty']) for line in inv['lines']] == [
+        (a, '95051000', 3),
+        (b, '9505', more),
+    ]
+    # its goods left the admin stock, b down to none
+    assert stock_of(client, admin, 'warehouse', a) == in_admin_a - 3 and stock_of(client, admin, 'warehouse', b) == 0
+
+    with session_scope() as session:
+        [again] = import_issued(session, path)
+    assert not again.added and stock_of(client, admin, 'warehouse', a) == in_admin_a - 3

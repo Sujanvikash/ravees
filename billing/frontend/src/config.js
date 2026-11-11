@@ -12,10 +12,16 @@ export const BRAND = {
 };
 
 /** The admin's own business, the seller on every tax invoice to a showroom (Raave's Evergreen is the brand, not the
- *  seller). Settings → Business details for invoices changes any of these; a field left blank there prints these. */
+ *  seller). Settings → Business details for invoices changes any of these; a field left blank there prints these.
+ *  The admin picks the address on each invoice from `addresses` (its own invoices, ICC000004 on, came from Manali);
+ *  one raised before that prints `address`. */
 export const SELLER = {
   name: 'TREE CLASSICS TRADER',
   address: 'No. 405/2A, Assisi Nagar, Kumarappapuram Main Road, Madhavaram, Chennai – 600 060', // registered office
+  addresses: [
+    { label: 'Warehouse, Manali', text: 'Plot No. 24, 3rd Avenue, Futura Business Park, Kamaraj Salai, Chinnasekkadu, Manali, Chennai – 600 068' },
+    { label: 'Registered office, Madhavaram', text: 'No. 405/2A, Assisi Nagar, Kumarappapuram Main Road, Madhavaram, Chennai – 600 060' },
+  ],
   phone: '9940193267',
   gstin: '33AAVFT1940M1ZN',
 };

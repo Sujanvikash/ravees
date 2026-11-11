@@ -28,7 +28,8 @@ const DocumentPreview = ({ id, title, subtitle, stamp, fileName, watermark, foot
   // made ahead, so Download and Share answer at once (a phone only opens the share sheet straight after a tap)
   useEffect(() => {
     let current = true;
-    buildPages(docRef.current, { watermark: markText && { text: markText, color: markColor }, footer })
+    // the document's own element, so its parts (and a table's rows) are what's shared out over the pages
+    buildPages(docRef.current.firstElementChild, { watermark: markText && { text: markText, color: markColor }, footer })
       .then(async (pages) => {
         const pdf = await pdfOf(pages);
         if (current) setBuilt({ stamp, images: pages.map((p) => p.toDataURL('image/jpeg', 0.85)), pdf });

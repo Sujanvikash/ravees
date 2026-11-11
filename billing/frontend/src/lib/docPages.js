@@ -10,7 +10,7 @@ const MM = 96 / 25.4; // CSS pixels per millimetre
 // the `quote` page in styles/index.css: A4 with 14mm margins
 const A4 = { width: 210, height: 297, margin: 14 };
 export const CONTENT_WIDTH = `${A4.width - 2 * A4.margin}mm`;
-const SCALE = 2; // picture pixels per CSS pixel
+const SCALE = 3; // picture pixels per CSS pixel: about 290 dpi, so small print stays sharp in the PDF
 // what a page holds, in CSS pixels; the parts are shared out a little short of it, as a picture lays out a touch longer
 const ROOM = (A4.height - 2 * A4.margin) * MM;
 const FILL = 0.97;
