@@ -7,3 +7,6 @@ export const EMAIL = 'info@christmasraave.in';
 
 export const whatsappHref = (text) =>
   `https://wa.me/${PHONE_E164.slice(1)}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
+
+/** A phone number as a tel: link ("+91 98407 88949" → "tel:+919840788949"); of "a / b", the first. */
+export const telHref = (phone = '') => `tel:${phone.split('/')[0].replace(/[^\d+]/g, '')}`;

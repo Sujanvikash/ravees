@@ -6,8 +6,10 @@ import Button from './Button.jsx';
 import Badge from './Badge.jsx';
 import FeatureItem from './FeatureItem.jsx';
 import WhatsAppLink from './WhatsAppLink.jsx';
+import Price from './Price.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { withoutSizeSpec } from '../lib/productSpecs.js';
+import { hasPrice } from '../lib/catalogue.js';
 import { featuresFor } from '../data/productFeatures.js';
 import { quickViewBg } from '../assets/backgrounds';
 
@@ -17,8 +19,8 @@ const LABEL = 'text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-tex
 
 /**
  * Quick specifications, over the festive frame: the photo (with ‹ › and thumbnails once a product has more
- * than one) beside the collection, name, description, the collection's points, quote on request, and
- * Add to Cart / Full Details / WhatsApp Quote.
+ * than one) beside the collection, name, description, the collection's points, the price (or quote on
+ * request), and Add to Cart / Full Details / WhatsApp.
  */
 const QuickViewModal = ({ product, onClose }) => {
   const { addToCart } = useCart();
@@ -91,6 +93,7 @@ const QuickViewModal = ({ product, onClose }) => {
               <Badge variant={product.inStock ? 'emerald' : 'ruby'}>{product.inStock ? 'In Stock' : 'On Backorder'}</Badge>
             </div>
             <h4 className="font-serif text-[1.6rem] font-semibold leading-tight text-white">{product.name}</h4>
+            {hasPrice(product) && <Price product={product} size="lg" />}
             <p className="text-[0.92rem] leading-[1.7] text-text-secondary">{product.description}</p>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -146,11 +149,11 @@ const QuickViewModal = ({ product, onClose }) => {
                 <ArrowRight size={16} strokeWidth={2} />
               </Link>
               <WhatsAppLink
-                text={`Hi Raave's Evergreen, I'd like a quote for ${product.name}.`}
+                text={`Hi Raave's Evergreen, I'd like ${hasPrice(product) ? 'to know more about' : 'a quote for'} ${product.name}.`}
                 iconSize={18}
                 className="inline-flex items-center justify-center gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/12 px-6 py-3 text-[0.9rem] font-semibold text-emerald-300 no-underline transition-all duration-300 hover:bg-emerald-500/25 sm:col-span-2"
               >
-                WhatsApp Quote
+                {hasPrice(product) ? 'Ask on WhatsApp' : 'WhatsApp Quote'}
                 <ChevronRight size={16} strokeWidth={2} />
               </WhatsAppLink>
             </div>

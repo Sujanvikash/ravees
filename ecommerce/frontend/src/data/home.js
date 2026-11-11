@@ -1,46 +1,8 @@
-import { PRODUCTS } from './products.js';
-
 /**
  * Copy for the home page sections. The wording is the old site's own (christmasraave.in: home and About
- * pages), lightly tidied (its typos fixed); the pictures that go with it are ours.
+ * pages), lightly tidied (its typos fixed); the pictures that go with it are ours. The products, categories
+ * and stores come from the shop API (context/StorefrontContext.jsx).
  */
-
-// The photo shown for each category (category circles, tabs): a product that reads well cropped
-// small, picked so no two categories show the same thing.
-export const CATEGORY_IMAGES = {
-  all: '/images/products/santa-doll-1-1.jpg',
-  'christmas-trees': '/images/products/french-pine-christmas-tree-1.png',
-  'tree-hangings': '/images/products/wonderland-ornaments-15-1.jpg',
-  'christmas-lights': '/images/products/ww-with-ball-decoration-1.jpg',
-  'wreath-garlands': '/images/products/garland-52958-1.jpg',
-  'nativity-sets': '/images/products/cribsets-1-1.jpg',
-  'santa-toy': '/images/products/santa-doll-deer-toy-1-1.jpg',
-  'home-decors': '/images/products/santa-toy-3-1.jpg',
-};
-
-/** The products of one category, in catalogue order (all of them when `limit` is left out). */
-export const productsIn = (category, limit) => {
-  const list = category === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === category);
-  return limit ? list.slice(0, limit) : list;
-};
-
-/** Looks a product up by id (for hand-picked spots such as a hero). */
-export const productById = (id) => PRODUCTS.find((p) => p.id === id);
-
-/**
- * A mixed selection across the catalogue: one product from each category in turn, then the next one from
- * each, and so on, so a short row never shows six ornaments in a row.
- */
-export const mixedProducts = (limit) => {
-  const byCategory = new Map();
-  for (const p of PRODUCTS) byCategory.set(p.category, [...(byCategory.get(p.category) ?? []), p]);
-  const queues = [...byCategory.values()];
-  const picks = [];
-  for (let round = 0; picks.length < limit && queues.some((q) => q.length > round); round += 1) {
-    for (const q of queues) if (q[round] && picks.length < limit) picks.push(q[round]);
-  }
-  return picks;
-};
 
 // "Why choose Raave's Christmas Tree and Decoration"
 export const WHY_CHOOSE = [

@@ -1,6 +1,18 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, ShieldAlert } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext.jsx';
+
+const MOBILE_NAV = [
+  { to: '/admin', label: 'Overview', end: true },
+  { to: '/admin/orders', label: 'Orders' },
+  { to: '/admin/enquiries', label: 'Enquiries' },
+  { to: '/admin/products', label: 'Products' },
+  { to: '/admin/categories', label: 'Categories' },
+  { to: '/admin/customers', label: 'Customers' },
+  { to: '/admin/showrooms', label: 'Showrooms' },
+  { to: '/admin/testimonials', label: 'Testimonials' },
+  { to: '/admin/settings', label: 'Settings' },
+];
 
 const AdminTopbar = () => {
   const { session, logout } = useAdminAuth();
@@ -9,21 +21,23 @@ const AdminTopbar = () => {
   return (
     <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b border-gold-400/15 bg-shade/92 px-5 py-3.5 backdrop-blur-[12px] md:px-8">
       <div className="flex items-center gap-2 text-[0.78rem] text-text-muted">
-        <ShieldAlert size={15} strokeWidth={2} className="text-gold-400" />
-        <span>Local demo console — data is stored in this browser only</span>
+        <ShieldCheck size={15} strokeWidth={2} className="text-gold-400" />
+        <span>Shop admin: changes go live on the website straight away</span>
       </div>
 
       <div className="flex items-center gap-3">
-        <nav className="flex gap-2 lg:hidden">
-          <NavLink to="/admin" end className="text-[0.8rem] text-gold-300">
-            Overview
-          </NavLink>
-          <NavLink to="/admin/products" className="text-[0.8rem] text-text-secondary">
-            Products
-          </NavLink>
-          <NavLink to="/admin/enquiries" className="text-[0.8rem] text-text-secondary">
-            Enquiries
-          </NavLink>
+        {/* Phones and tablets: the sidebar is hidden, so its pages are a wrapping row of links. */}
+        <nav className="flex flex-wrap gap-x-3 gap-y-1 lg:hidden">
+          {MOBILE_NAV.map(({ to, label, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) => `text-[0.8rem] ${isActive ? 'text-gold-300' : 'text-text-secondary'}`}
+            >
+              {label}
+            </NavLink>
+          ))}
         </nav>
 
         <span className="hidden font-mono text-[0.78rem] text-gold-300 sm:inline">

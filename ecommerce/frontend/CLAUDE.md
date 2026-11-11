@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Raave's Evergreen: a storefront and admin dashboard for a Christmas-tree retailer. It is **frontend only**: React 19, Vite 8, Tailwind CSS v4 and react-router-dom 7, written in plain JS/JSX with no TypeScript. There is no backend. Every bit of "persistence" is localStorage.
+Raave's Evergreen: a storefront and admin dashboard for a Christmas-tree retailer. React 19, Vite 8, Tailwind CSS v4 and react-router-dom 7, written in plain JS/JSX with no TypeScript. Its data lives in the shop API, `ecommerce/backend` (FastAPI); that folder's `README.md` is the contract this app is written against (paths, request and response shapes).
 
 This app lives at `ecommerce/frontend/` in the repo. All paths and commands below are relative to that folder. The other folders (`ecommerce/backend`, `billing/`) are described in the root `README.md`.
 
@@ -15,7 +15,9 @@ npm run lint      # ESLint (flat config, react-hooks + react-refresh rules)
 npm run preview   # serve dist/
 ```
 
-There is no test suite. Verify changes with `npm run lint`, `npm run build`, and by viewing the page in a browser at several widths. For the hero's mobile video, use Chrome rather than the bundled Playwright Chromium, which has no H.264.
+There is no test suite. Verify changes with `npm run lint`, `npm run build`, and by viewing the page in a browser at several widths, with the API running (`ecommerce/backend`, port 8001). For the hero's mobile video, use Chrome rather than the bundled Playwright Chromium, which has no H.264.
+
+**`VITE_API_URL`** is the API's address up to and including `/api/v1` (default `http://localhost:8001/api/v1`; see `.env.example`). Vite bakes it in at build time, so the hosting (Cloudflare Pages) sets it as a build environment variable.
 
 Asset scripts need `ffmpeg` and `ffprobe` on PATH:
 
@@ -27,7 +29,7 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
 ```
 
 - **Generated files:** each script writes a new timestamped name, deletes the older output of the same set, and rewrites the JSON manifest that the hero imports. Never hand-edit the manifests or hardcode frame counts.
-- **`public/` is git-ignored:** frames, videos, product images and the logo are not in the repo.
+- **`public/` is git-ignored** (frames, videos; the old product photos and `logo.svg` were force-added before the API). The live site must not depend on anything in it: product and category photos come from the API, and the logo and favicon are imported from `src/assets/`. `npm run build` works from a clean checkout.
 
 ## Architecture
 
@@ -35,20 +37,21 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
 - **Storefront:** under `layout/RootLayout.jsx`, which provides the Header, Footer, CartDrawer, ToastContainer, SantaLayer, and SmoothScroll (Lenis on GSAP's ticker).
 - **Admin:** `/admin/*` under `admin/layout/AdminLayout.jsx`, with its own sidebar and topbar and native scrolling.
 
-`src/admin/**` must stay isolated from the storefront. It imports only `src/data/**` and its own contexts, and never `layout/`, `components/` or `pages/`. The reverse also holds.
+`src/admin/**` must stay isolated from the storefront: it has its own contexts and never uses the storefront's (`context/`, `auth/`) or its pages and layout parts. It does share the plain UI primitives in `components/` (Button, FormField, Input, Modal…) and `lib/` (the API client, validation, formatting), and the storefront never imports from `src/admin`.
 
 **Data and state:**
-- **Catalogue:** static modules in `src/data/*.js`.
-  - `products.js` and `categories.js` are scraped.
-  - `showrooms.js` and `testimonials.js` were migrated by hand.
-  - The live site has no prices, so every product is `priceOnRequest: true` and the UI says "Enquire for Price". Never invent prices.
+- **API client** (`lib/api.js`): `api(path, { method, body, token })` speaks JSON and throws `Error(detail)` with `status`; `upload()` sends a photo with progress. Both the storefront and the admin use it.
+- **Catalogue** (`context/StorefrontContext.jsx`): `GET /storefront` once per visit gives the products, categories, showrooms, testimonials and delivery settings. The last copy is kept in localStorage (`raave-storefront`) so a reload paints at once; `components/StorefrontGate.jsx` (in RootLayout) shows a loader, or a friendly error with a retry, only when there is no copy yet. It adds the "All Collections" category (`id: 'all'`) and fills in missing photos.
+  - `src/data/products.js`, `categories.js`, `showrooms.js` and `testimonials.js` are no longer read by the site: they seed the backend's database. `data/home.js` and the other data files are page copy.
+  - Prices are rupees with GST (`lib/catalogue.js`, `lib/format.js`, `components/Price.jsx`). `price: null` (`priceOnRequest`) keeps the "On request" wording and the quote flow. Never invent prices.
 - **Global state:** Context plus `hooks/useLocalStorage.js`, with no state library.
-  - Providers are in `main.jsx`: Toast → CustomerAuth → Cart → Wishlist.
+  - Providers are in `main.jsx`: Toast → Storefront → CustomerAuth → Cart → Wishlist.
   - `SantaProvider` is mounted inside RootLayout.
-- **Checkout and contact:** neither creates an order. Both log an *enquiry* through `lib/enquiries.js` (`raave-enquiries`), which the admin reads.
-- **Customer auth** (`auth/context/CustomerAuthContext.jsx`): browser-only, with salted SHA-256 hashes in localStorage. Cart and checkout are wrapped in `auth/RequireCustomer.jsx`.
-- **Admin auth** (`admin/context/AdminAuthContext.jsx`): a demo with hardcoded credentials, not real security.
-- **Admin edits** (`admin/context/AdminDataContext.jsx`): saved as whole-collection overrides in localStorage (`raave-admin-<key>`), layered over `src/data`. They stay in one browser.
+- **Customer auth** (`auth/context/CustomerAuthContext.jsx`): the API's accounts. The token is in localStorage (`raave-customer-token`, checked with `GET /auth/me` on load and dropped on a 401), the profile beside it (`raave-customer`). Actions answer `{ ok, error }`; `request()` is the API call with the customer's token. Pages: sign in / up, `/forgot-password`, `/reset-password?token=…`, `/account` (profile, password, orders) and `/account/orders/:id`. Cart, checkout and order pages are wrapped in `auth/RequireCustomer.jsx`.
+- **Cart** (`context/CartContext.jsx`): `[{ productId, quantity }]` in localStorage (`raave-cart`), shown with the current product from the storefront data. `payable` when every item has a price and is in stock; totals add `settings.deliveryFee` (free from `freeDeliveryOver`).
+- **Checkout** (`pages/Checkout.jsx`, `components/checkout/`): a payable cart takes the delivery address and pays with Razorpay (`PayOnline`: `POST /orders` with an id kept in sessionStorage for retries, Razorpay Checkout via `lib/razorpay.js`, then `POST /orders/<id>/verify`). Otherwise the list goes to the concierge as a `quote-request` enquiry (`QuoteRequest`). The Contact page's ConsultForm sends a `consult` enquiry. Every enquiry is `POST /enquiries`.
+- **Admin auth** (`admin/context/AdminAuthContext.jsx`): `POST /admin/login`, token in localStorage (`raave-admin-token`, checked with `GET /admin/me`).
+- **Admin data** (`admin/context/AdminDataContext.jsx`): the catalogue (`GET /admin/catalogue`, hidden items too), showrooms and testimonials, each `{ items, create, update, remove, reorder }` and loaded again after every change. Orders, enquiries and customers are loaded by their own pages (`admin/useAdminList.js`). Photos are uploaded as soon as they are chosen (`admin/components/usePhotoUploads.js`).
 
 **Home page** (`pages/Home.jsx`): a product-led shop front, the "Storefront" design the client chose from five (the other four are in commit cddbe5f). Its sections are in `components/home/`, and their copy is in `data/home.js`.
 - **Content vs. look:** the words (brand story, why choose us, vision/mission, stores in `data/showrooms.js`, stories in `data/stories.js`) come from the old site, christmasraave.in. The logo, theme, photos and product images are ours. Never take images or styling from the old site.

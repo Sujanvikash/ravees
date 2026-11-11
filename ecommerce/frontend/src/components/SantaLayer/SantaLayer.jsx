@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { Bell, BellOff, X } from "lucide-react";
 import { useSanta } from "../../context/SantaContext.jsx";
 import { useCart } from "../../context/CartContext.jsx";
+import { useStorefront } from "../../context/StorefrontContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useRequireLogin } from "../../auth/useRequireLogin.js";
 import { useCustomerAuth } from "../../auth/context/CustomerAuthContext.jsx";
@@ -38,7 +39,7 @@ const IDLE_AFTER_MS = 20000; // no pointer/scroll/key activity this long → an 
 const IDLE_REPEAT_MS = 25000; // and at most one idle moment this often
 const BUBBLE_MS = 5000; // how long a speech bubble stays up
 // Pages with forms where he'd be in the way. He still appears on checkout to celebrate a sent request.
-const HIDDEN_ROUTES = ["/checkout", "/login", "/signup"];
+const HIDDEN_ROUTES = ["/checkout", "/login", "/signup", "/forgot-password", "/reset-password"];
 
 // Pivot points (SVG user units) for each animated part of SantaFigure.
 const PIVOTS = {
@@ -79,6 +80,7 @@ const overlayIsOpen = () =>
 const SantaLayer = ({ onOpenCart }) => {
   const { register } = useSanta();
   const { totalCount: cartCount } = useCart();
+  const { categories } = useStorefront();
   const { isAuthenticated } = useCustomerAuth();
   // The cart stays saved in the browser after logout, but it isn't visible while signed out:
   // no badge, and the sack goes back to its smallest size.
@@ -134,8 +136,9 @@ const SantaLayer = ({ onOpenCart }) => {
       sound: prefs.sound,
       minimised: prefs.minimised,
       setCelebratePath,
+      categories,
     };
-  }, [onOpenCart, requireLogin, isAuthenticated, showToast, navigate, pathname, search, prefs.sound, prefs.minimised]);
+  }, [onOpenCart, requireLogin, isAuthenticated, showToast, navigate, pathname, search, prefs.sound, prefs.minimised, categories]);
 
   // ---- Persist preferences.
   useEffect(() => savePrefs(prefs), [prefs]);
@@ -658,7 +661,7 @@ const SantaLayer = ({ onOpenCart }) => {
       flyTo(imgEl, mouthRef.current, catchIt);
       if (sound) playJingle();
       const actions = [{ label: "View cart", onClick: openCart }];
-      const pair = suggestFor(product);
+      const pair = suggestFor(product, latest.current.categories);
       if (pair && !suggested.has(pair.id)) {
         suggested.add(pair.id);
         actions.push({
@@ -688,13 +691,13 @@ const SantaLayer = ({ onOpenCart }) => {
     };
 
     let celebratedAt = -Infinity;
-    const celebrate = () => {
+    const celebrate = (text = "Ho ho ho! Your request is in — Merry Christmas! 🎄") => {
       celebratedAt = performance.now();
       // Un-hide him on the checkout page for this moment (resets when the route changes).
       latest.current.setCelebratePath(latest.current.pathname);
       gsap.delayedCall(0.45, () => {
         if (latest.current.sound) playJingleBells();
-        say("Ho ho ho! Your request is in — Merry Christmas! 🎄");
+        say(text);
         if (rm) return;
         const r = root.getBoundingClientRect();
         burstConfetti(r.left + r.width / 2, r.top + r.height * 0.3);

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { PHONE_HREF, PHONE_DISPLAY, whatsappHref } from '../data/site.js';
 import { useToast } from '../context/ToastContext.jsx';
-import { SHOWROOMS } from '../data/showrooms.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
 import Button from '../components/Button.jsx';
 import { Input } from '../components/Input.jsx';
 import Logo from '../components/Logo.jsx';
@@ -59,6 +59,7 @@ const COLUMN_DIVIDER = 'xl:border-l xl:border-gold-400/15 xl:pl-12';
 const Footer = () => {
   const [email, setEmail] = useState('');
   const { showToast } = useToast();
+  const { showrooms } = useStorefront();
 
   const handleNewsletter = (e) => {
     e.preventDefault();
@@ -131,8 +132,8 @@ const Footer = () => {
           <div className={COLUMN_DIVIDER}>
             <h4 className={HEADING}>Showroom Locations</h4>
             <ul className="flex list-none flex-col gap-3.5">
-              {SHOWROOMS.map((room) => (
-                <li key={room.city}>
+              {showrooms.map((room) => (
+                <li key={room.id ?? room.city}>
                   <Link to="/showrooms" className={FOOTER_LINK}>
                     <MapPin size={17} strokeWidth={1.6} className={FOOTER_LINK_ICON} />
                     <span className={FOOTER_LINK_LABEL}>

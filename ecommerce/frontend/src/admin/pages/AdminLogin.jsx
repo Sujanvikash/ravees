@@ -1,32 +1,36 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { LogIn, Info } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import Logo from '../../components/Logo.jsx';
 import AuthCard from '../../components/AuthCard.jsx';
 import FormError from '../../components/FormError.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
-import {
-  AdminAuthProvider,
-  DEMO_CREDENTIALS,
-  useAdminAuth,
-} from '../context/AdminAuthContext.jsx';
+import { AdminAuthProvider, useAdminAuth } from '../context/AdminAuthContext.jsx';
 import { Input } from '../../components/Input.jsx';
 
 const LoginForm = () => {
-  const { isAuthenticated, login } = useAdminAuth();
+  const { hasToken, login } = useAdminAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  if (isAuthenticated) return <Navigate to="/admin" replace />;
+  // Already signed in (the dashboard checks the saved token itself).
+  if (hasToken && !submitting) return <Navigate to="/admin" replace />;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = login(username, password);
-    if (result.ok) navigate('/admin');
-    else setError(result.error);
+    setError('');
+    setSubmitting(true);
+    const result = await login(username, password);
+    if (result.ok) {
+      navigate('/admin');
+    } else {
+      setError(result.error);
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -51,6 +55,7 @@ const LoginForm = () => {
           id="admin-user"
           required
           autoFocus
+          autoComplete="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
@@ -61,6 +66,7 @@ const LoginForm = () => {
           id="admin-pass"
           type="password"
           required
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -68,19 +74,10 @@ const LoginForm = () => {
 
       <FormError>{error}</FormError>
 
-      <Button type="submit" className="mt-1">
+      <Button type="submit" className="mt-1" disabled={submitting}>
         <LogIn size={17} strokeWidth={2} />
-        Sign In
+        {submitting ? 'Signing in...' : 'Sign In'}
       </Button>
-
-      <div className="flex gap-2.5 rounded-lg border border-gold-400/15 bg-gold-400/8 p-3.5">
-        <Info size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-gold-300" />
-        <p className="text-[0.78rem] leading-[1.6] text-text-secondary">
-          Demo credentials — <code className="font-mono text-gold-200">{DEMO_CREDENTIALS.username}</code> /{' '}
-          <code className="font-mono text-gold-200">{DEMO_CREDENTIALS.password}</code>. This gate is
-          client-side only and is not real security.
-        </p>
-      </div>
     </AuthCard>
   );
 };

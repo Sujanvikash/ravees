@@ -18,7 +18,10 @@ const Stories = lazy(() => import('./pages/Stories.jsx'));
 const StoryPost = lazy(() => import('./pages/StoryPost.jsx'));
 const Login = lazy(() => import('./auth/pages/Login.jsx'));
 const Signup = lazy(() => import('./auth/pages/Signup.jsx'));
+const ForgotPassword = lazy(() => import('./auth/pages/ForgotPassword.jsx'));
+const ResetPassword = lazy(() => import('./auth/pages/ResetPassword.jsx'));
 const Account = lazy(() => import('./auth/pages/Account.jsx'));
+const OrderDetail = lazy(() => import('./auth/pages/OrderDetail.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 // Admin dashboard — its own chunk, never downloaded by storefront-only visitors
@@ -31,6 +34,9 @@ const AdminCategories = lazy(() => import('./admin/pages/AdminCategories.jsx'));
 const AdminShowrooms = lazy(() => import('./admin/pages/AdminShowrooms.jsx'));
 const AdminTestimonials = lazy(() => import('./admin/pages/AdminTestimonials.jsx'));
 const AdminEnquiries = lazy(() => import('./admin/pages/AdminEnquiries.jsx'));
+const AdminOrders = lazy(() => import('./admin/pages/AdminOrders.jsx'));
+const AdminCustomers = lazy(() => import('./admin/pages/AdminCustomers.jsx'));
+const AdminSettings = lazy(() => import('./admin/pages/AdminSettings.jsx'));
 
 const App = () => {
   return (
@@ -50,7 +56,10 @@ const App = () => {
         <Route path="stories/:slug" element={<StoryPost />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="reset-password" element={<ResetPassword />} />
         <Route path="account" element={<Account />} />
+        <Route path="account/orders/:id" element={<RequireCustomer><OrderDetail /></RequireCustomer>} />
         <Route path="*" element={<NotFound />} />
       </Route>
 
@@ -72,6 +81,9 @@ const App = () => {
         <Route path="showrooms" element={<AdminShowrooms />} />
         <Route path="testimonials" element={<AdminTestimonials />} />
         <Route path="enquiries" element={<AdminEnquiries />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="customers" element={<AdminCustomers />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
     </Routes>
   );

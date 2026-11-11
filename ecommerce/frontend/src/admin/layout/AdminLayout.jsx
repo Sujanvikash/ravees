@@ -1,16 +1,30 @@
 import { Suspense } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { RotateCw } from 'lucide-react';
 import AdminSidebar from './AdminSidebar.jsx';
 import AdminTopbar from './AdminTopbar.jsx';
 import PageLoader from '../../components/PageLoader.jsx';
+import Button from '../../components/Button.jsx';
 import ToastContainer from '../../layout/ToastContainer.jsx';
 import { AdminAuthProvider, useAdminAuth } from '../context/AdminAuthContext.jsx';
-import { AdminDataProvider } from '../context/AdminDataContext.jsx';
+import { AdminDataGate, AdminDataProvider } from '../context/AdminDataContext.jsx';
 
 const AdminShell = () => {
-  const { isAuthenticated } = useAdminAuth();
+  const { hasToken, checking, checkError, retryCheck } = useAdminAuth();
 
-  if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
+  if (!hasToken) return <Navigate to="/admin/login" replace />;
+  if (checking) return <PageLoader label="Signing in" />;
+  if (checkError) {
+    return (
+      <div role="alert" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-shade px-6 text-center">
+        <p className="max-w-[420px] text-[0.92rem] text-text-secondary">{checkError}</p>
+        <Button size="sm" onClick={retryCheck}>
+          <RotateCw size={15} strokeWidth={2} />
+          Try again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <AdminDataProvider>
@@ -20,7 +34,9 @@ const AdminShell = () => {
           <AdminTopbar />
           <main className="flex-1 p-5 md:p-8">
             <Suspense fallback={<PageLoader />}>
-              <Outlet />
+              <AdminDataGate>
+                <Outlet />
+              </AdminDataGate>
             </Suspense>
           </main>
         </div>

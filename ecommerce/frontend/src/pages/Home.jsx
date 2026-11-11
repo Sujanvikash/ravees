@@ -17,12 +17,16 @@ import PromoTrio from '../components/home/PromoTrio.jsx';
 import WhyChoose from '../components/home/WhyChoose.jsx';
 import StoriesRow from '../components/home/StoriesRow.jsx';
 import StoresBand from '../components/home/StoresBand.jsx';
-import { productsIn } from '../data/home.js';
-import { CATEGORIES } from '../data/categories.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
+import { productsIn } from '../lib/catalogue.js';
 import { goldenReindeerStatue } from '../assets/decorations';
 
-const ORNAMENTS = productsIn('tree-hangings').filter((p) => /-(1[4-8])$/.test(p.id));
-const HANGINGS_COUNT = CATEGORIES.find((c) => c.id === 'tree-hangings')?.count ?? 0;
+// The "New this season" card's four ornaments: Wonderland Ornaments 14–18 when the catalogue has them,
+// otherwise the first of the tree hangings.
+const pickOrnaments = (hangings) => {
+  const wonderland = hangings.filter((p) => /-(1[4-8])$/.test(p.id));
+  return (wonderland.length >= 4 ? wonderland : hangings).slice(0, 4);
+};
 
 /**
  * The home page, a shop front: a big slider with two promo cards beside it, the brand facts, category
@@ -30,6 +34,9 @@ const HANGINGS_COUNT = CATEGORIES.find((c) => c.id === 'tree-hangings')?.count ?
  */
 const Home = () => {
   const [quickView, setQuickView] = useState(null);
+  const { products, categories } = useStorefront();
+  const ornaments = pickOrnaments(productsIn(products, 'tree-hangings'));
+  const hangingsCount = categories.find((c) => c.id === 'tree-hangings')?.count ?? 0;
 
   return (
     <>
@@ -72,10 +79,10 @@ const Home = () => {
                 <span className="mb-0.5 text-[0.66rem] font-semibold tracking-[0.12em] text-gold-ink uppercase">New this season</span>
                 <span className="mb-3 flex items-baseline justify-between gap-2 font-serif text-[1.1rem] font-bold text-ink">
                   Wonderland Ornaments
-                  <span className="font-sans text-[0.75rem] font-medium text-ink-soft">{HANGINGS_COUNT} designs</span>
+                  <span className="font-sans text-[0.75rem] font-medium text-ink-soft">{hangingsCount} designs</span>
                 </span>
                 <span className="grid flex-1 grid-cols-4 gap-2 lg:grid-cols-2 lg:grid-rows-2">
-                  {ORNAMENTS.slice(0, 4).map((p) => (
+                  {ornaments.map((p) => (
                     // The photo is absolute, so its own size never stretches the card.
                     <span key={p.id} className="relative block aspect-square overflow-hidden rounded-lg bg-white lg:aspect-auto">
                       <img src={p.image} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition-[scale] duration-500 group-hover:scale-105" />
@@ -110,14 +117,14 @@ const Home = () => {
             eyebrow="✦ Santa & friends ✦"
             title="Santa Toys"
             to="/shop?category=santa-toy"
-            products={productsIn('santa-toy')}
+            products={productsIn(products, 'santa-toy')}
             onQuickView={setQuickView}
           />
           <ProductRail
             eyebrow="✦ The reason for the season ✦"
             title="Nativity & Crib Sets"
             to="/shop?category=nativity-sets"
-            products={productsIn('nativity-sets')}
+            products={productsIn(products, 'nativity-sets')}
             onQuickView={setQuickView}
           />
         </Container>

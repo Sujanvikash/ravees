@@ -42,10 +42,19 @@ const Login = () => {
           {...errorProps('login-password', fieldErrors.password)}
           type="password"
           required
+          autoComplete="current-password"
           value={form.password}
           onChange={update('password')}
         />
       </FormField>
+
+      <Link
+        to="/forgot-password"
+        state={location.state}
+        className="-mt-2 self-end text-[0.8rem] text-gold-300 underline-offset-4 hover:underline"
+      >
+        Forgot password?
+      </Link>
 
       <FormError>{error}</FormError>
 

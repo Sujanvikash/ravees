@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import Button from './Button.jsx';
+import FormError from './FormError.jsx';
 import FormField from './FormField.jsx';
+import { errorProps } from './fieldError.js';
 import { useToast } from '../context/ToastContext.jsx';
-import { SHOWROOMS } from '../data/showrooms.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
+import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
+import { consultSchema, focusFirstError, validate } from '../lib/validation.js';
 import { Input, Select, Textarea } from './Input.jsx';
 
 const HEIGHT_OPTIONS = [
@@ -13,31 +17,77 @@ const HEIGHT_OPTIONS = [
   { value: 'LightsDecor', label: 'Lights & Ornaments Only' },
 ];
 
-const ConsultForm = ({ onSubmitted }) => {
+/**
+ * The styling consultation request (Contact page). It is sent to the shop as a "consult" enquiry, linked to
+ * the customer's account when they are signed in (their details are filled in for them). `onSent` runs
+ * once it is in (the page has Santa celebrate).
+ */
+const ConsultForm = ({ onSent }) => {
   const { showToast } = useToast();
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    showroom: 'Chennai',
+  const { showrooms } = useStorefront();
+  const { session, request } = useCustomerAuth();
+  const defaultShowroom = (showrooms.find((room) => room.isFlagship) ?? showrooms[0])?.city ?? 'Online';
+  const blank = () => ({
+    name: session?.name ?? '',
+    email: session?.email ?? '',
+    phone: session?.phone ?? '',
+    showroom: defaultShowroom,
     height: '6-7.5ft',
     notes: '',
   });
+  const [form, setForm] = useState(blank);
+  const [errors, setErrors] = useState({});
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
 
-  const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  // Editing a field clears its error; the rest stay until the next submit.
+  const update = (key) => (e) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmitted?.({ ...form, type: 'consultation' });
-    showToast(`Thank you, ${form.name}! Your consultation for ${form.showroom} has been requested.`);
-    setForm({ name: '', phone: '', showroom: 'Chennai', height: '6-7.5ft', notes: '' });
+    setError('');
+    const { data, errors: found } = validate(consultSchema, form);
+    if (found) {
+      setErrors(found);
+      focusFirstError(found, 'consult');
+      return;
+    }
+    setErrors({});
+
+    setSending(true);
+    try {
+      const height = HEIGHT_OPTIONS.find((opt) => opt.value === data.height)?.label ?? data.height;
+      await request('/enquiries', {
+        method: 'POST',
+        body: {
+          type: 'consult',
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          message: data.notes || undefined,
+          details: { showroom: data.showroom, treeHeight: height },
+        },
+      });
+      showToast(`Thank you, ${data.name.split(' ')[0]}! Your consultation for ${data.showroom} has been requested.`);
+      setForm(blank());
+      onSent?.();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
       <div className="grid gap-3.5 sm:grid-cols-2">
-        <FormField label="Your Name" htmlFor="consult-name">
+        <FormField label="Your Name" htmlFor="consult-name" error={errors.name}>
           <Input
             id="consult-name"
+            {...errorProps('consult-name', errors.name)}
             type="text"
             required
             placeholder="e.g. David Thomas"
@@ -45,9 +95,10 @@ const ConsultForm = ({ onSubmitted }) => {
             onChange={update('name')}
           />
         </FormField>
-        <FormField label="Phone / WhatsApp Number" htmlFor="consult-phone">
+        <FormField label="Phone / WhatsApp Number" htmlFor="consult-phone" error={errors.phone}>
           <Input
             id="consult-phone"
+            {...errorProps('consult-phone', errors.phone)}
             type="tel"
             required
             placeholder="+91 98765 43210"
@@ -57,15 +108,23 @@ const ConsultForm = ({ onSubmitted }) => {
         </FormField>
       </div>
 
+      <FormField label="Email" htmlFor="consult-email" error={errors.email}>
+        <Input
+          id="consult-email"
+          {...errorProps('consult-email', errors.email)}
+          type="email"
+          required
+          placeholder="you@example.com"
+          value={form.email}
+          onChange={update('email')}
+        />
+      </FormField>
+
       <div className="grid gap-3.5 sm:grid-cols-2">
         <FormField label="Preferred Showroom" htmlFor="consult-showroom">
-          <Select
-            id="consult-showroom"
-            value={form.showroom}
-            onChange={update('showroom')}
-          >
-            {SHOWROOMS.map((room) => (
-              <option key={room.city} value={room.city} className="bg-bg-dark-emerald">
+          <Select id="consult-showroom" value={form.showroom} onChange={update('showroom')}>
+            {showrooms.map((room) => (
+              <option key={room.id ?? room.city} value={room.city} className="bg-bg-dark-emerald">
                 {room.city}
                 {room.isFlagship ? ' (Flagship)' : ''}
               </option>
@@ -76,11 +135,7 @@ const ConsultForm = ({ onSubmitted }) => {
           </Select>
         </FormField>
         <FormField label="Tree Height Interest" htmlFor="consult-height">
-          <Select
-            id="consult-height"
-            value={form.height}
-            onChange={update('height')}
-          >
+          <Select id="consult-height" value={form.height} onChange={update('height')}>
             {HEIGHT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value} className="bg-bg-dark-emerald">
                 {opt.label}
@@ -90,9 +145,10 @@ const ConsultForm = ({ onSubmitted }) => {
         </FormField>
       </div>
 
-      <FormField label="Special Requests / Notes" htmlFor="consult-notes">
+      <FormField label="Special Requests / Notes" htmlFor="consult-notes" error={errors.notes}>
         <Textarea
           id="consult-notes"
+          {...errorProps('consult-notes', errors.notes)}
           rows="3"
           placeholder="Tell us about your home layout or decor preferences..."
           value={form.notes}
@@ -100,8 +156,10 @@ const ConsultForm = ({ onSubmitted }) => {
         />
       </FormField>
 
-      <Button type="submit" full>
-        <span>Submit Consultation Request</span>
+      <FormError>{error}</FormError>
+
+      <Button type="submit" full disabled={sending}>
+        <span>{sending ? 'Sending...' : 'Submit Consultation Request'}</span>
         <ArrowRight size={18} strokeWidth={2} />
       </Button>
     </form>

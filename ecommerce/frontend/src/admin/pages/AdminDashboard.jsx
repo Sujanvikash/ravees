@@ -1,11 +1,16 @@
-import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Inbox, AlertTriangle, Store, Tags, ArrowRight } from 'lucide-react';
+import { Package, Inbox, Truck, Users, IndianRupee, ReceiptText, ArrowRight } from 'lucide-react';
 import AdminStatCard from '../components/AdminStatCard.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
-import { listEnquiries } from '../../lib/enquiries.js';
+import { useAdminList } from '../useAdminList.js';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import { ENQUIRY_STATUS_STYLE, ENQUIRY_TYPES } from '../components/adminLabels.js';
 import { cardClass } from '../../components/cardClass.js';
+import { formatDate, formatPrice } from '../../lib/format.js';
+import { statusBadgeClass, statusLabel } from '../../lib/orders.js';
+
+// Orders the money has come in for (whatever has happened since).
+const PAID = ['paid', 'shipped', 'delivered'];
 
 // A dashboard card's title, with a link to the full page for it on the right.
 const CardHeader = ({ Icon, title, to, link }) => (
@@ -14,105 +19,96 @@ const CardHeader = ({ Icon, title, to, link }) => (
       <Icon size={17} strokeWidth={2} className="text-gold-400" />
       {title}
     </h2>
-    <Link
-      to={to}
-      className="inline-flex items-center gap-1 text-[0.8rem] text-gold-300 no-underline hover:text-white"
-    >
+    <Link to={to} className="inline-flex items-center gap-1 text-[0.8rem] text-gold-300 no-underline hover:text-white">
       {link} <ArrowRight size={13} strokeWidth={2} />
     </Link>
   </div>
 );
 
-const AdminDashboard = () => {
-  const { products, categories, showrooms } = useAdminData();
-  const [enquiries] = useState(listEnquiries);
-  const openEnquiries = enquiries.filter((e) => e.status === 'new').length;
-  const outOfStock = products.items.filter((p) => !p.inStock).length;
+const Empty = ({ children }) => <p className="py-8 text-center text-[0.85rem] text-text-muted">{children}</p>;
 
-  const perCategory = useMemo(
-    () =>
-      categories.items
-        .filter((c) => c.id !== 'all')
-        .map((c) => ({ ...c, live: products.items.filter((p) => p.category === c.id).length })),
-    [categories.items, products.items]
-  );
+/** The overview: paid orders and revenue, what is waiting (orders to ship, new enquiries), and the latest of each. */
+const AdminDashboard = () => {
+  const { products } = useAdminData();
+  const orders = useAdminList('/admin/orders');
+  const enquiries = useAdminList('/admin/enquiries');
+  const customers = useAdminList('/admin/customers');
+
+  const paid = orders.items.filter((o) => PAID.includes(o.status));
+  const revenue = paid.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const toShip = orders.items.filter((o) => o.status === 'paid');
+  const newEnquiries = enquiries.items.filter((e) => e.status === 'new');
+  const hidden = products.items.filter((p) => !p.visible).length;
+  const onRequest = products.items.filter((p) => p.price == null).length;
+  // A figure still loading shows a dash rather than a misleading 0.
+  const figure = (list, value) => (list.loading ? '—' : value);
+  const inAll = (list, one, many) => (list.loading ? '' : `${list.items.length} ${list.items.length === 1 ? one : many} in all`);
 
   return (
     <div className="flex flex-col gap-8">
-      <AdminPageHeader
-        title="Overview"
-        subtitle={<>Catalog scraped from christmasraave.in — {products.items.length} products across{' '}{perCategory.length} collections.</>}
-      />
+      <AdminPageHeader title="Overview" subtitle="Raave's Evergreen shop at a glance." />
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <AdminStatCard Icon={Package} label="Total products" value={products.items.length} />
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <AdminStatCard Icon={ReceiptText} label="Paid orders" value={figure(orders, paid.length)} hint={inAll(orders, 'order', 'orders')} accent="emerald" />
+        <AdminStatCard Icon={IndianRupee} label="Revenue" value={figure(orders, formatPrice(revenue))} hint="Paid orders, GST included" accent="emerald" />
+        <AdminStatCard Icon={Truck} label="Orders to ship" value={figure(orders, toShip.length)} accent={toShip.length ? 'ruby' : 'gold'} />
+        <AdminStatCard Icon={Inbox} label="New enquiries" value={figure(enquiries, newEnquiries.length)} hint={inAll(enquiries, 'enquiry', 'enquiries')} accent={newEnquiries.length ? 'ruby' : 'gold'} />
         <AdminStatCard
-          Icon={Inbox}
-          label="Open enquiries"
-          value={openEnquiries}
-          hint={`${enquiries.length} total`}
-          accent="emerald"
+          Icon={Package}
+          label="Products"
+          value={products.items.length}
+          hint={[hidden && `${hidden} hidden`, onRequest && `${onRequest} priced on request`].filter(Boolean).join(' · ')}
         />
-        <AdminStatCard Icon={AlertTriangle} label="On backorder" value={outOfStock} accent="ruby" />
-        <AdminStatCard Icon={Store} label="Showrooms" value={showrooms.items.length} />
+        <AdminStatCard Icon={Users} label="Customers" value={figure(customers, customers.items.length)} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <section className={`${cardClass('tile')} p-6`}>
-          <CardHeader Icon={Tags} title="Products by collection" to="/admin/products" link="Manage" />
+      {(orders.error || enquiries.error || customers.error) && (
+        <p role="alert" className="text-[0.85rem] text-ruby-500">
+          {orders.error || enquiries.error || customers.error}
+        </p>
+      )}
 
-          <div className="flex flex-col gap-3">
-            {perCategory.map((cat) => {
-              return (
-                <div key={cat.id} className="flex flex-col gap-1.5">
-                  <div className="flex justify-between text-[0.82rem]">
-                    <span className="text-text-secondary">
-                      {cat.icon} {cat.name}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className={`${cardClass('tile')} p-6`}>
+          <CardHeader Icon={Truck} title="Orders to ship" to="/admin/orders" link="All orders" />
+          {toShip.length === 0 ? (
+            <Empty>{orders.loading ? 'Loading…' : 'Nothing waiting: every paid order is on its way.'}</Empty>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {toShip.slice(0, 6).map((order) => (
+                <div key={order.id} className="flex items-start justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="truncate text-[0.85rem] text-white">
+                      <span className="font-mono text-gold-300">{order.number}</span> · {order.customer?.name ?? order.address?.name}
+                    </p>
+                    <span className="text-[0.75rem] text-text-muted">
+                      Paid {formatDate(order.paidAt ?? order.createdAt)} · {order.address?.city}
                     </span>
-                    <span className="font-mono text-gold-300">{cat.live}</span>
                   </div>
-                  <progress
-                    value={cat.live}
-                    max={products.items.length || 1}
-                    aria-label={`${cat.name}: ${cat.live} live products`}
-                    className="h-1.5 w-full appearance-none overflow-hidden rounded-full border-0 bg-white/8 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-[linear-gradient(90deg,var(--color-gold-600),var(--color-gold-300))] [&::-webkit-progress-bar]:bg-white/8 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-[linear-gradient(90deg,var(--color-gold-600),var(--color-gold-300))]"
-                  />
+                  <span className="shrink-0 text-[0.85rem] text-white">{formatPrice(order.total)}</span>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className={`${cardClass('tile')} p-6`}>
           <CardHeader Icon={Inbox} title="Latest enquiries" to="/admin/enquiries" link="All" />
-
-          {enquiries.length === 0 ? (
-            <p className="py-8 text-center text-[0.85rem] text-text-muted">
-              No enquiries yet. Submit the contact form or a quote request on the storefront to see one here.
-            </p>
+          {enquiries.items.length === 0 ? (
+            <Empty>{enquiries.loading ? 'Loading…' : 'No enquiries yet.'}</Empty>
           ) : (
             <div className="flex flex-col gap-3">
-              {enquiries.slice(0, 5).map((enq) => (
-                <div
-                  key={enq.id}
-                  className="flex items-start justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0"
-                >
+              {enquiries.items.slice(0, 6).map((enq) => (
+                <div key={enq.id} className="flex items-start justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0">
                   <div className="min-w-0">
                     <p className="truncate text-[0.85rem] text-white">{enq.name || 'Unnamed'}</p>
                     <span className="text-[0.75rem] text-text-muted">
-                      {enq.type === 'quote-request' ? `Quote · ${enq.itemCount ?? 0} items` : 'Consultation'}
-                      {' · '}
-                      {new Date(enq.createdAt).toLocaleDateString()}
+                      {ENQUIRY_TYPES[enq.type] ?? enq.type}
+                      {enq.details?.items?.length ? ` · ${enq.details.items.length} items` : ''} · {formatDate(enq.createdAt)}
                     </span>
                   </div>
                   <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[0.68rem] font-bold uppercase ${
-                      enq.status === 'new'
-                        ? 'bg-emerald-500/15 text-emerald-300'
-                        : enq.status === 'contacted'
-                          ? 'bg-gold-400/15 text-gold-300'
-                          : 'bg-white/8 text-text-muted'
-                    }`}
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold uppercase ${ENQUIRY_STATUS_STYLE[enq.status] ?? ENQUIRY_STATUS_STYLE.closed}`}
                   >
                     {enq.status}
                   </span>
@@ -122,6 +118,26 @@ const AdminDashboard = () => {
           )}
         </section>
       </div>
+
+      {orders.items.length > 0 && (
+        <section className={`${cardClass('tile')} p-6`}>
+          <CardHeader Icon={ReceiptText} title="Latest orders" to="/admin/orders" link="All orders" />
+          <div className="flex flex-col gap-3">
+            {orders.items.slice(0, 5).map((order) => (
+              <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0">
+                <p className="min-w-0 text-[0.85rem] text-white">
+                  <span className="font-mono text-gold-300">{order.number}</span> · {order.customer?.name ?? order.address?.name}
+                  <span className="ml-2 text-[0.75rem] text-text-muted">{formatDate(order.createdAt)}</span>
+                </p>
+                <div className="flex items-center gap-3">
+                  <span className="text-[0.85rem] text-white">{formatPrice(order.total)}</span>
+                  <span className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

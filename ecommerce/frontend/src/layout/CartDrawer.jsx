@@ -5,9 +5,11 @@ import { useOverlay } from '../hooks/useOverlay.js';
 import Button from '../components/Button.jsx';
 import IconButton from '../components/IconButton.jsx';
 import QuantityStepper from '../components/QuantityStepper.jsx';
+import Price from '../components/Price.jsx';
+import { formatPrice } from '../lib/format.js';
 
 const CartDrawer = ({ isOpen, onClose }) => {
-  const { cart, updateQuantity, removeFromCart, totalCount } = useCart();
+  const { cart, updateQuantity, removeFromCart, totalCount, payable, subtotal } = useCart();
 
   useOverlay(isOpen, onClose);
 
@@ -37,7 +39,9 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
         <div className="border-b border-white/10 bg-emerald-500/8 px-6 py-3.5">
           <p className="text-[0.76rem] text-emerald-300">
-            Our holiday concierge confirms pricing &amp; availability for every item on your list.
+            {payable
+              ? 'Pay securely online at checkout, with white-glove delivery to your door.'
+              : 'Our holiday concierge confirms pricing & availability for every item on your list.'}
           </p>
         </div>
 
@@ -89,7 +93,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                       value={quantity}
                       onChange={(next) => updateQuantity(product.id, next)}
                     />
-                    <span className="font-serif text-[0.9rem] font-bold text-gold-200">On request</span>
+                    <Price product={product} quantity={quantity} size="sm" className="justify-end" />
                   </div>
                 </div>
               </div>
@@ -104,12 +108,12 @@ const CartDrawer = ({ isOpen, onClose }) => {
               <span className="font-mono text-white">{totalCount}</span>
             </div>
             <div className="flex justify-between border-t border-white/10 pt-3 text-[1.1rem] font-bold text-white">
-              <span>Total</span>
-              <span className="font-serif text-[1.15rem] text-gold-300">Quote on request</span>
+              <span>{payable ? 'Subtotal' : 'Total'}</span>
+              <span className="font-serif text-[1.15rem] text-gold-300">{payable ? formatPrice(subtotal) : 'Quote on request'}</span>
             </div>
 
             <Button size="lg" full to="/checkout" onClick={onClose} className="mt-3.5">
-              Request Final Quote
+              {payable ? 'Checkout' : 'Request Final Quote'}
             </Button>
 
             <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[0.72rem] text-text-muted">

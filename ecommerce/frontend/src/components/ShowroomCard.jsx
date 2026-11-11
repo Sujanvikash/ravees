@@ -14,8 +14,8 @@ import {
 } from '../assets/decorations';
 import { cardClass } from './cardClass.js';
 
-// PLACEHOLDER photos until each showroom has its own: a showroom with an `images` array in
-// data/showrooms.js shows those instead. These are general festive photos, not of any store.
+// PLACEHOLDER photos until each showroom has its own: a showroom with an `images` array (none has one yet)
+// shows those instead. These are general festive photos, not of any store.
 const PLACEHOLDER_GALLERY = [
   heroTreeGlow,
   festiveLanternGlow,

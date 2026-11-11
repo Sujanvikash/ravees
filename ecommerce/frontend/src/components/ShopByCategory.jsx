@@ -1,21 +1,22 @@
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading.jsx';
 import Reveal from './Reveal.jsx';
-import { CATEGORIES } from '../data/categories.js';
-import { CATEGORY_IMAGES } from '../data/home.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
 
 /**
- * Circular category photos in gold rings; each opens the shop filtered to that category.
+ * Circular category photos in gold rings (the category's own photo, or its first product's); each opens
+ * the shop filtered to that category.
  * A block inside a page section (the homepage puts it above the featured products, sharing that
  * section's background and side decorations), so it has no section of its own.
  */
 const ShopByCategory = ({ className = '' }) => {
+  const { categories } = useStorefront();
   return (
     <div id="categories" className={className}>
       <SectionHeading eyebrow="✦ OUR COLLECTIONS ✦" title="Shop by Category" />
       <ul className="grid grid-cols-4 gap-x-3 gap-y-5 lg:grid-cols-8 lg:gap-x-5">
         {/* One left-to-right wave per row: all 8 across on desktop, each row of 4 on phones. */}
-        {CATEGORIES.map(({ id, name, count }) => (
+        {categories.map(({ id, name, count, image }) => (
           <Reveal as="li" key={id} delay="auto">
             <Link
               to={id === 'all' ? '/shop' : `/shop?category=${id}`}
@@ -27,7 +28,7 @@ const ShopByCategory = ({ className = '' }) => {
                 <span className="relative block size-full overflow-hidden rounded-full border-2 border-bg-primary bg-white sm:border-4">
                   {/* Absolute, so a tall photo can't stretch the circle into an oval */}
                   <img
-                    src={CATEGORY_IMAGES[id]}
+                    src={image}
                     alt=""
                     loading="lazy"
                     className="absolute inset-0 size-full object-cover transition-transform duration-500 ease-premium group-hover:scale-110"

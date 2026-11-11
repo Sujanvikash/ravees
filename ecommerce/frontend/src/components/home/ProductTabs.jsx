@@ -2,12 +2,9 @@ import { useState } from 'react';
 import Chip from '../Chip.jsx';
 import ProductCard from '../ProductCard.jsx';
 import Reveal from '../Reveal.jsx';
-import { CATEGORIES } from '../../data/categories.js';
-import { mixedProducts, productsIn } from '../../data/home.js';
+import { useStorefront } from '../../context/StorefrontContext.jsx';
+import { mixedProducts, productsIn } from '../../lib/catalogue.js';
 import { SHOP_GRID } from './shopGrid.js';
-
-// The tabs: every collection with more than one piece, "All" first (Home Decors has a single product).
-const TABS = CATEGORIES.filter((c) => c.count > 1).map((c) => ({ id: c.id, label: c.id === 'all' ? 'All' : c.name }));
 
 /**
  * "Featured categories": a row of category tabs over a product grid, like the old site's product
@@ -15,12 +12,15 @@ const TABS = CATEGORIES.filter((c) => c.count > 1).map((c) => ({ id: c.id, label
  */
 const ProductTabs = ({ onQuickView, limit = 12, className = '' }) => {
   const [active, setActive] = useState('all');
-  const products = active === 'all' ? mixedProducts(limit) : productsIn(active, limit);
+  const { products: all, categories } = useStorefront();
+  // The tabs: every collection with more than one piece, "All" first (Home Decors has a single product).
+  const tabs = categories.filter((c) => c.count > 1).map((c) => ({ id: c.id, label: c.id === 'all' ? 'All' : c.name }));
+  const products = active === 'all' ? mixedProducts(all, limit) : productsIn(all, active, limit);
 
   return (
     <div className={className}>
       <Reveal className="-mx-6 mb-5 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:flex-wrap">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <Chip
             key={tab.id}
             size="sm"

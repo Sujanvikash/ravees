@@ -1,133 +1,279 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Save, Upload, X, ImageOff } from 'lucide-react';
+import { ChevronLeft, Plus, Save, Trash2 } from 'lucide-react';
 import { z } from 'zod';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import FormField from '../../components/FormField.jsx';
-import { FIELD_LABEL_CLASS, errorProps } from '../../components/fieldError.js';
+import FormError from '../../components/FormError.jsx';
+import IconButton from '../../components/IconButton.jsx';
+import { errorProps } from '../../components/fieldError.js';
 import Button from '../../components/Button.jsx';
 import { Input, Select, Textarea } from '../../components/Input.jsx';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
+import PhotoGallery from '../components/PhotoGallery.jsx';
+import { usePhotoUploads } from '../components/usePhotoUploads.js';
+import { ADMIN_CHECK, rupeesOrNull } from '../components/adminForm.js';
 import { cardClass } from '../../components/cardClass.js';
 import { focusFirstError, validate } from '../../lib/validation.js';
-import { slugify } from '../components/adminForm.js';
 
-const productSchema = z.object({
-  name: z.string().trim().min(1, 'Please enter a product name').max(120, 'Keep the name under 120 characters'),
-  category: z.string().min(1, 'Choose a collection'),
-  description: z.string().trim().max(2000, 'Keep the description under 2000 characters'),
-  sizes: z.string(),
-  image: z.string().trim().min(1, 'Please add a product image'),
-  inStock: z.boolean(),
-  specs: z.array(z.unknown()),
-});
+// Rupees from a number field: empty means "no price" (the shop shows "Price on request").
+const rupees = z
+  .string()
+  .transform(rupeesOrNull)
+  .refine((value) => value === null || (Number.isFinite(value) && value > 0), 'Enter an amount in rupees, e.g. 12500');
 
-const AdminProductForm = () => {
-  const { id } = useParams();
+const productSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Please enter a product name').max(120, 'Keep the name under 120 characters'),
+    category: z.string().min(1, 'Choose a collection'),
+    description: z.string().trim().max(4000, 'Keep the description under 4000 characters'),
+    sizes: z.string(),
+    price: rupees,
+    mrp: rupees,
+    inStock: z.boolean(),
+    visible: z.boolean(),
+    featured: z.boolean(),
+  })
+  .refine((d) => d.mrp === null || d.price !== null, { path: ['mrp'], message: 'An MRP is only shown beside a price: add the price too' })
+  .refine((d) => d.mrp === null || d.price === null || d.mrp >= d.price, { path: ['mrp'], message: 'The MRP should be at least the price' });
+
+const INLINE_BTN =
+  'inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg border border-gold-400/25 bg-transparent px-3 py-2 text-[0.8rem] text-gold-300 transition-all hover:border-gold-400 hover:bg-gold-400/10';
+
+/** The editor itself, for a product (`existing`) or a new one. */
+const ProductEditor = ({ existing }) => {
   const { products, categories } = useAdminData();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-
-  const existing = id ? products.items.find((p) => p.id === id) : null;
-  const categoryOptions = categories.items.filter((c) => c.id !== 'all');
 
   const [form, setForm] = useState(() => ({
     name: existing?.name ?? '',
-    category: existing?.category ?? categoryOptions[0]?.id ?? '',
+    category: existing?.category ?? categories.items[0]?.id ?? '',
     description: existing?.description ?? '',
     sizes: (existing?.sizes ?? []).join(', '),
-    image: existing?.image ?? '',
+    price: existing?.price != null ? String(existing.price) : '',
+    mrp: existing?.mrp != null ? String(existing.mrp) : '',
     inStock: existing?.inStock ?? true,
-    specs: existing?.specs ?? [],
+    visible: existing?.visible ?? true,
+    featured: existing?.featured ?? false,
   }));
-  const [imageError, setImageError] = useState('');
+  const [specs, setSpecs] = useState(() => (existing?.specs ?? []).map((spec) => ({ ...spec })));
+  const uploads = usePhotoUploads((existing?.imageIds ?? []).map((id, i) => ({ id, url: existing.images?.[i] })));
   const [errors, setErrors] = useState({});
-
-  const clearError = (key) => setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const update = (key) => (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value,
-    }));
-    clearError(key);
+    setForm((prev) => ({ ...prev, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
   };
 
-  // No backend to upload to, so the file is read into a base64 data URL and stored
-  // directly on the product — same localStorage-override approach as the rest of
-  // the admin data (see AdminDataContext), just embedding the image bytes instead
-  // of a path.
-  const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024;
-  const handleFileSelect = (file) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setImageError('Please choose an image file.');
-      return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      setImageError('Image is too large — please use one under 1.5 MB.');
-      return;
-    }
-    setImageError('');
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm((prev) => ({ ...prev, image: reader.result }));
-      clearError('image');
-    };
-    reader.onerror = () => setImageError('Could not read that file.');
-    reader.readAsDataURL(file);
-  };
+  const setSpec = (i, key, value) => setSpecs((prev) => prev.map((spec, k) => (k === i ? { ...spec, [key]: value } : spec)));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     const { data, errors: found } = validate(productSchema, form);
-    // A new product's id comes from its name, so two products can't share a name.
-    const newId = existing ? null : slugify(form.name) || `product-${Date.now()}`;
-    const issues = found ?? {};
-    if (newId && !issues.name && products.items.some((p) => p.id === newId)) {
-      issues.name = 'A product with this name already exists';
-    }
-    if (Object.keys(issues).length) {
-      setErrors(issues);
-      focusFirstError(issues, 'p');
+    if (found) {
+      setErrors(found);
+      focusFirstError(found, 'p');
       return;
     }
+    setErrors({});
 
-    const categoryLabel = categoryOptions.find((c) => c.id === data.category)?.name ?? 'Home Decors';
-    const sizes = data.sizes
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const payload = {
+    const body = {
       name: data.name,
       category: data.category,
-      categoryLabel,
       description: data.description,
-      sizes,
-      image: data.image,
-      images: [data.image],
+      specs: specs
+        .map((spec) => ({ label: spec.label.trim(), value: spec.value.trim() }))
+        .filter((spec) => spec.label && spec.value),
+      sizes: data.sizes
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      price: data.price,
+      mrp: data.mrp,
       inStock: data.inStock,
-      specs: data.specs,
-      priceOnRequest: true,
+      visible: data.visible,
+      featured: data.featured,
+      imageIds: uploads.ids,
     };
 
-    if (existing) {
-      products.update(existing.id, payload);
-      showToast(`Updated "${payload.name}"`);
-    } else {
-      products.add({ ...payload, id: newId, sourceUrl: '' });
-      showToast(`Created "${payload.name}"`);
+    setSaving(true);
+    try {
+      if (existing) {
+        await products.update(existing.id, body);
+        showToast(`Saved "${body.name}"`);
+      } else {
+        await products.create(body);
+        showToast(`Created "${body.name}"`);
+      }
+      navigate('/admin/products');
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
     }
-    navigate('/admin/products');
   };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className={`${cardClass('tile')} grid w-full gap-6 p-6 md:p-8 lg:grid-cols-[1fr_400px]`}
+    >
+      {/* Left column: the details */}
+      <div className="flex min-w-0 flex-col gap-4">
+        <FormField label="Product name" htmlFor="p-name" error={errors.name}>
+          <Input id="p-name" {...errorProps('p-name', errors.name)} required value={form.name} onChange={update('name')} />
+        </FormField>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Collection" htmlFor="p-category" error={errors.category}>
+            <Select id="p-category" value={form.category} onChange={update('category')}>
+              {categories.items.map((cat) => (
+                <option key={cat.id} value={cat.id} className="bg-bg-dark-emerald">
+                  {cat.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField label="Sizes (comma separated)" htmlFor="p-sizes">
+            <Input id="p-sizes" value={form.sizes} onChange={update('sizes')} placeholder="6 ft, 7 ft, 8 ft" />
+          </FormField>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Price (₹, GST included)" htmlFor="p-price" error={errors.price}>
+            <Input
+              id="p-price"
+              {...errorProps('p-price', errors.price)}
+              type="number"
+              min="1"
+              step="any"
+              inputMode="decimal"
+              value={form.price}
+              onChange={update('price')}
+              placeholder="Empty: price on request"
+            />
+          </FormField>
+          <FormField label="MRP (₹, shown struck through)" htmlFor="p-mrp" error={errors.mrp}>
+            <Input
+              id="p-mrp"
+              {...errorProps('p-mrp', errors.mrp)}
+              type="number"
+              min="1"
+              step="any"
+              inputMode="decimal"
+              value={form.mrp}
+              onChange={update('mrp')}
+              placeholder="Optional"
+            />
+          </FormField>
+        </div>
+        <p className="-mt-2 text-[0.75rem] text-text-muted">
+          With a price, customers can pay online. Leave it empty and the shop shows &ldquo;Price on request&rdquo;, with
+          the quote request instead.
+        </p>
+
+        <FormField label="Description" htmlFor="p-description" error={errors.description}>
+          <Textarea
+            id="p-description"
+            {...errorProps('p-description', errors.description)}
+            rows="6"
+            value={form.description}
+            onChange={update('description')}
+            className="min-h-[140px]"
+          />
+        </FormField>
+
+        <FormField label="Specifications" htmlFor="p-spec-0-label">
+          <div className="flex flex-col gap-2">
+            {specs.map((spec, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1.4fr_auto] items-center gap-2">
+                <Input
+                  id={`p-spec-${i}-label`}
+                  size="sm"
+                  aria-label={`Specification ${i + 1}: name`}
+                  value={spec.label}
+                  onChange={(e) => setSpec(i, 'label', e.target.value)}
+                  placeholder="Height"
+                />
+                <Input
+                  size="sm"
+                  aria-label={`Specification ${i + 1}: value`}
+                  value={spec.value}
+                  onChange={(e) => setSpec(i, 'value', e.target.value)}
+                  placeholder="7 ft"
+                />
+                <IconButton
+                  variant="delete"
+                  label={`Remove specification ${i + 1}`}
+                  onClick={() => setSpecs((prev) => prev.filter((_, k) => k !== i))}
+                >
+                  <Trash2 size={13} strokeWidth={2} />
+                </IconButton>
+              </div>
+            ))}
+            <button type="button" onClick={() => setSpecs((prev) => [...prev, { label: '', value: '' }])} className={INLINE_BTN}>
+              <Plus size={14} strokeWidth={2} />
+              Add a specification
+            </button>
+          </div>
+        </FormField>
+
+        <FormField label="On the shop" htmlFor="p-instock">
+          <div className="flex flex-wrap gap-x-6 gap-y-2.5">
+            <label className={ADMIN_CHECK}>
+              <input id="p-instock" type="checkbox" checked={form.inStock} onChange={update('inStock')} className="h-4 w-4 accent-gold-500" />
+              In stock
+            </label>
+            <label className={ADMIN_CHECK}>
+              <input type="checkbox" checked={form.visible} onChange={update('visible')} className="h-4 w-4 accent-gold-500" />
+              Visible on the website
+            </label>
+            <label className={ADMIN_CHECK}>
+              <input type="checkbox" checked={form.featured} onChange={update('featured')} className="h-4 w-4 accent-gold-500" />
+              Featured
+            </label>
+          </div>
+        </FormField>
+
+        <FormError>{error}</FormError>
+
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <Button size="sm" type="submit" disabled={saving || uploads.busy}>
+            <Save size={16} strokeWidth={2} />
+            {saving ? 'Saving...' : existing ? 'Save changes' : 'Create product'}
+          </Button>
+          <Link
+            to="/admin/products"
+            className="inline-flex items-center rounded-lg border border-gold-400/25 px-5 py-2.5 text-[0.88rem] text-text-secondary no-underline transition-all hover:border-gold-400 hover:text-white"
+          >
+            Cancel
+          </Link>
+          {uploads.busy && <span className="text-[0.78rem] text-text-muted">Waiting for the photos to finish uploading…</span>}
+        </div>
+      </div>
+
+      {/* Right column: the photos */}
+      <PhotoGallery uploads={uploads} />
+    </form>
+  );
+};
+
+/** New product (`/admin/products/new`) or edit one (`/admin/products/:id/edit`). */
+const AdminProductForm = () => {
+  const { id } = useParams();
+  const { products } = useAdminData();
+  const existing = id ? products.items.find((p) => p.id === id) : null;
 
   return (
     <div className="flex flex-col gap-6">
       <AdminPageHeader
-        title={existing ? 'Edit product' : 'New product'}
+        title={existing ? `Edit ${existing.name}` : 'New product'}
         before={
           <Link
             to="/admin/products"
@@ -139,135 +285,13 @@ const AdminProductForm = () => {
         }
       />
 
-      <form
-        onSubmit={handleSubmit}
-        noValidate
-        className={`${cardClass('tile')} grid w-full gap-6 p-6 md:p-8 lg:grid-cols-[1fr_360px]`}
-      >
-        {/* Left column: fields */}
-        <div className="flex min-w-0 flex-col gap-4">
-          <FormField label="Product name" htmlFor="p-name" error={errors.name}>
-            <Input id="p-name" {...errorProps('p-name', errors.name)} required value={form.name} onChange={update('name')} />
-          </FormField>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Collection" htmlFor="p-category" error={errors.category}>
-              <Select
-                id="p-category"
-                value={form.category}
-                onChange={update('category')}
-              >
-                {categoryOptions.map((cat) => (
-                  <option key={cat.id} value={cat.id} className="bg-bg-dark-emerald">
-                    {cat.name}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-
-            <FormField label="Sizes (comma separated)" htmlFor="p-sizes">
-              <Input
-                id="p-sizes"
-                value={form.sizes}
-                onChange={update('sizes')}
-                placeholder="6 Feet, 7 Feet, 8 Feet"
-              />
-            </FormField>
-          </div>
-
-          <FormField label="Description" htmlFor="p-description" error={errors.description}>
-            <Textarea
-              id="p-description"
-              {...errorProps('p-description', errors.description)}
-              rows="8"
-              value={form.description}
-              onChange={update('description')}
-              className="min-h-[160px] flex-1"
-            />
-          </FormField>
-
-          <label className="flex cursor-pointer items-center gap-2.5 text-[0.88rem] text-text-secondary">
-            <input
-              type="checkbox"
-              checked={form.inStock}
-              onChange={update('inStock')}
-              className="h-4 w-4 accent-gold-500"
-            />
-            In stock
-          </label>
-
-          <div className="mt-2 flex gap-3">
-            <Button size="sm" type="submit">
-              <Save size={16} strokeWidth={2} />
-              {existing ? 'Save changes' : 'Create product'}
-            </Button>
-            <Link
-              to="/admin/products"
-              className="inline-flex items-center rounded-lg border border-gold-400/25 px-5 py-2.5 text-[0.88rem] text-text-secondary no-underline transition-all hover:border-gold-400 hover:text-white"
-            >
-              Cancel
-            </Link>
-          </div>
-        </div>
-
-        {/* Right column: image upload */}
-        <div className="flex flex-col gap-1.5">
-          <span className={FIELD_LABEL_CLASS}>Product image</span>
-
-          <div
-            className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-gold-400/25 bg-bg-deepest"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              handleFileSelect(e.dataTransfer.files?.[0]);
-            }}
-          >
-            {form.image ? (
-              <>
-                <img src={form.image} alt="" className="h-full w-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, image: '' }))}
-                  className="absolute top-2 right-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-black/60 text-white transition-all hover:border-ruby-500 hover:text-ruby-500"
-                  title="Remove image"
-                >
-                  <X size={14} strokeWidth={2} />
-                </button>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-2 px-6 text-center text-text-muted">
-                <ImageOff size={28} strokeWidth={1.5} />
-                <span className="text-[0.78rem]">No image selected</span>
-              </div>
-            )}
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleFileSelect(e.target.files?.[0])}
-          />
-          <button
-            id="p-image"
-            type="button"
-            {...errorProps('p-image', errors.image)}
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-gold-400/25 bg-white/5 px-4 py-2.5 text-[0.85rem] text-gold-300 transition-all hover:border-gold-400 hover:bg-gold-400/10"
-          >
-            <Upload size={15} strokeWidth={2} />
-            {form.image ? 'Replace image' : 'Upload image'}
-          </button>
-
-          {(imageError || errors.image) && (
-            <p id="p-image-error" className="text-[0.78rem] text-ruby-500">
-              {imageError || errors.image}
-            </p>
-          )}
-          <p className="text-[0.72rem] text-text-muted">JPG, PNG or WebP, up to 1.5 MB.</p>
-        </div>
-      </form>
+      {id && !existing ? (
+        <p className={`${cardClass('tile')} px-6 py-12 text-center text-text-muted`}>
+          There is no product &ldquo;{id}&rdquo;. It may have been deleted.
+        </p>
+      ) : (
+        <ProductEditor key={existing?.id ?? 'new'} existing={existing} />
+      )}
     </div>
   );
 };

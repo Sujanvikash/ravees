@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import SectionHeading from '../components/SectionHeading.jsx';
 import ShowroomCard from '../components/ShowroomCard.jsx';
-import { ALL_STORES, SHOWROOMS } from '../data/showrooms.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
 import Container from '../components/Container.jsx';
 import Reveal from '../components/Reveal.jsx';
 import PageBackdrop from '../components/PageBackdrop.jsx';
@@ -9,11 +9,12 @@ import { CHIP_ACTIVE, CHIP_GLOW, CHIP_IDLE } from '../components/Chip.jsx';
 import { showroomsBg } from '../assets/backgrounds';
 
 const Showrooms = () => {
+  const { showrooms, stores } = useStorefront();
   const [activeIdx, setActiveIdx] = useState(0);
   // Set on the first city switch: from then on the card slides in on every change (its first
   // appearance is the scroll Reveal's job).
   const [switched, setSwitched] = useState(false);
-  const showroom = SHOWROOMS[activeIdx];
+  const showroom = showrooms[activeIdx] ?? showrooms[0];
 
   // The gold pill behind the active city slides to whichever button is chosen. Measured from the
   // buttons (they wrap onto two lines on phones), and again whenever the row resizes.
@@ -45,7 +46,7 @@ const Showrooms = () => {
         <SectionHeading
           flourishes={false}
           className="mb-5!"
-          eyebrow={`✦ ${ALL_STORES.length} STORES ACROSS INDIA ✦`}
+          eyebrow={`✦ ${stores.length} STORES ACROSS INDIA ✦`}
           title="Visit Our Stores"
           subtitle="Wherever you are, step into the nearest Christmas Raaves store and let us help you create a magical and memorable festive season!"
         />
@@ -59,9 +60,9 @@ const Showrooms = () => {
               }`}
               style={pill ?? undefined}
             />
-            {SHOWROOMS.map((room, i) => (
+            {showrooms.map((room, i) => (
               <button
-                key={room.city}
+                key={room.id ?? room.city}
                 ref={(el) => {
                   pillRefs.current[i] = el;
                 }}
@@ -79,12 +80,14 @@ const Showrooms = () => {
           </div>
         </Reveal>
 
-        <Reveal>
-          {/* Keyed by city, so each switch remounts it and replays the slide-in. */}
-          <div key={showroom.city} className={switched ? 'animate-slide-in' : ''}>
-            <ShowroomCard showroom={showroom} />
-          </div>
-        </Reveal>
+        {showroom && (
+          <Reveal>
+            {/* Keyed by city, so each switch remounts it and replays the slide-in. */}
+            <div key={showroom.city} className={switched ? 'animate-slide-in' : ''}>
+              <ShowroomCard showroom={showroom} />
+            </div>
+          </Reveal>
+        )}
       </Container>
     </section>
   );

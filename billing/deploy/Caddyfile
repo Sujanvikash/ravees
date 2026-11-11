@@ -1,5 +1,13 @@
-# HTTPS for the API: Caddy gets and renews the certificate for API_DOMAIN by itself.
+# HTTPS for the APIs: Caddy gets and renews the certificates by itself.
+# The billing API:
 {$API_DOMAIN} {
 	encode gzip
 	reverse_proxy api:8000
+}
+
+# The website's shop API (ecommerce/deploy), reached over the shared "web" network. Without SHOP_API_DOMAIN in .env
+# this is a local name nothing asks for.
+{$SHOP_API_DOMAIN} {
+	encode gzip
+	reverse_proxy shop-api:8000
 }

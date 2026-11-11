@@ -7,16 +7,22 @@ import {
   MessageSquareQuote,
   Inbox,
   ExternalLink,
+  ReceiptText,
+  Users,
+  Settings,
 } from 'lucide-react';
 import Logo from '../../components/Logo.jsx';
 
 const NAV = [
   { to: '/admin', label: 'Overview', Icon: LayoutDashboard, end: true },
+  { to: '/admin/orders', label: 'Orders', Icon: ReceiptText },
+  { to: '/admin/enquiries', label: 'Enquiries', Icon: Inbox },
   { to: '/admin/products', label: 'Products', Icon: Package },
   { to: '/admin/categories', label: 'Categories', Icon: Tags },
+  { to: '/admin/customers', label: 'Customers', Icon: Users },
   { to: '/admin/showrooms', label: 'Showrooms', Icon: Store },
   { to: '/admin/testimonials', label: 'Testimonials', Icon: MessageSquareQuote },
-  { to: '/admin/enquiries', label: 'Enquiries', Icon: Inbox },
+  { to: '/admin/settings', label: 'Settings', Icon: Settings },
 ];
 
 const AdminSidebar = () => {

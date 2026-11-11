@@ -2,7 +2,7 @@ import SectionHeading from '../components/SectionHeading.jsx';
 import TestimonialCard from '../components/TestimonialCard.jsx';
 import Button from '../components/Button.jsx';
 import { ArrowRight } from 'lucide-react';
-import { TESTIMONIALS } from '../data/testimonials.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
 import Container from '../components/Container.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Reveal from '../components/Reveal.jsx';
@@ -10,6 +10,7 @@ import { cardClass } from '../components/cardClass.js';
 import { sectionClass } from '../components/sectionClass.js';
 
 const Testimonials = () => {
+  const { testimonials } = useStorefront();
   return (
     <section className={sectionClass('listing')}>
       <Aurora />
@@ -21,8 +22,8 @@ const Testimonials = () => {
         />
 
         <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
-          {TESTIMONIALS.map((t, i) => (
-            <Reveal key={t.author} delay={i % 3} className="h-full">
+          {testimonials.map((t, i) => (
+            <Reveal key={t.id ?? t.author} delay={i % 3} className="h-full">
               <TestimonialCard testimonial={t} />
             </Reveal>
           ))}

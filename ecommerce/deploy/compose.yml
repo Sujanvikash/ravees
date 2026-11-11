@@ -1,0 +1,71 @@
+# The shop API on the server: its own PostgreSQL, the API and a nightly database backup.
+# Lives in ~/ecommerce on the server next to .env; CI copies it there on every deploy.
+#   docker compose up -d                                        start or update everything
+#   docker compose exec shop-api python -m app.cli seed         the admin login and the starting catalogue (first time)
+#
+# HTTPS comes from the billing app's Caddy (billing/deploy), which sends SHOP_API_DOMAIN here over the shared
+# "web" network. The services are named shop-* so their names never clash with billing's on that network.
+
+services:
+  shop-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: raaves_shop
+    volumes:
+      - shop_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop -d raaves_shop"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  shop-api:
+    image: ${API_IMAGE:?set API_IMAGE in .env}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg://shop:${POSTGRES_PASSWORD}@shop-db:5432/raaves_shop
+    networks:
+      - default
+      - web
+    depends_on:
+      shop-db:
+        condition: service_healthy
+
+  # A pg_dump every night at about 02:30 IST into ./backups (photos included: they are in the database), keeping
+  # the last 14 days.
+  shop-backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: shop-db
+      PGUSER: shop
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: raaves_shop
+      TZ: Asia/Kolkata
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          # seconds until the next 02:30 IST (UTC+5:30 = 19800 s)
+          sleep $$(( (86400 + 9000 - ($$(date +%s) + 19800) % 86400) % 86400 + 1 ))
+          pg_dump -Fc -f /backups/shop-$$(date +%Y-%m-%d).dump && echo "backup done $$(date)"
+          find /backups -name 'shop-*.dump' -mtime +14 -delete
+        done
+    depends_on:
+      shop-db:
+        condition: service_healthy
+
+networks:
+  # made once by the deploy scripts (docker network create web); billing's Caddy is on it too
+  web:
+    external: true
+
+volumes:
+  shop_pgdata:

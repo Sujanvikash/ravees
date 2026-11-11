@@ -1,60 +1,147 @@
-import { createContext, useContext } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useLocalStorage } from '../../hooks/useLocalStorage.js';
+import { api, readToken, writeToken } from '../../lib/api.js';
 
 /**
- * There is no backend, so "accounts" are just a list in localStorage — shared with
- * nothing else, per browser, like Cart/Wishlist. Passwords are never stored in the
- * clear: they're SHA-256 hashed (salted with the email) via the browser's built-in
- * Web Crypto API before being written down. That's still not real authentication —
- * anyone with devtools access to this browser profile can read the hash list — but
- * it means a look at localStorage doesn't hand over a plaintext password.
+ * Customer accounts, kept by the shop API. Signing in gives a token (30 days, or until the password
+ * changes), saved in localStorage as `raave-customer-token`; the customer's profile is saved beside it so
+ * a reload shows them signed in at once. On load the token is checked with `GET /auth/me`: the profile
+ * is refreshed, or both are dropped if the server no longer accepts the token (401).
+ *
+ * Every action answers `{ ok: true }` or `{ ok: false, error: "a sentence for the person" }`.
+ * `request(path, options)` is the API call with the customer's token (when signed in); a 401 signs out.
  */
 const CustomerAuthContext = createContext(null);
 
-const hashPassword = async (password, email) => {
-  const bytes = new TextEncoder().encode(`${email.trim().toLowerCase()}:${password}`);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-};
+const TOKEN_KEY = 'raave-customer-token';
+
+// The accounts of the browser-only version (password hashes included): nothing reads them any more.
+try {
+  window.localStorage.removeItem('raave-customers');
+  window.localStorage.removeItem('raave-customer-session');
+} catch {
+  // storage unavailable: nothing to clean up
+}
+
+const failure = (err) => ({ ok: false, error: err.message });
 
 export const CustomerAuthProvider = ({ children }) => {
-  const [customers, setCustomers] = useLocalStorage('raave-customers', []);
-  const [session, setSession] = useLocalStorage('raave-customer-session', null);
+  const [token, setTokenState] = useState(() => readToken(TOKEN_KEY));
+  const [customer, setCustomer] = useLocalStorage('raave-customer', null);
 
-  const findByEmail = (email) => customers.find((c) => c.email.toLowerCase() === email.trim().toLowerCase());
+  const setToken = useCallback((next) => {
+    writeToken(TOKEN_KEY, next);
+    setTokenState(next);
+  }, []);
+
+  const signIn = useCallback(
+    ({ token: next, customer: who }) => {
+      setToken(next);
+      setCustomer(who);
+    },
+    [setToken, setCustomer]
+  );
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setCustomer(null);
+  }, [setToken, setCustomer]);
+
+  // Check the saved token once per visit (and whenever it changes).
+  useEffect(() => {
+    if (!token) return undefined;
+    const controller = new AbortController();
+    api('/auth/me', { token, signal: controller.signal }).then(setCustomer, (err) => {
+      if (err.status === 401) logout();
+    });
+    return () => controller.abort();
+  }, [token, setCustomer, logout]);
+
+  const request = useCallback(
+    async (path, options = {}) => {
+      try {
+        return await api(path, { ...options, token });
+      } catch (err) {
+        if (err.status === 401 && token) {
+          logout();
+          err.message = 'Your session has ended. Please sign in again.';
+        }
+        throw err;
+      }
+    },
+    [token, logout]
+  );
 
   const signup = async ({ name, email, phone, password }) => {
-    if (!name.trim() || !email.trim() || !password) {
-      return { ok: false, error: 'Please fill in your name, email and a password.' };
+    try {
+      signIn(await api('/auth/signup', { method: 'POST', body: { name, email, phone, password } }));
+      return { ok: true };
+    } catch (err) {
+      return failure(err);
     }
-    if (findByEmail(email)) {
-      return { ok: false, error: 'An account with this email already exists — try signing in instead.' };
-    }
-    const passwordHash = await hashPassword(password, email);
-    const customer = {
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      passwordHash,
-      createdAt: new Date().toISOString(),
-    };
-    setCustomers((prev) => [...prev, customer]);
-    setSession({ name: customer.name, email: customer.email, phone: customer.phone });
-    return { ok: true };
   };
 
   const login = async ({ email, password }) => {
-    const customer = findByEmail(email);
-    if (!customer) return { ok: false, error: 'No account found with that email.' };
-    const passwordHash = await hashPassword(password, email);
-    if (passwordHash !== customer.passwordHash) return { ok: false, error: 'Incorrect password.' };
-    setSession({ name: customer.name, email: customer.email, phone: customer.phone });
-    return { ok: true };
+    try {
+      signIn(await api('/auth/login', { method: 'POST', body: { email, password } }));
+      return { ok: true };
+    } catch (err) {
+      return failure(err);
+    }
   };
 
-  const logout = () => setSession(null);
+  const updateProfile = async ({ name, phone }) => {
+    try {
+      setCustomer(await request('/auth/me', { method: 'PATCH', body: { name, phone } }));
+      return { ok: true };
+    } catch (err) {
+      return failure(err);
+    }
+  };
 
-  const value = { session, isAuthenticated: Boolean(session), signup, login, logout };
+  // The server signs other devices out and answers a new token for this one.
+  const changePassword = async ({ current, password }) => {
+    try {
+      const { token: next } = await request('/auth/change-password', { method: 'POST', body: { current, password } });
+      setToken(next);
+      return { ok: true };
+    } catch (err) {
+      return failure(err);
+    }
+  };
+
+  // Answers ok whether or not the email has an account (the server doesn't say either).
+  const forgotPassword = async ({ email }) => {
+    try {
+      await api('/auth/forgot-password', { method: 'POST', body: { email } });
+      return { ok: true };
+    } catch (err) {
+      return failure(err);
+    }
+  };
+
+  // The emailed link's token and the new password; signs the customer in.
+  const resetPassword = async ({ token: resetToken, password }) => {
+    try {
+      signIn(await api('/auth/reset-password', { method: 'POST', body: { token: resetToken, password } }));
+      return { ok: true };
+    } catch (err) {
+      return failure(err);
+    }
+  };
+
+  const value = {
+    session: token ? customer : null,
+    isAuthenticated: Boolean(token && customer),
+    signup,
+    login,
+    logout,
+    updateProfile,
+    changePassword,
+    forgotPassword,
+    resetPassword,
+    request,
+  };
 
   return <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>;
 };

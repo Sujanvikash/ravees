@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
 import { useInView } from '../hooks/useInView.js';
+import Price from './Price.jsx';
 
 // Round icon button over the photo (wishlist): white discs that read on any photo.
 const ACTION_CIRCLE =
@@ -12,7 +13,7 @@ const ACTION_CIRCLE =
 
 /**
  * Product card: a cream card topped by a full-width square photo, a stock badge, the category in gold,
- * the name and one full-width "Add to Cart".
+ * the name, the price (or "Price on request") and one full-width "Add to Cart".
  * The photo and the name open the product page.
  */
 const ProductCard = ({ product, onQuickView }) => {
@@ -105,11 +106,13 @@ const ProductCard = ({ product, onQuickView }) => {
           {product.categoryLabel}
         </span>
 
-        <h3 className="mb-2 font-sans text-[0.82rem] font-semibold leading-[1.3] text-ink sm:text-[0.86rem]">
+        <h3 className="mb-1 font-sans text-[0.82rem] font-semibold leading-[1.3] text-ink sm:text-[0.86rem]">
           <Link to={`/product/${product.id}`} onClick={openQuickView} className="no-underline transition-colors hover:text-gold-ink">
             {product.name}
           </Link>
         </h3>
+
+        <Price product={product} tone="cream" size="sm" onRequest="Price on request" className="mb-2" />
 
         <button
           ref={addBtnRef}

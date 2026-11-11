@@ -5,7 +5,8 @@ import Reveal from '../Reveal.jsx';
 import Button from '../Button.jsx';
 import PageTitle from '../PageTitle.jsx';
 import Eyebrow from '../Eyebrow.jsx';
-import { SHOWROOMS, ALL_STORES, telHref } from '../../data/showrooms.js';
+import { telHref } from '../../data/site.js';
+import { useStorefront } from '../../context/StorefrontContext.jsx';
 import { VISIT_US } from '../../data/home.js';
 import { showroomsBg } from '../../assets/backgrounds';
 
@@ -13,7 +14,9 @@ import { showroomsBg } from '../../assets/backgrounds';
  * "Visit us": a full-width band over the storefront photo, with the old site's invitation on the left and
  * a card per city on the right (its stores, the first phone number, and a link to the Showrooms page).
  */
-const StoresBand = () => (
+const StoresBand = () => {
+  const { showrooms, stores } = useStorefront();
+  return (
   <section className="relative isolate z-20 overflow-hidden border-y border-gold-400/15 bg-bg-darker py-10 md:py-14">
     <img src={showroomsBg} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 -z-10 size-full object-cover object-right opacity-60" />
     <span
@@ -23,7 +26,7 @@ const StoresBand = () => (
     <Container className="grid items-center gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-12">
       <Reveal>
         <Eyebrow>
-          ✦ {ALL_STORES.length} stores across India ✦
+          ✦ {stores.length} stores across India ✦
         </Eyebrow>
         <PageTitle as="h2" size="lg" className="mb-3">
           {VISIT_US.title}
@@ -36,8 +39,8 @@ const StoresBand = () => (
       </Reveal>
 
       <ul className="grid list-none gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {SHOWROOMS.map((room, i) => (
-          <Reveal as="li" key={room.city} delay={i}>
+        {showrooms.map((room, i) => (
+          <Reveal as="li" key={room.id ?? room.city} delay={i}>
             <div className="flex h-full flex-col rounded-xl border border-gold-400/20 bg-surface/80 p-4 backdrop-blur-[6px]">
               <Link to="/showrooms" className="mb-1.5 flex items-center gap-2 font-serif text-[1.05rem] font-bold text-white no-underline hover:text-gold-300">
                 <MapPin size={17} strokeWidth={1.8} className="text-gold-400" aria-hidden="true" />
@@ -59,6 +62,7 @@ const StoresBand = () => (
       </ul>
     </Container>
   </section>
-);
+  );
+};
 
 export default StoresBand;

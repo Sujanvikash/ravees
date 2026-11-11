@@ -1,4 +1,4 @@
-# The billing API on the server: PostgreSQL, the API, Caddy (HTTPS) and a nightly database backup.
+# The billing API on the server: PostgreSQL, the API, Caddy (HTTPS, for the shop API too) and a nightly database backup.
 # Lives in ~/billing on the server next to .env and Caddyfile; CI copies it there on every deploy.
 #   docker compose up -d                                   start or update everything
 #   docker compose exec api python -m app.cli seed         fill the database (first time)
@@ -38,10 +38,15 @@ services:
       - "443:443"
     environment:
       API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env}
+      # the website's shop API (ecommerce/deploy), served by this Caddy too
+      SHOP_API_DOMAIN: ${SHOP_API_DOMAIN:-shop-api.localhost}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - default
+      - web
     depends_on:
       - api
 
@@ -69,6 +74,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+networks:
+  # shared with the shop API (ecommerce/deploy); the deploy scripts make it (docker network create web)
+  web:
+    external: true
 
 volumes:
   pgdata:

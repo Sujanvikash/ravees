@@ -1,17 +1,33 @@
+# ecommerce/frontend
 
-# React + Vite
+The Raave's Evergreen website: the shop front (collections, product pages, cart and checkout, showrooms,
+stories) and the admin at `/admin`. React 19, Vite 8, Tailwind CSS v4 and react-router-dom 7, in plain JSX.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+```bash
+npm install
+npm run dev       # http://localhost:5173
+npm run lint
+npm run build     # to dist/
+```
 
-Currently, two official plugins are available:
+## The shop API
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Everything the site shows and stores comes from the shop API in `ecommerce/backend` (its `README.md` is the
+contract): the catalogue, showrooms and testimonials, customer accounts, enquiries, orders and the admin.
+Run it on port 8001 while working on the site.
 
-## React Compiler
+- **`VITE_API_URL`**: the API's address up to and including `/api/v1`, `http://localhost:8001/api/v1` by default.
+  Copy `.env.example` to `.env.local` to change it locally; on Cloudflare Pages set it as a build environment
+  variable (it is built into the site). The API's `CORS_ORIGINS` must include the site's address.
+- **Storefront data**: one `GET /storefront` per visit, with the last copy kept in the browser so a reload
+  paints at once. If the API can't be reached on a first visit, the site says so and offers a retry.
+- **Customers**: sign up, sign in, reset a forgotten password by email (`/forgot-password` → the emailed
+  `/reset-password?token=…` link), and see their orders under `/account`.
+- **Checkout**: when every item in the cart has a price, the customer gives a delivery address and pays with
+  Razorpay; products without a price ("Price on request") send the list to the concierge as a quote request.
+- **Admin** (`/admin`): sign in with the admin login the backend's `seed` created. Products (details, prices,
+  photos, order), categories, showrooms, testimonials, enquiries, orders (move them along, e.g. with a
+  tracking number), customers, delivery charges and the admin password.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`src/data/products.js`, `categories.js`, `showrooms.js` and `testimonials.js` are no longer read by the site;
+they are the backend's first catalogue (its `seed` command). `public/` is not needed to build or run the site.

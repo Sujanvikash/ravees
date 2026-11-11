@@ -74,6 +74,8 @@ const Signup = () => {
             {...errorProps('signup-password', fieldErrors.password)}
             type="password"
             required
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
             value={form.password}
             onChange={update('password')}
           />
@@ -84,6 +86,7 @@ const Signup = () => {
             {...errorProps('signup-confirm', fieldErrors.confirm)}
             type="password"
             required
+            autoComplete="new-password"
             value={form.confirm}
             onChange={update('confirm')}
           />

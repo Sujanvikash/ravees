@@ -5,8 +5,7 @@ import CategoryTabs from '../components/CategoryTabs.jsx';
 import Dropdown from '../components/Dropdown.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
 import QuickViewModal from '../components/QuickViewModal.jsx';
-import { PRODUCTS } from '../data/products.js';
-import { CATEGORIES } from '../data/categories.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import Container from '../components/Container.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
@@ -27,6 +26,7 @@ const Shop = () => {
   const [quickView, setQuickView] = useState(null);
   const [sort, setSort] = useState('featured');
   const { wishlist } = useWishlist();
+  const { products, categories } = useStorefront();
 
   const category = searchParams.get('category') ?? 'all';
   const query = searchParams.get('q') ?? '';
@@ -41,7 +41,7 @@ const Shop = () => {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = PRODUCTS.filter((p) => {
+    let list = products.filter((p) => {
       const matchesCat = category === 'all' || p.category === category;
       const matchesQuery =
         !q ||
@@ -57,7 +57,7 @@ const Shop = () => {
     else if (sort === 'stock') list = [...list].sort((a, b) => Number(b.inStock) - Number(a.inStock));
 
     return list;
-  }, [category, query, sort, wishlistOnly, wishlist]);
+  }, [products, category, query, sort, wishlistOnly, wishlist]);
 
   return (
     <section className={sectionClass('listing')}>
@@ -105,7 +105,7 @@ const Shop = () => {
         )}
 
         <CategoryTabs
-          categories={CATEGORIES}
+          categories={categories}
           selected={category}
           onSelect={(id) => setParam('category', id)}
         />

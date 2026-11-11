@@ -3,7 +3,9 @@ import { Trash2, ArrowRight } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import IconButton from '../components/IconButton.jsx';
 import QuantityStepper from '../components/QuantityStepper.jsx';
+import Price from '../components/Price.jsx';
 import { useCart } from '../context/CartContext.jsx';
+import { formatPrice } from '../lib/format.js';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Aurora from '../components/Aurora.jsx';
 import Decoration from '../components/Decoration.jsx';
@@ -12,8 +14,14 @@ import PageTitle from '../components/PageTitle.jsx';
 import { cardClass } from '../components/cardClass.js';
 import { sectionClass } from '../components/sectionClass.js';
 
+/**
+ * The cart page. When every piece has a price it shows the subtotal, delivery and total and goes on to
+ * pay online; when any is priced on request (or on backorder) the concierge quotes the whole list instead.
+ */
 const Cart = () => {
-  const { cart, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
+  const { cart, updateQuantity, removeFromCart, clearCart, totalCount, payable, subtotal, delivery, total, freeDeliveryOver } =
+    useCart();
+  const toFreeDelivery = delivery > 0 && freeDeliveryOver > subtotal ? freeDeliveryOver - subtotal : 0;
 
   return (
     <section className={sectionClass('panel')}>
@@ -67,7 +75,7 @@ const Cart = () => {
 
                   <QuantityStepper value={quantity} onChange={(next) => updateQuantity(product.id, next)} />
 
-                  <span className="font-serif text-[0.95rem] font-bold text-gold-200">On request</span>
+                  <Price product={product} quantity={quantity} className="justify-end sm:min-w-28" />
 
                   <IconButton
                     variant="remove"
@@ -86,17 +94,41 @@ const Cart = () => {
                 <span>Items in list</span>
                 <span className="font-mono text-white">{totalCount}</span>
               </div>
-              <div className="flex justify-between border-t border-white/10 pt-4 text-[1.1rem] font-bold text-white">
-                <span>Total</span>
-                <span className="font-serif text-[1.2rem] text-gold-300">Quote on request</span>
-              </div>
-              <p className="text-[0.82rem] leading-[1.6] text-text-muted">
-                Raave&apos;s publishes pricing through its concierge so every quote accounts for size, finish and
-                installation. Submit your list and a specialist confirms pricing and availability.
-              </p>
+              {payable ? (
+                <>
+                  <div className="flex justify-between text-[0.92rem] text-text-secondary">
+                    <span>Subtotal</span>
+                    <span className="text-white">{formatPrice(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-[0.92rem] text-text-secondary">
+                    <span>Delivery</span>
+                    <span className="text-white">{delivery > 0 ? formatPrice(delivery) : 'Free'}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-white/10 pt-4 text-[1.1rem] font-bold text-white">
+                    <span>Total</span>
+                    <span className="font-serif text-[1.2rem] text-gold-300">{formatPrice(total)}</span>
+                  </div>
+                  <p className="text-[0.82rem] leading-[1.6] text-text-muted">
+                    Prices include GST.
+                    {toFreeDelivery > 0 && ` Add ${formatPrice(toFreeDelivery)} more for free delivery.`}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between border-t border-white/10 pt-4 text-[1.1rem] font-bold text-white">
+                    <span>Total</span>
+                    <span className="font-serif text-[1.2rem] text-gold-300">Quote on request</span>
+                  </div>
+                  <p className="text-[0.82rem] leading-[1.6] text-text-muted">
+                    Some pieces on your list are priced through our concierge, so every quote accounts for size,
+                    finish, availability and installation. Submit your list and a specialist confirms pricing and
+                    availability.
+                  </p>
+                </>
+              )}
               <div className="flex flex-wrap gap-3">
                 <Button to="/checkout">
-                  Request Final Quote
+                  {payable ? 'Proceed to Checkout' : 'Request Final Quote'}
                   <ArrowRight size={16} strokeWidth={2} />
                 </Button>
                 <Button variant="outline" to="/shop">

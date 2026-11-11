@@ -5,6 +5,7 @@ import Footer from './Footer.jsx';
 import CartDrawer from './CartDrawer.jsx';
 import ToastContainer from './ToastContainer.jsx';
 import PageLoader from '../components/PageLoader.jsx';
+import StorefrontGate from '../components/StorefrontGate.jsx';
 import SmoothScroll from '../components/SmoothScroll';
 import SantaLayer from '../components/SantaLayer/SantaLayer.jsx';
 import WhatsAppFloat from '../components/WhatsAppFloat.jsx';
@@ -29,7 +30,10 @@ const RootLayout = () => {
               stage and every position:fixed popup inside the page. */}
           <div key={pathname} className="animate-page-in">
             <Suspense fallback={<PageLoader />}>
-              <Outlet context={{ openCart: () => setIsCartOpen(true) }} />
+              {/* Every page can rely on the storefront data (products, showrooms…) being there. */}
+              <StorefrontGate>
+                <Outlet context={{ openCart: () => setIsCartOpen(true) }} />
+              </StorefrontGate>
             </Suspense>
           </div>
         </main>

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../Button.jsx';
 import Eyebrow from '../Eyebrow.jsx';
-import { HERO_SLIDES, productById } from '../../data/home.js';
+import { HERO_SLIDES } from '../../data/home.js';
+import { useStorefront } from '../../context/StorefrontContext.jsx';
 import { checkoutBg, quickViewBg, productBg } from '../../assets/backgrounds';
 
 // Each slide's photo (subject on the right, dark on the left where the text sits) and three products
@@ -14,11 +15,7 @@ const SLIDE_MEDIA = [
   { photo: productBg, products: ['norway-spruce-christmas-tree', 'swiss-alps-christmas-tree', 'white-wood-christmas-tree'] },
 ];
 
-const SLIDES = HERO_SLIDES.map((slide, i) => ({
-  ...slide,
-  photo: SLIDE_MEDIA[i].photo,
-  products: SLIDE_MEDIA[i].products.map(productById).filter(Boolean),
-}));
+const SLIDES = HERO_SLIDES.map((slide, i) => ({ ...slide, ...SLIDE_MEDIA[i] }));
 
 const INTERVAL = 6500;
 
@@ -33,6 +30,7 @@ const NAV_BTN =
 const HeroCarousel = ({ className = '' }) => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const { productById } = useStorefront();
   const go = (d) => setIndex((i) => (i + d + SLIDES.length) % SLIDES.length);
 
   useEffect(() => {
@@ -83,7 +81,7 @@ const HeroCarousel = ({ className = '' }) => {
 
           {/* Featured products: small white plates along the bottom right */}
           <div className="absolute right-4 bottom-4 hidden items-end gap-2.5 sm:flex">
-            {slide.products.map((p) => (
+            {slide.products.map(productById).filter(Boolean).map((p) => (
               <Link
                 key={p.id}
                 to={`/product/${p.id}`}

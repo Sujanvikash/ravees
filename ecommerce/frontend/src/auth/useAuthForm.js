@@ -4,11 +4,12 @@ import { useToast } from '../context/ToastContext.jsx';
 import { focusFirstError, validate } from '../lib/validation.js';
 
 /**
- * The shared state and submit flow of the sign-in and sign-up forms: validate with `schema`, call
- * `submit(data)` (login or signup), then greet with `welcome(data)` and go back to where the customer
- * came from, or show the error. `idPrefix` is the forms' field-id prefix, for focusing the first error.
+ * The shared state and submit flow of the account forms: validate with `schema`, call `submit(data)`
+ * (login, signup, reset…), then greet with `welcome(data)` and go back to where the customer came from
+ * (the account page by default), or show the error. A form that stays put passes `done(data)` instead of
+ * `welcome`. `idPrefix` is the forms' field-id prefix, for focusing the first error.
  */
-export const useAuthForm = ({ initial, schema, idPrefix, submit, welcome }) => {
+export const useAuthForm = ({ initial, schema, idPrefix, submit, welcome, done }) => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,11 +35,14 @@ export const useAuthForm = ({ initial, schema, idPrefix, submit, welcome }) => {
       focusFirstError(errors, idPrefix);
       return;
     }
+    setFieldErrors({});
 
     setSubmitting(true);
     const result = await submit(data);
     setSubmitting(false);
-    if (result.ok) {
+    if (result.ok && done) {
+      done(data);
+    } else if (result.ok) {
       showToast(welcome(data));
       navigate(location.state?.from ?? '/account');
     } else {

@@ -1,5 +1,3 @@
-import { CATEGORIES } from "../../data/categories.js";
-
 // What goes well with what Santa just caught: category → complementary category.
 const PAIRS = {
   "christmas-trees": "tree-hangings",
@@ -11,9 +9,9 @@ const PAIRS = {
   "home-decors": "wreath-garlands",
 };
 
-/** { id, label } of a category that pairs with the product, or null. */
-export const suggestFor = (product) => {
+/** { id, label } of a category (from the storefront's `categories`) that pairs with the product, or null. */
+export const suggestFor = (product, categories = []) => {
   const id = PAIRS[product?.category];
-  const category = id && CATEGORIES.find((c) => c.id === id);
+  const category = id && categories.find((c) => c.id === id);
   return category ? { id, label: category.name } : null;
 };
