@@ -50,10 +50,10 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
 - **Admin auth** (`admin/context/AdminAuthContext.jsx`): a demo with hardcoded credentials, not real security.
 - **Admin edits** (`admin/context/AdminDataContext.jsx`): saved as whole-collection overrides in localStorage (`raave-admin-<key>`), layered over `src/data`. They stay in one browser.
 
-**Home page** (`pages/Home.jsx`): five candidate designs in `pages/home/`, picked with `?option=1…5` through a temporary switcher pill (`components/home/HomeOptionSwitcher.jsx`). Once the client chooses one, it becomes the home page and the other options and the switcher are deleted. Their shared sections are in `components/home/`, and their copy is in `data/home.js`.
+**Home page** (`pages/Home.jsx`): a product-led shop front, the "Storefront" design the client chose from five (the other four are in commit cddbe5f). Its sections are in `components/home/`, and their copy is in `data/home.js`.
 - **Content vs. look:** the words (brand story, why choose us, vision/mission, stores in `data/showrooms.js`, stories in `data/stories.js`) come from the old site, christmasraave.in. The logo, theme, photos and product images are ours. Never take images or styling from the old site.
 
-**Cinematic hero** (`components/CinematicHero/`): not used by any home option at present (the client asked for the hero to go). Kept until a home option is chosen.
+**Cinematic hero** (`components/CinematicHero/`): not used on the site (the client asked for the hero to go). The code is kept in case it is wanted back.
 - `heroConfig.js` is the single place for the asset manifests, the mobile/desktop media query, the scroll length, the choreography thresholds (fractions of scroll from 0 to 1) and the copy.
 - `CinematicHero.jsx` turns a scroll listener and requestAnimationFrame into a 0–1 progress value. It applies that progress by writing styles directly; **scrolling never causes a React re-render**, so keep it that way.
 - It uses `MOBILE_QUERY` to mount exactly one visual, so only one kind of asset downloads:

@@ -1,19 +1,11 @@
 import { PRODUCTS } from './products.js';
-import {
-  baublesScatter,
-  festiveLanternGlow,
-  heroTreeGlow,
-  luxuryWreathAccent,
-  nativityCribSet,
-  santaChildGift,
-} from '../assets/decorations';
 
 /**
  * Copy for the home page sections. The wording is the old site's own (christmasraave.in: home and About
  * pages), lightly tidied (its typos fixed); the pictures that go with it are ours.
  */
 
-// The photo shown for each category (category circles, tiles, tabs): a product that reads well cropped
+// The photo shown for each category (category circles, tabs): a product that reads well cropped
 // small, picked so no two categories show the same thing.
 export const CATEGORY_IMAGES = {
   all: '/images/products/santa-doll-1-1.jpg',
@@ -24,16 +16,6 @@ export const CATEGORY_IMAGES = {
   'nativity-sets': '/images/products/cribsets-1-1.jpg',
   'santa-toy': '/images/products/santa-doll-deer-toy-1-1.jpg',
   'home-decors': '/images/products/santa-toy-3-1.jpg',
-};
-
-// One of our own photos per collection, for big tiles (the product photos are on plain backgrounds).
-export const CATEGORY_PHOTOS = {
-  'christmas-trees': heroTreeGlow,
-  'tree-hangings': baublesScatter,
-  'christmas-lights': festiveLanternGlow,
-  'wreath-garlands': luxuryWreathAccent,
-  'nativity-sets': nativityCribSet,
-  'santa-toy': santaChildGift,
 };
 
 /** The products of one category, in catalogue order (all of them when `limit` is left out). */
@@ -59,26 +41,6 @@ export const mixedProducts = (limit) => {
   }
   return picks;
 };
-
-export const BRAND = {
-  name: 'Raave’s Evergreen Christmas Tree & Decorations',
-  welcome:
-    'Welcome to Raave’s, India’s largest importer of European-standard artificial Christmas trees and decorations, proudly celebrating our 27th year in India. We are dedicated to bringing the magic of the holiday season into homes across the country with our exquisite collection.',
-  family:
-    'At Raave’s, we extend our heartfelt gratitude to our family—yes, we consider our customers part of our family! Your support and loyalty are the driving forces behind our success. Every year, we cherish the testimonials and warm memories shared by our customers when they visit our showrooms.',
-  emotion:
-    'Raave’s is not just a brand; it embodies an “EMOTION.” We believe in celebrating the spirit of the season and creating lasting memories through our beautifully crafted decorations. Remember the reason for the season: “JESUS loves you and came for you” (JOHN 3:16).',
-  together:
-    'Join us in making this holiday season unforgettable, filled with joy, warmth, and cherished moments with your loved ones.',
-};
-
-// The About page's statistics band.
-export const BRAND_STATS = [
-  { value: 200, suffix: '+', label: 'Products' },
-  { value: 50, suffix: 'K', label: 'Happy Customers' },
-  { value: 10, suffix: '+', label: 'Locations' },
-  { value: 100, suffix: '+', label: 'Team Members' },
-];
 
 // "Why choose Raave's Christmas Tree and Decoration"
 export const WHY_CHOOSE = [
@@ -134,30 +96,6 @@ export const HERO_SLIDES = [
     title: 'European Standard Trees, Under One Roof',
     text: 'Lush, lifelike trees that become the centrepiece of your celebrations.',
     cta: { label: 'Shop Trees', to: '/shop?category=christmas-trees' },
-  },
-];
-
-// What each store city's page promises ("What awaits you at Christmas Raaves?").
-export const WHAT_AWAITS = [
-  {
-    title: 'European-Standard Christmas Trees',
-    text: 'Beautifully crafted, lush, and lifelike trees that become the centerpiece of your celebrations.',
-    category: 'christmas-trees',
-  },
-  {
-    title: 'Unique Ornaments',
-    text: 'From classic designs to contemporary styles, our ornaments are perfect for adding a personal touch to your tree.',
-    category: 'tree-hangings',
-  },
-  {
-    title: 'Elegant Wreaths and Garlands',
-    text: 'Grace your doors and spaces with timeless pieces that exude festive charm.',
-    category: 'wreath-garlands',
-  },
-  {
-    title: 'Timeless Nativity Sets',
-    text: 'Celebrate the season’s true spirit with detailed and handcrafted nativity sets.',
-    category: 'nativity-sets',
   },
 ];
 
