@@ -10,11 +10,11 @@ const QuantityStepper = ({ value, onChange, size = 'md' }) => {
   const s = SIZES[size] ?? SIZES.md;
   const button = `flex ${s.button} cursor-pointer items-center justify-center border-none bg-transparent text-gold-300 hover:bg-gold-400/20`;
   return (
-    <div className="inline-flex items-center overflow-hidden rounded-lg border border-gold-400/15 bg-white/8">
+    <div className="inline-flex items-center overflow-hidden rounded-lg border border-gold-400/15 bg-contrast/8">
       <button type="button" className={button} onClick={() => onChange(value - 1)} aria-label="Decrease quantity">
         <Minus size={s.icon} strokeWidth={2.5} />
       </button>
-      <span className={`${s.value} text-center font-mono text-white`} aria-live="polite">
+      <span className={`${s.value} text-center font-mono text-text-primary`} aria-live="polite">
         {value}
       </span>
       <button type="button" className={button} onClick={() => onChange(value + 1)} aria-label="Increase quantity">

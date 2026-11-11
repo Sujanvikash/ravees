@@ -4,7 +4,7 @@ import ProductCard from '../ProductCard.jsx';
 import RowHeader from './RowHeader.jsx';
 
 const ARROW =
-  'absolute top-[38%] z-10 hidden size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-bg-primary/90 text-gold-300 shadow-[0_6px_18px_--alpha(var(--color-black)/50%)] transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-on-gold md:flex';
+  'absolute top-[38%] z-10 hidden size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-bg-primary/90 text-gold-300 shadow-[0_6px_18px_--alpha(var(--color-shadow)/50%)] transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-on-gold md:flex';
 
 /**
  * One shop row that scrolls sideways: a heading with "View all", then the products in a single line

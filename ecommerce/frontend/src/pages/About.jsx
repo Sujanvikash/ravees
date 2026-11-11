@@ -25,16 +25,31 @@ const PROMISES = [
 ];
 
 /**
- * Why Raave: the nativity backdrop fills the screen, the story and its numbers on the left, John 3:16
- * over the nativity on the right, and the four promises in a band along the bottom.
+ * Why Raave, after the client's reference design and on their background (ivory, with the nativity in its
+ * right 41%): the story and its numbers on the left, John 3:16 on a dark green card at the nativity's base,
+ * and the four promises in a band below the background's gold ribbon.
+ *
+ * From xl the background spans the top at its own shape (1828×860, so 47.05vw tall) and the page is laid
+ * out on it: the text beside the nativity, the card over the snow at its foot, the promises under the
+ * ribbon. Below xl the background covers the section (cropped to its plain middle) and everything stacks,
+ * the nativity shown as a framed crop of the same picture above the card.
  */
 const About = () => {
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-darker pt-4 md:pt-5">
-      <PageBackdrop src={whyRaaveBg} fade="left" />
-      <Container>
-        <div className="grid min-h-[min(640px,calc(100svh-var(--header-h)-9rem))] items-center gap-10 py-6 lg:grid-cols-[1.25fr_1fr] lg:py-10">
-          <div>
+    <section className="relative isolate z-20 overflow-hidden bg-bg-why pt-4 md:pt-5 xl:flex xl:min-h-[47.05vw] xl:flex-col">
+      {/* Below xl the picture is a quarter taller than the section, so its gold ribbon (83-91% down) falls
+          below the bottom edge instead of running through the stacked promises, and it is cropped left of
+          centre, so neither the nativity (from 59% across) nor the bauble shows behind the text. */}
+      <PageBackdrop
+        src={whyRaaveBg}
+        position="object-[40%_center]"
+        light
+        className="h-[125%] xl:h-auto xl:aspect-1828/860"
+      />
+      <Container className="w-full xl:flex xl:flex-1 xl:flex-col">
+        <div className="grid gap-8 py-6 xl:min-h-[calc(42.6vw-1.25rem)] xl:grid-cols-[1.1fr_1fr] xl:items-center xl:gap-10 xl:py-0">
+          {/* Clear of the hanging bauble at the background's left edge, while the page is narrow enough to reach it. */}
+          <div className="xl:pl-12 min-[1440px]:pl-6 2xl:pl-0">
             <Reveal>
               <Eyebrow>✦ 27 YEARS IN INDIA &bull; EST. 1998 ✦</Eyebrow>
               <PageTitle size="xl" className="mb-5">
@@ -57,10 +72,12 @@ const About = () => {
                 <Reveal
                   key={label}
                   delay={i}
-                  className={`${cardClass('glass')} flex flex-col justify-center px-4 py-5`}
+                  className={`${cardClass('glass')} @container flex flex-col justify-center px-4 py-5`}
                 >
+                  {/* The word is sized from its card's width (it is about 6.7 times as wide as it is tall),
+                      so "Countless" fits however narrow the cards get. */}
                   {word ? (
-                    <span className="block font-serif text-[1.15rem] font-bold uppercase tracking-[0.04em] text-gold-300 sm:text-[1.2rem]">
+                    <span className="block font-serif text-[min(1.2rem,14cqw)] font-bold uppercase tracking-[0.04em] text-gold-300">
                       {word}
                     </span>
                   ) : (
@@ -78,26 +95,44 @@ const About = () => {
             </div>
           </div>
 
-          {/* The verse sits low over the nativity, as a caption to it, on a soft dark glow so it reads over the figures. */}
-          <Reveal
-            delay={2}
-            className="rounded-3xl bg-[radial-gradient(ellipse_at_center,--alpha(var(--color-shade)/82%)_0%,--alpha(var(--color-shade)/55%)_55%,transparent_78%)] px-6 py-8 text-center lg:self-end"
-          >
-            <p className="font-quote text-[1.3rem] italic leading-[1.5] text-gold-200 [text-shadow:0_2px_12px_--alpha(var(--color-black)/90%)] sm:text-[1.5rem]">
-              &ldquo;For God so loved the world
-              <br />
-              that He gave His one and only Son...&rdquo;
-            </p>
-            <span className="mt-3 block font-mono text-[0.68rem] uppercase tracking-[0.2em] text-gold-400 [text-shadow:0_1px_8px_--alpha(var(--color-black)/90%)]">
-              John 3:16 &bull; The reason for the season
-            </span>
-          </Reveal>
+          <div className="mx-auto w-full max-w-2xl">
+            {/* Below xl: the nativity, cropped out of the background (its right 42%, from 12% to 74% down: the
+                picture is 1828/768 = 238% of the frame's width, and 100px of its 860 down is 18.5% of the
+                frame's height), in a frame the card overlaps at the bottom. */}
+            <div className="relative aspect-768/540 overflow-hidden rounded-2xl border border-gold-400/20 xl:hidden">
+              <img src={whyRaaveBg} alt="" aria-hidden="true" className="absolute top-[-18.5%] right-0 w-[238%] max-w-none" />
+            </div>
+            {/* From xl the card is placed on the background, over the snow at the nativity's foot: its top 63%
+                of the picture down (29.6vw), from 57% to 94% across (the nativity spans 59-100%). It stays
+                compact there, so it ends above the gold ribbon (85% down on that side) even at 1280px. */}
+            <Reveal
+              delay={2}
+              className="theme-dark relative mx-3 -mt-10 rounded-2xl bg-forest px-6 py-7 text-center shadow-[0_20px_50px_--alpha(var(--color-shadow)/25%)] sm:mx-6 sm:py-8 xl:absolute xl:top-[29.6vw] xl:right-[6%] xl:left-[57%] xl:mx-0 xl:mt-0 xl:py-5 2xl:py-6"
+            >
+              <p className="font-quote text-[1.3rem] italic leading-[1.5] text-text-primary sm:text-[1.5rem] xl:text-[1.3rem] 2xl:text-[1.5rem]">
+                &ldquo;For God so loved the world
+                <br />
+                that He gave His one and only Son...&rdquo;
+              </p>
+              <span className="mt-3 block font-mono text-[0.68rem] uppercase tracking-[0.2em] text-gold-400">
+                John 3:16 &bull; The reason for the season
+              </span>
+            </Reveal>
+          </div>
         </div>
 
-        {/* The four promises, in a band along the bottom of the page. */}
-        <div className="grid grid-cols-1 gap-6 border-t border-gold-400/15 py-9 sm:grid-cols-2 lg:grid-cols-4">
+        {/* The four promises. From xl they sit under the background's gold ribbon, divided by thin lines. */}
+        <div className="grid grid-cols-1 gap-6 border-t border-gold-400/15 py-9 sm:grid-cols-2 xl:grid-cols-4 xl:gap-0 xl:divide-x xl:divide-gold-400/25 xl:border-t-0 xl:py-6">
           {PROMISES.map(({ Icon, text }, i) => (
-            <FeatureItem key={text} as={Reveal} delay={i} variant="band" Icon={Icon} title={text} />
+            <FeatureItem
+              key={text}
+              as={Reveal}
+              delay={i}
+              variant="band"
+              Icon={Icon}
+              title={text}
+              className="xl:justify-center xl:px-6"
+            />
           ))}
         </div>
       </Container>

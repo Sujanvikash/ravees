@@ -181,7 +181,7 @@ const CinematicHero = ({ scrollHeight = HERO_SCROLL_HEIGHT }) => {
       aria-label="Raave's Evergreen: premium Christmas trees"
       // Pulled up under the sticky header (-mt), so the picture fills the screen from the very top: when the
       // header slides away with the copy, the tree shows in its place instead of an empty strip.
-      className="relative -mt-(--header-h) bg-hero-bg"
+      className="theme-dark relative -mt-(--header-h) bg-hero-bg"
       style={reduced ? undefined : { height: scrollHeight }}
     >
       <div

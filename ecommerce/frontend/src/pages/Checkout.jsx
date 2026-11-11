@@ -61,7 +61,7 @@ const StepTitle = ({ n, title, hint, action }) => (
         {n}
       </span>
       <div>
-        <h2 className="font-serif text-[1.15rem] font-semibold leading-tight tracking-[0.04em] text-white uppercase">{title}</h2>
+        <h2 className="font-serif text-[1.15rem] font-semibold leading-tight tracking-[0.04em] text-text-primary uppercase">{title}</h2>
         {hint && <p className="mt-0.5 text-[0.8rem] text-text-secondary">{hint}</p>}
       </div>
     </div>
@@ -133,7 +133,7 @@ const Checkout = () => {
         <div className="max-w-[560px] text-center">
           {/* Wrapped gifts, with the success check as a badge on their bottom edge. */}
           <div className="relative isolate mx-auto mb-6 h-[220px] w-[min(330px,100%)]">
-            <Decoration src={luxuryGiftBoxes} className="inset-0" />
+            <Decoration src={luxuryGiftBoxes} fade="none" className="inset-0 overflow-hidden rounded-2xl border border-gold-400/25" />
             <CheckCircle2
               size={44}
               strokeWidth={1.5}
@@ -165,7 +165,7 @@ const Checkout = () => {
         <Aurora />
         <div className="flex max-w-[480px] flex-col items-center gap-4 text-center">
           <ShoppingBag size={44} strokeWidth={1.5} className="text-gold-400/50" />
-          <h1 className="font-serif text-[1.5rem] text-white">Nothing to quote yet</h1>
+          <h1 className="font-serif text-[1.5rem] text-text-primary">Nothing to quote yet</h1>
           <p className="text-text-secondary">Add a few pieces to your cart and we&apos;ll price them up for you.</p>
           <Button to="/shop">Browse the Collections</Button>
         </div>
@@ -182,8 +182,8 @@ const Checkout = () => {
   ].filter(Boolean);
 
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
-      <PageBackdrop src={checkoutBg} fade="frame" align="center" />
+    <section className="theme-dark relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
+      <PageBackdrop src={checkoutBg} align="center" />
       <Container>
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2 xl:grid-cols-[0.72fr_1.28fr_1fr]">
           {/* The invitation, straight on the backdrop. */}
@@ -193,7 +193,7 @@ const Checkout = () => {
               Concierge quote request
               <span aria-hidden="true" className="h-px w-5 bg-gold-400/60" />
             </span>
-            <PageTitle size="xl" className="mb-4 [text-shadow:0_2px_16px_--alpha(var(--color-black)/70%)]">
+            <PageTitle size="xl" className="mb-4">
               Request Your Final Quote
             </PageTitle>
             <p className="max-w-[26rem] text-[0.92rem] leading-[1.75] text-text-secondary">
@@ -320,7 +320,7 @@ const Checkout = () => {
                 <button
                   type="button"
                   onClick={() => setConfirmClear(true)}
-                  className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 text-[0.85rem] text-gold-300 transition-colors hover:text-white"
+                  className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 text-[0.85rem] text-gold-300 transition-colors hover:text-text-primary"
                 >
                   <Trash2 size={16} strokeWidth={1.8} />
                   Clear All
@@ -330,13 +330,13 @@ const Checkout = () => {
 
             <ul data-lenis-prevent className="-mr-2 flex max-h-[430px] flex-col overflow-y-auto pr-2">
               {cart.map(({ product, quantity }) => (
-                <li key={product.id} className="flex items-center gap-3 border-b border-white/6 py-3 first:pt-0 last:border-0">
+                <li key={product.id} className="flex items-center gap-3 border-b border-contrast/6 py-3 first:pt-0 last:border-0">
                   <Link to={`/product/${product.id}`} className="size-14 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
                     <img src={product.image} alt={product.name} className="size-full object-cover" />
                   </Link>
                   {/* Phones put the quantity under the name, so the name keeps the row's width. */}
                   <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 text-[0.88rem] font-medium leading-snug text-white sm:truncate">{product.name}</p>
+                    <p className="line-clamp-2 text-[0.88rem] font-medium leading-snug text-text-primary sm:truncate">{product.name}</p>
                     <span className="text-[0.74rem] text-text-muted">{product.categoryLabel}</span>
                     <div className="mt-1.5 sm:hidden">
                       <QuantityStepper size="sm" value={quantity} onChange={(q) => updateQuantity(product.id, q)} />
@@ -354,7 +354,7 @@ const Checkout = () => {
 
             <Link
               to="/shop"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gold-400/30 px-4 py-3 font-mono text-[0.78rem] font-bold uppercase tracking-[0.12em] text-gold-300 no-underline transition-all hover:border-gold-400 hover:bg-gold-400/10 hover:text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gold-400/30 px-4 py-3 font-mono text-[0.78rem] font-bold uppercase tracking-[0.12em] text-gold-300 no-underline transition-all hover:border-gold-400 hover:bg-gold-400/10 hover:text-text-primary"
             >
               <Plus size={16} strokeWidth={2} />
               Add more products
@@ -367,7 +367,7 @@ const Checkout = () => {
               </h3>
               <dl className="flex flex-col">
                 {summary.map(([label, value]) => (
-                  <div key={label} className="flex justify-between gap-4 border-b border-white/6 py-2 text-[0.85rem] last:border-0">
+                  <div key={label} className="flex justify-between gap-4 border-b border-contrast/6 py-2 text-[0.85rem] last:border-0">
                     <dt className="text-text-muted">{label}</dt>
                     <dd className="text-right text-text-primary">{value}</dd>
                   </div>
