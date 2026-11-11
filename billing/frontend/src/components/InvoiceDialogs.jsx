@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Eye, FileText, Minus, PackageCheck, Pencil, Plus, Printer, ScanBarcode, Search, Upload, X } from 'lucide-react';
+import { readSheet } from 'read-excel-file/browser';
+import { Download, Eye, FileSpreadsheet, FileText, Minus, PackageCheck, Pencil, Plus, Printer, ScanBarcode, Search, Upload, X } from 'lucide-react';
 import { activeLocations, locationById, SELLER, WAREHOUSE } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { useScanner } from '../hooks/useScanner.js';
@@ -9,6 +10,7 @@ import { findProduct, searchProducts } from '../lib/catalogue.js';
 import { GST_STATES, sellerState, stateName, stateOfGstin } from '../lib/gst.js';
 import { invoiceLine, STATUS, storeBuyer } from '../lib/invoices.js';
 import { inr } from '../lib/money.js';
+import { parsePurchaseRows } from '../lib/purchaseFile.js';
 import Dialog from './Dialog.jsx';
 
 const MAX_PDF = 2 * 1024 * 1024;
@@ -32,12 +34,13 @@ const secondary =
 const quiet = 'inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink';
 
 /** The products of some boxes and single products added together, priced as the server will:
- *  [{ code, name, qty, cost, rate, amount, gst, tax }]. */
+ *  [{ code, name, qty, cost, rate, amount, gst, tax }]. The single products come first, in their order (the newest
+ *  on top), then what the boxes hold. */
 const linesOf = (boxes, singles) => {
   const sum = new Map();
   const add = (l) => sum.set(l.code, { code: l.code, name: l.name, qty: (sum.get(l.code)?.qty ?? 0) + l.qty });
-  for (const b of boxes) b.lines.forEach(add);
   singles.forEach(add);
+  for (const b of boxes) b.lines.forEach(add);
   return [...sum.values()].map((l) => invoiceLine(l, findProduct(l.code)));
 };
 
@@ -49,64 +52,92 @@ const Notice = ({ tone = 'warn', children }) => (
 
 /** The lines of an invoice: each product at its cost price (D.Rate) with its GST on top, and the totals under them.
  *  Invoices raised before GST was added this way have no GST on their lines (their rate was cost + 18%). */
-const LinesTable = ({ lines, total }) => {
+const LinesTable = ({ lines, total }) => (
+  <div className="overflow-hidden rounded-xl border border-line-soft">
+    <div className="max-h-[36vh] overflow-auto">
+      <table className="w-full min-w-[38rem] text-[13px] tabular-nums">
+        <thead className="sticky top-0 bg-mist-2 text-left text-xs text-ink-3">
+          <tr>
+            <th scope="col" className="px-3 py-2 font-medium">Product</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium">Qty</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium">Rate (D.Rate)</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium">GST</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lines.map((l) => (
+            <tr key={l.code} className="border-t border-line-soft">
+              <td className="px-3 py-1.5">
+                <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
+                {l.name}
+              </td>
+              <td className="px-3 py-1.5 text-right">{l.qty}</td>
+              <td className="px-3 py-1.5 text-right text-ink-2">{inr(l.rate)}</td>
+              <td className="px-3 py-1.5 text-right">{inr(l.amount)}</td>
+              <td className="px-3 py-1.5 text-right text-ink-2">{l.gst == null ? '—' : `${l.gst}% · ${inr(l.tax)}`}</td>
+              <td className="px-3 py-1.5 text-right font-medium">{inr(l.amount + (l.tax ?? 0))}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <Sums lines={lines} total={total} />
+  </div>
+);
+
+/** The totals under an invoice's lines: the taxable value, the GST, any round off and the total. */
+const Sums = ({ lines, total }) => {
   const taxable = lines.reduce((s, l) => s + l.amount, 0);
   const tax = lines.reduce((s, l) => s + (l.tax ?? 0), 0);
   const sum = total ?? taxable + tax;
   return (
-    <div className="overflow-hidden rounded-xl border border-line-soft">
-      <div className="max-h-[36vh] overflow-auto">
-        <table className="w-full min-w-[38rem] text-[13px] tabular-nums">
-          <thead className="sticky top-0 bg-mist-2 text-left text-xs text-ink-3">
-            <tr>
-              <th scope="col" className="px-3 py-2 font-medium">Product</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Qty</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Rate (D.Rate)</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">GST</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l) => (
-              <tr key={l.code} className="border-t border-line-soft">
-                <td className="px-3 py-1.5">
-                  <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
-                  {l.name}
-                </td>
-                <td className="px-3 py-1.5 text-right">{l.qty}</td>
-                <td className="px-3 py-1.5 text-right text-ink-2">{inr(l.rate)}</td>
-                <td className="px-3 py-1.5 text-right">{inr(l.amount)}</td>
-                <td className="px-3 py-1.5 text-right text-ink-2">{l.gst == null ? '—' : `${l.gst}% · ${inr(l.tax)}`}</td>
-                <td className="px-3 py-1.5 text-right font-medium">{inr(l.amount + (l.tax ?? 0))}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="flex flex-col gap-1 border-t border-line-soft bg-surface px-3 py-2 text-[13px] tabular-nums">
+      <div className="flex justify-between text-ink-2">
+        <span>Taxable value (D.Rate)</span>
+        <span>{inr(taxable)}</span>
       </div>
-      <div className="flex flex-col gap-1 border-t border-line-soft bg-surface px-3 py-2 text-[13px] tabular-nums">
+      <div className="flex justify-between text-ink-2">
+        <span>GST</span>
+        <span>{inr(tax)}</span>
+      </div>
+      {Math.abs(sum - taxable - tax) >= 0.005 && (
         <div className="flex justify-between text-ink-2">
-          <span>Taxable value (D.Rate)</span>
-          <span>{inr(taxable)}</span>
+          <span>Round off</span>
+          <span>{inr(sum - taxable - tax)}</span>
         </div>
-        <div className="flex justify-between text-ink-2">
-          <span>GST</span>
-          <span>{inr(tax)}</span>
-        </div>
-        {Math.abs(sum - taxable - tax) >= 0.005 && (
-          <div className="flex justify-between text-ink-2">
-            <span>Round off</span>
-            <span>{inr(sum - taxable - tax)}</span>
-          </div>
-        )}
-        <div className="flex justify-between border-t border-line-soft pt-1 font-semibold">
-          <span>Total</span>
-          <span>{inr(sum)}</span>
-        </div>
+      )}
+      <div className="flex justify-between border-t border-line-soft pt-1 font-semibold">
+        <span>Total</span>
+        <span>{inr(sum)}</span>
       </div>
     </div>
   );
 };
+
+/** − qty + for a single product on the invoice; down to 0 takes it off. */
+const QtyStepper = ({ name, value, onChange }) => (
+  <div className="mx-auto flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line bg-surface">
+    <button type="button" onClick={() => onChange(value - 1)} aria-label={`One less ${name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
+      <Minus size={14} />
+    </button>
+    <input
+      inputMode="numeric"
+      aria-label={`Quantity of ${name}`}
+      value={value}
+      onFocus={(e) => e.target.select()}
+      onChange={(e) => {
+        const n = parseInt(e.target.value.replace(/\D/g, ''), 10);
+        if (n > 0) onChange(n);
+      }}
+      className="h-full min-w-0 flex-1 border-x border-line bg-transparent text-center font-medium tabular-nums"
+    />
+    <button type="button" onClick={() => onChange(value + 1)} aria-label={`One more ${name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
+      <Plus size={14} />
+    </button>
+  </div>
+);
 
 /** The single products on an invoice: its lines less what its boxes hold. */
 const singlesOf = (invoice, boxes) => {
@@ -121,7 +152,9 @@ const singlesOf = (invoice, boxes) => {
  * goes to it: box labels (or tick the boxes) and single products' barcodes (or search them by code or name). Every
  * product is billed at its cost price (D.Rate) with 18% GST on top: CGST + SGST to a showroom in Tamil Nadu, IGST to
  * any other state. It all leaves the admin's stock when the invoice is raised (an edit changes it by the difference),
- * and reaches the showroom's stock only when the invoice is paid and the admin adds it. `order` is a showroom's
+ * and reaches the showroom's stock only when the invoice is paid and the admin adds it. Products can also come from an
+ * Excel (a Code and a Qty column; public/invoice-template.xlsx). What is on the invoice is listed right under the scan
+ * box, the newest product on top. `order` is a showroom's
  * request a new invoice fulfils, if it comes from one: its lines, as the admin reviewed them, start on the invoice as
  * single products.
  */
@@ -141,6 +174,9 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [detailsOf, setDetailsOf] = useState(invoice?.buyer ? invoice.location : null); // whose details are in the form
+  const [last, setLast] = useState(null); // { code, at }: the product added last, marked in the list and scrolled to
+  const lastRow = useRef(null);
+  const fileRef = useRef(null);
 
   // choosing a showroom fills in its details (an invoice being edited keeps its own until the showroom changes)
   useEffect(() => {
@@ -192,13 +228,25 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
 
   const setQty = (code, qty) => setSingles((s) => (qty > 0 ? s.map((l) => (l.code === code ? { ...l, qty } : l)) : s.filter((l) => l.code !== code)));
 
+  // A product new to the invoice goes on top of the list, right under the scan box (several keep their order); one
+  // already on it is counted up where it is.
+  const addMany = (incoming) =>
+    setSingles((s) => {
+      const next = [...s];
+      const fresh = [];
+      for (const l of incoming) {
+        const i = next.findIndex((x) => x.code === l.code);
+        if (i >= 0) next[i] = { ...next[i], qty: next[i].qty + l.qty };
+        else fresh.push({ code: l.code, name: l.name, qty: l.qty });
+      }
+      return [...fresh, ...next];
+    });
+  useEffect(() => lastRow.current?.scrollIntoView({ block: 'nearest' }), [last]);
+
   const addSingle = (product, qty = 1) => {
     const now = (singles.find((l) => l.code === product.code)?.qty ?? 0) + qty;
-    setSingles((s) =>
-      s.some((l) => l.code === product.code)
-        ? s.map((l) => (l.code === product.code ? { ...l, qty: l.qty + qty } : l))
-        : [...s, { code: product.code, name: product.name, qty }],
-    );
+    addMany([{ code: product.code, name: product.name, qty }]);
+    setLast({ code: product.code, at: Date.now() });
     setNotice({ tone: 'ok', text: `${product.code} · ${product.name}: ${now} on this invoice, ${available(product.code)} in the admin stock.` });
   };
 
@@ -219,6 +267,33 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
     addSingle(product);
   };
   useScanner(onScan, true);
+
+  // An Excel of products (the purchase sheet's format: a Code and a Qty column), each added as a single product.
+  const importFile = async (file) => {
+    if (!file) return;
+    try {
+      const parsed = parsePurchaseRows(await readSheet(file));
+      if (parsed.error) return setNotice({ tone: 'warn', text: `${file.name}: ${parsed.error}` });
+      const usable = parsed.lines.filter((l) => !findProduct(l.code)?.shop);
+      const skipped = [
+        ...parsed.problems,
+        ...parsed.lines.filter((l) => findProduct(l.code)?.shop).map((l) => ({ row: l.rows[0], code: l.code, reason: 'A showroom’s own product' })),
+      ];
+      addMany(usable);
+      setLast(usable[0] ? { code: usable[0].code, at: Date.now() } : null);
+      const units = usable.reduce((t, l) => t + l.qty, 0);
+      const added = usable.length ? `Added ${usable.length} products (${units.toLocaleString('en-IN')} units) from ${file.name}.` : `Nothing added from ${file.name}.`;
+      const why = skipped
+        .slice(0, 4)
+        .map((p) => `row ${p.row}${p.code ? ` (${p.code})` : ''} ${p.reason.toLowerCase()}`)
+        .join('; ');
+      setNotice({ tone: skipped.length ? 'warn' : 'ok', text: skipped.length ? `${added} Skipped ${skipped.length}: ${why}${skipped.length > 4 ? '…' : ''}.` : added });
+    } catch {
+      setNotice({ tone: 'warn', text: `${file.name} could not be read as an .xlsx sheet.` });
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
 
   const save = async () => {
     if (!location) return setError('Choose the showroom this invoice is for.');
@@ -261,6 +336,9 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
       ? { text: `Inside ${stateName(home)}: CGST + SGST`, className: 'bg-evergreen-50 text-evergreen-900' }
       : { text: `Inter-state to ${stateName(buyer.state)}: IGST`, className: 'bg-warn-50 text-warn-ink' };
 
+  const units = lines.reduce((t, l) => t + l.qty, 0);
+  const singleQty = new Map(singles.map((l) => [l.code, l.qty]));
+
   return (
     <Dialog
       id="invoice-editor"
@@ -270,161 +348,194 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
           ? 'Change the showroom’s details, the boxes or the products. The admin stock changes by the difference.'
           : order
             ? `For ${order.number}, requested by ${locationById(order.location)?.label}. The products as reviewed are on it: check them and raise it.`
-            : 'Choose the showroom, then scan the boxes or single products that go to it.'
+            : 'Choose the showroom, then scan the boxes or single products that go to it, or import them from an Excel.'
       }
       onClose={onClose}
-      size="max-w-5xl"
+      size="max-w-[112rem]"
     >
-      <div className="flex flex-col gap-4 border-t border-line-soft px-6 pt-4 pb-5">
-        <div className="grid gap-3 sm:grid-cols-[16rem_minmax(0,1fr)]">
-          <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-            Showroom
-            <select value={location} onChange={(e) => setLocation(e.target.value)} disabled={Boolean(order || invoice?.orderId)} className={field}>
-              <option value="">Choose a showroom</option>
-              {activeLocations().map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.city} · {l.area}
-                </option>
-              ))}
-            </select>
-          </label>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (scan.trim()) onScan(scan, true);
-            }}
-            className="relative flex flex-col gap-1.5 text-[13px] font-medium"
-          >
-            <label htmlFor="invoice-scan">Scan a box or a product</label>
-            <div className="flex h-10 items-center gap-2 rounded-xl border border-line px-3 focus-within:border-evergreen-800/50">
-              <ScanBarcode size={16} className="text-ink-3" aria-hidden="true" />
-              <input
-                id="invoice-scan"
-                value={scan}
-                onChange={(e) => setScan(e.target.value)}
-                placeholder="Scan a box label or a product barcode, or type a code or name and press Enter"
-                autoComplete="off"
-                autoFocus
-                className="min-w-0 flex-1 bg-transparent text-sm font-normal placeholder:text-ink-3"
-              />
+      <div className="grid gap-5 border-t border-line-soft px-6 pt-4 pb-5 lg:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-cols-[minmax(0,1fr)_30rem]">
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="flex w-full flex-col gap-1.5 text-[13px] font-medium sm:w-56">
+              Showroom
+              <select value={location} onChange={(e) => setLocation(e.target.value)} disabled={Boolean(order || invoice?.orderId)} className={field}>
+                <option value="">Choose a showroom</option>
+                {activeLocations().map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.city} · {l.area}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (scan.trim()) onScan(scan, true);
+              }}
+              className="relative flex min-w-64 flex-1 flex-col gap-1.5 text-[13px] font-medium"
+            >
+              <label htmlFor="invoice-scan">Scan a box or a product</label>
+              <div className="flex h-10 items-center gap-2 rounded-xl border border-line px-3 focus-within:border-evergreen-800/50">
+                <ScanBarcode size={16} className="text-ink-3" aria-hidden="true" />
+                <input
+                  id="invoice-scan"
+                  value={scan}
+                  onChange={(e) => setScan(e.target.value)}
+                  placeholder="Scan a box label or a product barcode, or type a code or name and press Enter"
+                  autoComplete="off"
+                  autoFocus
+                  className="min-w-0 flex-1 bg-transparent text-sm font-normal placeholder:text-ink-3"
+                />
+              </div>
+              {matches.length > 0 && (
+                <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-80 animate-pop overflow-y-auto rounded-xl border border-line bg-surface p-1 font-normal shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">
+                  {matches.map((p) => (
+                    <li key={p.code}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addSingle(p);
+                          setScan('');
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] hover:bg-mist"
+                      >
+                        <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
+                        <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
+                        <span className={`text-xs tabular-nums ${available(p.code) > 0 ? 'text-ink-3' : 'text-ruby-ink'}`}>{available(p.code)} in admin stock</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </form>
+            <label className={`${secondary} cursor-pointer`} title="Add the products in an Excel sheet with a Code and a Qty column">
+              <FileSpreadsheet size={15} aria-hidden="true" /> Import Excel
+              <input ref={fileRef} type="file" accept=".xlsx" className="sr-only" onChange={(e) => importFile(e.target.files[0])} />
+            </label>
+            <a href="/invoice-template.xlsx" download className={quiet} title="The Excel to fill in: Code, Product name and Qty">
+              <Download size={15} aria-hidden="true" /> Template
+            </a>
+          </div>
+
+          {order && (
+            <p className="rounded-xl bg-mist-2 px-4 py-2.5 text-xs text-ink-2">
+              The {order.lines.length} products reviewed on {order.number} are on this invoice as single products. A box scanned here adds its products on top
+              of them, so scan boxes only for what isn&rsquo;t listed.
+            </p>
+          )}
+          {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
+
+          <section aria-label="On this invoice" className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-[13px] font-semibold">
+                On this invoice · {lines.length} {lines.length === 1 ? 'product' : 'products'}, {units.toLocaleString('en-IN')} units
+              </h3>
+              {singles.length > 1 && (
+                <button type="button" onClick={() => setSingles([])} className="text-xs font-medium text-ink-3 hover:text-ruby-ink">
+                  Remove all single products
+                </button>
+              )}
             </div>
-            {matches.length > 0 && (
-              <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-80 animate-pop overflow-y-auto rounded-xl border border-line bg-surface p-1 font-normal shadow-[0_16px_40px_-8px_rgba(9,9,11,0.18)]">
-                {matches.map((p) => (
-                  <li key={p.code}>
+            {chosen.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="font-medium text-ink-2">Boxes:</span>
+                {chosen.map((b) => (
+                  <span key={b.id} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface py-0.5 pr-0.5 pl-2">
+                    <span className="font-mono font-semibold">{b.boxNo}</span>
+                    <span className="text-ink-3">· {boxUnits(b.lines)} units</span>
                     <button
                       type="button"
-                      onClick={() => {
-                        addSingle(p);
-                        setScan('');
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] hover:bg-mist"
+                      onClick={() => toggle(b.id)}
+                      aria-label={`Take box ${b.boxNo} off`}
+                      className="inline-flex size-6 items-center justify-center rounded-md text-ink-3 hover:bg-ruby-50 hover:text-ruby"
                     >
-                      <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
-                      <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
-                      <span className={`text-xs tabular-nums ${available(p.code) > 0 ? 'text-ink-3' : 'text-ruby-ink'}`}>{available(p.code)} in admin stock</span>
+                      <X size={13} />
                     </button>
-                  </li>
+                  </span>
                 ))}
-              </ul>
+              </div>
             )}
-          </form>
-        </div>
-
-        <fieldset className="flex flex-col gap-2 rounded-xl border border-line-soft p-4">
-          <legend className="px-1 text-[13px] font-semibold">From: {settings.bizName?.trim() || SELLER.name}’s address on the invoice</legend>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {froms.map((o) => (
-              <label
-                key={o.text}
-                className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-[13px] ${from === o.text ? 'border-evergreen-800/50 bg-evergreen-50' : 'border-line hover:bg-mist'}`}
-              >
-                <input type="radio" name="invoice-from" checked={from === o.text} onChange={() => setFrom(o.text)} className="mt-0.5 size-4 shrink-0 accent-evergreen-800" />
-                <span className="min-w-0">
-                  <span className="block font-medium">{o.label}</span>
-                  <span className="block text-xs whitespace-pre-line text-ink-3">{o.text}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        {location && (
-          <section aria-label={`${city} on the invoice`} className="flex flex-col gap-3 rounded-xl border border-line-soft p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-[13px] font-semibold">Bill to: {city}’s details on the invoice</h3>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${supply.className}`}>{supply.text}</span>
-            </div>
-            {!ready ? (
-              <p className="text-xs text-ink-3">Loading {city}’s details…</p>
+            {lines.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-line px-4 py-12 text-center text-[13px] text-ink-3">
+                Scan a box or a product above, or import an Excel: each shows up here straight away, with its price.
+              </p>
             ) : (
-              <>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-                    Name on the invoice
-                    <input value={buyer.name} onChange={(e) => setField('name', e.target.value)} placeholder="e.g. Spark Christmas" maxLength={120} className={field} />
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-                    GSTIN
-                    <input
-                      value={buyer.gstin}
-                      onChange={(e) => setField('gstin', e.target.value.toUpperCase())}
-                      placeholder="e.g. 29ABCDE1234F1Z5"
-                      maxLength={20}
-                      className={`${field} font-mono uppercase`}
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-                    Phone
-                    <input value={buyer.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="Optional" maxLength={80} className={field} />
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-                    State (place of supply)
-                    <select value={buyer.state} onChange={(e) => setField('state', e.target.value)} className={field}>
-                      <option value="">Choose the state</option>
-                      {GST_STATES.map(([code, name]) => (
-                        <option key={code} value={code}>
-                          {name} ({code})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+              <div className="overflow-hidden rounded-xl border border-line-soft">
+                <div className="max-h-[56vh] overflow-auto">
+                  <table className="w-full min-w-[50rem] text-[13px] tabular-nums">
+                    <thead className="sticky top-0 z-1 bg-mist-2 text-left text-xs text-ink-3">
+                      <tr>
+                        <th scope="col" className="px-3 py-2 font-medium">Product</th>
+                        <th scope="col" className="px-3 py-2 text-right font-medium">Admin stock</th>
+                        <th scope="col" className="px-3 py-2 text-center font-medium">Qty</th>
+                        <th scope="col" className="px-3 py-2 text-right font-medium">Rate (D.Rate)</th>
+                        <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
+                        <th scope="col" className="px-3 py-2 text-right font-medium">GST</th>
+                        <th scope="col" className="px-3 py-2 text-right font-medium">Total</th>
+                        <th scope="col" className="w-10 px-2 py-2">
+                          <span className="sr-only">Remove</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lines.map((l) => {
+                        const single = singleQty.get(l.code) ?? 0;
+                        const boxed = l.qty - single;
+                        const isLast = l.code === last?.code;
+                        return (
+                          <tr key={l.code} ref={isLast ? lastRow : undefined} className={`border-t border-line-soft ${isLast ? 'bg-evergreen-50' : ''}`}>
+                            <td className="px-3 py-1.5">
+                              <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
+                              {l.name}
+                            </td>
+                            <td className={`px-3 py-1.5 text-right ${l.qty > available(l.code) ? 'font-medium text-ruby-ink' : 'text-ink-3'}`}>
+                              {Math.max(available(l.code), 0)}
+                            </td>
+                            <td className="px-3 py-1">
+                              {single > 0 && <QtyStepper name={l.name} value={single} onChange={(n) => setQty(l.code, n)} />}
+                              {boxed > 0 && <div className="text-center text-xs text-ink-3">{single > 0 ? `+ ${boxed}` : boxed} in boxes</div>}
+                            </td>
+                            <td className="px-3 py-1.5 text-right text-ink-2">{inr(l.rate)}</td>
+                            <td className="px-3 py-1.5 text-right">{inr(l.amount)}</td>
+                            <td className="px-3 py-1.5 text-right text-ink-2">{l.gst == null ? '—' : `${l.gst}% · ${inr(l.tax)}`}</td>
+                            <td className="px-3 py-1.5 text-right font-medium">{inr(l.amount + (l.tax ?? 0))}</td>
+                            <td className="px-2 py-1 text-right">
+                              {single > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setQty(l.code, 0)}
+                                  aria-label={`Remove ${l.name}`}
+                                  className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby"
+                                >
+                                  <X size={15} />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-                  Address
-                  <textarea
-                    rows={2}
-                    value={buyer.address}
-                    onChange={(e) => setField('address', e.target.value)}
-                    maxLength={300}
-                    placeholder="Street, city, PIN"
-                    className="resize-none rounded-xl border border-line px-3 py-2 text-sm font-normal placeholder:text-ink-3 focus:border-evergreen-800/50"
-                  />
-                </label>
-                {gstinState && gstinState !== buyer.state && (
-                  <Notice>
-                    The GSTIN starts with {gstinState} ({stateName(gstinState)}), but the state chosen is {stateName(buyer.state) || 'none'}.
-                  </Notice>
-                )}
-                <label className="flex items-center gap-2 text-xs text-ink-2">
-                  <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="size-4 accent-evergreen-800" />
-                  Also save these as {city}’s own details (its bills and the next invoices use them)
-                </label>
-              </>
+                <Sums lines={lines} />
+              </div>
+            )}
+            {short.length > 0 && (
+              <Notice>
+                More than the admin stock holds:{' '}
+                {short
+                  .slice(0, 6)
+                  .map((l) => `${l.code} (have ${Math.max(available(l.code), 0)}, on this invoice ${l.qty})`)
+                  .join(', ')}
+                {short.length > 6 ? ` and ${short.length - 6} more` : ''}. Add stock under Inventory or lower the quantities.
+              </Notice>
             )}
           </section>
-        )}
+          {error && <Notice>{error}</Notice>}
+        </div>
 
-        {order && (
-          <p className="rounded-xl bg-mist-2 px-4 py-2.5 text-xs text-ink-2">
-            The {order.lines.length} products reviewed on {order.number} are on this invoice as single products. A box scanned here adds its products on top
-            of them, so scan boxes only for what isn&rsquo;t listed.
-          </p>
-        )}
-        {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
-
-        <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-          <section className="flex min-h-0 flex-col gap-2">
+        <aside aria-label="Boxes and who the invoice is to" className="flex min-w-0 flex-col gap-4">
+          <section className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-[13px] font-semibold">Boxes in the warehouse · {free.length}</h3>
               <label className="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2">
@@ -433,7 +544,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="w-28 bg-transparent text-xs placeholder:text-ink-3" />
               </label>
             </div>
-            <ul className="max-h-72 overflow-y-auto rounded-xl border border-line-soft bg-surface p-1">
+            <ul className="max-h-56 overflow-y-auto rounded-xl border border-line-soft bg-surface p-1">
               {shown.length === 0 && (
                 <li className="px-3 py-6 text-center text-[13px] text-ink-3">{free.length ? 'No box matches.' : 'No boxes in the warehouse. Single products can still be scanned.'}</li>
               )}
@@ -449,87 +560,99 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
               ))}
             </ul>
           </section>
-          <section className="flex min-h-0 flex-col gap-2">
-            <h3 className="text-[13px] font-semibold">
-              On this invoice · {chosen.length} {chosen.length === 1 ? 'box' : 'boxes'}, {singles.length} single{' '}
-              {singles.length === 1 ? 'product' : 'products'}
-            </h3>
-            {singles.length > 0 && (
-              <ul aria-label="Single products" className="max-h-44 overflow-y-auto rounded-xl border border-line-soft bg-surface p-1">
-                {singles.map((l) => (
-                  <li key={l.code} className="flex items-center gap-2.5 rounded-lg px-2.5 py-1 text-[13px]">
-                    <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
-                    <span className="min-w-0 flex-1 truncate">{l.name}</span>
-                    <div className="flex h-8 w-28 shrink-0 items-center overflow-hidden rounded-lg border border-line">
-                      <button
-                        type="button"
-                        onClick={() => setQty(l.code, l.qty - 1)}
-                        aria-label={`One less ${l.name}`}
-                        className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist"
-                      >
-                        <Minus size={14} />
-                      </button>
+          {location && (
+            <section aria-label={`${city} on the invoice`} className="flex flex-col gap-3 rounded-xl border border-line-soft p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-[13px] font-semibold">Bill to: {city}’s details on the invoice</h3>
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${supply.className}`}>{supply.text}</span>
+              </div>
+              {!ready ? (
+                <p className="text-xs text-ink-3">Loading {city}’s details…</p>
+              ) : (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+                    <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+                      Name on the invoice
+                      <input value={buyer.name} onChange={(e) => setField('name', e.target.value)} placeholder="e.g. Spark Christmas" maxLength={120} className={field} />
+                    </label>
+                    <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+                      GSTIN
                       <input
-                        inputMode="numeric"
-                        aria-label={`Quantity of ${l.name}`}
-                        value={l.qty}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => {
-                          const n = parseInt(e.target.value.replace(/\D/g, ''), 10);
-                          if (n > 0) setQty(l.code, n);
-                        }}
-                        className="h-full min-w-0 flex-1 border-x border-line bg-transparent text-center font-medium tabular-nums"
+                        value={buyer.gstin}
+                        onChange={(e) => setField('gstin', e.target.value.toUpperCase())}
+                        placeholder="e.g. 29ABCDE1234F1Z5"
+                        maxLength={20}
+                        className={`${field} font-mono uppercase`}
                       />
-                      <button
-                        type="button"
-                        onClick={() => setQty(l.code, l.qty + 1)}
-                        aria-label={`One more ${l.name}`}
-                        className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setQty(l.code, 0)}
-                      aria-label={`Remove ${l.name}`}
-                      className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby"
-                    >
-                      <X size={15} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {lines.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-line px-4 py-10 text-center text-[13px] text-ink-3">Scanned boxes and products show up here with their prices.</p>
-            ) : (
-              <LinesTable lines={lines} />
-            )}
-            {short.length > 0 && (
-              <Notice>
-                More than the admin stock holds:{' '}
-                {short
-                  .slice(0, 6)
-                  .map((l) => `${l.code} (have ${Math.max(available(l.code), 0)}, on this invoice ${l.qty})`)
-                  .join(', ')}
-                {short.length > 6 ? ` and ${short.length - 6} more` : ''}. Add stock under Inventory or lower the quantities.
-              </Notice>
-            )}
-          </section>
-        </div>
-
-        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-ink-2">
-          Note <span className="sr-only">(optional)</span>
-          <textarea
-            rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional"
-            className="resize-none rounded-xl border border-line px-3 py-2 font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
-          />
-        </label>
-        {error && <Notice>{error}</Notice>}
+                    </label>
+                    <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+                      Phone
+                      <input value={buyer.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="Optional" maxLength={80} className={field} />
+                    </label>
+                    <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+                      State (place of supply)
+                      <select value={buyer.state} onChange={(e) => setField('state', e.target.value)} className={field}>
+                        <option value="">Choose the state</option>
+                        {GST_STATES.map(([code, name]) => (
+                          <option key={code} value={code}>
+                            {name} ({code})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <label className="flex flex-col gap-1.5 text-[13px] font-medium">
+                    Address
+                    <textarea
+                      rows={2}
+                      value={buyer.address}
+                      onChange={(e) => setField('address', e.target.value)}
+                      maxLength={300}
+                      placeholder="Street, city, PIN"
+                      className="resize-none rounded-xl border border-line px-3 py-2 text-sm font-normal placeholder:text-ink-3 focus:border-evergreen-800/50"
+                    />
+                  </label>
+                  {gstinState && gstinState !== buyer.state && (
+                    <Notice>
+                      The GSTIN starts with {gstinState} ({stateName(gstinState)}), but the state chosen is {stateName(buyer.state) || 'none'}.
+                    </Notice>
+                  )}
+                  <label className="flex items-center gap-2 text-xs text-ink-2">
+                    <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="size-4 accent-evergreen-800" />
+                    Also save these as {city}’s own details (its bills and the next invoices use them)
+                  </label>
+                </>
+              )}
+            </section>
+          )}
+          <fieldset className="flex flex-col gap-2 rounded-xl border border-line-soft p-4">
+            <legend className="px-1 text-[13px] font-semibold">From: {settings.bizName?.trim() || SELLER.name}’s address on the invoice</legend>
+            <div className="grid gap-2">
+              {froms.map((o) => (
+                <label
+                  key={o.text}
+                  className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-[13px] ${from === o.text ? 'border-evergreen-800/50 bg-evergreen-50' : 'border-line hover:bg-mist'}`}
+                >
+                  <input type="radio" name="invoice-from" checked={from === o.text} onChange={() => setFrom(o.text)} className="mt-0.5 size-4 shrink-0 accent-evergreen-800" />
+                  <span className="min-w-0">
+                    <span className="block font-medium">{o.label}</span>
+                    <span className="block text-xs whitespace-pre-line text-ink-3">{o.text}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium text-ink-2">
+            Note <span className="sr-only">(optional)</span>
+            <textarea
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Optional"
+              className="resize-none rounded-xl border border-line px-3 py-2 font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
+            />
+          </label>
+        </aside>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-mist-2 px-6 py-4">
         <span className="text-[13px] text-ink-3 tabular-nums">

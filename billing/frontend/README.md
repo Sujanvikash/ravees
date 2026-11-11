@@ -55,7 +55,7 @@ The menu shows a red badge when something needs doing: requests to review for th
 
 **Purchase Excel format:** one row per product, with a `Code` column and a `Qty` column, plus an optional `Purchase rate` (or `Rate` / `Cost`). If there is no rate, the product's cost price is used. The header row is found by name, so a title row above it, extra columns or a different column order are fine. A code that appears twice is added up. Unknown codes and bad quantities are listed and skipped. It must be an `.xlsx` file: re-save old `.xls` files from Excel.
 
-- `public/purchase-template.xlsx` is a blank template (also linked from the app).
+- `public/purchase-template.xlsx` is a blank template (also linked from the app). `public/invoice-template.xlsx` is the same for the admin's invoices (Code, Product name, Qty), and `public/box-template.xlsx` for packing lists.
 - `billing/backend/seed/sample-purchase-2026.xlsx` is a sample with 25 of the season's products, for testing.
 - `billing/backend/seed/opening-stock-2026/` has one sample opening-stock file per showroom (60 of the season's products each). Import each in Inventory → Import stock, choosing that showroom.
 
@@ -83,7 +83,7 @@ A note is asked for when it doesn't balance. The admin's **Cash check** has a pe
 
 ## Invoices and e-way bills
 
-**Invoices** (admin, under Stock) bill a showroom for the boxes and products sent to it, as Tree Classics Trader, numbered `ICC000008` onwards (ICC000004 to ICC000007 were issued before the app and brought in as printed). The admin picks the address it is from (the Manali warehouse or the Madhavaram registered office) on each one. **E-way bills** are made by hand on the GST portal (ewaybillgst.gov.in) before the goods leave; from the moment an invoice is raised its e-way bill number and PDF can be recorded on it. The Invoices list (all invoices by default) has on each row the **Invoice** to preview and the **E-way bill** to view, or **Attach e-way bill** where it is still missing.
+**Invoices** (admin, under Stock) bill a showroom for the boxes and products sent to it, as Tree Classics Trader, numbered `ICC000008` onwards (ICC000004 to ICC000007 were issued before the app and brought in as printed). The admin picks the address it is from (the Manali warehouse or the Madhavaram registered office) on each one. The new-invoice window fills the screen: the showroom and the scan box at the top, with **Import Excel** beside them (the purchase Excel format: a `Code` and a `Qty` column; **Template** downloads `public/invoice-template.xlsx`), and everything on the invoice listed right under them, the product added last on top and marked, with its admin stock, quantity and price. The warehouse boxes, the showroom's details, the address it is from and the note are in the column beside it. **E-way bills** are made by hand on the GST portal (ewaybillgst.gov.in) before the goods leave; from the moment an invoice is raised its e-way bill number and PDF can be recorded on it. The Invoices list (all invoices by default) has on each row the **Invoice** to preview and the **E-way bill** to view, or **Attach e-way bill** where it is still missing.
 
 ## Product performance and the sales report
 
