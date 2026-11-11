@@ -5,6 +5,7 @@ Razorpay, through its HTTP API (no SDK): making an order to pay, and checking th
 
 import hashlib
 import hmac
+import logging
 
 import httpx
 
@@ -12,6 +13,10 @@ from app.core.config import get_settings
 from app.core.errors import PaymentProblem
 
 ORDERS_URL = 'https://api.razorpay.com/v1/orders'
+# Razorpay's smallest payment: one rupee
+MIN_PAISE = 100
+
+log = logging.getLogger('shop.razorpay')
 
 
 def create_order(amount_paise: int, receipt: str, notes: dict[str, str]) -> str:
@@ -27,6 +32,9 @@ def create_order(amount_paise: int, receipt: str, notes: dict[str, str]) -> str:
         response.raise_for_status()
         return response.json()['id']
     except (httpx.HTTPError, KeyError, ValueError) as error:
+        # 401: the keys are wrong (or test and live are mixed up); the body says what Razorpay didn't like
+        detail = error.response.text[:300] if isinstance(error, httpx.HTTPStatusError) else str(error)
+        log.error('Razorpay order for %s failed: %s', receipt, detail)
         raise PaymentProblem() from error
 
 

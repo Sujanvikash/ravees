@@ -1,10 +1,9 @@
 # Shop website CI/CD.
 #   every push and pull request touching ecommerce/: backend lint + tests (on a throwaway PostgreSQL), frontend lint + build
-#   a push to main: also builds the shop API image, pushes it to GHCR and deploys it to the server over SSH (the same
-#   server and secrets as billing; billing's Caddy serves it, see ecommerce/deploy/compose.yml)
+#   a push to main: also builds the shop API image, pushes it to GHCR and deploys it to the shop's own server over SSH
 # The website itself is deployed by Cloudflare Pages from main (see ecommerce/deploy/README.md), not here.
 #
-# Repository secrets the deploy needs: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY.
+# Secrets the deploy needs, in the production environment: SHOP_DEPLOY_HOST, SHOP_DEPLOY_USER, SHOP_DEPLOY_SSH_KEY.
 
 name: ecommerce
 
@@ -111,10 +110,10 @@ jobs:
       - name: Copy compose files to the server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: ecommerce/deploy/compose.yml
+          host: ${{ secrets.SHOP_DEPLOY_HOST }}
+          username: ${{ secrets.SHOP_DEPLOY_USER }}
+          key: ${{ secrets.SHOP_DEPLOY_SSH_KEY }}
+          source: ecommerce/deploy/compose.yml,ecommerce/deploy/Caddyfile
           target: ecommerce
           strip_components: 2
 
@@ -125,8 +124,8 @@ jobs:
           IMAGE: ${{ steps.image.outputs.name }}:${{ github.sha }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.SHOP_DEPLOY_SSH_KEY }}
+          DEPLOY_TARGET: ${{ secrets.SHOP_DEPLOY_USER }}@${{ secrets.SHOP_DEPLOY_HOST }}
         run: |
           install -m 600 /dev/null ~/deploy_key
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/deploy_key

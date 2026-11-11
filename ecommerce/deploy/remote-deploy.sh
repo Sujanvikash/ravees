@@ -3,8 +3,6 @@
 set -e
 # Everything that could read stdin gets </dev/null: the script itself arrives on stdin, and docker would swallow it.
 cd ~/ecommerce
-# the network billing's Caddy reaches the shop API on
-docker network inspect web >/dev/null 2>&1 </dev/null || docker network create web >/dev/null 2>&1 </dev/null || true
 echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 # pin the exact image this run built, so a restart never picks up something else
 if grep -q '^API_IMAGE=' .env; then sed -i "s|^API_IMAGE=.*|API_IMAGE=$IMAGE|" .env; else echo "API_IMAGE=$IMAGE" >> .env; fi

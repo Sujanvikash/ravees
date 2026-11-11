@@ -140,6 +140,8 @@ def checkout(session: Session, customer: Customer, data: OrderIn, *, settings: S
     free = shop.free_delivery_over > 0 and subtotal >= shop.free_delivery_over
     delivery = Decimal(0 if free else shop.delivery_fee)
     total = subtotal + delivery
+    if total * 100 < razorpay.MIN_PAISE:
+        raise InvalidInput('An online payment must be at least ₹1.')
     address = data.address.model_dump(by_alias=False)
 
     if order is None:

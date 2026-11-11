@@ -1,10 +1,8 @@
-# The shop API on the server: its own PostgreSQL, the API and a nightly database backup.
-# Lives in ~/ecommerce on the server next to .env; CI copies it there on every deploy.
+# The shop API on its own server (apart from billing, so the website's traffic never slows the showrooms):
+# PostgreSQL, the API, Caddy (HTTPS) and a nightly database backup.
+# Lives in ~/ecommerce on the server next to .env and Caddyfile; CI copies them there on every deploy.
 #   docker compose up -d                                        start or update everything
 #   docker compose exec shop-api python -m app.cli seed         the admin login and the starting catalogue (first time)
-#
-# HTTPS comes from the billing app's Caddy (billing/deploy), which sends SHOP_API_DOMAIN here over the shared
-# "web" network. The services are named shop-* so their names never clash with billing's on that network.
 
 services:
   shop-db:
@@ -29,12 +27,24 @@ services:
     environment:
       ENVIRONMENT: production
       DATABASE_URL: postgresql+psycopg://shop:${POSTGRES_PASSWORD}@shop-db:5432/raaves_shop
-    networks:
-      - default
-      - web
     depends_on:
       shop-db:
         condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - shop-api
 
   # A pg_dump every night at about 02:30 IST into ./backups (photos included: they are in the database), keeping
   # the last 14 days.
@@ -62,10 +72,7 @@ services:
       shop-db:
         condition: service_healthy
 
-networks:
-  # made once by the deploy scripts (docker network create web); billing's Caddy is on it too
-  web:
-    external: true
-
 volumes:
   shop_pgdata:
+  caddy_data:
+  caddy_config:
