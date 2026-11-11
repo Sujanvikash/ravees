@@ -2,19 +2,7 @@ import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading.jsx';
 import Reveal from './Reveal.jsx';
 import { CATEGORIES } from '../data/categories.js';
-
-// The photo shown in each category's circle: a product that reads well cropped to a circle, picked so no
-// two circles show the same thing.
-const CATEGORY_IMAGES = {
-  all: '/images/products/santa-doll-1-1.jpg',
-  'christmas-trees': '/images/products/french-pine-christmas-tree-1.png',
-  'tree-hangings': '/images/products/wonderland-ornaments-15-1.jpg',
-  'christmas-lights': '/images/products/ww-with-ball-decoration-1.jpg',
-  'wreath-garlands': '/images/products/garland-52958-1.jpg',
-  'nativity-sets': '/images/products/cribsets-1-1.jpg',
-  'santa-toy': '/images/products/santa-doll-deer-toy-1-1.jpg',
-  'home-decors': '/images/products/santa-toy-3-1.jpg',
-};
+import { CATEGORY_IMAGES } from '../data/home.js';
 
 /**
  * Circular category photos in gold rings; each opens the shop filtered to that category.

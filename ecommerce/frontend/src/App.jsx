@@ -8,13 +8,14 @@ import PageLoader from './components/PageLoader.jsx';
 const Home = lazy(() => import('./pages/Home.jsx'));
 const Shop = lazy(() => import('./pages/Shop.jsx'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail.jsx'));
-const TreeStudioPage = lazy(() => import('./pages/TreeStudioPage.jsx'));
 const Cart = lazy(() => import('./pages/Cart.jsx'));
 const Checkout = lazy(() => import('./pages/Checkout.jsx'));
 const Showrooms = lazy(() => import('./pages/Showrooms.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
 const Contact = lazy(() => import('./pages/Contact.jsx'));
 const Testimonials = lazy(() => import('./pages/Testimonials.jsx'));
+const Stories = lazy(() => import('./pages/Stories.jsx'));
+const StoryPost = lazy(() => import('./pages/StoryPost.jsx'));
 const Login = lazy(() => import('./auth/pages/Login.jsx'));
 const Signup = lazy(() => import('./auth/pages/Signup.jsx'));
 const Account = lazy(() => import('./auth/pages/Account.jsx'));
@@ -39,13 +40,14 @@ const App = () => {
         <Route index element={<Home />} />
         <Route path="shop" element={<Shop />} />
         <Route path="product/:slug" element={<ProductDetail />} />
-        <Route path="tree-studio" element={<TreeStudioPage />} />
         <Route path="cart" element={<RequireCustomer><Cart /></RequireCustomer>} />
         <Route path="checkout" element={<RequireCustomer><Checkout /></RequireCustomer>} />
         <Route path="showrooms" element={<Showrooms />} />
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
         <Route path="testimonials" element={<Testimonials />} />
+        <Route path="stories" element={<Stories />} />
+        <Route path="stories/:slug" element={<StoryPost />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />
         <Route path="account" element={<Account />} />

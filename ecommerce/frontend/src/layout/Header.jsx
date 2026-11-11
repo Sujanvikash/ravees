@@ -11,9 +11,9 @@ import PopBadge from '../components/PopBadge.jsx';
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
   { to: '/shop', label: 'Collections' },
-  { to: '/tree-studio', label: 'Tree Studio', tag: 'NEW' },
   { to: '/about', label: 'Why Raave' },
   { to: '/showrooms', label: 'Showrooms' },
+  { to: '/stories', label: 'Stories' },
   { to: '/contact', label: 'Contact' },
 ];
 
@@ -35,7 +35,7 @@ const getInitials = (name = '') => {
   return (first + last).toUpperCase();
 };
 
-// The red NEW tag next to a link (Tree Studio).
+// The red NEW tag next to a link (give a link `tag: 'NEW'`).
 const NewTag = ({ children }) => (
   <span className="ml-1 rounded bg-ruby-500 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">{children}</span>
 );

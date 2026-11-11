@@ -7,6 +7,7 @@ import ToastContainer from './ToastContainer.jsx';
 import PageLoader from '../components/PageLoader.jsx';
 import SmoothScroll from '../components/SmoothScroll';
 import SantaLayer from '../components/SantaLayer/SantaLayer.jsx';
+import WhatsAppFloat from '../components/WhatsAppFloat.jsx';
 import { SantaProvider } from '../context/SantaContext.jsx';
 
 const RootLayout = () => {
@@ -36,6 +37,7 @@ const RootLayout = () => {
         <Footer />
         <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
         <ToastContainer />
+        <WhatsAppFloat />
         <SantaLayer onOpenCart={() => setIsCartOpen(true)} />
       </SantaProvider>
     </SmoothScroll>

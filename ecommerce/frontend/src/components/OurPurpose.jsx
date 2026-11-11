@@ -4,22 +4,22 @@ import Flourish from './Flourish.jsx';
 import Decoration from './Decoration.jsx';
 import { pineCornerCutout, santaChildGift } from '../assets/decorations';
 
-// Draft copy: edit freely.
+// The old site's own words (christmasraave.in, home page).
 const PURPOSE = [
   {
     Icon: Sparkles,
     title: 'Vision',
-    text: 'To inspire joy, warmth and togetherness in Indian homes by becoming the most trusted name in premium Christmas décor.',
+    text: 'To inspire joy, warmth, and togetherness in homes worldwide by becoming the most trusted name in premium Christmas decorations.',
   },
   {
     Icon: Target,
     title: 'Mission',
-    text: 'To bring high-quality, timeless Christmas decorations that blend European tradition with modern style, and make every setup effortless.',
+    text: 'Our mission is to craft high-quality, timeless Christmas decorations that blend tradition with modern aesthetics.',
   },
   {
     Icon: HeartHandshake,
     title: 'Core Values',
-    text: 'Quality, customer delight, craftsmanship and care for every family we serve guide everything we do.',
+    text: 'Quality, customer delight, innovation, environmental responsibility, and community focus drive Raave’s Christmas to create meaningful, sustainable holiday experiences.',
   },
 ];
 

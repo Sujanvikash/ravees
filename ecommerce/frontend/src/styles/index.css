@@ -35,6 +35,7 @@
   /* ruby (wishlist / alerts) */
   --color-ruby-500: #e11d48;
   --color-danger: #ff5c5c; /* delete / remove actions */
+  --color-whatsapp: #25d366; /* WhatsApp's own green, for its chat button */
 
   /* cream: the light surfaces (product cards, the "Our Purpose" band) with dark-green ink on them */
   --color-cream-50: #fbf7ee;

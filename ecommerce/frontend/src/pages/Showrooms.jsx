@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import SectionHeading from '../components/SectionHeading.jsx';
 import ShowroomCard from '../components/ShowroomCard.jsx';
-import { SHOWROOMS } from '../data/showrooms.js';
+import { ALL_STORES, SHOWROOMS } from '../data/showrooms.js';
 import Container from '../components/Container.jsx';
 import Reveal from '../components/Reveal.jsx';
 import PageBackdrop from '../components/PageBackdrop.jsx';
@@ -45,9 +45,9 @@ const Showrooms = () => {
         <SectionHeading
           flourishes={false}
           className="mb-5!"
-          eyebrow="✦ 5 FLAGSHIP DESTINATIONS ✦"
-          title="Visit Our Experience Showrooms"
-          subtitle="Walk through 10,000+ sq.ft of European winter wonder. Touch the foliage, explore lighting displays, and consult with our master holiday stylists."
+          eyebrow={`✦ ${ALL_STORES.length} STORES ACROSS INDIA ✦`}
+          title="Visit Our Stores"
+          subtitle="Wherever you are, step into the nearest Christmas Raaves store and let us help you create a magical and memorable festive season!"
         />
 
         <Reveal>

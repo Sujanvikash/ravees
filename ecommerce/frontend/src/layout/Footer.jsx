@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaFacebookF, FaInstagram, FaYoutube, FaWhatsapp } from 'react-icons/fa';
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaWhatsapp } from 'react-icons/fa';
 import {
   ArrowRight,
   ArrowUp,
@@ -29,13 +29,13 @@ const COLLECTION_LINKS = [
   { label: 'Wreaths & Garlands', to: '/shop?category=wreath-garlands', Icon: CircleDashed },
   { label: 'Nativity & Crib Sets', to: '/shop?category=nativity-sets', Icon: Star },
   { label: 'Santa Toys & Home Decor', to: '/shop?category=santa-toy', Icon: Gift },
-  { label: 'Customer Stories', to: '/testimonials', Icon: MessageSquareQuote },
+  { label: 'Christmas Stories', to: '/stories', Icon: MessageSquareQuote },
 ];
 
 const SOCIALS = [
-  { Icon: FaFacebookF, title: 'Facebook', href: 'https://www.facebook.com/' },
-  { Icon: FaInstagram, title: 'Instagram', href: 'https://www.instagram.com/' },
-  { Icon: FaYoutube, title: 'YouTube', href: 'https://www.youtube.com/' },
+  { Icon: FaFacebookF, title: 'Facebook', href: 'https://www.facebook.com/raveechristmas' },
+  { Icon: FaInstagram, title: 'Instagram', href: 'https://www.instagram.com/christmasraave.in/' },
+  { Icon: FaLinkedinIn, title: 'LinkedIn', href: 'https://www.linkedin.com/company/christmasraave/' },
   { Icon: FaWhatsapp, title: 'WhatsApp', href: whatsappHref() },
 ];
 
@@ -62,7 +62,7 @@ const Footer = () => {
 
   const handleNewsletter = (e) => {
     e.preventDefault();
-    showToast('Welcome to the Raave family! Use code RAAVE27 for 10% off.');
+    showToast('You have been successfully subscribed!');
     setEmail('');
   };
 
