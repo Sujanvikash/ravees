@@ -1,7 +1,7 @@
 // Wording and badge colours shared by the admin's enquiry pages (the list and the overview).
 
 export const ENQUIRY_TYPES = {
-  'quote-request': 'Quote request',
+  'quote-request': 'Quote request', // the old checkout's, before everything could be paid for online
   consult: 'Consultation',
   contact: 'Contact',
   product: 'Product enquiry',

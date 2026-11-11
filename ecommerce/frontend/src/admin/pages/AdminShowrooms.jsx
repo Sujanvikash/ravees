@@ -119,8 +119,8 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
             {stores.map((store, i) => (
               <div key={i} className="flex flex-col gap-2 rounded-lg border border-white/8 p-3">
                 <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
-                  <Input id={field(`store-${i}-name`)} size="sm" aria-label={`Store ${i + 1}: name`} placeholder="Name (e.g. Egmore)" value={store.name ?? ''} onChange={(e) => setStore(i, 'name', e.target.value)} />
-                  <Input size="sm" aria-label={`Store ${i + 1}: phone`} placeholder="Phone" value={store.phone ?? ''} onChange={(e) => setStore(i, 'phone', e.target.value)} />
+                  <Input id={field(`store-${i}-name`)} size="sm" aria-label={`Store ${i + 1}: name`} placeholder="Name (e.g. Egmore)" value={store.name ?? ''} onChange={(e) => setStore(i, 'name', e.target.value)} className="w-full min-w-0" />
+                  <Input size="sm" aria-label={`Store ${i + 1}: phone`} placeholder="Phone" value={store.phone ?? ''} onChange={(e) => setStore(i, 'phone', e.target.value)} className="w-full min-w-0" />
                   <IconButton
                     variant="delete"
                     label={`Remove store ${i + 1}`}

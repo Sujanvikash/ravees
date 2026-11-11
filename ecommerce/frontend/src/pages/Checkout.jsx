@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { ArrowRight, CheckCircle2, FileText, Headphones, PackageCheck, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Headphones, PackageCheck, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import FeatureItem from '../components/FeatureItem.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import PageBackdrop from '../components/PageBackdrop.jsx';
 import Container from '../components/Container.jsx';
 import PayOnline from '../components/checkout/PayOnline.jsx';
-import QuoteRequest from '../components/checkout/QuoteRequest.jsx';
+import UnavailableItems from '../components/UnavailableItems.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
@@ -18,31 +18,14 @@ import { checkoutBg } from '../assets/backgrounds';
 import PageTitle from '../components/PageTitle.jsx';
 import { sectionClass } from '../components/sectionClass.js';
 
-// The left column's copy: paying online, or asking the concierge for a quote.
-const INTRO = {
-  pay: {
-    eyebrow: 'Secure checkout',
-    title: 'Complete Your Order',
-    text: 'Tell us where to deliver, then pay securely online. We will email your order confirmation and keep you posted until it arrives.',
-    promises: [
-      { Icon: ShieldCheck, text: 'Secure Payments by Razorpay' },
-      { Icon: Truck, text: 'White-Glove Delivery Across India' },
-      { Icon: Headphones, text: 'Dedicated Concierge Support' },
-    ],
-  },
-  quote: {
-    eyebrow: 'Concierge quote request',
-    title: 'Request Your Final Quote',
-    text: 'Share your requirements and our team will get back to you with the best pricing, availability, and delivery options.',
-    promises: [
-      { Icon: Headphones, text: 'Dedicated Concierge Support' },
-      { Icon: FileText, text: 'Best Pricing & Bulk Options' },
-      { Icon: Truck, text: 'Fast Response (Within 24 Hours)' },
-    ],
-  },
-};
+// The left column's three points.
+const PROMISES = [
+  { Icon: ShieldCheck, text: 'Secure Payments by Razorpay' },
+  { Icon: Truck, text: 'White-Glove Delivery Across India' },
+  { Icon: Headphones, text: 'Dedicated Concierge Support' },
+];
 
-/** The thank-you screen after a sent request or a paid order: wrapped gifts with a check, then the words. */
+/** The thank-you screen after a paid order: wrapped gifts with a check, then the words. */
 const Done = ({ title, children, actions }) => (
   <section className={sectionClass('centered')}>
     <Aurora />
@@ -64,16 +47,15 @@ const Done = ({ title, children, actions }) => (
 );
 
 /**
- * Checkout over the festive backdrop, in three columns: the invitation on the left, the form in the middle
- * and the list with quantities and a summary on the right (stacking on smaller screens). When every piece
- * has a price it takes the delivery address and payment (PayOnline); otherwise it sends the list to the
- * concierge as a quote request (QuoteRequest).
+ * Checkout over the festive backdrop, in three columns: the invitation on the left, the delivery address and
+ * payment in the middle and the order with its total on the right (stacking on smaller screens; PayOnline
+ * draws the last two). Lines that can't be bought right now are called out, and must go before paying.
  */
 const Checkout = () => {
-  const { cart, payable, clearCart } = useCart();
+  const { cart, unavailable, clearCart } = useCart();
   const { showToast } = useToast();
   const { celebrate } = useSanta();
-  const [done, setDone] = useState(null); // { order } once paid, { quote: true } once a request is sent
+  const [done, setDone] = useState(null); // { order } once paid
   const [confirmClear, setConfirmClear] = useState(false);
 
   const finish = (result, message, santa) => {
@@ -111,45 +93,24 @@ const Checkout = () => {
     );
   }
 
-  if (done?.quote) {
-    return (
-      <Done
-        title="Your Request Is In"
-        actions={
-          <>
-            <Button to="/shop">
-              Continue Browsing
-              <ArrowRight size={16} strokeWidth={2} />
-            </Button>
-            <Button variant="outline" to="/">
-              Back Home
-            </Button>
-          </>
-        }
-      >
-        <p className="mb-8 text-[1rem] leading-[1.7] text-text-secondary">
-          Thank you! Our holiday concierge will contact you on WhatsApp or phone to confirm pricing,
-          availability and your white-glove delivery schedule.
-        </p>
-      </Done>
-    );
-  }
-
+  // Nothing that can be bought: an empty cart, or only lines that are out of stock or gone from the shop.
   if (cart.length === 0) {
     return (
       <section className={sectionClass('centered')}>
         <Aurora />
-        <div className="flex max-w-[480px] flex-col items-center gap-4 text-center">
+        <div className="flex w-full max-w-[480px] flex-col items-center gap-4 text-center">
           <ShoppingBag size={44} strokeWidth={1.5} className="text-gold-400/50" />
-          <h1 className="font-serif text-[1.5rem] text-text-primary">Your cart is empty</h1>
+          <h1 className="font-serif text-[1.5rem] text-text-primary">
+            {unavailable.length ? 'Nothing in your cart can be bought right now' : 'Your cart is empty'}
+          </h1>
           <p className="text-text-secondary">Add a few pieces to your cart and they will be waiting for you here.</p>
+          <UnavailableItems className="w-full text-left" />
           <Button to="/shop">Browse the Collections</Button>
         </div>
       </section>
     );
   }
 
-  const intro = INTRO[payable ? 'pay' : 'quote'];
   const askToClear = () => setConfirmClear(true);
 
   return (
@@ -161,16 +122,19 @@ const Checkout = () => {
           <div className="lg:col-span-2 xl:col-span-1 xl:pt-6">
             <span className="mb-3 flex items-center gap-3 font-mono text-[0.7rem] uppercase tracking-[0.24em] text-gold-400">
               <span aria-hidden="true" className="h-px w-5 bg-gold-400/60" />
-              {intro.eyebrow}
+              Secure checkout
               <span aria-hidden="true" className="h-px w-5 bg-gold-400/60" />
             </span>
             <PageTitle size="xl" className="mb-4">
-              {intro.title}
+              Complete Your Order
             </PageTitle>
-            <p className="max-w-[26rem] text-[0.92rem] leading-[1.75] text-text-secondary">{intro.text}</p>
+            <p className="max-w-[26rem] text-[0.92rem] leading-[1.75] text-text-secondary">
+              Tell us where to deliver, then pay securely online. We will email your order confirmation and keep you
+              posted until it arrives.
+            </p>
 
             <div className="mt-6 flex flex-col gap-4 border-t border-gold-400/15 pt-6 sm:flex-row sm:flex-wrap xl:flex-col">
-              {intro.promises.map(({ Icon, text }) => (
+              {PROMISES.map(({ Icon, text }) => (
                 <FeatureItem key={text} variant="point" Icon={Icon} title={text} className="sm:min-w-[14rem]" />
               ))}
             </div>
@@ -188,26 +152,19 @@ const Checkout = () => {
             </figure>
           </div>
 
-          {/* The form and the list: two columns of this grid. */}
-          {payable ? (
-            <PayOnline
-              onClearAll={askToClear}
-              onPaid={(order) =>
-                finish({ order }, `Order ${order.number} is confirmed. Thank you!`, 'Ho ho ho! Your order is on its way — Merry Christmas! 🎄')
-              }
-            />
-          ) : (
-            <QuoteRequest
-              onClearAll={askToClear}
-              onSent={() => finish({ quote: true }, 'Quote request received — our concierge will be in touch.')}
-            />
-          )}
+          {/* The form and the order: two columns of this grid. */}
+          <PayOnline
+            onClearAll={askToClear}
+            onPaid={(order) =>
+              finish({ order }, `Order ${order.number} is confirmed. Thank you!`, 'Ho ho ho! Your order is on its way — Merry Christmas! 🎄')
+            }
+          />
         </div>
       </Container>
 
       <ConfirmDialog
         open={confirmClear}
-        title="Clear your list?"
+        title="Clear your cart?"
         message="This removes every item from your cart. You can add them again from the collections."
         confirmLabel="Clear all"
         onConfirm={() => {

@@ -7,6 +7,7 @@ import { errorProps } from '../fieldError.js';
 import { Input, Textarea } from '../Input.jsx';
 import StepTitle from './StepTitle.jsx';
 import CheckoutList from './CheckoutList.jsx';
+import UnavailableItems from '../UnavailableItems.jsx';
 import { useCart } from '../../context/CartContext.jsx';
 import { useCustomerAuth } from '../../auth/context/CustomerAuthContext.jsx';
 import { deliverySchema, focusFirstError, validate } from '../../lib/validation.js';
@@ -59,13 +60,16 @@ const brandColour = () => getComputedStyle(document.documentElement).getProperty
 const BUSY = { creating: 'Preparing your order...', paying: 'Waiting for payment...', verifying: 'Confirming your payment...' };
 
 /**
- * Checkout for a list where every piece has a price: the delivery address and the order with its total, as
- * two columns of the checkout grid. Paying creates the order (`POST /orders`, priced by the server), opens
- * Razorpay, and confirms the payment (`POST /orders/<id>/verify`); `onPaid(order)` then shows the receipt.
- * Closing the payment window keeps the order, and "Try again" pays the same one.
+ * Checkout: the delivery address and the order with its total, as two columns of the checkout grid. Paying
+ * creates the order (`POST /orders`, priced by the server), opens Razorpay, and confirms the payment
+ * (`POST /orders/<id>/verify`); `onPaid(order)` then shows the receipt. Closing the payment window keeps the
+ * order, and "Try again" pays the same one. Lines that can't be bought (out of stock, gone from the shop) are
+ * listed at the top of the form, and the Pay button waits until they are removed (the server would refuse the
+ * order).
  */
 const PayOnline = ({ onPaid, onClearAll }) => {
-  const { cart, totalCount, subtotal, delivery, total, freeDeliveryOver } = useCart();
+  const { cart, unavailable, subtotal, delivery, total, freeDeliveryOver } = useCart();
+  const pieces = cart.reduce((sum, line) => sum + line.quantity, 0);
   const { session, request } = useCustomerAuth();
   const [form, setForm] = useState(() => ({
     name: session?.name ?? '',
@@ -92,6 +96,7 @@ const PayOnline = ({ onPaid, onClearAll }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (unavailable.length) return;
     const { data, errors: found } = validate(deliverySchema, form);
     if (found) {
       setErrors(found);
@@ -157,6 +162,8 @@ const PayOnline = ({ onPaid, onClearAll }) => {
     <>
       {/* ① and ② the delivery form */}
       <form onSubmit={handleSubmit} noValidate className={`${cardClass('raised')} flex flex-col gap-5 p-6 md:p-7`}>
+        {/* First thing in the form, so it is seen before the details are filled in (on phones too). */}
+        <UnavailableItems />
         <StepTitle n="1" title="Your details" hint="Who should we contact about this order?" />
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Full Name" htmlFor="pay-name" required error={errors.name} className="sm:col-span-2">
@@ -205,20 +212,21 @@ const PayOnline = ({ onPaid, onClearAll }) => {
 
         <FormError>{error}</FormError>
 
-        <Button type="submit" size="lg" full className="uppercase" disabled={busy}>
+        <Button type="submit" size="lg" full className="uppercase" disabled={busy || unavailable.length > 0}>
           <CreditCard size={18} strokeWidth={2} />
           {busy ? BUSY[stage] : `${tried ? 'Try Again · Pay' : 'Pay'} ${formatPrice(total)}`}
         </Button>
         <p className="-mt-2 flex items-center justify-center gap-1.5 text-center text-[0.75rem] text-text-muted">
           <Lock size={13} strokeWidth={2} aria-hidden="true" />
-          Secure payment by Razorpay: UPI, cards, net banking and wallets.
+          {unavailable.length > 0
+            ? "Remove the items that can't be bought right now (at the top) to pay."
+            : 'Secure payment by Razorpay: UPI, cards, net banking and wallets.'}
         </p>
       </form>
 
       {/* ③ the order and its total */}
       <CheckoutList
-        title={`Your order (${totalCount})`}
-        showPrices
+        title={`Your order (${pieces})`}
         summary={[
           ['Subtotal', formatPrice(subtotal)],
           ['Delivery', delivery > 0 ? formatPrice(delivery) : 'Free'],

@@ -38,7 +38,7 @@ const LEAVE_DELAY_MS = 180;
 const IDLE_AFTER_MS = 20000; // no pointer/scroll/key activity this long → an idle moment
 const IDLE_REPEAT_MS = 25000; // and at most one idle moment this often
 const BUBBLE_MS = 5000; // how long a speech bubble stays up
-// Pages with forms where he'd be in the way. He still appears on checkout to celebrate a sent request.
+// Pages with forms where he'd be in the way. He still appears on checkout to celebrate a paid order.
 const HIDDEN_ROUTES = ["/checkout", "/login", "/signup", "/forgot-password", "/reset-password"];
 
 // Pivot points (SVG user units) for each animated part of SantaFigure.
@@ -75,8 +75,8 @@ const overlayIsOpen = () =>
 // Santa with his gift sack. Rests in the bottom-right corner (click → open cart). Hovering a product
 // card (for HOVER_DELAY_MS) makes him walk to the top-right of its Add button and wave; added
 // products fly into his sack and he answers in a speech bubble. He reacts to sign-in prompts,
-// removed items and sent requests, follows the cursor with his eyes, has idle moments, can be
-// minimised to a small sack, and steps aside for forms, drawers and modals.
+// removed items, sent consultation requests and paid orders, follows the cursor with his eyes, has
+// idle moments, can be minimised to a small sack, and steps aside for forms, drawers and modals.
 const SantaLayer = ({ onOpenCart }) => {
   const { register } = useSanta();
   const { totalCount: cartCount } = useCart();
@@ -707,7 +707,7 @@ const SantaLayer = ({ onOpenCart }) => {
 
     let pendingSad = false;
     const onRemoved = () => {
-      if (performance.now() - celebratedAt < 5000) return; // cart emptied by a sent request
+      if (performance.now() - celebratedAt < 5000) return; // cart emptied by a paid order
       if (!shownRef.current) {
         pendingSad = true; // e.g. removed inside the cart drawer: react once it closes
         return;

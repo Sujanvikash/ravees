@@ -7,7 +7,7 @@ const SantaContext = createContext(null);
 // - hoverCard(addButtonEl) / leaveCard(): Santa walks to a product's Add button and back.
 // - added(product, imageEl): an item went into the cart; returns nothing.
 // - needLogin(): a signed-out add; returns true if Santa handled it (otherwise do the normal redirect).
-// - celebrate(text?): a quote request was sent or an order paid; text replaces his usual cheer.
+// - celebrate(text?): a consultation request was sent or an order paid; text replaces his usual cheer.
 export const SantaProvider = ({ children }) => {
   const handlersRef = useRef({});
 

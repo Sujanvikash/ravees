@@ -13,7 +13,7 @@ const ACTION_CIRCLE =
 
 /**
  * Product card: a cream card topped by a full-width square photo, a stock badge, the category in gold,
- * the name, the price (or "Price on request") and one full-width "Add to Cart".
+ * the name, the price and one full-width "Add to Cart" (a disabled "Out of Stock" when it is).
  * The photo and the name open the product page.
  */
 const ProductCard = ({ product, onQuickView }) => {
@@ -43,7 +43,8 @@ const ProductCard = ({ product, onQuickView }) => {
 
   return (
     <div
-      onMouseEnter={() => hoverCard(addBtnRef.current)}
+      // Santa only walks over to a button that can be pressed.
+      onMouseEnter={() => product.inStock && hoverCard(addBtnRef.current)}
       onMouseLeave={leaveCard}
       className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-cream-200 bg-cream-50 shadow-[0_12px_30px_--alpha(var(--color-shadow)/35%)] transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-[0_22px_44px_--alpha(var(--color-shadow)/50%),0_0_24px_--alpha(var(--color-gold-400)/18%)]"
     >
@@ -82,7 +83,7 @@ const ProductCard = ({ product, onQuickView }) => {
           product.inStock ? 'bg-forest' : 'bg-ruby-500'
         }`}
       >
-        {product.inStock ? 'In Stock' : 'Backorder'}
+        {product.inStock ? 'In Stock' : 'Out of Stock'}
       </span>
 
       <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
@@ -112,17 +113,24 @@ const ProductCard = ({ product, onQuickView }) => {
           </Link>
         </h3>
 
-        <Price product={product} tone="cream" size="sm" onRequest="Price on request" className="mb-2" />
+        <Price product={product} tone="cream" size="sm" className="mb-2" />
 
         <button
           ref={addBtnRef}
           type="button"
           onClick={handleAdd}
-          title="Add to cart"
-          className="mt-auto inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md bg-forest px-2 py-1 text-[0.74rem] font-semibold text-cream-50 transition-colors duration-200 hover:bg-forest-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:text-[0.76rem]"
+          disabled={!product.inStock}
+          title={product.inStock ? 'Add to cart' : 'Out of stock'}
+          className="mt-auto inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md bg-forest px-2 py-1 text-[0.74rem] font-semibold text-cream-50 transition-colors duration-200 hover:bg-forest-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 disabled:cursor-not-allowed disabled:bg-cream-200 disabled:text-ink-soft sm:text-[0.76rem]"
         >
-          Add to Cart
-          <ShoppingCart size={13} strokeWidth={2} aria-hidden="true" />
+          {product.inStock ? (
+            <>
+              Add to Cart
+              <ShoppingCart size={13} strokeWidth={2} aria-hidden="true" />
+            </>
+          ) : (
+            'Out of Stock'
+          )}
         </button>
       </div>
     </div>

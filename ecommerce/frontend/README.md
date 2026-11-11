@@ -23,8 +23,11 @@ Run it on port 8001 while working on the site.
   paints at once. If the API can't be reached on a first visit, the site says so and offers a retry.
 - **Customers**: sign up, sign in, reset a forgotten password by email (`/forgot-password` → the emailed
   `/reset-password?token=…` link), and see their orders under `/account`.
-- **Checkout**: when every item in the cart has a price, the customer gives a delivery address and pays with
-  Razorpay; products without a price ("Price on request") send the list to the concierge as a quote request.
+- **Shopping**: a plain online store. Customers add products to the cart and pay with Razorpay at checkout,
+  after giving a delivery address. Every product on the website has a price; one without a price isn't for
+  sale yet and stays hidden. Out-of-stock products show as such and can't be added, and checkout asks for
+  any cart line that is out of stock or gone from the shop to be removed before paying.
+- **Enquiries**: the Contact page's styling consultation form.
 - **Admin** (`/admin`): sign in with the admin login the backend's `seed` created. Products (details, prices,
   photos, order), categories, showrooms, testimonials, enquiries, orders (move them along, e.g. with a
   tracking number), customers, delivery charges and the admin password.

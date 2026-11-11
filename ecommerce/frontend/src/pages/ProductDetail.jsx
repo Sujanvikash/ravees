@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronUp, Expand, Gift, Headphones, Heart, Mail, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronUp, Expand, Gift, Headphones, Heart, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
 import WhatsAppLink from '../components/WhatsAppLink.jsx';
 import { PHONE_DISPLAY, ORDER_HOURS } from '../data/site.js';
 import Badge from '../components/Badge.jsx';
@@ -15,7 +15,6 @@ import PageLoader from '../components/PageLoader.jsx';
 import Price from '../components/Price.jsx';
 import { featuresFor } from '../data/productFeatures.js';
 import { withoutSizeSpec } from '../lib/productSpecs.js';
-import { hasPrice } from '../lib/catalogue.js';
 import { formatPrice } from '../lib/format.js';
 import { useStorefront } from '../context/StorefrontContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
@@ -37,7 +36,7 @@ const PROMISES = [
   { Icon: Truck, title: 'Pan India Delivery', body: 'Secure, white-glove shipping to your door' },
   { Icon: ShieldCheck, title: '10-Year Warranty', body: 'Built for long-lasting festive beauty' },
   { Icon: Headphones, title: 'Expert Support', body: `Call ${PHONE_DISPLAY}, ${ORDER_HOURS}` },
-  { Icon: Gift, title: 'Bulk & Project Orders', body: 'Special pricing for homes, venues and businesses' },
+  { Icon: Gift, title: 'Bulk & Project Orders', body: 'Single pieces or many, for homes, venues and businesses' },
 ];
 
 // Outline button look for links that aren't <Button> (the WhatsApp link).
@@ -48,7 +47,7 @@ const OUTLINE =
 const specRows = (product) =>
   [
     ['Collection', product.categoryLabel],
-    ['Availability', product.inStock ? 'In stock' : 'On backorder'],
+    ['Availability', product.inStock ? 'In stock' : 'Out of stock'],
     product.sizes.length > 0 && ['Sizes available', product.sizes.join(', ')],
     ...withoutSizeSpec(product).map((spec) => [spec.label, spec.value]),
     ['Quality', 'European standard'],
@@ -56,14 +55,14 @@ const specRows = (product) =>
     ['Warranty', '10 years'],
     ['Delivery', 'Pan-India, white-glove'],
     ['Orders', 'Single pieces, bulk & projects'],
-    ['Price', hasPrice(product) ? `${formatPrice(product.price)} incl. GST` : 'On request'],
+    ['Price', `${formatPrice(product.price)} incl. GST`],
   ].filter(Boolean);
 
 /**
  * Product page: the photo (with a thumbnail column once a product has more than one) beside the details —
- * collection, name, description, four collection points, the price (with the MRP struck through) and
- * add to cart / WhatsApp / save, or for a product priced on request, quote / WhatsApp quote / save — and the
- * specifications, then four promise tiles and more from the same collection. The festive backdrop frames it.
+ * collection, name, description, four collection points, the price (with the MRP struck through), add to cart
+ * (a disabled "Out of Stock" when it is) / a question on WhatsApp / save, and the specifications — then four
+ * promise tiles and more from the same collection. The festive backdrop frames it.
  */
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -87,8 +86,6 @@ const ProductDetail = () => {
 
   // A saved copy of the catalogue may predate a new product: wait for the fresh one before saying "not found".
   if (!product) return loading ? <PageLoader /> : <NotFound />;
-
-  const priced = hasPrice(product);
 
   const wishlisted = isWishlisted(product.id);
   const photos = product.images.length ? product.images : [product.image];
@@ -172,7 +169,7 @@ const ProductDetail = () => {
 
             <div className="flex items-center gap-3">
               <span className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-gold-400">{product.categoryLabel}</span>
-              <Badge variant={product.inStock ? 'emerald' : 'ruby'}>{product.inStock ? 'In Stock' : 'On Backorder'}</Badge>
+              <Badge variant={product.inStock ? 'emerald' : 'ruby'}>{product.inStock ? 'In Stock' : 'Out of Stock'}</Badge>
             </div>
 
             <PageTitle size="lg" className="xl:pr-40">{product.name}</PageTitle>
@@ -184,12 +181,10 @@ const ProductDetail = () => {
               ))}
             </div>
 
-            {priced && (
-              <div className="flex flex-col gap-1.5">
-                <Price product={product} size="lg" />
-                <span className="text-[0.76rem] text-text-muted">Inclusive of GST · pay securely online</span>
-              </div>
-            )}
+            <div className="flex flex-col gap-1.5">
+              <Price product={product} size="lg" />
+              <span className="text-[0.76rem] text-text-muted">Inclusive of GST · pay securely online</span>
+            </div>
 
             {product.sizes.length > 0 && (
               <div className="flex flex-col gap-2">
@@ -204,40 +199,39 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Like the product cards: pointing at the buttons sends Santa to stand on the cart / quote button, and
-                the product flies from the photo into his sack (his speech bubble replaces the toast). */}
+            {/* Like the product cards: pointing at the buttons sends Santa to stand on the cart button (not when it
+                is out of stock), and the product flies from the photo into his sack (his speech bubble replaces the
+                toast). */}
             <div
               className="grid gap-3 sm:grid-cols-[1.4fr_1.2fr_auto]"
-              onMouseEnter={() => hoverCard(addBtnRef.current)}
+              onMouseEnter={() => product.inStock && hoverCard(addBtnRef.current)}
               onMouseLeave={leaveCard}
             >
               <Button
                 ref={addBtnRef}
                 size="lg"
                 className="uppercase"
+                disabled={!product.inStock}
                 onClick={() => {
                   if (addToCart(product, { quiet: true, onNeedLogin: needLogin })) added(product, imageRef.current);
                 }}
               >
-                {priced ? (
+                <ShoppingBag size={18} strokeWidth={2} />
+                {product.inStock ? (
                   <>
-                    <ShoppingBag size={18} strokeWidth={2} />
                     Add to Cart
+                    <ArrowRight size={18} strokeWidth={2} />
                   </>
                 ) : (
-                  <>
-                    <Mail size={18} strokeWidth={2} />
-                    Request a Quote
-                  </>
+                  'Out of Stock'
                 )}
-                <ArrowRight size={18} strokeWidth={2} />
               </Button>
               <WhatsAppLink
-                text={`Hi Raave's Evergreen, I'd like ${priced ? 'to know more about' : 'a quote for'} ${product.name}${selectedSize ? ` (${selectedSize})` : ''}.`}
+                text={`Hi Raave's Evergreen, I have a question about ${product.name}${selectedSize ? ` (${selectedSize})` : ''}.`}
                 className={OUTLINE}
                 iconSize={18}
               >
-                {priced ? 'WhatsApp Us' : 'WhatsApp Quote'}
+                WhatsApp Us
               </WhatsAppLink>
               <button type="button" onClick={() => toggleWishlist(product.id)} aria-pressed={wishlisted} className={OUTLINE}>
                 <Heart size={18} strokeWidth={2} fill={wishlisted ? 'currentColor' : 'none'} />

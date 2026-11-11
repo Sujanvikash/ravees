@@ -43,28 +43,6 @@ const notes = z.string().trim().max(1000, 'Please keep notes under 1000 characte
 const newPassword = z.string().min(1, 'Please choose a password').min(8, 'Use at least 8 characters');
 const confirmMatches = (d) => d.confirm === '' || d.password === d.confirm;
 
-/** The quote request (a cart with an item priced on request): the concierge confirms prices and delivery. */
-export const checkoutSchema = z
-  .object({
-    name,
-    phone,
-    email,
-    city: requiredText('Please enter your city').pipe(z.string().min(2, 'City looks too short')),
-    address: z.string().trim(),
-    fulfilment: z.enum(['delivery', 'pickup']),
-    showroom: z.string(),
-    timeline: z.string(),
-    notes,
-  })
-  .refine((d) => d.fulfilment === 'pickup' || d.address.length > 0, {
-    path: ['address'],
-    message: 'Please enter your delivery address',
-  })
-  .refine((d) => d.fulfilment === 'pickup' || d.address.length === 0 || d.address.length >= 10, {
-    path: ['address'],
-    message: 'Please add a little more detail (street, area, pincode)',
-  });
-
 /** The delivery address of an order paid online. */
 export const deliverySchema = z.object({
   name,

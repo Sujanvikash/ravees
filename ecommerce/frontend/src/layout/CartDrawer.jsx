@@ -6,10 +6,12 @@ import Button from '../components/Button.jsx';
 import IconButton from '../components/IconButton.jsx';
 import QuantityStepper from '../components/QuantityStepper.jsx';
 import Price from '../components/Price.jsx';
+import UnavailableItems from '../components/UnavailableItems.jsx';
 import { formatPrice } from '../lib/format.js';
 
 const CartDrawer = ({ isOpen, onClose }) => {
-  const { cart, updateQuantity, removeFromCart, totalCount, payable, subtotal } = useCart();
+  const { cart, unavailable, updateQuantity, removeFromCart, totalCount, subtotal } = useCart();
+  const empty = cart.length === 0 && unavailable.length === 0;
 
   useOverlay(isOpen, onClose);
 
@@ -39,14 +41,12 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
         <div className="border-b border-contrast/10 bg-emerald-500/8 px-6 py-3.5">
           <p className="text-[0.76rem] text-emerald-300">
-            {payable
-              ? 'Pay securely online at checkout, with white-glove delivery to your door.'
-              : 'Our holiday concierge confirms pricing & availability for every item on your list.'}
+            Pay securely online at checkout, with white-glove delivery to your door.
           </p>
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
-          {cart.length === 0 ? (
+          {empty ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
               <ShoppingBag size={40} strokeWidth={1.5} className="text-gold-400/50" />
               <p className="text-text-secondary">Your cart is empty.</p>
@@ -59,61 +59,64 @@ const CartDrawer = ({ isOpen, onClose }) => {
               </Link>
             </div>
           ) : (
-            cart.map(({ product, quantity }) => (
-              <div
-                key={product.id}
-                className="flex items-center gap-3.5 rounded-xl border border-gold-400/15 bg-shade/70 p-3.5 transition-all duration-300 hover:border-gold-400/30 hover:bg-shade/90"
-              >
-                <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
-                  <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-                </div>
-
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-[0.9rem] font-semibold leading-[1.3] text-text-primary">
-                      <Link to={`/product/${product.id}`} onClick={onClose} className="no-underline hover:text-gold-200">
-                        {product.name}
-                      </Link>
-                    </h3>
-                    <IconButton
-                      variant="remove"
-                      label={`Remove ${product.name}`}
-                      onClick={() => removeFromCart(product.id)}
-                      className="p-1"
-                    >
-                      <Trash2 size={15} strokeWidth={2} />
-                    </IconButton>
+            <>
+              {cart.map(({ product, quantity }) => (
+                <div
+                  key={product.id}
+                  className="flex items-center gap-3.5 rounded-xl border border-gold-400/15 bg-shade/70 p-3.5 transition-all duration-300 hover:border-gold-400/30 hover:bg-shade/90"
+                >
+                  <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
+                    <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                   </div>
 
-                  <p className="text-[0.75rem] text-gold-300">{product.categoryLabel}</p>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-[0.9rem] font-semibold leading-[1.3] text-text-primary">
+                        <Link to={`/product/${product.id}`} onClick={onClose} className="no-underline hover:text-gold-200">
+                          {product.name}
+                        </Link>
+                      </h3>
+                      <IconButton
+                        variant="remove"
+                        label={`Remove ${product.name}`}
+                        onClick={() => removeFromCart(product.id)}
+                        className="p-1"
+                      >
+                        <Trash2 size={15} strokeWidth={2} />
+                      </IconButton>
+                    </div>
 
-                  <div className="mt-2 flex items-center justify-between">
-                    <QuantityStepper
-                      size="sm"
-                      value={quantity}
-                      onChange={(next) => updateQuantity(product.id, next)}
-                    />
-                    <Price product={product} quantity={quantity} size="sm" className="justify-end" />
+                    <p className="text-[0.75rem] text-gold-300">{product.categoryLabel}</p>
+
+                    <div className="mt-2 flex items-center justify-between">
+                      <QuantityStepper
+                        size="sm"
+                        value={quantity}
+                        onChange={(next) => updateQuantity(product.id, next)}
+                      />
+                      <Price product={product} quantity={quantity} size="sm" className="justify-end" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+              <UnavailableItems onNavigate={onClose} />
+            </>
           )}
         </div>
 
-        {cart.length > 0 && (
+        {!empty && (
           <div className="border-t border-contrast/10 bg-shade p-6">
             <div className="mb-2.5 flex justify-between text-[0.88rem] text-text-secondary">
               <span>Items</span>
               <span className="font-mono text-text-primary">{totalCount}</span>
             </div>
             <div className="flex justify-between border-t border-contrast/10 pt-3 text-[1.1rem] font-bold text-text-primary">
-              <span>{payable ? 'Subtotal' : 'Total'}</span>
-              <span className="font-serif text-[1.15rem] text-gold-300">{payable ? formatPrice(subtotal) : 'Quote on request'}</span>
+              <span>Subtotal</span>
+              <span className="font-serif text-[1.15rem] text-gold-300">{formatPrice(subtotal)}</span>
             </div>
 
-            <Button size="lg" full to="/checkout" onClick={onClose} className="mt-3.5">
-              {payable ? 'Checkout' : 'Request Final Quote'}
+            <Button size="lg" full to="/checkout" onClick={onClose} className="mt-3.5" disabled={cart.length === 0}>
+              Checkout
             </Button>
 
             <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[0.72rem] text-text-muted">

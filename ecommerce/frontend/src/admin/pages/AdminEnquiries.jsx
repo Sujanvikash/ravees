@@ -29,7 +29,7 @@ const textFor = (value) => {
   return String(value);
 };
 
-/** An enquiry's `details` (whatever its form sent): a quote request's items as a list, the rest as "Label: value". */
+/** An enquiry's `details` (whatever its form sent): a list of items (older quote requests) as a list, the rest as "Label: value". */
 const Details = ({ details }) => {
   if (!details || typeof details !== 'object') return null;
   const { items } = details;
@@ -67,7 +67,7 @@ const Details = ({ details }) => {
   );
 };
 
-/** Enquiries from the website (quote requests, consultations…), newest first: status, details, delete. */
+/** Enquiries from the website (consultations, questions; older quote requests), newest first: status, details, delete. */
 const AdminEnquiries = () => {
   const { request } = useAdminAuth();
   const { showToast } = useToast();
@@ -104,7 +104,7 @@ const AdminEnquiries = () => {
     <div className="flex flex-col gap-6">
       <AdminPageHeader
         title="Enquiries"
-        subtitle="Quote requests from checkout, consultations from the contact page and other questions from the website."
+        subtitle="Consultation requests from the contact page and other questions from the website."
         actions={
           <Button size="sm" variant="outline" onClick={reload}>
             <RotateCw size={14} strokeWidth={2} />

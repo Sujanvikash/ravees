@@ -39,7 +39,7 @@ const AdminDashboard = () => {
   const toShip = orders.items.filter((o) => o.status === 'paid');
   const newEnquiries = enquiries.items.filter((e) => e.status === 'new');
   const hidden = products.items.filter((p) => !p.visible).length;
-  const onRequest = products.items.filter((p) => p.price == null).length;
+  const noPrice = products.items.filter((p) => p.price == null).length;
   // A figure still loading shows a dash rather than a misleading 0.
   const figure = (list, value) => (list.loading ? '—' : value);
   const inAll = (list, one, many) => (list.loading ? '' : `${list.items.length} ${list.items.length === 1 ? one : many} in all`);
@@ -57,7 +57,7 @@ const AdminDashboard = () => {
           Icon={Package}
           label="Products"
           value={products.items.length}
-          hint={[hidden && `${hidden} hidden`, onRequest && `${onRequest} priced on request`].filter(Boolean).join(' · ')}
+          hint={[hidden && `${hidden} hidden`, noPrice && `${noPrice} without a price (hidden)`].filter(Boolean).join(' · ')}
         />
         <AdminStatCard Icon={Users} label="Customers" value={figure(customers, customers.items.length)} />
       </div>

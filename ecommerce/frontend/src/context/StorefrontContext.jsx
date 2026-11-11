@@ -3,8 +3,8 @@ import { api } from '../lib/api.js';
 import { luxuryGiftBoxes } from '../assets/decorations';
 
 /**
- * Everything the storefront shows (`GET /storefront`): products, categories, showrooms, testimonials and
- * the delivery settings, loaded once per visit. The last copy is kept in localStorage, so a reload paints
+ * Everything the storefront shows (`GET /storefront`): the products for sale (every one has a price),
+ * categories, showrooms, testimonials and the delivery settings, loaded once per visit. The last copy is kept in localStorage, so a reload paints
  * at once and the fresh copy replaces it when it arrives; if the server can't be reached the saved copy
  * stays on screen. Without one, RootLayout shows a loader, then StorefrontError with a retry.
  */
@@ -76,7 +76,8 @@ export const StorefrontProvider = ({ children }) => {
   }, []);
 
   const value = useMemo(() => {
-    const products = (data?.products ?? []).map(normalizeProduct);
+    // The API only sends products for sale; a saved copy from before that rule may still hold price-less ones.
+    const products = (data?.products ?? []).filter((p) => p.price != null).map(normalizeProduct);
     const byId = new Map(products.map((p) => [p.id, p]));
     // A category without a photo of its own shows its first product's.
     const firstPhoto = (category) => products.find((p) => p.category === category)?.image;

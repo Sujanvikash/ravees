@@ -89,6 +89,12 @@ const AdminProducts = () => {
                   <EyeOff size={11} strokeWidth={2} /> Hidden
                 </span>
               )}
+              {/* The shop leaves out a product without a price: it isn't for sale yet. */}
+              {row.visible && row.price == null && (
+                <span className="inline-flex items-center gap-1 text-ruby-500">
+                  <EyeOff size={11} strokeWidth={2} /> Hidden: no price
+                </span>
+              )}
               {row.featured && (
                 <span className="inline-flex items-center gap-1 text-gold-300">
                   <Star size={11} strokeWidth={2} fill="currentColor" /> Featured
@@ -111,7 +117,7 @@ const AdminProducts = () => {
             {row.mrp != null && row.mrp > row.price && <s className="ml-2 text-[0.75rem] text-text-muted">{formatPrice(row.mrp)}</s>}
           </span>
         ) : (
-          <span className="text-text-muted">On request</span>
+          <span className="text-ruby-500">No price</span>
         ),
     },
     {
@@ -119,7 +125,7 @@ const AdminProducts = () => {
       label: 'Stock',
       render: (row) => (
         <span className={`${BADGE} ${row.inStock ? 'bg-emerald-500/15 text-emerald-300' : 'bg-ruby-500/15 text-ruby-500'}`}>
-          {row.inStock ? 'In stock' : 'Backorder'}
+          {row.inStock ? 'In stock' : 'Out of stock'}
         </span>
       ),
     },
@@ -160,12 +166,19 @@ const AdminProducts = () => {
   ];
 
   const hidden = products.items.filter((p) => !p.visible).length;
+  const noPrice = products.items.filter((p) => p.visible && p.price == null).length;
 
   return (
     <div className="flex flex-col gap-6">
       <AdminPageHeader
         title="Products"
-        subtitle={`${products.items.length} products${hidden ? ` · ${hidden} hidden from the website` : ''}`}
+        subtitle={[
+          `${products.items.length} products`,
+          hidden && `${hidden} hidden from the website`,
+          noPrice && `${noPrice} without a price (hidden)`,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
         actions={
           <Button size="sm" to="/admin/products/new">
             <Plus size={15} strokeWidth={2.5} />

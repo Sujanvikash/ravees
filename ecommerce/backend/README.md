@@ -58,9 +58,10 @@ allowed, 404, 409 conflict).
 }
 ```
 
-Only visible categories and products, in the admin's order. `price` and `mrp` are rupees, GST included; `price: null`
-means "Enquire for price" (`priceOnRequest: true`) and such a product can't be paid for online. `images` are the
-large photos (1600px), `image` the first one at card size (600px), or null.
+Only visible categories and the products for sale, in the admin's order. `price` and `mrp` are rupees, GST included.
+A product without a price isn't for sale: the storefront leaves it out (the admin still sees it), so every product here
+has a price (`priceOnRequest` is always false). `images` are the large photos (1600px), `image` the first one at card
+size (600px), or null.
 
 `GET /media/<imageId>.webp` serves a photo (`?size=card` for 600px); cached for a year.
 
@@ -87,7 +88,7 @@ A customer token lasts 30 days, or until the password changes.
 ### Orders and payment
 
 1. `POST /orders` (customer): `{ id: <uuid made by the website>, lines: [{ productId, qty }], address: { name, phone, email, line1, line2, city, state, pincode }, notes }`.
-   The server prices it from the catalogue (refusing hidden, out-of-stock or price-on-request products), adds the
+   The server prices it from the catalogue (refusing hidden, out-of-stock or price-less products), adds the
    delivery fee (`deliveryFee`, free at or above `freeDeliveryOver` when that is above 0), creates the Razorpay order
    and answers `{ order, payment: { keyId, razorpayOrderId, amount, currency, name, description, prefill: { name, email, contact } } }`
    (`amount` in paise). The same `id` sent again returns the same order (and payment, while it is unpaid).

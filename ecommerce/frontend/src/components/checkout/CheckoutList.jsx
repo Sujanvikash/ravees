@@ -8,11 +8,11 @@ import { useCart } from '../../context/CartContext.jsx';
 import { cardClass } from '../cardClass.js';
 
 /**
- * Checkout's third column: the list with quantities (and each line's amount when `showPrices`), a link back
- * to the shop, and the order summary: `summary` rows ([label, value]), then `total` ([label, value]) in bold.
- * `onClearAll` asks before emptying the list (the page owns the confirmation).
+ * Checkout's third column: the lines with their quantities and amounts, a link back to the shop, and the
+ * order summary: `summary` rows ([label, value]), then `total` ([label, value]) in bold. `onClearAll` asks
+ * before emptying the cart (the page owns the confirmation).
  */
-const CheckoutList = ({ title, summary, total, note, showPrices = false, onClearAll }) => {
+const CheckoutList = ({ title, summary, total, note, onClearAll }) => {
   const { cart, updateQuantity, removeFromCart } = useCart();
 
   return (
@@ -41,11 +41,7 @@ const CheckoutList = ({ title, summary, total, note, showPrices = false, onClear
             {/* Phones put the quantity under the name, so the name keeps the row's width. */}
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-[0.88rem] font-medium leading-snug text-text-primary sm:truncate">{product.name}</p>
-              {showPrices ? (
-                <Price product={product} quantity={quantity} size="sm" />
-              ) : (
-                <span className="text-[0.74rem] text-text-muted">{product.categoryLabel}</span>
-              )}
+              <Price product={product} quantity={quantity} size="sm" />
               <div className="mt-1.5 sm:hidden">
                 <QuantityStepper size="sm" value={quantity} onChange={(q) => updateQuantity(product.id, q)} />
               </div>
