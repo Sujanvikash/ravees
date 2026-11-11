@@ -83,7 +83,7 @@ A note is asked for when it doesn't balance. The admin's **Cash check** has a pe
 
 ## Invoices and e-way bills
 
-**Invoices** (admin, under Stock) bill a showroom for the boxes and products sent to it, as Tree Classics Trader, numbered `ICC000008` onwards (ICC000004 to ICC000007 were issued before the app and brought in as printed). The admin picks the address it is from (the Manali warehouse or the Madhavaram registered office) on each one. **E-way bills** are made by hand on the GST portal (ewaybillgst.gov.in) before the goods leave; from the moment an invoice is raised its e-way bill number and PDF can be recorded on it. The **E-way bills** page (under Stock) lists every invoice with its e-way bill: view the invoice, view the e-way bill's PDF, or attach one to an invoice still without it.
+**Invoices** (admin, under Stock) bill a showroom for the boxes and products sent to it, as Tree Classics Trader, numbered `ICC000008` onwards (ICC000004 to ICC000007 were issued before the app and brought in as printed). The admin picks the address it is from (the Manali warehouse or the Madhavaram registered office) on each one. **E-way bills** are made by hand on the GST portal (ewaybillgst.gov.in) before the goods leave; from the moment an invoice is raised its e-way bill number and PDF can be recorded on it. The Invoices list (all invoices by default) has on each row the **Invoice** to preview and the **E-way bill** to view, or **Attach e-way bill** where it is still missing.
 
 ## Product performance and the sales report
 

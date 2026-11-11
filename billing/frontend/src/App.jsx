@@ -91,7 +91,6 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'returns' && <StockReturns {...props} />}
           {page === 'boxes' && session.role === 'admin' && <Boxes key={session.username} {...props} />}
           {page === 'transfers' && session.role === 'admin' && <TransferInvoices key={session.username} {...props} />}
-          {page === 'eway' && session.role === 'admin' && <TransferInvoices key={`${session.username}|eway`} view="eway" {...props} />}
           {page === 'cash' && <CashClose key={session.username} {...props} />}
           {page === 'stores' && session.role === 'admin' && <Stores {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}

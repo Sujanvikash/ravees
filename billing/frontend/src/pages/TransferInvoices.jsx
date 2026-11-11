@@ -17,118 +17,33 @@ import { rowClick } from '../lib/rowClick.js';
 
 const when = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
-const day = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
 const TABS = [
+  { id: 'all', label: 'All' },
   { id: 'raised', label: 'To pay' },
   { id: 'paid', label: 'Paid' },
   { id: 'stocked', label: 'Added to store' },
   { id: 'cancelled', label: 'Cancelled' },
-  { id: 'all', label: 'All' },
 ];
-
-// the E-way bills page: every invoice, or those still without their e-way bill, or those with it
-const EWAY_TABS = [
-  { id: 'all', label: 'All invoices' },
-  { id: 'missing', label: 'Without an e-way bill' },
-  { id: 'done', label: 'With an e-way bill' },
-];
-const hasEway = (i) => Boolean(i.ewayNo || i.hasDocument);
-const inTab = (i, tab, eway) =>
-  tab === 'all' || (eway ? (tab === 'missing' ? i.status !== 'cancelled' && !hasEway(i) : hasEway(i)) : i.status === tab);
 
 const rowButton =
   'inline-flex h-8 items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 text-xs font-medium whitespace-nowrap text-ink-2 hover:bg-mist hover:text-ink';
 
-/** The E-way bills page's list: each invoice with its date, showroom and total, and its e-way bill: the number, and
- *  the PDF to view or a way to attach it. The invoice itself opens from here too. */
-const EwayTable = ({ rows, onOpen, onInvoice, onEway, onAttach }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full min-w-[60rem] text-[13px] tabular-nums">
-      <thead>
-        <tr className="border-b border-line-soft text-left text-xs text-ink-3">
-          <th scope="col" className="py-2 pr-3 pl-4 font-medium">
-            Invoice
-          </th>
-          <th scope="col" className="py-2 pr-3 font-medium">
-            Date
-          </th>
-          <th scope="col" className="py-2 pr-3 font-medium">
-            Showroom
-          </th>
-          <th scope="col" className="py-2 pr-3 text-right font-medium">
-            Total
-          </th>
-          <th scope="col" className="py-2 pr-3 font-medium">
-            Status
-          </th>
-          <th scope="col" className="py-2 pr-3 font-medium">
-            E-way bill no.
-          </th>
-          <th scope="col" className="py-2 pr-4 font-medium">
-            <span className="sr-only">View or attach</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((i) => {
-          const shop = locationById(i.location);
-          return (
-            <tr key={i.id} className="border-b border-line-soft">
-              <td className="py-2 pr-3 pl-4">
-                <button type="button" onClick={() => onOpen(i)} className="font-mono text-xs font-semibold text-evergreen-900 hover:underline">
-                  {i.number}
-                </button>
-              </td>
-              <td className="py-2 pr-3 whitespace-nowrap text-ink-2">{day.format(new Date(i.createdAt))}</td>
-              <td className="py-2 pr-3 text-ink-2">{[shop?.city, shop?.area].filter(Boolean).join(' · ')}</td>
-              <td className="py-2 pr-3 text-right font-medium">{inr(i.total)}</td>
-              <td className="py-2 pr-3">
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS[i.status].className}`}>{STATUS[i.status].label}</span>
-              </td>
-              <td className="py-2 pr-3 font-mono text-xs">{i.ewayNo || <span className="font-sans text-ink-3">—</span>}</td>
-              <td className="py-2 pr-4">
-                <div className="flex justify-end gap-1.5">
-                  <button type="button" onClick={() => onInvoice(i)} className={rowButton}>
-                    <FileText size={14} aria-hidden="true" /> Invoice
-                  </button>
-                  {i.hasDocument ? (
-                    <button type="button" onClick={() => onEway(i)} className={rowButton}>
-                      <Eye size={14} aria-hidden="true" /> E-way bill
-                    </button>
-                  ) : (
-                    i.status !== 'cancelled' && (
-                      <button type="button" onClick={() => onAttach(i)} className={`${rowButton} border-dashed text-warn-ink`}>
-                        <Paperclip size={14} aria-hidden="true" /> {i.ewayNo ? 'Attach its PDF' : 'Attach e-way bill'}
-                      </button>
-                    )
-                  )}
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-);
 
 /**
  * Invoices, how stock goes from the admin's warehouse to a showroom: the admin scans boxes and single products and
  * raises an invoice for a showroom (each product at its cost price, D.Rate, with 18% GST on top), records the e-way bill or bill from the GST portal,
  * marks it paid, then adds the products to the showroom's stock. A showroom's purchase order can be answered by
  * an invoice (Create invoice on the order opens this page with the order filled in).
- * `view` 'eway' is the E-way bills page: the same invoices as a register of their e-way bills (made by hand on the
- * GST portal), each with its invoice and e-way bill PDF to view, and those still without one to attach it to.
+ * Each row opens its invoice to view and its e-way bill (made by hand on the GST portal) to view, or to attach where it
+ * is still missing.
  */
-const TransferInvoices = ({ intent, onMenu, view = 'invoices' }) => {
-  const eway = view === 'eway';
+const TransferInvoices = ({ intent, onMenu }) => {
   const { invoices, settings, viewInvoiceDocument } = useStore();
   const colour = useInvoiceColour();
   const [printing, setPrinting] = useState(null); // { invoice, buyer } on the print page
   const [printJob, setPrintJob] = useState(0);
   const [preview, setPreview] = useState(null); // { invoice, buyer } in the preview
-  const [tab, setTab] = useState(eway ? 'all' : 'raised');
+  const [tab, setTab] = useState('all');
   const [location, setLocation] = useState(null);
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(() => (intent?.order ? { order: intent.order } : null)); // { order? }
@@ -139,15 +54,12 @@ const TransferInvoices = ({ intent, onMenu, view = 'invoices' }) => {
   const [flash, setFlash] = useState(null);
 
   const mine = invoices.filter((i) => !location || i.location === location);
-  const count = (id) => mine.filter((i) => inTab(i, id, eway)).length;
+  const count = (id) => mine.filter((i) => id === 'all' || i.status === id).length;
   const q = query.trim().toLowerCase();
   const list = mine
-    .filter((i) => inTab(i, tab, eway))
+    .filter((i) => tab === 'all' || i.status === tab)
     .filter((i) => !q || `${i.number} ${i.ewayNo} ${i.billNo} ${locationById(i.location)?.city ?? ''}`.toLowerCase().includes(q))
-    // the register runs by invoice date and number, newest first; the invoices by what changed last
-    .sort((a, b) =>
-      eway ? new Date(b.createdAt) - new Date(a.createdAt) || b.number.localeCompare(a.number) : new Date(b.updatedAt) - new Date(a.updatedAt),
-    );
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt) || b.number.localeCompare(a.number));
   const paged = usePages(list, 50, `${tab}|${location}|${q}`);
 
   useEffect(() => {
@@ -172,7 +84,7 @@ const TransferInvoices = ({ intent, onMenu, view = 'invoices' }) => {
 
   const created = (invoice) => {
     setCreating(null);
-    setTab('raised');
+    setTab('all');
     setOpenId(invoice.id);
     setFlash(`${invoice.number} raised for ${locationById(invoice.location)?.city}. Mark it paid when the money comes in.`);
   };
@@ -191,30 +103,27 @@ const TransferInvoices = ({ intent, onMenu, view = 'invoices' }) => {
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col print:hidden">
-        <PageHeader crumbs={['Admin', eway ? 'E-way bills' : 'Invoices']} onMenu={onMenu} />
+        <PageHeader crumbs={['Admin', 'Invoices']} onMenu={onMenu} />
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-[100rem] flex-col gap-4 p-3 lg:px-5 lg:py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-3xl text-[13px] text-ink-3">
-                {eway
-                  ? 'Every invoice and its e-way bill. Make each e-way bill by hand on the GST portal (ewaybillgst.gov.in) before the goods leave, then attach its PDF to the invoice here: both stay together to view any time.'
-                  : 'Send stock to a showroom: scan boxes and single products onto an invoice at cost price (D.Rate) plus 18% GST, record the e-way bill, and mark it paid. Then add the products to the showroom’s stock.'}
+                Send stock to a showroom: scan boxes and single products onto an invoice at cost price (D.Rate) plus 18% GST, attach its e-way bill (made on the GST
+                portal), and mark it paid. Then add the products to the showroom’s stock. Each invoice and its e-way bill can be viewed from the list.
               </p>
-              {!eway && (
-                <button
-                  type="button"
-                  onClick={() => setCreating({})}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900"
-                >
-                  <Plus size={16} aria-hidden="true" /> New invoice
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setCreating({})}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900"
+              >
+                <Plus size={16} aria-hidden="true" /> New invoice
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Segmented
-                label={eway ? 'E-way bills' : 'Invoices'}
-                options={(eway ? EWAY_TABS : TABS).map((t) => ({ ...t, label: `${t.label}${count(t.id) ? ` · ${count(t.id)}` : ''}` }))}
+                label="Invoices"
+                options={TABS.map((t) => ({ ...t, label: `${t.label}${count(t.id) ? ` · ${count(t.id)}` : ''}` }))}
                 value={tab}
                 onChange={setTab}
               />
@@ -240,15 +149,13 @@ const TransferInvoices = ({ intent, onMenu, view = 'invoices' }) => {
                 <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
                   <FileText size={22} className="text-ink-3" aria-hidden="true" />
                   <div className="text-[15px] font-semibold">
-                    {q ? 'No invoice matches that search' : eway && tab === 'missing' ? 'Every invoice has its e-way bill' : 'No invoices here'}
+                    {q ? 'No invoice matches that search' : 'No invoices here'}
                   </div>
                   <div className="max-w-sm text-[13px] text-ink-3">Raise an invoice to send boxes or single products to a showroom.</div>
                 </div>
-              ) : eway ? (
-                <EwayTable rows={paged.rows} onOpen={(i) => open(i)} onInvoice={openPreview} onEway={showEway} onAttach={(i) => open(i, 'eway')} />
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[52rem] text-[13px] tabular-nums">
+                  <table className="w-full min-w-[68rem] text-[13px] tabular-nums">
                     <thead>
                       <tr className="border-b border-line-soft text-left text-xs text-ink-3">
                         <th scope="col" className="py-2 pr-3 pl-4 font-medium">
@@ -272,8 +179,11 @@ const TransferInvoices = ({ intent, onMenu, view = 'invoices' }) => {
                         <th scope="col" className="py-2 pr-3 text-right font-medium">
                           Total
                         </th>
-                        <th scope="col" className="py-2 pr-4 font-medium">
+                        <th scope="col" className="py-2 pr-3 font-medium">
                           Updated
+                        </th>
+                        <th scope="col" className="py-2 pr-4 font-medium">
+                          <span className="sr-only">View</span>
                         </th>
                       </tr>
                     </thead>
@@ -299,7 +209,25 @@ const TransferInvoices = ({ intent, onMenu, view = 'invoices' }) => {
                           <td className="py-2 pr-3 text-right">{i.boxIds.length || '—'}</td>
                           <td className="py-2 pr-3 text-right">{i.lines.reduce((s, l) => s + l.qty, 0)}</td>
                           <td className="py-2 pr-3 text-right font-medium">{inr(i.total)}</td>
-                          <td className="py-2 pr-4 whitespace-nowrap text-ink-2">{when.format(new Date(i.updatedAt))}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(i.updatedAt))}</td>
+                          <td className="py-2 pr-4">
+                            <div className="flex justify-end gap-1.5">
+                              <button type="button" onClick={() => openPreview(i)} className={rowButton}>
+                                <FileText size={14} aria-hidden="true" /> Invoice
+                              </button>
+                              {i.hasDocument ? (
+                                <button type="button" onClick={() => showEway(i)} className={rowButton}>
+                                  <Eye size={14} aria-hidden="true" /> E-way bill
+                                </button>
+                              ) : (
+                                i.status !== 'cancelled' && (
+                                  <button type="button" onClick={() => open(i, 'eway')} className={`${rowButton} border-dashed text-warn-ink`}>
+                                    <Paperclip size={14} aria-hidden="true" /> {i.ewayNo ? 'Attach its PDF' : 'Attach e-way bill'}
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

@@ -1,4 +1,4 @@
-import { Boxes, Package, FileText, FileSpreadsheet, HandCoins, LayoutDashboard, PackagePlus, ReceiptText, ScanBarcode, Settings, Store, Truck, Undo2, Users, Wallet } from 'lucide-react';
+import { Boxes, Package, FileText, FileSpreadsheet, HandCoins, LayoutDashboard, PackagePlus, ReceiptText, ScanBarcode, Settings, Store, Undo2, Users, Wallet } from 'lucide-react';
 
 /**
  * What each kind of login can open. Showrooms bill and see their own figures; the admin sees all showrooms.
@@ -27,7 +27,6 @@ export const NAV = {
     { id: 'orders', label: 'Purchase orders', Icon: PackagePlus, group: 'Stock' },
     { id: 'boxes', label: 'Boxes', Icon: Package, group: 'Stock' },
     { id: 'transfers', label: 'Invoices', Icon: FileSpreadsheet, group: 'Stock' },
-    { id: 'eway', label: 'E-way bills', Icon: Truck, group: 'Stock' },
     { id: 'returns', label: 'Purchase returns', Icon: Undo2, group: 'Stock' },
     { id: 'customers', label: 'Customers', Icon: Users, group: 'CRM' },
     { id: 'stores', label: 'Stores', Icon: Store, group: 'Settings' },

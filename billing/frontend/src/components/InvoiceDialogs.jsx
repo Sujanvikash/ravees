@@ -578,7 +578,7 @@ const readPdf = (file) =>
  * it is raised the admin records its e-way bill (made by hand on the GST portal before the goods go): the number,
  * and its PDF to view again any time; then, once paid, adds the products to the store's stock. Raised and paid
  * invoices can still be cancelled: their products go back to the admin stock and their boxes to the warehouse.
- * `focus` 'eway' opens it at the e-way bill (from the E-way bills page).
+ * `focus` 'eway' opens it at the e-way bill (Attach e-way bill in the invoices list).
  */
 export const InvoiceDetail = ({ id, focus, onClose, onPreview, onPrint, onEdit }) => {
   const { invoices, saveInvoiceDocuments, payInvoice, stockInvoice, cancelInvoice, downloadInvoiceDocument, viewInvoiceDocument } = useStore();
@@ -703,7 +703,7 @@ export const InvoiceDetail = ({ id, focus, onClose, onPreview, onPrint, onEdit }
             </div>
             <p className="text-xs text-ink-3">
               Make the e-way bill on the GST portal (ewaybillgst.gov.in) before the goods leave, then record its number and attach its PDF here. It can be viewed
-              again any time, here or under E-way bills.
+              again any time, here or from the invoices list.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-[13px] font-medium">
