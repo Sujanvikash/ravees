@@ -15,7 +15,7 @@ const AdminStatCard = ({ Icon, label, value, hint, accent = 'gold' }) => {
         </div>
       )}
       <div>
-        <span className="block font-serif text-[1.8rem] font-bold leading-none text-white">{value}</span>
+        <span className="block font-serif text-[1.8rem] font-bold leading-none text-text-primary">{value}</span>
         <span className="mt-1.5 block text-[0.78rem] uppercase tracking-[0.08em] text-text-muted">
           {label}
         </span>

@@ -82,7 +82,7 @@ const AdminProducts = () => {
             {row.image && <img src={row.image} alt="" className="h-full w-full object-cover" />}
           </div>
           <div className="min-w-0">
-            <span className="block font-medium text-white">{row.name}</span>
+            <span className="block font-medium text-text-primary">{row.name}</span>
             <span className="flex flex-wrap gap-2 text-[0.72rem] text-text-muted">
               {!row.visible && (
                 <span className="inline-flex items-center gap-1 text-ruby-500">
@@ -113,7 +113,7 @@ const AdminProducts = () => {
       render: (row) =>
         row.price != null ? (
           <span className="whitespace-nowrap">
-            <span className="text-white">{formatPrice(row.price)}</span>
+            <span className="text-text-primary">{formatPrice(row.price)}</span>
             {row.mrp != null && row.mrp > row.price && <s className="ml-2 text-[0.75rem] text-text-muted">{formatPrice(row.mrp)}</s>}
           </span>
         ) : (
@@ -154,7 +154,7 @@ const AdminProducts = () => {
           <button
             type="button"
             onClick={() => setPendingDelete(row)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-transparent text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-contrast/10 bg-transparent text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
             title="Delete"
             aria-label={`Delete ${row.name}`}
           >
@@ -195,7 +195,7 @@ const AdminProducts = () => {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search products..."
             aria-label="Search products"
-            className="w-full border-none bg-transparent text-[0.85rem] text-white outline-none placeholder:text-text-muted"
+            className="w-full border-none bg-transparent text-[0.85rem] text-text-primary outline-none placeholder:text-text-muted"
           />
         </div>
         <Dropdown

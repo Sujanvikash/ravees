@@ -42,7 +42,7 @@ const DataTable = ({ columns, rows, rowKey = 'id', searchKeys = [], emptyMessage
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search..."
-            className="w-full border-none bg-transparent text-[0.85rem] text-white outline-none placeholder:text-text-muted"
+            className="w-full border-none bg-transparent text-[0.85rem] text-text-primary outline-none placeholder:text-text-muted"
           />
         </div>
       )}
@@ -82,7 +82,7 @@ const DataTable = ({ columns, rows, rowKey = 'id', searchKeys = [], emptyMessage
               visible.map((row) => (
                 <tr
                   key={row[rowKey]}
-                  className="border-b border-white/5 transition-colors last:border-0 hover:bg-white/3"
+                  className="border-b border-contrast/5 transition-colors last:border-0 hover:bg-contrast/3"
                 >
                   {columns.map((col) => (
                     <td key={col.key} className="px-4 py-3 align-middle text-[0.85rem] text-text-secondary">

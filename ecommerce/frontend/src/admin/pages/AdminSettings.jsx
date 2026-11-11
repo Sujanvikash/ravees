@@ -14,7 +14,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { formatPrice } from '../../lib/format.js';
 import { changePasswordSchema, focusFirstError, validate } from '../../lib/validation.js';
 
-const CARD_TITLE = 'mb-1 flex items-center gap-2 font-serif text-[1.15rem] text-white';
+const CARD_TITLE = 'mb-1 flex items-center gap-2 font-serif text-[1.15rem] text-text-primary';
 
 /** What delivery costs: a flat fee per order, free from a threshold (0 = never free). */
 const DeliveryCard = () => {

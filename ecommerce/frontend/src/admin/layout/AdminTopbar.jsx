@@ -19,7 +19,7 @@ const AdminTopbar = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b border-gold-400/15 bg-shade/92 px-5 py-3.5 backdrop-blur-[12px] md:px-8">
+    <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b border-gold-400/20 bg-surface/95 px-5 py-3.5 backdrop-blur-[12px] md:px-8">
       <div className="flex items-center gap-2 text-[0.78rem] text-text-muted">
         <ShieldCheck size={15} strokeWidth={2} className="text-gold-400" />
         <span>Shop admin: changes go live on the website straight away</span>
@@ -33,7 +33,9 @@ const AdminTopbar = () => {
               key={to}
               to={to}
               end={end}
-              className={({ isActive }) => `text-[0.8rem] ${isActive ? 'text-gold-300' : 'text-text-secondary'}`}
+              className={({ isActive }) =>
+                `text-[0.8rem] ${isActive ? 'font-semibold text-gold-300 underline underline-offset-4' : 'text-text-secondary hover:text-text-primary'}`
+              }
             >
               {label}
             </NavLink>
@@ -48,7 +50,7 @@ const AdminTopbar = () => {
             logout();
             navigate('/admin/login');
           }}
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gold-400/20 bg-white/5 px-3 py-2 text-[0.8rem] text-text-secondary transition-all hover:border-ruby-500/50 hover:text-ruby-500"
+          className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-gold-400/20 bg-contrast/5 px-3 py-2 text-[0.8rem] text-text-secondary transition-all hover:border-ruby-500/50 hover:text-ruby-500"
         >
           <LogOut size={14} strokeWidth={2} />
           Sign out

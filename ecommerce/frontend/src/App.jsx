@@ -41,9 +41,10 @@ const AdminSettings = lazy(() => import('./admin/pages/AdminSettings.jsx'));
 const App = () => {
   const isAdmin = useLocation().pathname.startsWith('/admin');
 
-  // The admin keeps the dark palette. It goes on <html> so popups rendered into <body> get it too.
+  // The admin uses the shop's light palette with a few admin touches (index.css, `.admin-ui`). The class goes
+  // on <html> so popups rendered into <body> (dialogs, dropdown lists) get them too.
   useLayoutEffect(() => {
-    document.documentElement.classList.toggle('theme-dark', isAdmin);
+    document.documentElement.classList.toggle('admin-ui', isAdmin);
   }, [isAdmin]);
 
   return (

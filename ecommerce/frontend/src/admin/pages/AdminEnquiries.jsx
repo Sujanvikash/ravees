@@ -41,10 +41,10 @@ const Details = ({ details }) => {
   return (
     <>
       {Array.isArray(items) && items.length > 0 && (
-        <ul className="mt-3 flex list-none flex-col gap-1 rounded-lg border border-white/5 bg-black/20 p-3 text-[0.82rem]">
+        <ul className="mt-3 flex list-none flex-col gap-1 rounded-lg border border-contrast/5 bg-contrast/5 p-3 text-[0.82rem]">
           {items.map((item, i) => (
             <li key={item.id ?? i} className="flex justify-between gap-3">
-              <span className="text-white">
+              <span className="text-text-primary">
                 {item.name ?? item.id}
                 {item.categoryLabel && <span className="ml-2 text-[0.75rem] text-text-muted">{item.categoryLabel}</span>}
               </span>
@@ -141,7 +141,7 @@ const AdminEnquiries = () => {
             <div key={enq.id} className={`${cardClass('tile')} p-5`}>
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-[1rem] font-semibold text-white">{enq.name || 'Unnamed'}</p>
+                  <p className="text-[1rem] font-semibold text-text-primary">{enq.name || 'Unnamed'}</p>
                   <span className="font-mono text-[0.7rem] uppercase tracking-widest text-gold-400">
                     {ENQUIRY_TYPES[enq.type] ?? enq.type} &middot; {formatDate(enq.createdAt, true)}
                   </span>

@@ -180,9 +180,20 @@
   }
 }
 
-/* The dark palette, for anything that sits on a dark picture or belongs to the admin: on the hero section,
-   and on <html> for /admin routes (App.jsx) so its popups rendered into <body> get it too. Every colour
-   class reads these variables, so a subtree only needs this class to switch. */
+/* The admin (on <html> for /admin routes, App.jsx): the storefront's light palette, as one brand, tuned for a
+   work tool. The two accents that carry small status text are deepened so every label reads at WCAG AA on its
+   own tint, and keyboard focus gets a clear evergreen ring. */
+.admin-ui {
+  --color-ruby-500: #b0102f;
+  --color-gold-300: #7a5c24;
+}
+.admin-ui :where(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+}
+
+/* The dark palette, for anything that sits on a dark picture: the hero section, the dark backdrop pages and
+   panels. Every colour class reads these variables, so a subtree only needs this class to switch. */
 .theme-dark {
   --color-bg-primary: #05160f;
   --color-bg-dark-emerald: #082117;

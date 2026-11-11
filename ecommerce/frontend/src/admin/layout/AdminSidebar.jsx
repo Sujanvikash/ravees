@@ -27,13 +27,11 @@ const NAV = [
 
 const AdminSidebar = () => {
   return (
-    <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-gold-400/15 bg-bg-deepest p-5 lg:flex">
-      <div className="mb-8 flex items-center gap-2.5">
-        <Logo mark height={30} />
-        <div className="flex flex-col">
-          <span className="font-serif text-[0.92rem] font-bold tracking-[0.12em] text-white">RAAVE&apos;S</span>
-          <span className="font-mono text-[0.58rem] tracking-[0.2em] text-gold-400">ADMIN CONSOLE</span>
-        </div>
+    <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-gold-400/20 bg-surface p-5 lg:flex">
+      {/* The shop's own logo on its white plate, as in the website's header, with what this is under it. */}
+      <div className="mb-7 flex flex-col items-start gap-2">
+        <Logo height={46} />
+        <span className="font-mono text-[0.62rem] tracking-[0.2em] text-gold-400">ADMIN CONSOLE</span>
       </div>
 
       <nav className="flex flex-col gap-1">
@@ -44,9 +42,10 @@ const AdminSidebar = () => {
             end={end}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-[0.88rem] no-underline transition-all duration-200 ${
+                // The chosen page in the shop's evergreen, like its chosen chips; the rest plain.
                 isActive
-                  ? 'bg-gold-400/15 font-semibold text-gold-300'
-                  : 'text-text-secondary hover:bg-white/5 hover:text-white'
+                  ? 'bg-cta-from font-semibold text-on-cta'
+                  : 'text-text-secondary hover:bg-gold-400/10 hover:text-text-primary'
               }`
             }
           >

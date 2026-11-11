@@ -229,15 +229,15 @@ const ProductEditor = ({ existing }) => {
         <FormField label="On the shop" htmlFor="p-instock">
           <div className="flex flex-wrap gap-x-6 gap-y-2.5">
             <label className={ADMIN_CHECK}>
-              <input id="p-instock" type="checkbox" checked={form.inStock} onChange={update('inStock')} className="h-4 w-4 accent-gold-500" />
+              <input id="p-instock" type="checkbox" checked={form.inStock} onChange={update('inStock')} className="h-4 w-4 accent-forest" />
               In stock
             </label>
             <label className={ADMIN_CHECK}>
-              <input type="checkbox" checked={form.visible} onChange={update('visible')} className="h-4 w-4 accent-gold-500" />
+              <input type="checkbox" checked={form.visible} onChange={update('visible')} className="h-4 w-4 accent-forest" />
               Visible on the website
             </label>
             <label className={ADMIN_CHECK}>
-              <input type="checkbox" checked={form.featured} onChange={update('featured')} className="h-4 w-4 accent-gold-500" />
+              <input type="checkbox" checked={form.featured} onChange={update('featured')} className="h-4 w-4 accent-forest" />
               Featured
             </label>
           </div>
@@ -252,7 +252,7 @@ const ProductEditor = ({ existing }) => {
           </Button>
           <Link
             to="/admin/products"
-            className="inline-flex items-center rounded-lg border border-gold-400/25 px-5 py-2.5 text-[0.88rem] text-text-secondary no-underline transition-all hover:border-gold-400 hover:text-white"
+            className="inline-flex items-center rounded-lg border border-gold-400/25 px-5 py-2.5 text-[0.88rem] text-text-secondary no-underline transition-all hover:border-gold-400 hover:text-text-primary"
           >
             Cancel
           </Link>
