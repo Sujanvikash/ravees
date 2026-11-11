@@ -13,7 +13,7 @@ import { sectionClass } from '../../components/sectionClass.js';
 const STATUS_STYLE = {
   new: 'bg-emerald-500/15 text-emerald-300',
   contacted: 'bg-gold-400/15 text-gold-300',
-  closed: 'bg-white/8 text-text-muted',
+  closed: 'bg-contrast/8 text-text-muted',
 };
 
 const Account = () => {
@@ -48,7 +48,7 @@ const Account = () => {
         <div className={`${cardClass('panel')} mb-5 flex flex-col gap-4 p-6 md:p-8`}>
           <div className="flex items-center gap-3">
             <User size={18} strokeWidth={2} className="shrink-0 text-gold-400" />
-            <span className="text-[0.95rem] text-white">{session.name}</span>
+            <span className="text-[0.95rem] text-text-primary">{session.name}</span>
           </div>
           <div className="flex items-center gap-3">
             <Mail size={18} strokeWidth={2} className="shrink-0 text-gold-400" />
@@ -66,14 +66,14 @@ const Account = () => {
               logout();
               showToast('Signed out');
             }}
-            className="mt-2 inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-transparent px-4 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-ruby-500 hover:text-ruby-500"
+            className="mt-2 inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-contrast/10 bg-transparent px-4 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-ruby-500 hover:text-ruby-500"
           >
             <LogOut size={15} strokeWidth={2} />
             Sign out
           </button>
         </div>
 
-        <h2 className="mb-4 flex items-center gap-2 font-serif text-[1.25rem] text-white">
+        <h2 className="mb-4 flex items-center gap-2 font-serif text-[1.25rem] text-text-primary">
           <Inbox size={18} strokeWidth={2} className="text-gold-400" />
           My Enquiries
         </h2>

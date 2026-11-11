@@ -8,7 +8,7 @@ import { useInView } from '../hooks/useInView.js';
 
 // Round icon button over the photo (wishlist): white discs that read on any photo.
 const ACTION_CIRCLE =
-  'flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink shadow-[0_2px_8px_--alpha(var(--color-black)/15%)] transition-all duration-300 hover:border-gold-500 hover:bg-gold-400 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500';
+  'flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-ink/10 bg-white/90 text-ink shadow-[0_2px_8px_--alpha(var(--color-shadow)/15%)] transition-all duration-300 hover:border-gold-500 hover:bg-gold-400 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500';
 
 /**
  * Product card: a cream card topped by a full-width square photo, a stock badge, the category in gold,
@@ -44,7 +44,7 @@ const ProductCard = ({ product, onQuickView }) => {
     <div
       onMouseEnter={() => hoverCard(addBtnRef.current)}
       onMouseLeave={leaveCard}
-      className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-cream-200 bg-cream-50 shadow-[0_12px_30px_--alpha(var(--color-black)/35%)] transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-[0_22px_44px_--alpha(var(--color-black)/50%),0_0_24px_--alpha(var(--color-gold-400)/18%)]"
+      className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-cream-200 bg-cream-50 shadow-[0_12px_30px_--alpha(var(--color-shadow)/35%)] transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-[0_22px_44px_--alpha(var(--color-shadow)/50%),0_0_24px_--alpha(var(--color-gold-400)/18%)]"
     >
       <Link
         ref={photoRef}
@@ -77,7 +77,7 @@ const ProductCard = ({ product, onQuickView }) => {
       </Link>
 
       <span
-        className={`absolute top-2.5 left-2.5 rounded-md px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_--alpha(var(--color-black)/20%)] sm:text-[0.64rem] ${
+        className={`absolute top-2.5 left-2.5 rounded-md px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_--alpha(var(--color-shadow)/20%)] sm:text-[0.64rem] ${
           product.inStock ? 'bg-forest' : 'bg-ruby-500'
         }`}
       >

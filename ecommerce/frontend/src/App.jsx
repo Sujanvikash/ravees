@@ -1,6 +1,6 @@
 import RequireCustomer from './auth/RequireCustomer.jsx';
-import { Suspense, lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Suspense, lazy, useLayoutEffect } from 'react';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import RootLayout from './layout/RootLayout.jsx';
 import PageLoader from './components/PageLoader.jsx';
 
@@ -33,6 +33,13 @@ const AdminTestimonials = lazy(() => import('./admin/pages/AdminTestimonials.jsx
 const AdminEnquiries = lazy(() => import('./admin/pages/AdminEnquiries.jsx'));
 
 const App = () => {
+  const isAdmin = useLocation().pathname.startsWith('/admin');
+
+  // The admin keeps the dark palette. It goes on <html> so popups rendered into <body> get it too.
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', isAdmin);
+  }, [isAdmin]);
+
   return (
     <Routes>
       {/* Storefront */}

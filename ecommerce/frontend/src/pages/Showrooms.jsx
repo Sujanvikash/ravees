@@ -70,7 +70,7 @@ const Showrooms = () => {
                 onClick={() => choose(i)}
                 className={`cursor-pointer rounded-full border px-7 py-3 font-serif text-[0.95rem] font-semibold transition-colors duration-300 ${
                   // The gold behind the chosen city is the sliding pill above; the button itself stays clear.
-                  i === activeIdx ? 'border-transparent text-on-gold' : CHIP_IDLE
+                  i === activeIdx ? 'border-transparent text-on-cta' : CHIP_IDLE
                 }`}
               >
                 {room.city}

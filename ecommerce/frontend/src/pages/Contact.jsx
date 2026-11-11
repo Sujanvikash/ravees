@@ -18,7 +18,7 @@ import { cardClass } from '../components/cardClass.js';
 const HOTLINE = SHOWROOMS.find((room) => room.isFlagship)?.phone ?? PHONE_DISPLAY;
 
 const METHOD_ROW =
-  `${cardClass('glass')} group flex items-center gap-5 px-6 py-5 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/40 hover:bg-gold-400/12 hover:text-white`;
+  `${cardClass('glass')} group flex items-center gap-5 px-6 py-5 text-text-secondary no-underline transition-all duration-300 hover:border-gold-400/40 hover:bg-gold-400/12 hover:text-text-primary`;
 
 // The row's icon gives a little springy tilt when the row is hovered.
 const METHOD_ICON = 'shrink-0 transition-transform duration-300 ease-spring group-hover:scale-115 group-hover:-rotate-8';
@@ -57,7 +57,7 @@ const Contact = () => {
                 <a href={PHONE_HREF} className={METHOD_ROW}>
                   <Phone size={26} strokeWidth={1.6} className={`${METHOD_ICON} text-gold-400`} />
                   <div>
-                    <strong className="block text-[1.02rem] text-white">Hotline / Orders</strong>
+                    <strong className="block text-[1.02rem] text-text-primary">Hotline / Orders</strong>
                     <span className="text-[0.92rem]">{HOTLINE}</span>
                   </div>
                 </a>
@@ -66,7 +66,7 @@ const Contact = () => {
               <Reveal delay={2}>
                 <WhatsAppLink className={METHOD_ROW} iconSize={26} iconClassName={`${METHOD_ICON} text-emerald-400`}>
                   <div>
-                    <strong className="block text-[1.02rem] text-white">WhatsApp Concierge</strong>
+                    <strong className="block text-[1.02rem] text-text-primary">WhatsApp Concierge</strong>
                     <span className="text-[0.92rem]">Chat live with our tree designers</span>
                   </div>
                 </WhatsAppLink>
@@ -76,7 +76,7 @@ const Contact = () => {
                 <a href={`mailto:${EMAIL}`} className={METHOD_ROW}>
                   <Mail size={26} strokeWidth={1.6} className={`${METHOD_ICON} text-gold-400`} />
                   <div>
-                    <strong className="block text-[1.02rem] text-white">Email Us</strong>
+                    <strong className="block text-[1.02rem] text-text-primary">Email Us</strong>
                     <span className="text-[0.92rem]">{EMAIL}</span>
                   </div>
                 </a>
@@ -85,7 +85,7 @@ const Contact = () => {
           </div>
 
           <div className={`${cardClass('raised')} p-7 md:p-9 lg:sticky lg:top-[calc(var(--header-h)+24px)]`}>
-            <h2 className="mb-6 font-serif text-[1.3rem] text-white">Request Personal Styling Consultation</h2>
+            <h2 className="mb-6 font-serif text-[1.3rem] text-text-primary">Request Personal Styling Consultation</h2>
             <ConsultForm
               onSubmitted={(data) => {
                 addEnquiry({ ...data, customerEmail: session?.email ?? null });

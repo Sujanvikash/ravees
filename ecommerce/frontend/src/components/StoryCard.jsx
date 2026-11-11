@@ -15,7 +15,7 @@ const StoryCard = ({ story, tone = 'dark' }) => {
       className={`group flex h-full flex-col overflow-hidden rounded-2xl border no-underline transition-all duration-400 ease-premium hover:-translate-y-1 ${
         light
           ? 'border-cream-200 bg-cream-50 shadow-[0_10px_28px_--alpha(var(--color-forest)/12%)] hover:shadow-[0_18px_40px_--alpha(var(--color-forest)/20%)]'
-          : 'border-gold-400/15 bg-surface/85 hover:border-gold-400/40 hover:shadow-[0_18px_40px_--alpha(var(--color-black)/50%)]'
+          : 'border-gold-400/15 bg-surface/85 hover:border-gold-400/40 hover:shadow-[0_18px_40px_--alpha(var(--color-shadow)/50%)]'
       }`}
     >
       <span className="block aspect-16/10 overflow-hidden">
@@ -33,7 +33,7 @@ const StoryCard = ({ story, tone = 'dark' }) => {
         </span>
         <span
           className={`mb-2 line-clamp-2 font-serif text-[1.05rem] font-bold leading-[1.35] transition-colors ${
-            light ? 'text-ink group-hover:text-gold-ink' : 'text-white group-hover:text-gold-300'
+            light ? 'text-ink group-hover:text-gold-ink' : 'text-text-primary group-hover:text-gold-300'
           }`}
         >
           {story.title}

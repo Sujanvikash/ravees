@@ -17,7 +17,7 @@ const FeatureItem = ({ Icon, title, body, variant = 'strip', as: Tag = 'div', cl
       <Tag className={`flex items-center gap-2.5 sm:gap-3 ${className}`} {...rest}>
         <Icon strokeWidth={1.5} className="size-5 shrink-0 text-gold-400 sm:size-6" aria-hidden="true" />
         <div className="min-w-0">
-          <h3 className="text-[0.78rem] font-semibold leading-tight text-white sm:text-[0.88rem]">{title}</h3>
+          <h3 className="text-[0.78rem] font-semibold leading-tight text-text-primary sm:text-[0.88rem]">{title}</h3>
           {/* Phones show the title only, to keep the strip short. */}
           {body && <p className="hidden text-[0.76rem] leading-snug text-text-muted sm:block">{body}</p>}
         </div>

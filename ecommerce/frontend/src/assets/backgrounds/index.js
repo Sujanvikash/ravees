@@ -6,5 +6,8 @@ import contactBg from './contact.webp';
 import productBg from './product.webp';
 import quickViewBg from './quick-view.webp';
 import checkoutBg from './checkout.webp';
+// The home slider's "Christmas Trees" slide (1536×1024, from the client): pine, lights, a lantern and a
+// gift on the right, plain pale sage on the left.
+import slideTreesBg from './slide-trees.webp';
 
-export { whyRaaveBg, showroomsBg, contactBg, productBg, quickViewBg, checkoutBg };
+export { whyRaaveBg, showroomsBg, contactBg, productBg, quickViewBg, checkoutBg, slideTreesBg };

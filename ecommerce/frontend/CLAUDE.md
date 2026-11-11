@@ -51,7 +51,7 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
 - **Admin edits** (`admin/context/AdminDataContext.jsx`): saved as whole-collection overrides in localStorage (`raave-admin-<key>`), layered over `src/data`. They stay in one browser.
 
 **Home page** (`pages/Home.jsx`): a product-led shop front, the "Storefront" design the client chose from five (the other four are in commit cddbe5f). Its sections are in `components/home/`, and their copy is in `data/home.js`.
-- **Content vs. look:** the words (brand story, why choose us, vision/mission, stores in `data/showrooms.js`, stories in `data/stories.js`) come from the old site, christmasraave.in. The logo, theme, photos and product images are ours. Never take images or styling from the old site.
+- **Content vs. look:** the words (brand story, why choose us, vision/mission, stores in `data/showrooms.js`, stories in `data/stories.js`) come from the old site, christmasraave.in. The logo, photos and product images are ours: never take images from the old site. The colour palette (ivory, deep evergreen, antique gold) follows the old site's, at the client's request.
 
 **Cinematic hero** (`components/CinematicHero/`): not used on the site (the client asked for the hero to go). The code is kept in case it is wanted back.
 - `heroConfig.js` is the single place for the asset manifests, the mobile/desktop media query, the scroll length, the choreography thresholds (fractions of scroll from 0 to 1) and the copy.
@@ -66,6 +66,7 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
 
 - **Tailwind v4:** the single entry is `src/styles/index.css`.
   - Brand tokens are declared in `@theme`: `bg-primary`, gold, emerald, ruby, text, the serif/sans/quote/mono fonts, and the eases and animations. Use those tokens, not raw hex values.
+  - The default palette is light. `.theme-dark` restores the dark one: it is on the (unused) cinematic hero and, for `/admin` routes, on `<html>` (`App.jsx`). For faint lines and tints use `border-contrast/10` and `bg-contrast/5`, not white, and use `text-text-primary` for headings.
   - The `short:` custom variant means max-height 760px.
   - `--header-h` is the header height.
   - Important uses the suffix form, `class!`.

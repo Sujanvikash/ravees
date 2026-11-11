@@ -14,7 +14,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
   return (
     <div
       data-lenis-prevent
-      className={`fixed inset-0 z-1000 flex justify-end bg-bg-deepest/75 backdrop-blur-md transition-opacity duration-300 ${
+      className={`fixed inset-0 z-1000 flex justify-end bg-scrim backdrop-blur-md transition-opacity duration-300 ${
         isOpen ? 'visible opacity-100' : 'invisible opacity-0'
       }`}
       onClick={onClose}
@@ -25,7 +25,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/10 p-6">
+        <div className="flex items-center justify-between border-b border-contrast/10 p-6">
           <div className="flex items-center gap-2.5 text-gold-300">
             <ShoppingBag size={20} strokeWidth={2} />
             <h2 className="font-serif text-[1.15rem] tracking-[0.06em]">Your Cart</h2>
@@ -35,7 +35,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
           </IconButton>
         </div>
 
-        <div className="border-b border-white/10 bg-emerald-500/8 px-6 py-3.5">
+        <div className="border-b border-contrast/10 bg-emerald-500/8 px-6 py-3.5">
           <p className="text-[0.76rem] text-emerald-300">
             Our holiday concierge confirms pricing &amp; availability for every item on your list.
           </p>
@@ -66,7 +66,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-[0.9rem] font-semibold leading-[1.3] text-white">
+                    <h3 className="text-[0.9rem] font-semibold leading-[1.3] text-text-primary">
                       <Link to={`/product/${product.id}`} onClick={onClose} className="no-underline hover:text-gold-200">
                         {product.name}
                       </Link>
@@ -98,12 +98,12 @@ const CartDrawer = ({ isOpen, onClose }) => {
         </div>
 
         {cart.length > 0 && (
-          <div className="border-t border-white/10 bg-shade p-6">
+          <div className="border-t border-contrast/10 bg-shade p-6">
             <div className="mb-2.5 flex justify-between text-[0.88rem] text-text-secondary">
               <span>Items</span>
-              <span className="font-mono text-white">{totalCount}</span>
+              <span className="font-mono text-text-primary">{totalCount}</span>
             </div>
-            <div className="flex justify-between border-t border-white/10 pt-3 text-[1.1rem] font-bold text-white">
+            <div className="flex justify-between border-t border-contrast/10 pt-3 text-[1.1rem] font-bold text-text-primary">
               <span>Total</span>
               <span className="font-serif text-[1.15rem] text-gold-300">Quote on request</span>
             </div>

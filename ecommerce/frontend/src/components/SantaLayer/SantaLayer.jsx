@@ -886,7 +886,7 @@ const SantaLayer = ({ onOpenCart }) => {
 
   const cartLabel = count > 0 ? `Open cart (${count} item${count === 1 ? "" : "s"})` : "Open cart";
   const controlClass =
-    "pointer-events-auto flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-bg-dark-emerald text-gold-300 shadow-[0_2px_8px_--alpha(var(--color-black)/50%)] transition-colors hover:bg-gold-400 hover:text-on-gold focus-visible:outline-2 focus-visible:outline-gold-400";
+    "pointer-events-auto flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-bg-dark-emerald text-gold-300 shadow-[0_2px_8px_--alpha(var(--color-shadow)/50%)] transition-colors hover:bg-gold-400 hover:text-on-gold focus-visible:outline-2 focus-visible:outline-gold-400";
 
   return (
     <>
@@ -921,7 +921,7 @@ const SantaLayer = ({ onOpenCart }) => {
           {hovered && !message && (
             <span
               aria-hidden="true"
-              className="absolute bottom-full right-0 mb-1 w-max rounded-full border border-gold-400/40 bg-bg-dark-emerald px-2.5 py-1 text-[0.72rem] font-semibold text-gold-200 shadow-[0_4px_14px_--alpha(var(--color-black)/50%)] transition-[opacity,translate] duration-200 starting:translate-y-1 starting:opacity-0"
+              className="absolute bottom-full right-0 mb-1 w-max rounded-full border border-gold-400/40 bg-bg-dark-emerald px-2.5 py-1 text-[0.72rem] font-semibold text-gold-200 shadow-[0_4px_14px_--alpha(var(--color-shadow)/50%)] transition-[opacity,translate] duration-200 starting:translate-y-1 starting:opacity-0"
             >
               View cart{count > 0 ? ` (${count})` : ""}
             </span>
@@ -987,7 +987,7 @@ const SantaLayer = ({ onOpenCart }) => {
             <div ref={spinRef} className="h-full w-full" style={{ transformOrigin: "54% 62%" }}>
               <div
                 ref={flipRef}
-                className="relative h-full w-full drop-shadow-[0_6px_10px_--alpha(var(--color-black)/45%)]"
+                className="relative h-full w-full drop-shadow-[0_6px_10px_--alpha(var(--color-shadow)/45%)]"
                 style={{
                   transform: "scaleX(var(--face, 1))",
                   transformOrigin: `${(FEET_CX / 120) * 100}% 50%`,
@@ -1003,7 +1003,7 @@ const SantaLayer = ({ onOpenCart }) => {
                   >
                     <span
                       ref={badgeRef}
-                      className="flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[0.6rem] font-bold text-on-gold shadow-[0_2px_6px_--alpha(var(--color-black)/50%)]"
+                      className="flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[0.6rem] font-bold text-on-gold shadow-[0_2px_6px_--alpha(var(--color-shadow)/50%)]"
                     >
                       {count}
                     </span>
@@ -1023,7 +1023,7 @@ const SantaLayer = ({ onOpenCart }) => {
           onClick={() => setPref("minimised", false)}
           aria-label={`Show Santa${count > 0 ? ` (${count} in cart)` : ""}`}
           title="Bring Santa back"
-          className="fixed z-60 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-bg-dark-emerald shadow-[0_6px_18px_--alpha(var(--color-black)/55%)] transition-[opacity,scale] duration-300 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400 starting:scale-75 starting:opacity-0"
+          className="fixed z-60 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-gold-400/40 bg-bg-dark-emerald shadow-[0_6px_18px_--alpha(var(--color-shadow)/55%)] transition-[opacity,scale] duration-300 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400 starting:scale-75 starting:opacity-0"
           style={{ right: gap, bottom: gap }}
         >
           <svg viewBox="0 0 40 40" width="26" height="26" aria-hidden="true">

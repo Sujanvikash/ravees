@@ -81,14 +81,14 @@ const About = () => {
           {/* The verse sits low over the nativity, as a caption to it, on a soft dark glow so it reads over the figures. */}
           <Reveal
             delay={2}
-            className="rounded-3xl bg-[radial-gradient(ellipse_at_center,--alpha(var(--color-shade)/82%)_0%,--alpha(var(--color-shade)/55%)_55%,transparent_78%)] px-6 py-8 text-center lg:self-end"
+            className="rounded-3xl border border-gold-400/20 bg-surface/92 px-6 py-8 text-center lg:self-end"
           >
-            <p className="font-quote text-[1.3rem] italic leading-[1.5] text-gold-200 [text-shadow:0_2px_12px_--alpha(var(--color-black)/90%)] sm:text-[1.5rem]">
+            <p className="font-quote text-[1.3rem] italic leading-[1.5] text-gold-200 sm:text-[1.5rem]">
               &ldquo;For God so loved the world
               <br />
               that He gave His one and only Son...&rdquo;
             </p>
-            <span className="mt-3 block font-mono text-[0.68rem] uppercase tracking-[0.2em] text-gold-400 [text-shadow:0_1px_8px_--alpha(var(--color-black)/90%)]">
+            <span className="mt-3 block font-mono text-[0.68rem] uppercase tracking-[0.2em] text-gold-400">
               John 3:16 &bull; The reason for the season
             </span>
           </Reveal>

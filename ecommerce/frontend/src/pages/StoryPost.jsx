@@ -14,7 +14,7 @@ import { STORIES, findStory } from '../data/stories.js';
 const withBold = (text) =>
   text.split(/\*\*(.+?)\*\*/g).map((part, i) =>
     i % 2 ? (
-      <strong key={i} className="font-semibold text-white">
+      <strong key={i} className="font-semibold text-text-primary">
         {part}
       </strong>
     ) : (
@@ -48,7 +48,7 @@ const StoryPost = () => {
         <img
           src={story.image}
           alt=""
-          className="mb-8 aspect-16/9 w-full rounded-2xl border border-gold-400/20 object-cover shadow-[0_20px_50px_--alpha(var(--color-black)/50%)]"
+          className="mb-8 aspect-16/9 w-full rounded-2xl border border-gold-400/20 object-cover shadow-[0_20px_50px_--alpha(var(--color-shadow)/50%)]"
         />
 
         <div className="text-[1.02rem] leading-[1.85] text-text-secondary">
@@ -66,7 +66,7 @@ const StoryPost = () => {
         </div>
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold-400/20 bg-surface/85 p-6">
-          <p className="font-serif text-[1.1rem] text-white">Bring the season home with Raave’s.</p>
+          <p className="font-serif text-[1.1rem] text-text-primary">Bring the season home with Raave’s.</p>
           <Button to="/shop">
             Shop the Collection
             <ArrowRight size={16} strokeWidth={2} />
@@ -75,7 +75,7 @@ const StoryPost = () => {
       </Container>
 
       <Container className="mt-12">
-        <h2 className="mb-5 font-serif text-[1.4rem] font-bold text-white">More Stories</h2>
+        <h2 className="mb-5 font-serif text-[1.4rem] font-bold text-text-primary">More Stories</h2>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {others.map((s, i) => (
             <Reveal key={s.slug} delay={i} className="h-full">

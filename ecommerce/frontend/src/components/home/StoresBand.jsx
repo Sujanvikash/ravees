@@ -39,7 +39,7 @@ const StoresBand = () => (
         {SHOWROOMS.map((room, i) => (
           <Reveal as="li" key={room.city} delay={i}>
             <div className="flex h-full flex-col rounded-xl border border-gold-400/20 bg-surface/80 p-4 backdrop-blur-[6px]">
-              <Link to="/showrooms" className="mb-1.5 flex items-center gap-2 font-serif text-[1.05rem] font-bold text-white no-underline hover:text-gold-300">
+              <Link to="/showrooms" className="mb-1.5 flex items-center gap-2 font-serif text-[1.05rem] font-bold text-text-primary no-underline hover:text-gold-300">
                 <MapPin size={17} strokeWidth={1.8} className="text-gold-400" aria-hidden="true" />
                 {room.city}
               </Link>
@@ -48,7 +48,7 @@ const StoresBand = () => (
               </p>
               <a
                 href={telHref(room.phone)}
-                className="mt-auto inline-flex items-center gap-1.5 text-[0.82rem] font-semibold text-gold-300 no-underline hover:text-white"
+                className="mt-auto inline-flex items-center gap-1.5 text-[0.82rem] font-semibold text-gold-300 no-underline hover:text-text-primary"
               >
                 <Phone size={14} strokeWidth={2} aria-hidden="true" />
                 {room.phone.split('/')[0].trim()}

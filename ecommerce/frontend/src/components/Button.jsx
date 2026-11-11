@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 const BASE =
-  'inline-flex cursor-pointer items-center justify-center rounded-lg font-sans font-semibold no-underline transition-all duration-300 ease-premium active:scale-[0.97] disabled:pointer-events-none disabled:border-white/10 disabled:bg-none disabled:bg-white/5 disabled:text-text-muted disabled:shadow-none';
+  'inline-flex cursor-pointer items-center justify-center rounded-lg font-sans font-semibold no-underline transition-all duration-300 ease-premium active:scale-[0.97] disabled:pointer-events-none disabled:border-contrast/10 disabled:bg-none disabled:bg-contrast/5 disabled:text-text-muted disabled:shadow-none';
 
 // sm: compact admin/toolbar buttons; md: the default; lg: full-width checkout-style calls to action.
 const SIZES = {
@@ -15,9 +15,9 @@ const SHINE =
   'relative overflow-hidden before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-1/3 before:translate-x-[-120%] before:skew-x-[-20deg] before:bg-[linear-gradient(90deg,transparent,--alpha(var(--color-white)/55%),transparent)] before:transition-transform before:duration-700 before:ease-premium hover:before:translate-x-[420%]';
 
 const VARIANTS = {
-  gold: SHINE + ' border border-gold-200 bg-[linear-gradient(135deg,var(--color-gold-400),var(--color-gold-600))] text-on-gold shadow-[0_0_20px_--alpha(var(--color-gold-400)/40%)] hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,var(--color-gold-100),var(--color-gold-400))] hover:shadow-[0_0_30px_--alpha(var(--color-gold-400)/65%)]',
+  gold: SHINE + ' border border-gold-200 bg-[linear-gradient(135deg,var(--color-cta-from),var(--color-cta-to))] text-on-cta shadow-[0_0_20px_--alpha(var(--color-cta-glow)/40%)] hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,var(--color-cta-hover-from),var(--color-cta-hover-to))] hover:shadow-[0_0_30px_--alpha(var(--color-cta-glow)/65%)]',
   outline:
-    'border border-gold-400/30 bg-surface/60 text-gold-300 backdrop-blur-[8px] hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white',
+    'border border-gold-400/30 bg-surface/60 text-gold-300 backdrop-blur-[8px] hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-text-primary',
   ghost: 'border border-transparent text-text-secondary hover:text-gold-300',
 };
 

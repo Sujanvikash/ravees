@@ -4,19 +4,28 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../Button.jsx';
 import Eyebrow from '../Eyebrow.jsx';
 import { HERO_SLIDES, productById } from '../../data/home.js';
-import { checkoutBg, quickViewBg, productBg } from '../../assets/backgrounds';
+import { checkoutBg, quickViewBg, slideTreesBg } from '../../assets/backgrounds';
 
 // Each slide's photo (subject on the right, dark on the left where the text sits) and three products
 // from what the slide talks about, shown as a "featured" strip.
 const SLIDE_MEDIA = [
   { photo: checkoutBg, products: ['santa-doll-2', 'wonderland-ornaments-18', 'garland-52958'] },
   { photo: quickViewBg, products: ['cluster-light-1', 'ww-with-ball-decoration', 'white-wire-lights-2'] },
-  { photo: productBg, products: ['norway-spruce-christmas-tree', 'swiss-alps-christmas-tree', 'white-wood-christmas-tree'] },
+  // Already pale on the left, so it needs only a light wash (see WASH).
+  { photo: slideTreesBg, light: true, products: ['norway-spruce-christmas-tree', 'swiss-alps-christmas-tree', 'white-wood-christmas-tree'] },
 ];
+
+// The wash over the photo that keeps the text readable: heavy for a busy photo, light for one that is
+// already plain where the text sits.
+const WASH = {
+  heavy: 'bg-[linear-gradient(90deg,--alpha(var(--color-shade)/98%)_0%,--alpha(var(--color-shade)/93%)_45%,--alpha(var(--color-shade)/15%)_85%)]',
+  light: 'bg-[linear-gradient(90deg,--alpha(var(--color-shade)/70%)_0%,--alpha(var(--color-shade)/40%)_40%,transparent_65%)]',
+};
 
 const SLIDES = HERO_SLIDES.map((slide, i) => ({
   ...slide,
   photo: SLIDE_MEDIA[i].photo,
+  light: SLIDE_MEDIA[i].light ?? false,
   products: SLIDE_MEDIA[i].products.map(productById).filter(Boolean),
 }));
 
@@ -48,7 +57,7 @@ const HeroCarousel = ({ className = '' }) => {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
       aria-roledescription="carousel"
-      className={`relative isolate overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_24px_60px_--alpha(var(--color-black)/55%)] ${className}`}
+      className={`relative isolate overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_24px_60px_--alpha(var(--color-shadow)/55%)] ${className}`}
     >
       {SLIDES.map((slide, i) => (
         <div
@@ -65,11 +74,11 @@ const HeroCarousel = ({ className = '' }) => {
           />
           <span
             aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,--alpha(var(--color-shade)/92%)_0%,--alpha(var(--color-shade)/75%)_40%,--alpha(var(--color-shade)/10%)_80%)]"
+            className={`absolute inset-0 -z-10 ${slide.light ? WASH.light : WASH.heavy}`}
           />
           <div className="flex w-full flex-col justify-center p-6 pb-20 sm:p-10 sm:pb-24 lg:max-w-[62%]">
             <Eyebrow>✦ {slide.eyebrow} ✦</Eyebrow>
-            <h2 className="mb-3 font-serif text-[1.75rem] leading-[1.15] font-bold text-white sm:text-[2.3rem] xl:text-[2.6rem]">
+            <h2 className="mb-3 font-serif text-[1.75rem] leading-[1.15] font-bold text-text-primary sm:text-[2.3rem] xl:text-[2.6rem]">
               {slide.title}
             </h2>
             <p className="mb-6 text-[1rem] text-text-secondary sm:text-[1.08rem]">{slide.text}</p>
@@ -88,7 +97,7 @@ const HeroCarousel = ({ className = '' }) => {
                 key={p.id}
                 to={`/product/${p.id}`}
                 title={p.name}
-                className="group block size-20 overflow-hidden rounded-xl border-2 border-gold-300/70 bg-white shadow-[0_8px_20px_--alpha(var(--color-black)/45%)] transition-transform duration-300 hover:-translate-y-1 lg:size-24"
+                className="group block size-20 overflow-hidden rounded-xl border-2 border-gold-300/70 bg-white shadow-[0_8px_20px_--alpha(var(--color-shadow)/45%)] transition-transform duration-300 hover:-translate-y-1 lg:size-24"
               >
                 <img src={p.image} alt={p.name} loading="lazy" className="size-full object-cover transition-[scale] duration-500 group-hover:scale-110" />
               </Link>
@@ -110,7 +119,7 @@ const HeroCarousel = ({ className = '' }) => {
               aria-label={`Slide ${i + 1}`}
               aria-current={i === index}
               onClick={() => setIndex(i)}
-              className={`h-1.5 cursor-pointer rounded-full transition-all duration-500 ${i === index ? 'w-7 bg-gold-400' : 'w-3 bg-white/30 hover:bg-white/60'}`}
+              className={`h-1.5 cursor-pointer rounded-full transition-all duration-500 ${i === index ? 'w-7 bg-gold-400' : 'w-3 bg-contrast/30 hover:bg-contrast/60'}`}
             />
           ))}
         </div>

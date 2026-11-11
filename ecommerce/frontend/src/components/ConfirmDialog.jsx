@@ -8,7 +8,7 @@ const ConfirmDialog = ({ open, title, message, confirmLabel = 'Delete', onConfir
         <div className="flex flex-wrap justify-end gap-3">
           <button
             onClick={onCancel}
-            className="cursor-pointer rounded-lg border border-gold-400/25 bg-transparent px-5 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-gold-400 hover:text-white"
+            className="cursor-pointer rounded-lg border border-gold-400/25 bg-transparent px-5 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-gold-400 hover:text-text-primary"
           >
             Cancel
           </button>

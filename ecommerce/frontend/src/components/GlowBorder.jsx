@@ -11,7 +11,7 @@
 const GlowBorder = ({ rounded = 'rounded-3xl', className = '', children }) => {
   return (
     <div
-      className={`relative overflow-hidden ${rounded} bg-gold-400/20 p-px shadow-[0_20px_50px_--alpha(var(--color-black)/60%),0_0_30px_--alpha(var(--color-gold-400)/8%)] ${className}`}
+      className={`relative overflow-hidden ${rounded} bg-gold-400/20 p-px shadow-[0_20px_50px_--alpha(var(--color-shadow)/60%),0_0_30px_--alpha(var(--color-gold-400)/8%)] ${className}`}
     >
       <span
         aria-hidden="true"

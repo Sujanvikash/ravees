@@ -1,6 +1,6 @@
-// White-to-gold gradient lettering for every page and section title.
+// Gold gradient lettering for every page and section title.
 export const GRADIENT_TITLE =
-  'bg-[linear-gradient(135deg,var(--color-white)_0%,var(--color-gold-200)_50%,var(--color-gold-500)_100%)] bg-clip-text text-transparent';
+  'bg-[linear-gradient(135deg,var(--color-title-start)_0%,var(--color-gold-200)_50%,var(--color-gold-500)_100%)] bg-clip-text text-transparent';
 
 const SIZES = {
   xl: 'text-[1.75rem] leading-[1.15] sm:text-[2.1rem] xl:text-[2.35rem]', // page heroes (Why Raave, Contact)
