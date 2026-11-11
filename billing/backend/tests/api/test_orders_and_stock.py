@@ -32,6 +32,15 @@ def test_purchase_order_is_a_request(client, chennai, admin):
     edited = client.put(f'/orders/{o["id"]}', json={'lines': [{'code': code, 'qty': 6}]}, headers=chennai).json()
     assert edited['lines'][0]['qty'] == 6 and edited['history'][-1]['action'] == 'updated'
 
+    # the admin reviews it before raising the invoice: the lines change, the showroom's note stays
+    other = season_code(client, chennai, 2)
+    review = {'lines': [{'code': code, 'qty': 4}, {'code': other, 'qty': 2}], 'note': 'Only 4 left'}
+    reviewed = client.put(f'/orders/{o["id"]}', json=review, headers=admin).json()
+    assert [(line['code'], line['qty']) for line in reviewed['lines']] == [(code, 4), (other, 2)]
+    assert reviewed['note'] == 'Low' and reviewed['status'] == 'requested'
+    last = reviewed['history'][-1]
+    assert (last['action'], last['by'], last['note']) == ('reviewed', 'Admin', 'Only 4 left')
+
     # the admin answers with a transfer invoice: no sending, no counting in, no ordering for a showroom
     send = {'lines': [{'code': code, 'qty': 6}]}
     assert client.post(f'/orders/{o["id"]}/send', json=send, headers=admin).status_code in (404, 405)

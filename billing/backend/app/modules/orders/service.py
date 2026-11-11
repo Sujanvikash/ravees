@@ -82,15 +82,15 @@ def create_order(session: Session, user: User, data: OrderIn, *, at: datetime | 
 
 
 def update_request(session: Session, user: User, order_id: uuid.UUID, data: OrderEditIn) -> PurchaseOrder:
-    """The showroom changes its request before the admin has sent it."""
-    if user.is_admin:
-        raise Forbidden(ONLY_SHOWROOM)
+    """The showroom changes its request, or the admin reviews it, before an invoice answers it. The admin's note goes
+    in the history only; the request keeps the showroom's own."""
     order = _get(session, user, order_id)
     _expect(order, Status.REQUESTED, 'edited')
     note = data.note.strip()
     order.lines = _lines(session, data.lines)
-    order.note = note or order.note
-    _log(order, _by(session, user), 'updated', note, clock.now())
+    if not user.is_admin:
+        order.note = note or order.note
+    _log(order, _by(session, user), 'reviewed' if user.is_admin else 'updated', note, clock.now())
     session.commit()
     return order
 

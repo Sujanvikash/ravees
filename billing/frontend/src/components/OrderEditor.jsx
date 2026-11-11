@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { readSheet } from 'read-excel-file/browser';
-import { CircleAlert, FileSpreadsheet, Minus, Plus, Search, Send, Sparkles, X } from 'lucide-react';
-import { locationById } from '../config.js';
+import { CircleAlert, FileSpreadsheet, FileText, Minus, Plus, Save, Search, Send, Sparkles, X } from 'lucide-react';
+import { locationById, WAREHOUSE } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { findProduct, PRODUCTS, searchProducts } from '../lib/catalogue.js';
 import { inr } from '../lib/money.js';
@@ -16,8 +16,10 @@ const RESTOCK_TO = 10; // "Add low stock" suggests topping each item up to this 
  * A showroom's stock request (quantities only; the admin fulfils it with an invoice). Lines can be picked from the product list
  * (shown as soon as the search box is clicked: this season's products, lowest stock first), searched,
  * suggested from low stock, or imported from a purchase Excel.
+ * `review`: the admin checks a showroom's request before answering it, against the admin stock as well, and saves it
+ * or goes on to raise its invoice with these lines (onSave gets `raise`).
  */
-const OrderEditor = ({ order, onClose, onSave }) => {
+const OrderEditor = ({ order, review = false, onClose, onSave }) => {
   const { stockOf } = useStore();
   const location = order.location;
   const [lines, setLines] = useState(order.lines);
@@ -71,10 +73,15 @@ const OrderEditor = ({ order, onClose, onSave }) => {
     }
   };
 
+  const adminStock = (code) => stockOf(WAREHOUSE.id, code);
+  const short = review ? lines.filter((l) => l.qty > adminStock(l.code)) : [];
+
   const setQty = (code, qty) => setLines((prev) => (qty > 0 ? prev.map((l) => (l.code === code ? { ...l, qty } : l)) : prev.filter((l) => l.code !== code)));
 
-  const title = existing ? `Edit request ${order.number}` : 'Request stock';
-  const subtitle = 'The admin reviews your request and sends the stock with an invoice.';
+  const title = review ? `Review ${order.number} from ${shop.city}` : existing ? `Edit request ${order.number}` : 'Request stock';
+  const subtitle = review
+    ? 'Change the quantities, remove or add products, then raise the invoice: it starts with the products as reviewed here.'
+    : 'The admin reviews your request and sends the stock with an invoice.';
   const action = existing ? 'Update request' : 'Send request to admin';
 
   return (
@@ -125,7 +132,10 @@ const OrderEditor = ({ order, onClose, onSave }) => {
                       <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{p.code}</span>
                       <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
                       <span className="text-xs text-ink-2 tabular-nums">{inr(p.cost ?? 0)}</span>
-                      <span className={`w-20 text-right text-xs tabular-nums ${stock <= 0 ? 'text-ruby-ink' : stock <= LOW ? 'text-warn-ink' : 'text-ink-3'}`}>{stock} in stock</span>
+                      <span className={`w-20 text-right text-xs tabular-nums ${stock <= 0 ? 'text-ruby-ink' : stock <= LOW ? 'text-warn-ink' : 'text-ink-3'}`}>
+                        {review ? `${stock} at ${shop.city}` : `${stock} in stock`}
+                      </span>
+                      {review && <span className="w-24 text-right text-xs text-ink-3 tabular-nums">{adminStock(p.code)} with admin</span>}
                     </button>
                   </li>
                 ))}
@@ -183,7 +193,8 @@ const OrderEditor = ({ order, onClose, onSave }) => {
               <thead className="sticky top-0 z-1 bg-mist-2 text-left text-xs text-ink-3">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">Product</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">In stock</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">{review ? `At ${shop.city}` : 'In stock'}</th>
+                  {review && <th scope="col" className="px-3 py-2 text-right font-medium">Admin stock</th>}
                   <th scope="col" className="px-3 py-2 text-center font-medium">Qty</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Rate</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
@@ -200,6 +211,9 @@ const OrderEditor = ({ order, onClose, onSave }) => {
                       {l.name}
                     </td>
                     <td className="px-3 py-1.5 text-right text-ink-3">{stockOf(location, l.code)}</td>
+                    {review && (
+                      <td className={`px-3 py-1.5 text-right ${l.qty > adminStock(l.code) ? 'font-medium text-ruby-ink' : 'text-ink-3'}`}>{adminStock(l.code)}</td>
+                    )}
                     <td className="px-3 py-1.5">
                       <div className="mx-auto flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line">
                         <button type="button" onClick={() => setQty(l.code, l.qty - 1)} aria-label={`One less ${l.name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
@@ -235,13 +249,33 @@ const OrderEditor = ({ order, onClose, onSave }) => {
           )}
         </div>
 
+        {short.length > 0 && (
+          <p role="status" className="flex items-start gap-2 rounded-xl bg-warn-50 px-4 py-2.5 text-[13px] text-warn-ink">
+            <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>
+              More than the admin stock holds:{' '}
+              {short
+                .slice(0, 6)
+                .map((l) => `${l.code} (have ${Math.max(adminStock(l.code), 0)}, asked ${l.qty})`)
+                .join(', ')}
+              {short.length > 6 ? ` and ${short.length - 6} more` : ''}. Lower them, or add stock under Inventory before raising the invoice.
+            </span>
+          </p>
+        )}
+
+        {review && order.note && (
+          <p className="rounded-xl bg-mist-2 px-4 py-2.5 text-[13px] text-ink-2">
+            <span className="font-semibold">{shop.city}&rsquo;s note:</span> {order.note}
+          </p>
+        )}
+
         <label className="flex flex-col gap-1.5 text-[13px] font-medium text-ink-2">
           Note <span className="sr-only">(optional)</span>
           <textarea
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional: anything the admin should know"
+            placeholder={review ? `Optional: for ${shop.city}, kept in the order’s history` : 'Optional: anything the admin should know'}
             className="resize-none rounded-xl border border-line px-3 py-2 font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
           />
         </label>
@@ -255,13 +289,23 @@ const OrderEditor = ({ order, onClose, onSave }) => {
           <button type="button" onClick={onClose} className="h-10 rounded-xl px-3.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink">
             Cancel
           </button>
+          {review && (
+            <button
+              type="button"
+              onClick={() => onSave({ location, lines, note: note.trim(), raise: false })}
+              disabled={!lines.length}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-evergreen-800/25 bg-white px-4 text-[13px] font-semibold text-evergreen-900 hover:border-evergreen-800/50 hover:bg-evergreen-50 disabled:opacity-50"
+            >
+              <Save size={15} aria-hidden="true" /> Save review
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => onSave({ location, lines, note: note.trim() })}
+            onClick={() => onSave({ location, lines, note: note.trim(), raise: review })}
             disabled={!lines.length}
             className="inline-flex h-10 items-center gap-2 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(9,9,11,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3 disabled:shadow-none"
           >
-            <Send size={15} aria-hidden="true" /> {action}
+            {review ? <FileText size={15} aria-hidden="true" /> : <Send size={15} aria-hidden="true" />} {review ? 'Raise invoice' : action}
           </button>
         </div>
       </div>

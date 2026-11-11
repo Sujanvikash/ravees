@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { ChevronDown, ClipboardList, FileText, History, PencilLine, Plus, Printer, X } from 'lucide-react';
+import { ChevronDown, ClipboardCheck, ClipboardList, History, PencilLine, Plus, Printer, X } from 'lucide-react';
 import Dialog from '../components/Dialog.jsx';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import OrderEditor from '../components/OrderEditor.jsx';
@@ -32,12 +32,16 @@ const TABS = {
 const ACTION_LABEL = {
   requested: 'Requested',
   updated: 'Request updated',
+  reviewed: 'Reviewed and changed',
   fulfilled: 'Invoiced',
   sent: 'Approved and sent',
   received: 'Counted in',
   rejected: 'Rejected',
   cancelled: 'Cancelled',
+  reopened: 'Open again (its invoice was cancelled)',
 };
+
+const sameLines = (a, b) => a.length === b.length && a.every((l, i) => l.code === b[i].code && l.qty === b[i].qty && l.rate === b[i].rate);
 
 const primary =
   'inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900';
@@ -74,7 +78,7 @@ const RejectDialog = ({ order, onClose, onConfirm }) => {
 
 /**
  * Purchase orders, a showroom's requests for stock:
- *   showroom requests stock → admin raises an invoice for it (or rejects it).
+ *   showroom requests stock → admin reviews it (changing what goes) → raises an invoice with those products (or rejects it).
  * A showroom sees its own orders and raises requests; the admin sees every showroom's. The stock itself reaches
  * the showroom through the invoice, once it is paid.
  */
@@ -118,9 +122,16 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
     }
   };
 
-  const save = ({ location: loc, lines, note }) =>
+  const save = ({ location: loc, lines, note, raise }) =>
     attempt(async () => {
       const body = { lines: lines.map((l) => ({ code: l.code, qty: l.qty, rate: l.rate })), note };
+      if (admin) {
+        // the review is saved on the order (and in its history) only if something changed
+        const changed = Boolean(note) || !sameLines(editing.lines, lines);
+        const order = changed ? await updateOrder(editing.id, body) : editing;
+        if (raise) return onNavigate('transfers', { order });
+        return done(changed ? `${order.number} reviewed and saved. Raise its invoice when it’s ready.` : `${order.number} is unchanged.`);
+      }
       const order = !editing.number ? await requestOrder({ ...body, location: loc }) : await updateOrder(editing.id, body);
       done(`${order.number} sent to the admin.`);
       setTab('requested');
@@ -150,7 +161,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
             <div>
               <p className="text-[13px] text-ink-3">
                 {admin
-                  ? 'Showroom requests for stock. Raise an invoice for one to fulfil it; the stock is added to the showroom once the invoice is paid.'
+                  ? 'Showroom requests for stock. Review one to check and change its products, then raise its invoice with them; the stock is added to the showroom once the invoice is paid.'
                   : 'Request stock from the admin. The admin sends it with an invoice, and it is added to your stock once that is paid.'}
               </p>
             </div>
@@ -267,8 +278,8 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
                                     <button type="button" onClick={() => setRejecting(o)} className={quiet}>
                                       <X size={14} aria-hidden="true" /> Reject
                                     </button>
-                                    <button type="button" onClick={() => onNavigate('transfers', { order: o })} className={primary}>
-                                      <FileText size={14} aria-hidden="true" /> Create invoice
+                                    <button type="button" onClick={() => setEditing(o)} className={primary}>
+                                      <ClipboardCheck size={14} aria-hidden="true" /> Review
                                     </button>
                                   </>
                                 )}
@@ -348,7 +359,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
       </div>
 
       {editing && (
-        <OrderEditor key={editing.id ?? 'new'} order={editing} onClose={() => setEditing(null)} onSave={save} />
+        <OrderEditor key={editing.id ?? 'new'} order={editing} review={admin} onClose={() => setEditing(null)} onSave={save} />
       )}
       {rejecting && <RejectDialog order={rejecting} onClose={() => setRejecting(null)} onConfirm={(reason) => reject(rejecting, reason)} />}
     </div>

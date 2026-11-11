@@ -27,7 +27,7 @@ def create_order(body: OrderIn, user: CurrentUser, session: DbSession) -> OrderO
 
 @router.put('/{order_id}', responses=CONFLICT)
 def update_request(order_id: uuid.UUID, body: OrderEditIn, user: CurrentUser, session: DbSession) -> OrderOut:
-    """The showroom edits its request while the admin hasn't sent it yet."""
+    """The showroom edits its request, or the admin reviews it (logged as reviewed), before an invoice answers it."""
     return OrderOut.from_model(service.update_request(session, user, order_id, body))
 
 

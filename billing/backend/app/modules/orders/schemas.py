@@ -23,7 +23,7 @@ class OrderIn(ApiModel):
 
 
 class OrderEditIn(ApiModel):
-    """The lines as they are now, when a showroom edits its request."""
+    """The lines as they are now, when a showroom edits its request or the admin reviews it."""
 
     lines: list[OrderLineIn] = Field(min_length=1, max_length=5000)
     note: str = Field(default='', max_length=1000)

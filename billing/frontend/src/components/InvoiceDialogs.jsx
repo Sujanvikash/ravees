@@ -122,7 +122,8 @@ const singlesOf = (invoice, boxes) => {
  * product is billed at its cost price (D.Rate) with 18% GST on top: CGST + SGST to a showroom in Tamil Nadu, IGST to
  * any other state. It all leaves the admin's stock when the invoice is raised (an edit changes it by the difference),
  * and reaches the showroom's stock only when the invoice is paid and the admin adds it. `order` is a showroom's
- * request a new invoice fulfils, if it comes from one.
+ * request a new invoice fulfils, if it comes from one: its lines, as the admin reviewed them, start on the invoice as
+ * single products.
  */
 export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
   const { boxes, saveInvoice, updateInvoice, stockOf, settings } = useStore();
@@ -131,7 +132,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
   const [buyer, setBuyer] = useState(invoice?.buyer ?? null); // { name, address, phone, gstin, state } once loaded
   const [keep, setKeep] = useState(false); // also save the details as the showroom's own
   const [picked, setPicked] = useState(() => new Set(invoice?.boxIds ?? []));
-  const [singles, setSingles] = useState(() => (invoice ? singlesOf(invoice, boxes) : [])); // [{ code, name, qty }]
+  const [singles, setSingles] = useState(() => (invoice ? singlesOf(invoice, boxes) : (order?.lines ?? []).map(({ code, name, qty }) => ({ code, name, qty })))); // [{ code, name, qty }]
   const [query, setQuery] = useState('');
   const [scan, setScan] = useState('');
   const [note, setNote] = useState(invoice?.note ?? '');
@@ -173,7 +174,6 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
   const short = lines.filter((l) => l.qty > available(l.code));
   // a showroom's own products (p.shop) never come from the admin
   const matches = useMemo(() => searchProducts(scan, { limit: 12 }).filter((p) => !p.shop).slice(0, 6), [scan]);
-  const requested = order ? new Map(order.lines.map((l) => [l.code, l.qty])) : null;
 
   const setField = (name, value) =>
     setBuyer((b) => {
@@ -219,11 +219,6 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
     addSingle(product);
   };
   useScanner(onScan, true);
-
-  const addRequested = () => {
-    for (const l of order.lines) addSingle(findProduct(l.code) ?? { code: l.code, name: l.name ?? l.code }, l.qty);
-    setNotice({ tone: 'ok', text: `The ${order.lines.length} requested products are on the invoice as single products.` });
-  };
 
   const save = async () => {
     if (!location) return setError('Choose the showroom this invoice is for.');
@@ -274,7 +269,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
         editing
           ? 'Change the showroom’s details, the boxes or the products. The admin stock changes by the difference.'
           : order
-            ? `For ${order.number}, requested by ${locationById(order.location)?.city}. Scan the boxes or products that go.`
+            ? `For ${order.number}, requested by ${locationById(order.location)?.city}. The products as reviewed are on it: check them and raise it.`
             : 'Choose the showroom, then scan the boxes or single products that go to it.'
       }
       onClose={onClose}
@@ -420,19 +415,11 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
           </section>
         )}
 
-        {requested && (
-          <div className="flex flex-wrap items-center gap-3 rounded-xl bg-mist-2 px-4 py-2.5 text-xs text-ink-2">
-            <p className="min-w-0 flex-1">
-              <span className="font-semibold">Requested:</span> {order.lines.map((l) => `${l.code} × ${l.qty}`).join(' · ')}
-            </p>
-            <button
-              type="button"
-              onClick={addRequested}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 font-medium text-ink-2 hover:bg-mist hover:text-ink"
-            >
-              <Plus size={14} aria-hidden="true" /> Add the requested products
-            </button>
-          </div>
+        {order && (
+          <p className="rounded-xl bg-mist-2 px-4 py-2.5 text-xs text-ink-2">
+            The {order.lines.length} products reviewed on {order.number} are on this invoice as single products. A box scanned here adds its products on top
+            of them, so scan boxes only for what isn&rsquo;t listed.
+          </p>
         )}
         {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
 
