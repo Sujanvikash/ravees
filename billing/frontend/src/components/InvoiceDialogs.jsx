@@ -241,7 +241,10 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
       }
       return [...fresh, ...next];
     });
-  useEffect(() => lastRow.current?.scrollIntoView({ block: 'nearest' }), [last]);
+  // braces: scrollIntoView returns a promise in newer browsers, and an effect may only return its cleanup
+  useEffect(() => {
+    lastRow.current?.scrollIntoView({ block: 'nearest' });
+  }, [last]);
 
   const addSingle = (product, qty = 1) => {
     const now = (singles.find((l) => l.code === product.code)?.qty ?? 0) + qty;
