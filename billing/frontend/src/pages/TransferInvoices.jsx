@@ -59,7 +59,8 @@ const TransferInvoices = ({ intent, onMenu }) => {
   const list = mine
     .filter((i) => tab === 'all' || i.status === tab)
     .filter((i) => !q || `${i.number} ${i.ewayNo} ${i.billNo} ${locationById(i.location)?.city ?? ''}`.toLowerCase().includes(q))
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt) || b.number.localeCompare(a.number));
+    // by invoice number, newest first
+    .sort((a, b) => b.number.localeCompare(a.number, 'en', { numeric: true }));
   const paged = usePages(list, 50, `${tab}|${location}|${q}`);
 
   useEffect(() => {
