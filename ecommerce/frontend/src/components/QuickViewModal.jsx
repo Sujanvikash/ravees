@@ -14,7 +14,7 @@ import { featuresFor } from '../data/productFeatures.js';
 import { quickViewBg } from '../assets/backgrounds';
 
 const ROUND_BTN =
-  'flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-shade/70 text-white transition-colors hover:border-gold-400 hover:text-gold-300';
+  'flex size-10 cursor-pointer items-center justify-center rounded-full border border-contrast/20 bg-shade/70 text-text-primary transition-colors hover:border-gold-400 hover:text-gold-300';
 const LABEL = 'text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-text-muted';
 
 /**
@@ -50,7 +50,7 @@ const QuickViewModal = ({ product, onClose }) => {
         <div className="grid items-start gap-7 px-6 pt-5 pb-7 sm:px-8 md:grid-cols-[minmax(0,1fr)_1.15fr]">
           {/* Gallery */}
           <div className="flex flex-col gap-3">
-            <div className="relative aspect-7/6 overflow-hidden rounded-xl border border-gold-400/25 bg-bg-deepest shadow-[0_16px_40px_--alpha(var(--color-black)/55%)]">
+            <div className="relative aspect-7/6 overflow-hidden rounded-xl border border-gold-400/25 bg-bg-deepest shadow-[0_16px_40px_--alpha(var(--color-shadow)/55%)]">
               <img src={current} alt={product.name} className="size-full object-cover" />
               {photos.length > 1 && (
                 <>
@@ -92,7 +92,7 @@ const QuickViewModal = ({ product, onClose }) => {
               <span className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-gold-300">{product.categoryLabel}</span>
               <Badge variant={product.inStock ? 'emerald' : 'ruby'}>{product.inStock ? 'In Stock' : 'On Backorder'}</Badge>
             </div>
-            <h4 className="font-serif text-[1.6rem] font-semibold leading-tight text-white">{product.name}</h4>
+            <h4 className="font-serif text-[1.6rem] font-semibold leading-tight text-text-primary">{product.name}</h4>
             {hasPrice(product) && <Price product={product} size="lg" />}
             <p className="text-[0.92rem] leading-[1.7] text-text-secondary">{product.description}</p>
 
@@ -120,7 +120,7 @@ const QuickViewModal = ({ product, onClose }) => {
                 <span className={LABEL}>Specifications</span>
                 <dl className="flex flex-col gap-1.5">
                   {specs.map((spec) => (
-                    <div key={spec.label} className="flex justify-between gap-4 border-b border-white/5 pb-1.5 text-[0.85rem]">
+                    <div key={spec.label} className="flex justify-between gap-4 border-b border-contrast/5 pb-1.5 text-[0.85rem]">
                       <dt className="text-text-muted">{spec.label}</dt>
                       <dd className="text-right text-gold-200">{spec.value}</dd>
                     </div>
@@ -142,7 +142,7 @@ const QuickViewModal = ({ product, onClose }) => {
               <Link
                 to={`/product/${product.id}`}
                 onClick={onClose}
-                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-surface/60 px-6 py-3 font-sans text-[0.88rem] font-semibold tracking-[0.06em] text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white"
+                className="inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-surface/60 px-6 py-3 font-sans text-[0.88rem] font-semibold tracking-[0.06em] text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400/15 hover:text-text-primary"
               >
                 <FileText size={17} strokeWidth={2} />
                 Full Details

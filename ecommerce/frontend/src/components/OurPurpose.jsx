@@ -2,7 +2,7 @@ import { Sparkles, Target, HeartHandshake } from 'lucide-react';
 import Reveal from './Reveal.jsx';
 import Flourish from './Flourish.jsx';
 import Decoration from './Decoration.jsx';
-import { pineCornerCutout, santaChildGift } from '../assets/decorations';
+import { ornamentBerryCorner, santaChildGift } from '../assets/decorations';
 
 // The old site's own words (christmasraave.in, home page).
 const PURPOSE = [
@@ -24,20 +24,21 @@ const PURPOSE = [
 ];
 
 /**
- * "Our Purpose": the cream band on the home page. A Santa photo on the left melts into the cream, with
+ * "Our Purpose": the cream band on the home page. A Santa photo on the left (shown whole, no fade), with
  * Vision / Mission / Core Values on the right, their icons joined by a thin gold line. A cut-out pine
  * branch decorates the top-right corner on wide screens.
  */
 const OurPurpose = () => {
   return (
     <section aria-labelledby="purpose-title" className="relative z-20 isolate overflow-hidden bg-cream-100 text-ink">
-      {/* Only where the space beside the content column is wide enough to hold it, so it never covers the text. */}
+      {/* A pine-and-berry corner (mirrored, to hug the right) over the empty top-right of the text column
+          (the heading sits on the left), from lg. */}
       <Decoration
-        side="hidden min-[1840px]:block"
-        src={pineCornerCutout}
-        fade="right"
-        className="top-0 right-0 h-[300px] w-[min(230px,calc((100vw-1360px)/2))]"
-        imgClassName="object-top-left"
+        side="hidden lg:block"
+        src={ornamentBerryCorner}
+        fade="none"
+        className="top-0 right-0 aspect-900/697 w-[clamp(150px,14vw,250px)]"
+        imgClassName="object-contain! -scale-x-100"
       />
 
       <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
@@ -47,7 +48,7 @@ const OurPurpose = () => {
             alt="Santa Claus handing a wrapped present to a smiling girl beside a lit Christmas tree"
             loading="lazy"
             decoding="async"
-            className="purpose-photo-fade absolute inset-0 h-full w-full object-cover object-[55%_center]"
+            className="absolute inset-0 h-full w-full object-cover object-[55%_center]"
           />
         </div>
 
@@ -68,7 +69,7 @@ const OurPurpose = () => {
               />
               {PURPOSE.map(({ Icon, title, text }) => (
                 <div key={title} className="relative">
-                  <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-gold-500/60 bg-forest text-gold-300 shadow-[0_6px_16px_--alpha(var(--color-forest)/25%)]">
+                  <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border-2 border-gold-500/60 bg-forest text-on-cta shadow-[0_6px_16px_--alpha(var(--color-forest)/25%)]">
                     <Icon size={24} strokeWidth={1.6} aria-hidden="true" />
                   </span>
                   <h3 className="mb-2 font-serif text-[1.15rem] font-bold text-ink">{title}</h3>

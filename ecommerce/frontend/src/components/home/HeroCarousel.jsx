@@ -5,14 +5,16 @@ import Button from '../Button.jsx';
 import Eyebrow from '../Eyebrow.jsx';
 import { HERO_SLIDES } from '../../data/home.js';
 import { useStorefront } from '../../context/StorefrontContext.jsx';
-import { checkoutBg, quickViewBg, productBg } from '../../assets/backgrounds';
+import { slideCandleBg, slideLanternBg, slideTreesBg } from '../../assets/backgrounds';
 
-// Each slide's photo (subject on the right, dark on the left where the text sits) and three products
-// from what the slide talks about, shown as a "featured" strip.
+// Each slide's photo, shown as it is (no wash). All three are the client's: pale where the text sits, the
+// decorations on the right, so every slide keeps the light palette (dark text); `dark` would switch one to
+// light text for a dark photo. Each also has three products from what it talks about, shown as a
+// "featured" strip. On phones (a narrow, tall card) `pos` crops each photo to its plain side, behind the text.
 const SLIDE_MEDIA = [
-  { photo: checkoutBg, products: ['santa-doll-2', 'wonderland-ornaments-18', 'garland-52958'] },
-  { photo: quickViewBg, products: ['cluster-light-1', 'ww-with-ball-decoration', 'white-wire-lights-2'] },
-  { photo: productBg, products: ['norway-spruce-christmas-tree', 'swiss-alps-christmas-tree', 'white-wood-christmas-tree'] },
+  { photo: slideCandleBg, dark: false, pos: 'object-left sm:object-right', products: ['santa-doll-2', 'wonderland-ornaments-18', 'garland-52958'] },
+  { photo: slideLanternBg, dark: false, pos: 'object-left sm:object-right', products: ['cluster-light-1', 'ww-with-ball-decoration', 'white-wire-lights-2'] },
+  { photo: slideTreesBg, dark: false, pos: 'object-left sm:object-right', products: ['norway-spruce-christmas-tree', 'swiss-alps-christmas-tree', 'white-wood-christmas-tree'] },
 ];
 
 const SLIDES = HERO_SLIDES.map((slide, i) => ({ ...slide, ...SLIDE_MEDIA[i] }));
@@ -46,28 +48,24 @@ const HeroCarousel = ({ className = '' }) => {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
       aria-roledescription="carousel"
-      className={`relative isolate overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_24px_60px_--alpha(var(--color-black)/55%)] ${className}`}
+      className={`relative isolate overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_24px_60px_--alpha(var(--color-shadow)/55%)] ${className}`}
     >
       {SLIDES.map((slide, i) => (
         <div
           key={slide.title}
           aria-hidden={i !== index}
           inert={i !== index}
-          className={`absolute inset-0 flex transition-opacity duration-700 ease-premium ${i === index ? 'z-10 opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 flex transition-opacity duration-700 ease-premium ${slide.dark ? 'theme-dark' : ''} ${i === index ? 'z-10 opacity-100' : 'opacity-0'}`}
         >
           <img
             src={slide.photo}
             alt=""
             loading={i === 0 ? 'eager' : 'lazy'}
-            className={`absolute inset-0 -z-10 size-full object-cover object-right transition-[scale] duration-[7s] ease-out ${i === index ? 'scale-105' : 'scale-100'}`}
-          />
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,--alpha(var(--color-shade)/92%)_0%,--alpha(var(--color-shade)/75%)_40%,--alpha(var(--color-shade)/10%)_80%)]"
+            className={`absolute inset-0 -z-10 size-full object-cover ${slide.pos} transition-[scale] duration-[7s] ease-out ${i === index ? 'scale-105' : 'scale-100'}`}
           />
           <div className="flex w-full flex-col justify-center p-6 pb-20 sm:p-10 sm:pb-24 lg:max-w-[62%]">
             <Eyebrow>✦ {slide.eyebrow} ✦</Eyebrow>
-            <h2 className="mb-3 font-serif text-[1.75rem] leading-[1.15] font-bold text-white sm:text-[2.3rem] xl:text-[2.6rem]">
+            <h2 className="mb-3 font-serif text-[1.75rem] leading-[1.15] font-bold text-text-primary sm:text-[2.3rem] xl:text-[2.6rem]">
               {slide.title}
             </h2>
             <p className="mb-6 text-[1rem] text-text-secondary sm:text-[1.08rem]">{slide.text}</p>
@@ -86,7 +84,7 @@ const HeroCarousel = ({ className = '' }) => {
                 key={p.id}
                 to={`/product/${p.id}`}
                 title={p.name}
-                className="group block size-20 overflow-hidden rounded-xl border-2 border-gold-300/70 bg-white shadow-[0_8px_20px_--alpha(var(--color-black)/45%)] transition-transform duration-300 hover:-translate-y-1 lg:size-24"
+                className="group block size-20 overflow-hidden rounded-xl border-2 border-gold-300/70 bg-white shadow-[0_8px_20px_--alpha(var(--color-shadow)/45%)] transition-transform duration-300 hover:-translate-y-1 lg:size-24"
               >
                 <img src={p.image} alt={p.name} loading="lazy" className="size-full object-cover transition-[scale] duration-500 group-hover:scale-110" />
               </Link>
@@ -95,8 +93,8 @@ const HeroCarousel = ({ className = '' }) => {
         </div>
       ))}
 
-      {/* Controls */}
-      <div className="absolute bottom-4 left-6 z-20 flex items-center gap-3 sm:left-10">
+      {/* Controls: in the dark palette while a dark slide is showing */}
+      <div className={`absolute bottom-4 left-6 z-20 flex items-center gap-3 sm:left-10 ${SLIDES[index].dark ? 'theme-dark' : ''}`}>
         <button type="button" aria-label="Previous slide" onClick={() => go(-1)} className={NAV_BTN}>
           <ChevronLeft size={17} strokeWidth={2} />
         </button>
@@ -108,7 +106,7 @@ const HeroCarousel = ({ className = '' }) => {
               aria-label={`Slide ${i + 1}`}
               aria-current={i === index}
               onClick={() => setIndex(i)}
-              className={`h-1.5 cursor-pointer rounded-full transition-all duration-500 ${i === index ? 'w-7 bg-gold-400' : 'w-3 bg-white/30 hover:bg-white/60'}`}
+              className={`h-1.5 cursor-pointer rounded-full transition-all duration-500 ${i === index ? 'w-7 bg-gold-400' : 'w-3 bg-contrast/30 hover:bg-contrast/60'}`}
             />
           ))}
         </div>

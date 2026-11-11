@@ -42,7 +42,7 @@ const PROMISES = [
 
 // Outline button look for links that aren't <Button> (the WhatsApp link).
 const OUTLINE =
-  'inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-surface/60 px-5 py-3.5 font-sans text-[0.88rem] font-semibold uppercase tracking-[0.06em] text-gold-300 no-underline transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-white';
+  'inline-flex cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-gold-400/30 bg-surface/60 px-5 py-3.5 font-sans text-[0.88rem] font-semibold uppercase tracking-[0.06em] text-gold-300 no-underline transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-400 hover:bg-gold-400/15 hover:text-text-primary';
 
 /** The specification rows: what the catalogue knows about this product, then what holds for every product. */
 const specRows = (product) =>
@@ -98,8 +98,8 @@ const ProductDetail = () => {
   const half = Math.ceil(rows.length / 2);
 
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
-      <PageBackdrop src={productBg} fade="frame" align="center" className="h-[1150px]" />
+    <section className="theme-dark relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
+      <PageBackdrop src={productBg} align="center" className="h-[1150px]" />
       <Container>
         <div className="grid gap-7 lg:grid-cols-[1fr_1.1fr] lg:gap-10">
           {/* Gallery */}
@@ -146,13 +146,13 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              <div className="relative aspect-square flex-1 overflow-hidden rounded-2xl border border-gold-400/25 bg-bg-deepest shadow-[0_20px_50px_--alpha(var(--color-black)/60%)]">
+              <div className="relative aspect-square flex-1 overflow-hidden rounded-2xl border border-gold-400/25 bg-bg-deepest shadow-[0_20px_50px_--alpha(var(--color-shadow)/60%)]">
                 <img ref={imageRef} src={photos[activeImage] ?? product.image} alt={product.name} className="size-full object-cover" />
                 <button
                   type="button"
                   onClick={() => setZoomed(true)}
                   aria-label="View photo full size"
-                  className="absolute right-4 bottom-4 flex size-11 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-shade/70 text-white transition-colors hover:border-gold-400 hover:text-gold-300"
+                  className="absolute right-4 bottom-4 flex size-11 cursor-pointer items-center justify-center rounded-full border border-contrast/20 bg-shade/70 text-text-primary transition-colors hover:border-gold-400 hover:text-gold-300"
                 >
                   <Expand size={18} strokeWidth={2} />
                 </button>
@@ -254,7 +254,7 @@ const ProductDetail = () => {
                 {[rows.slice(0, half), rows.slice(half)].map((col, c) => (
                   <dl key={c} className="flex flex-col">
                     {col.map(([label, value]) => (
-                      <div key={label} className="flex justify-between gap-4 border-b border-white/6 py-2.5 text-[0.84rem] last:border-0">
+                      <div key={label} className="flex justify-between gap-4 border-b border-contrast/6 py-2.5 text-[0.84rem] last:border-0">
                         <dt className="text-text-muted">{label}</dt>
                         <dd className="text-right text-text-primary">{value}</dd>
                       </div>

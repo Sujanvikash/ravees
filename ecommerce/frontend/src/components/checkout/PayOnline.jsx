@@ -52,8 +52,9 @@ const forgetOrder = () => {
   }
 };
 
-// The brand gold for the payment window (it wants a colour value, so it is read from the theme).
-const brandGold = () => getComputedStyle(document.documentElement).getPropertyValue('--color-gold-500').trim() || undefined;
+// The site's call-to-action evergreen for the payment window (it wants a colour value, so it is read from
+// the page's palette).
+const brandColour = () => getComputedStyle(document.documentElement).getPropertyValue('--color-cta-from').trim() || undefined;
 
 const BUSY = { creating: 'Preparing your order...', paying: 'Waiting for payment...', verifying: 'Confirming your payment...' };
 
@@ -122,7 +123,7 @@ const PayOnline = ({ onPaid, onClearAll }) => {
       }
 
       setStage('paying');
-      const paid = await payWithRazorpay(payment, { color: brandGold() });
+      const paid = await payWithRazorpay(payment, { color: brandColour() });
 
       setStage('verifying');
       try {

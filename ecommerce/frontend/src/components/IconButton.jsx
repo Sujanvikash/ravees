@@ -10,9 +10,9 @@ const BASE =
   'inline-flex cursor-pointer items-center justify-center bg-transparent text-text-muted transition-all';
 
 const VARIANTS = {
-  close: 'border-none hover:text-white',
+  close: 'border-none hover:text-text-primary',
   remove: 'rounded-lg border-none hover:bg-danger/15 hover:text-danger',
-  delete: 'rounded-lg border border-white/10 p-1.5 hover:border-ruby-500 hover:text-ruby-500',
+  delete: 'rounded-lg border border-contrast/10 p-1.5 hover:border-ruby-500 hover:text-ruby-500',
 };
 
 const IconButton = ({ label, variant = 'close', type = 'button', className = '', children, ...rest }) => {

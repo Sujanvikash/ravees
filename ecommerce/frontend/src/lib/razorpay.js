@@ -26,7 +26,7 @@ const loadRazorpay = () => {
  * Opens the payment window for `payment` ({ keyId, razorpayOrderId, amount, currency, name, description,
  * prefill }). Resolves with Razorpay's answer ({ razorpay_order_id, razorpay_payment_id, razorpay_signature })
  * once paid; rejects with an error marked `dismissed: true` when the person closes the window without paying.
- * `color` tints the window (the brand gold).
+ * `color` tints the window (the site's evergreen).
  */
 export const payWithRazorpay = async (payment, { color } = {}) => {
   const Razorpay = await loadRazorpay();

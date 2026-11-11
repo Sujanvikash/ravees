@@ -37,7 +37,7 @@ const Cart = () => {
         {cart.length === 0 ? (
           <div className={`${cardClass('panel')} flex flex-col items-center gap-4 px-6 py-12 text-center`}>
             <div className="relative isolate h-42.5 w-[min(250px,100%)]">
-              <Decoration src={luxuryGiftBoxes} className="inset-0" />
+              <Decoration src={luxuryGiftBoxes} fade="none" className="inset-0 overflow-hidden rounded-2xl border border-gold-400/25" />
             </div>
             <p className="text-text-secondary">Your cart is empty.</p>
             <Button to="/shop">Browse the Collections</Button>
@@ -61,7 +61,7 @@ const Cart = () => {
                     <span className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-gold-400">
                       {product.categoryLabel}
                     </span>
-                    <h3 className="font-serif text-[1.1rem] text-white">
+                    <h3 className="font-serif text-[1.1rem] text-text-primary">
                       <Link to={`/product/${product.id}`} className="no-underline hover:text-gold-200">
                         {product.name}
                       </Link>
@@ -92,19 +92,19 @@ const Cart = () => {
             <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-gold-400/30 bg-shade p-6 md:p-8">
               <div className="flex justify-between text-[0.92rem] text-text-secondary">
                 <span>Items in list</span>
-                <span className="font-mono text-white">{totalCount}</span>
+                <span className="font-mono text-text-primary">{totalCount}</span>
               </div>
               {payable ? (
                 <>
                   <div className="flex justify-between text-[0.92rem] text-text-secondary">
                     <span>Subtotal</span>
-                    <span className="text-white">{formatPrice(subtotal)}</span>
+                    <span className="text-text-primary">{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-[0.92rem] text-text-secondary">
                     <span>Delivery</span>
-                    <span className="text-white">{delivery > 0 ? formatPrice(delivery) : 'Free'}</span>
+                    <span className="text-text-primary">{delivery > 0 ? formatPrice(delivery) : 'Free'}</span>
                   </div>
-                  <div className="flex justify-between border-t border-white/10 pt-4 text-[1.1rem] font-bold text-white">
+                  <div className="flex justify-between border-t border-contrast/10 pt-4 text-[1.1rem] font-bold text-text-primary">
                     <span>Total</span>
                     <span className="font-serif text-[1.2rem] text-gold-300">{formatPrice(total)}</span>
                   </div>
@@ -115,7 +115,7 @@ const Cart = () => {
                 </>
               ) : (
                 <>
-                  <div className="flex justify-between border-t border-white/10 pt-4 text-[1.1rem] font-bold text-white">
+                  <div className="flex justify-between border-t border-contrast/10 pt-4 text-[1.1rem] font-bold text-text-primary">
                     <span>Total</span>
                     <span className="font-serif text-[1.2rem] text-gold-300">Quote on request</span>
                   </div>

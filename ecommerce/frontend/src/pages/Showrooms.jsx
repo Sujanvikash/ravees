@@ -6,7 +6,7 @@ import Container from '../components/Container.jsx';
 import Reveal from '../components/Reveal.jsx';
 import PageBackdrop from '../components/PageBackdrop.jsx';
 import { CHIP_ACTIVE, CHIP_GLOW, CHIP_IDLE } from '../components/Chip.jsx';
-import { showroomsBg } from '../assets/backgrounds';
+import { showroomsPageBg } from '../assets/backgrounds';
 
 const Showrooms = () => {
   const { showrooms, stores } = useStorefront();
@@ -39,9 +39,11 @@ const Showrooms = () => {
   };
 
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-darker pt-3 pb-10 md:pt-5 md:pb-14">
-      {/* The storefront backdrop: the centred heading sits in its dark middle, the shop front to the right. */}
-      <PageBackdrop src={showroomsBg} fade="center" />
+    <section className="relative isolate z-20 overflow-hidden bg-bg-showrooms pt-3 pb-10 md:pt-5 md:pb-14">
+      {/* The client's ivory background (pine corners, a gold bauble, a gold ribbon wave) fills the whole
+          section, cropped to fit (where the page is taller than the picture's shape, its sides are trimmed).
+          Light, so the page keeps its light palette. */}
+      <PageBackdrop src={showroomsPageBg} align="center" light />
       <Container>
         <SectionHeading
           flourishes={false}
@@ -71,7 +73,7 @@ const Showrooms = () => {
                 onClick={() => choose(i)}
                 className={`cursor-pointer rounded-full border px-7 py-3 font-serif text-[0.95rem] font-semibold transition-colors duration-300 ${
                   // The gold behind the chosen city is the sliding pill above; the button itself stays clear.
-                  i === activeIdx ? 'border-transparent text-on-gold' : CHIP_IDLE
+                  i === activeIdx ? 'border-transparent text-on-cta' : CHIP_IDLE
                 }`}
               >
                 {room.city}

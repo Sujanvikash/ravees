@@ -26,13 +26,15 @@ const FADES = {
  * opacity    final opacity of the picture (backgrounds behind text use ~0.3)
  * className  position and size of the decoration (Tailwind classes)
  * imgClassName  extra classes for the picture, e.g. object-position
+ * style      inline style for the box (sizes worked out in JS, e.g. HangingBauble)
  */
-const Decoration = ({ src, fade = 'oval', side = false, opacity = 1, className = '', imgClassName = '' }) => {
+const Decoration = ({ src, fade = 'oval', side = false, opacity = 1, className = '', imgClassName = '', style }) => {
   const [loaded, setLoaded] = useState(false);
 
   return (
     <div
       aria-hidden="true"
+      style={style}
       className={`pointer-events-none absolute -z-10 ${typeof side === 'string' ? side : side ? 'hidden 2xl:block' : ''} ${className}`}
     >
       <img

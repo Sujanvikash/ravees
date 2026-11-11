@@ -11,7 +11,7 @@ import { formatDate, formatPrice } from '../../lib/format.js';
 import { addressLines, statusBadgeClass, statusLabel } from '../../lib/orders.js';
 import { useAccountData } from '../useAccountData.js';
 
-const CARD_TITLE = 'mb-4 flex items-center gap-2 font-serif text-[1.1rem] text-white';
+const CARD_TITLE = 'mb-4 flex items-center gap-2 font-serif text-[1.1rem] text-text-primary';
 
 /**
  * One of the customer's orders (`/account/orders/:id`, where the order emails link): what was bought, the
@@ -19,7 +19,9 @@ const CARD_TITLE = 'mb-4 flex items-center gap-2 font-serif text-[1.1rem] text-w
  */
 const OrderDetail = () => {
   const { id } = useParams();
-  const { data: order, loading, error, retry } = useAccountData(`/orders/${encodeURIComponent(id)}`);
+  const { data: order, loading, error, status, retry } = useAccountData(`/orders/${encodeURIComponent(id)}`);
+  // Not found, or not an order id at all (the server checks the id's shape): the same to the customer.
+  const notYours = status === 404 || status === 422;
 
   if (loading) return <PageLoader label="Loading your order" />;
 
@@ -29,13 +31,15 @@ const OrderDetail = () => {
         <Aurora />
         <div className="flex max-w-[480px] flex-col items-center gap-4 text-center">
           <PackageOpen size={44} strokeWidth={1.5} className="text-gold-400/50" />
-          <h1 className="font-serif text-[1.5rem] text-white">We couldn&apos;t open this order</h1>
-          <p className="text-text-secondary">{error || "It isn't one of your orders."}</p>
+          <h1 className="font-serif text-[1.5rem] text-text-primary">We couldn&apos;t open this order</h1>
+          <p className="text-text-secondary">{notYours || !error ? "It isn't one of your orders." : error}</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Button onClick={retry}>
-              <RotateCw size={16} strokeWidth={2} />
-              Try Again
-            </Button>
+            {!notYours && error && (
+              <Button onClick={retry}>
+                <RotateCw size={16} strokeWidth={2} />
+                Try Again
+              </Button>
+            )}
             <Button variant="outline" to="/account">
               My Account
             </Button>
@@ -73,12 +77,12 @@ const OrderDetail = () => {
           <div className={`${cardClass('panel')} p-6 md:p-7`}>
             <ul className="flex list-none flex-col">
               {order.lines.map((line, i) => (
-                <li key={`${line.productId}-${i}`} className="flex items-center gap-4 border-b border-white/6 py-3 first:pt-0 last:border-0">
+                <li key={`${line.productId}-${i}`} className="flex items-center gap-4 border-b border-contrast/6 py-3 first:pt-0 last:border-0">
                   <div className="size-16 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
                     {line.image && <img src={line.image} alt="" className="size-full object-cover" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <Link to={`/product/${line.productId}`} className="text-[0.92rem] font-medium text-white no-underline hover:text-gold-200">
+                    <Link to={`/product/${line.productId}`} className="text-[0.92rem] font-medium text-text-primary no-underline hover:text-gold-200">
                       {line.name}
                     </Link>
                     <p className="text-[0.8rem] text-text-muted">
@@ -98,7 +102,7 @@ const OrderDetail = () => {
                 </div>
               ))}
               <div className="mt-1 flex justify-between gap-4 border-t border-gold-400/25 pt-3 text-[1.05rem] font-bold">
-                <dt className="text-white">Total</dt>
+                <dt className="text-text-primary">Total</dt>
                 <dd className="font-serif text-gold-300">{formatPrice(order.total)}</dd>
               </div>
             </dl>
@@ -129,7 +133,7 @@ const OrderDetail = () => {
                   {order.history.map((step, i) => (
                     <li key={`${step.at}-${i}`} className="relative">
                       <span aria-hidden="true" className="absolute top-1.5 -left-[21px] size-2.5 rounded-full bg-gold-400" />
-                      <p className="text-[0.88rem] text-white">{statusLabel(step.status)}</p>
+                      <p className="text-[0.88rem] text-text-primary">{statusLabel(step.status)}</p>
                       <p className="text-[0.76rem] text-text-muted">{formatDate(step.at, true)}</p>
                       {step.note && <p className="mt-0.5 text-[0.82rem] text-text-secondary">{step.note}</p>}
                     </li>

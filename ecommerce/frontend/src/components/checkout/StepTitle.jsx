@@ -6,7 +6,7 @@ const StepTitle = ({ n, title, hint, action }) => (
         {n}
       </span>
       <div>
-        <h2 className="font-serif text-[1.15rem] font-semibold leading-tight tracking-[0.04em] text-white uppercase">{title}</h2>
+        <h2 className="font-serif text-[1.15rem] font-semibold leading-tight tracking-[0.04em] text-text-primary uppercase">{title}</h2>
         {hint && <p className="mt-0.5 text-[0.8rem] text-text-secondary">{hint}</p>}
       </div>
     </div>

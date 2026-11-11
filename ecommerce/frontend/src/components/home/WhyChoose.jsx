@@ -20,9 +20,9 @@ const WhyChoose = ({ tone = 'dark', className = '' }) => {
           src={pineCrateBaubles}
           alt="Green and gold baubles in a wooden crate among pine branches"
           loading="lazy"
-          className="aspect-4/3 w-full rounded-2xl border border-gold-400/25 object-cover shadow-[0_20px_50px_--alpha(var(--color-black)/45%)]"
+          className="aspect-4/3 w-full rounded-2xl border border-gold-400/25 object-cover shadow-[0_20px_50px_--alpha(var(--color-shadow)/45%)]"
         />
-        <span className="absolute -bottom-4 left-5 rounded-xl border border-gold-300 bg-[linear-gradient(135deg,var(--color-gold-300),var(--color-gold-500))] px-4 py-2 font-serif text-[0.95rem] font-bold text-on-gold shadow-[0_8px_20px_--alpha(var(--color-black)/35%)]">
+        <span className="absolute -bottom-4 left-5 rounded-xl border border-gold-300 bg-[linear-gradient(135deg,var(--color-cta-from),var(--color-cta-to))] px-4 py-2 font-serif text-[0.95rem] font-bold text-on-cta shadow-[0_8px_20px_--alpha(var(--color-shadow)/35%)]">
           Since 1997
         </span>
       </Reveal>
@@ -52,7 +52,7 @@ const WhyChoose = ({ tone = 'dark', className = '' }) => {
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className={`border-l pl-5 ${light ? 'border-gold-ink/25' : 'border-gold-400/20'}`}>
-                <h3 className={`mb-1 font-serif text-[1.08rem] font-bold ${light ? 'text-ink' : 'text-white'}`}>{title}</h3>
+                <h3 className={`mb-1 font-serif text-[1.08rem] font-bold ${light ? 'text-ink' : 'text-text-primary'}`}>{title}</h3>
                 <p className={`text-[0.93rem] leading-[1.7] ${light ? 'text-ink-soft' : 'text-text-secondary'}`}>{text}</p>
               </div>
             </Reveal>

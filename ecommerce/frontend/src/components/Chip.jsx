@@ -3,12 +3,12 @@
  * The style constants are exported for the few places that draw the same states without this button:
  * the Showrooms city row (a gold pill that slides behind the chosen city) and the Tree Studio option cards.
  */
-export const CHIP_ACTIVE = 'border-gold-300 bg-gold-500 font-semibold text-on-gold';
+export const CHIP_ACTIVE = 'border-gold-300 bg-cta-from font-semibold text-on-cta';
 // The richer selected look for large option cards: a gold gradient with a soft glow.
 export const CHIP_ACTIVE_RICH =
-  'border-gold-300 bg-[linear-gradient(135deg,var(--color-gold-300),var(--color-gold-500))] text-on-gold shadow-[0_0_18px_--alpha(var(--color-gold-400)/35%)]';
+  'border-gold-300 bg-[linear-gradient(135deg,var(--color-cta-from),var(--color-cta-to))] text-on-cta shadow-[0_0_18px_--alpha(var(--color-gold-400)/35%)]';
 export const CHIP_GLOW = 'shadow-[0_0_16px_--alpha(var(--color-gold-400)/40%)]';
-export const CHIP_IDLE = 'border-gold-400/15 bg-surface/85 text-text-secondary hover:border-gold-400 hover:text-white';
+export const CHIP_IDLE = 'border-gold-400/15 bg-surface/85 text-text-secondary hover:border-gold-400 hover:text-text-primary';
 // Unselected on a gold-tinted row (product sizes): gold text instead of grey.
 const CHIP_IDLE_GOLD = 'border-gold-400/20 bg-gold-400/8 text-gold-300 hover:border-gold-400';
 

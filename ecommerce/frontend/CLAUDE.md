@@ -54,7 +54,7 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
 - **Admin data** (`admin/context/AdminDataContext.jsx`): the catalogue (`GET /admin/catalogue`, hidden items too), showrooms and testimonials, each `{ items, create, update, remove, reorder }` and loaded again after every change. Orders, enquiries and customers are loaded by their own pages (`admin/useAdminList.js`). Photos are uploaded as soon as they are chosen (`admin/components/usePhotoUploads.js`).
 
 **Home page** (`pages/Home.jsx`): a product-led shop front, the "Storefront" design the client chose from five (the other four are in commit cddbe5f). Its sections are in `components/home/`, and their copy is in `data/home.js`.
-- **Content vs. look:** the words (brand story, why choose us, vision/mission, stores in `data/showrooms.js`, stories in `data/stories.js`) come from the old site, christmasraave.in. The logo, theme, photos and product images are ours. Never take images or styling from the old site.
+- **Content vs. look:** the words (brand story, why choose us, vision/mission, stores in `data/showrooms.js`, stories in `data/stories.js`) come from the old site, christmasraave.in. The logo, photos and product images are ours: never take images from the old site. The colour palette (ivory, deep evergreen, antique gold) follows the old site's, at the client's request.
 
 **Cinematic hero** (`components/CinematicHero/`): not used on the site (the client asked for the hero to go). The code is kept in case it is wanted back.
 - `heroConfig.js` is the single place for the asset manifests, the mobile/desktop media query, the scroll length, the choreography thresholds (fractions of scroll from 0 to 1) and the copy.
@@ -69,6 +69,8 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
 
 - **Tailwind v4:** the single entry is `src/styles/index.css`.
   - Brand tokens are declared in `@theme`: `bg-primary`, gold, emerald, ruby, text, the serif/sans/quote/mono fonts, and the eases and animations. Use those tokens, not raw hex values.
+  - The default palette is light. `.theme-dark` restores the dark one: it is on the (unused) cinematic hero and, for `/admin` routes, on `<html>` (`App.jsx`). It is also on every section or panel that shows one of the dark green background photos (`PageBackdrop` pages except Why Raave, Contact and Showrooms, whose backgrounds are ivory: the product page, checkout, the 404 page and `StorefrontGate`'s error; the stores band, the dark hero slides, the quick-view panel). A component that can sit in either palette uses only tokens (`Price`, `CheckoutList`), never `white`/`black`. The admin pages, always dark, still use `text-white` and `white/` tints.
+  - **No washes or fades over photos:** the client wants every photo shown as it is. Put light text (`.theme-dark`) on a dark photo's plain area, or put the words on a solid strip beside the photo (the home promo cards), rather than a gradient over it. For faint lines and tints use `border-contrast/10` and `bg-contrast/5`, not white, and use `text-text-primary` for headings.
   - The `short:` custom variant means max-height 760px.
   - `--header-h` is the header height.
   - Important uses the suffix form, `class!`.
@@ -76,7 +78,8 @@ node scripts/scrape-site.mjs                             # one-off: scrape chris
   - `lucide-react` for UI icons.
   - `react-icons` only for what lucide lacks, such as brand logos.
   - No hand-written `<svg>` unless no package has the icon.
-- **Reuse primitives:** use the components in `components/` (Button, Eyebrow, FormField, Modal, Decoration…). Every form wraps its fields in `FormField`.
+- **Reuse primitives:** use the components in `components/` (Button, Eyebrow, FormField, Modal, Decoration, Price…). Every form wraps its fields in `FormField`.
+- **Ornaments:** the client's transparent cut-outs in `assets/decorations` (pine corners, the snowflake bauble, the footer corners) go in a `Decoration` with `fade="none"` and `imgClassName="object-contain!"` (add `-scale-x-100` to mirror a corner), sized with the `aspect-[w/h]` its import comment gives. `HangingBauble` hangs the bauble on a gold string from a section's top. Side ornaments only show where the margin beside the 1360px column can hold them (`hidden min-[1600px]:block`), so they never cover content.
 - **React 19 refs:** `ref` is passed as a normal prop with `useImperativeHandle`, and `forwardRef` is not used.
 - **Header breakpoint:** the desktop nav switches on at `xl` (1280px) because the bar's minimum content width is about 1260px. If you add anything to the header, sweep widths from 320 to 1920 and compare `document.documentElement.scrollWidth` against the viewport width.
 - **Header spacing:** keep the gap between the header and page content tight on every page.

@@ -33,7 +33,7 @@ const ForgotPassword = () => {
         <div role="status" className="flex flex-col items-center gap-3 py-2 text-center">
           <MailCheck size={40} strokeWidth={1.5} className="text-emerald-400" />
           <p className="text-[0.92rem] leading-[1.7] text-text-secondary">
-            If an account exists for <span className="text-white">{sentTo}</span>, we&apos;ve sent a link to reset its
+            If an account exists for <span className="text-text-primary">{sentTo}</span>, we&apos;ve sent a link to reset its
             password. It works for 30 minutes; do check your spam folder too.
           </p>
         </div>
