@@ -6,9 +6,9 @@ import { useStorefront } from '../context/StorefrontContext.jsx';
 import Container from '../components/Container.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import Reveal from '../components/Reveal.jsx';
-import PageBackdrop from '../components/PageBackdrop.jsx';
+import Decoration from '../components/Decoration.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
-import { contactBg } from '../assets/backgrounds';
+import { ornamentBowCorner } from '../assets/decorations';
 import PageTitle from '../components/PageTitle.jsx';
 import { cardClass } from '../components/cardClass.js';
 
@@ -18,10 +18,14 @@ const METHOD_ROW =
 // The row's icon gives a little springy tilt when the row is hovered.
 const METHOD_ICON = 'shrink-0 transition-transform duration-300 ease-spring group-hover:scale-115 group-hover:-rotate-8';
 
+// Pine-and-bow cut-outs in the top corners (shown whole, the right one mirrored), from lg, where the centred
+// heading leaves those corners empty.
+const CORNER = 'top-0 aspect-900/566 w-[clamp(150px,18vw,280px)]';
+
 /**
- * Contact: the client's ivory background fills the section. The invitation on top (centred from lg), then
- * on the left three ways to reach the concierge and on the right the consultation form in its card, which
- * stays pinned under the header while the page scrolls.
+ * Contact, on the plain ivory page: the invitation on top (centred from lg), then on the left three ways to
+ * reach the concierge and on the right the consultation form in its card, which stays pinned under the
+ * header while the page scrolls.
  */
 const Contact = () => {
   const { showrooms } = useStorefront();
@@ -30,11 +34,9 @@ const Contact = () => {
   const hotline = showrooms.find((room) => room.isFlagship)?.phone || PHONE_DISPLAY;
 
   return (
-    <section className="relative isolate z-20 overflow-x-clip bg-bg-darker pt-6 pb-10 md:pt-8 md:pb-14 lg:flex lg:min-h-[min(56.28vw,1080px)] lg:items-center">
-      {/* The client's ivory background (pine corners, a gold ribbon wave): light, so the page keeps its
-          light palette; shown as it is. From lg the section is as tall as the picture's own shape, so the
-          corners and the ribbon show whole, and the heading is centred in its plain middle, clear of them. */}
-      <PageBackdrop src={contactBg} align="center" light />
+    <section className="relative isolate z-20 overflow-x-clip bg-bg-darker pt-6 pb-10 md:pt-8 md:pb-14">
+      <Decoration side="hidden lg:block" src={ornamentBowCorner} fade="none" imgClassName="object-contain!" className={`left-0 ${CORNER}`} />
+      <Decoration side="hidden lg:block" src={ornamentBowCorner} fade="none" imgClassName="object-contain! -scale-x-100" className={`right-0 ${CORNER}`} />
       <Container className="w-full">
         <Reveal className="mb-8 lg:mb-10 lg:text-center">
           <Eyebrow>✦ CONCIERGE SUPPORT ✦</Eyebrow>

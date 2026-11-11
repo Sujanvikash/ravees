@@ -4,9 +4,13 @@ import ShowroomCard from '../components/ShowroomCard.jsx';
 import { useStorefront } from '../context/StorefrontContext.jsx';
 import Container from '../components/Container.jsx';
 import Reveal from '../components/Reveal.jsx';
-import PageBackdrop from '../components/PageBackdrop.jsx';
+import Decoration from '../components/Decoration.jsx';
 import { CHIP_ACTIVE, CHIP_GLOW, CHIP_IDLE } from '../components/Chip.jsx';
-import { showroomsPageBg } from '../assets/backgrounds';
+import { ornamentBerryCorner } from '../assets/decorations';
+
+// Pine-and-berry cut-outs in the top corners (shown whole, the right one mirrored), from lg, beside the
+// centred heading and city row.
+const CORNER = 'top-0 aspect-900/697 w-[clamp(150px,16vw,250px)]';
 
 const Showrooms = () => {
   const { showrooms, stores } = useStorefront();
@@ -39,11 +43,9 @@ const Showrooms = () => {
   };
 
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-showrooms pt-3 pb-10 md:pt-5 md:pb-14">
-      {/* The client's ivory background (pine corners, a gold bauble, a gold ribbon wave) fills the whole
-          section, cropped to fit (where the page is taller than the picture's shape, its sides are trimmed).
-          Light, so the page keeps its light palette. */}
-      <PageBackdrop src={showroomsPageBg} align="center" light />
+    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-3 pb-10 md:pt-5 md:pb-14">
+      <Decoration side="hidden lg:block" src={ornamentBerryCorner} fade="none" imgClassName="object-contain!" className={`left-0 ${CORNER}`} />
+      <Decoration side="hidden lg:block" src={ornamentBerryCorner} fade="none" imgClassName="object-contain! -scale-x-100" className={`right-0 ${CORNER}`} />
       <Container>
         <SectionHeading
           flourishes={false}

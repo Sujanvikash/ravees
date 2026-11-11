@@ -10,16 +10,16 @@ import Price from './Price.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { withoutSizeSpec } from '../lib/productSpecs.js';
 import { featuresFor } from '../data/productFeatures.js';
-import { quickViewBg } from '../assets/backgrounds';
 
 const ROUND_BTN =
-  'flex size-10 cursor-pointer items-center justify-center rounded-full border border-contrast/20 bg-shade/70 text-text-primary transition-colors hover:border-gold-400 hover:text-gold-300';
+  'flex size-10 cursor-pointer items-center justify-center rounded-full border border-contrast/15 bg-surface/90 text-text-primary shadow-[0_2px_8px_--alpha(var(--color-shadow)/25%)] transition-colors hover:border-gold-400 hover:text-gold-300';
 const LABEL = 'text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-text-muted';
 
 /**
- * Quick specifications, over the festive frame: the photo (with ‹ › and thumbnails once a product has more
+ * Quick specifications, on a plain white card: the photo (with ‹ › and thumbnails once a product has more
  * than one) beside the collection, name, description, the collection's points, the price, and Add to Cart
- * (disabled when out of stock) / Full Details / a question on WhatsApp.
+ * (disabled when out of stock) / Full Details / a question on WhatsApp. The name is in the details, so the
+ * header only says what this is.
  */
 const QuickViewModal = ({ product, onClose }) => {
   const { addToCart } = useCart();
@@ -41,9 +41,7 @@ const QuickViewModal = ({ product, onClose }) => {
       open={Boolean(product)}
       onClose={onClose}
       eyebrow="✦ Quick specifications"
-      title={product?.name}
       size="lg"
-      backdrop={quickViewBg}
     >
       {product && (
         <div className="grid items-start gap-7 px-6 pt-5 pb-7 sm:px-8 md:grid-cols-[minmax(0,1fr)_1.15fr]">

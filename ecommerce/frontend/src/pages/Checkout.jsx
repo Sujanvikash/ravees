@@ -3,7 +3,6 @@ import { ArrowRight, CheckCircle2, Headphones, PackageCheck, ShieldCheck, Shoppi
 import Button from '../components/Button.jsx';
 import FeatureItem from '../components/FeatureItem.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
-import PageBackdrop from '../components/PageBackdrop.jsx';
 import Container from '../components/Container.jsx';
 import PayOnline from '../components/checkout/PayOnline.jsx';
 import UnavailableItems from '../components/UnavailableItems.jsx';
@@ -14,7 +13,6 @@ import { formatPrice } from '../lib/format.js';
 import Aurora from '../components/Aurora.jsx';
 import Decoration from '../components/Decoration.jsx';
 import { luxuryGiftBoxes } from '../assets/decorations';
-import { checkoutBg } from '../assets/backgrounds';
 import PageTitle from '../components/PageTitle.jsx';
 import { sectionClass } from '../components/sectionClass.js';
 
@@ -47,7 +45,7 @@ const Done = ({ title, children, actions }) => (
 );
 
 /**
- * Checkout over the festive backdrop, in three columns: the invitation on the left, the delivery address and
+ * Checkout on the plain ivory page, in three columns: the invitation on the left, the delivery address and
  * payment in the middle and the order with its total on the right (stacking on smaller screens; PayOnline
  * draws the last two). Lines that can't be bought right now are called out, and must go before paying.
  */
@@ -114,11 +112,11 @@ const Checkout = () => {
   const askToClear = () => setConfirmClear(true);
 
   return (
-    <section className="theme-dark relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
-      <PageBackdrop src={checkoutBg} align="center" />
+    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
+      <Aurora />
       <Container>
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2 xl:grid-cols-[0.72fr_1.28fr_1fr]">
-          {/* The invitation, straight on the backdrop. */}
+          {/* The invitation, straight on the page. */}
           <div className="lg:col-span-2 xl:col-span-1 xl:pt-6">
             <span className="mb-3 flex items-center gap-3 font-mono text-[0.7rem] uppercase tracking-[0.24em] text-gold-400">
               <span aria-hidden="true" className="h-px w-5 bg-gold-400/60" />

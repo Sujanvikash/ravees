@@ -7,9 +7,9 @@ export const ORDER_STATUSES = ['pending', 'paid', 'shipped', 'delivered', 'cance
 const STATUS = {
   pending: { label: 'Awaiting payment', badge: 'border-gold-400/30 bg-gold-400/10 text-gold-300' },
   paid: { label: 'Paid', badge: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300' },
-  shipped: { label: 'Shipped', badge: 'border-gold-300 bg-gold-500 text-on-gold' },
+  shipped: { label: 'Shipped', badge: 'border-forest bg-forest text-cream-50' },
   delivered: { label: 'Delivered', badge: 'border-contrast/10 bg-contrast/8 text-text-secondary' },
-  cancelled: { label: 'Cancelled', badge: 'border-ruby-500/40 bg-ruby-500/15 text-ruby-500' },
+  cancelled: { label: 'Cancelled', badge: 'border-danger/40 bg-danger/10 text-danger' },
 };
 
 /** The status's wording ("Awaiting payment"). */

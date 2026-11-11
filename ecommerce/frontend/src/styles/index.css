@@ -5,15 +5,13 @@
 
 @theme {
   /* The storefront palette: ivory pages, white cards, deep evergreen buttons, antique gold accents.
-     .theme-dark (below) swaps these for the dark palette, for the hero video and the admin. */
+     Every page uses it; .theme-dark (below) is kept only for the cinematic hero, which the site doesn't show. */
 
   /* backgrounds */
   --color-bg-primary: #fdfcfa;
   --color-bg-dark-emerald: #ffffff; /* modals, dropdowns, toasts */
   --color-bg-darker: #f9f5ec; /* alternate ivory bands */
   --color-bg-deepest: #fbf8f2; /* footer, image wells */
-  --color-bg-showrooms: #f8ead7; /* the Showrooms background picture's bottom colour, which the page carries on in */
-  --color-bg-why: #fcefe3; /* the same for Why Raave's background picture */
   --color-hero-bg: #0b1a14; /* the home hero behind its frames (dark in both palettes) */
   --color-scrim: rgb(13 39 25 / 0.55); /* behind modals and the cart drawer */
 
@@ -67,7 +65,7 @@
   /* text */
   --color-text-primary: #1c231f;
   --color-text-secondary: #4a544e;
-  --color-text-muted: #6a736d;
+  --color-text-muted: #5f6862; /* deep enough for placeholders and disabled labels on the grey field tint */
   --color-text-tagline: #4a544e; /* the logo's "European standard since 1998" line */
   --color-text-quote: #1c231f; /* testimonial quotes */
 
@@ -192,8 +190,9 @@
   outline-offset: 2px;
 }
 
-/* The dark palette, for anything that sits on a dark picture: the hero section, the dark backdrop pages and
-   panels. Every colour class reads these variables, so a subtree only needs this class to switch. */
+/* The dark palette. The storefront is light throughout; only the cinematic hero (kept, but not on the site)
+   still uses this, on its own section. Every colour class reads these variables, so a subtree only needs
+   this class to switch. */
 .theme-dark {
   --color-bg-primary: #05160f;
   --color-bg-dark-emerald: #082117;

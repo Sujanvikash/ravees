@@ -10,7 +10,6 @@ import Modal from '../components/Modal.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
 import QuickViewModal from '../components/QuickViewModal.jsx';
 import FeatureItem from '../components/FeatureItem.jsx';
-import PageBackdrop from '../components/PageBackdrop.jsx';
 import PageLoader from '../components/PageLoader.jsx';
 import Price from '../components/Price.jsx';
 import { featuresFor } from '../data/productFeatures.js';
@@ -22,9 +21,9 @@ import { useWishlist } from '../context/WishlistContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
 import NotFound from './NotFound.jsx';
 import Container from '../components/Container.jsx';
+import Aurora from '../components/Aurora.jsx';
 import PageTitle from '../components/PageTitle.jsx';
 import { cardClass } from '../components/cardClass.js';
-import { productBg } from '../assets/backgrounds';
 
 const THUMBS = 5; // thumbnails shown beside the photo; the column scrolls with the selection
 // The up/down buttons at the ends of the thumbnail column (desktop only).
@@ -62,7 +61,7 @@ const specRows = (product) =>
  * Product page: the photo (with a thumbnail column once a product has more than one) beside the details —
  * collection, name, description, four collection points, the price (with the MRP struck through), add to cart
  * (a disabled "Out of Stock" when it is) / a question on WhatsApp / save, and the specifications — then four
- * promise tiles and more from the same collection. The festive backdrop frames it.
+ * promise tiles and more from the same collection, on the plain ivory page.
  */
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -95,8 +94,8 @@ const ProductDetail = () => {
   const half = Math.ceil(rows.length / 2);
 
   return (
-    <section className="theme-dark relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
-      <PageBackdrop src={productBg} align="center" className="h-[1150px]" />
+    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
+      <Aurora />
       <Container>
         <div className="grid gap-7 lg:grid-cols-[1fr_1.1fr] lg:gap-10">
           {/* Gallery */}

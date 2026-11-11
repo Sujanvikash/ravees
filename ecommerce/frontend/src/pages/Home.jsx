@@ -53,7 +53,7 @@ const Home = () => {
     <>
       <section className="relative z-20 bg-bg-primary pt-4 pb-6 md:pt-5">
         <Container className="grid gap-4 lg:h-[clamp(440px,calc(100svh-var(--header-h)-7.5rem),560px)] lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
-          <HeroCarousel className="h-[440px] lg:h-full" />
+          <HeroCarousel className="h-[480px] sm:h-[440px] lg:h-full" />
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-2">
             {/* The old site's red promo card, in our colours: off to the stores */}
