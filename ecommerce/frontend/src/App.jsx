@@ -1,6 +1,6 @@
 import RequireCustomer from './auth/RequireCustomer.jsx';
-import { Suspense, lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Suspense, lazy, useLayoutEffect } from 'react';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import RootLayout from './layout/RootLayout.jsx';
 import PageLoader from './components/PageLoader.jsx';
 
@@ -39,6 +39,14 @@ const AdminCustomers = lazy(() => import('./admin/pages/AdminCustomers.jsx'));
 const AdminSettings = lazy(() => import('./admin/pages/AdminSettings.jsx'));
 
 const App = () => {
+  const isAdmin = useLocation().pathname.startsWith('/admin');
+
+  // The admin uses the shop's light palette with a few admin touches (index.css, `.admin-ui`). The class goes
+  // on <html> so popups rendered into <body> (dialogs, dropdown lists) get them too.
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle('admin-ui', isAdmin);
+  }, [isAdmin]);
+
   return (
     <Routes>
       {/* Storefront */}

@@ -20,7 +20,11 @@ import { useStorefront } from '../context/StorefrontContext.jsx';
 import Button from '../components/Button.jsx';
 import { Input } from '../components/Input.jsx';
 import Logo from '../components/Logo.jsx';
-import { footerBackground } from '../assets/decorations';
+import Decoration from '../components/Decoration.jsx';
+import { footerBottomLeft, footerBottomRight, footerTopLeft, footerTopRight } from '../assets/decorations';
+
+// Cut-outs are transparent, so they are shown whole (contain), never cropped or edge-faded.
+const CUTOUT = { fade: 'none', imgClassName: 'object-contain!' };
 
 const COLLECTION_LINKS = [
   { label: 'European Christmas Trees', to: '/shop?category=christmas-trees', Icon: TreePine },
@@ -69,29 +73,31 @@ const Footer = () => {
 
   return (
     <footer className="relative z-20 overflow-hidden border-t border-gold-400/15 bg-bg-deepest pt-8 pb-6">
-      {/* The pine-and-ribbon background: dark in the middle (behind the text), branches framing both sides.
-          Wide screens (columns in one row): drawn as two halves, the left one pinned left and the right one
-          pinned right, each the footer's full height, so both sets of branches show whole at any width (the
-          seam falls in the plain dark middle). Narrower screens, where the footer is taller and the text
-          reaches the edges: one centred copy behind a darker wash, for legibility. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat xl:hidden"
-          style={{ backgroundImage: `url(${footerBackground})` }}
-        />
-        <div
-          className="absolute inset-y-0 left-0 hidden w-1/2 bg-size-[auto_100%] bg-left bg-no-repeat xl:block"
-          style={{ backgroundImage: `url(${footerBackground})` }}
-        />
-        <div
-          className="absolute inset-y-0 right-0 hidden w-1/2 bg-size-[auto_100%] bg-right bg-no-repeat xl:block"
-          style={{ backgroundImage: `url(${footerBackground})` }}
-        />
-        {/* Shade over it: fades in from the border line at the top and, on wide screens, darkens the middle
-            behind the columns while the branches at the far left and right stay bright. */}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--color-bg-deepest)_0%,--alpha(var(--color-bg-deepest)/0%)_14%,--alpha(var(--color-bg-deepest)/0%)_80%,--alpha(var(--color-bg-deepest)/50%)_100%)] max-xl:bg-bg-deepest/60" />
-        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,--alpha(var(--color-bg-deepest)/0%)_0%,--alpha(var(--color-bg-deepest)/82%)_15%,--alpha(var(--color-bg-deepest)/88%)_50%,--alpha(var(--color-bg-deepest)/82%)_85%,--alpha(var(--color-bg-deepest)/0%)_100%)] xl:block" />
-      </div>
+      {/* The client's footer corners (cut-outs). The top two hang into the empty space either side of the
+          R mark: small on phones, as wide as the margin beside the columns from 1440px (so they never sit
+          behind the logo). The bottom two stand in that margin, beside the copyright line, so only from 1440px. */}
+      <Decoration
+        {...CUTOUT}
+        src={footerTopLeft}
+        className="top-0 left-0 aspect-459/318 w-24 sm:w-[clamp(130px,calc(50vw-576px),300px)]"
+      />
+      <Decoration
+        {...CUTOUT}
+        src={footerTopRight}
+        className="top-0 right-0 aspect-445/285 w-24 sm:w-[clamp(130px,calc(50vw-576px),300px)]"
+      />
+      <Decoration
+        {...CUTOUT}
+        side="hidden min-[1440px]:block"
+        src={footerBottomLeft}
+        className="bottom-0 left-0 aspect-629/313 w-[min(360px,calc(50vw-576px))]"
+      />
+      <Decoration
+        {...CUTOUT}
+        side="hidden min-[1440px]:block"
+        src={footerBottomRight}
+        className="right-0 bottom-0 aspect-667/390 w-[min(360px,calc(50vw-576px))]"
+      />
 
       {/* Narrower than the page width (Container), so the branches at the sides frame the columns. */}
       <div className="relative mx-auto max-w-300 px-6">
@@ -121,7 +127,7 @@ const Footer = () => {
                   rel="noreferrer"
                   title={title}
                   aria-label={title}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-gold-400/35 bg-bg-deepest/40 text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-on-gold"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-gold-400/35 bg-surface text-gold-300 no-underline transition-all duration-300 hover:border-gold-400 hover:bg-gold-400 hover:text-on-gold"
                 >
                   <Icon size={16} />
                 </a>
@@ -173,7 +179,7 @@ const Footer = () => {
                 aria-label="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="min-w-0 flex-1 bg-bg-deepest/55 px-4 py-3"
+                className="min-w-0 flex-1 bg-surface px-4 py-3"
               />
               <Button size="sm" type="submit" className="px-5">
                 Join
@@ -182,7 +188,7 @@ const Footer = () => {
             </form>
             <a
               href={PHONE_HREF}
-              className="group flex items-center gap-4 border-t border-white/8 pt-6 no-underline"
+              className="group flex items-center gap-4 border-t border-contrast/8 pt-6 no-underline"
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold-400/45 text-gold-300 transition-colors duration-300 group-hover:bg-gold-400 group-hover:text-on-gold">
                 <Phone size={19} strokeWidth={1.8} />
@@ -205,11 +211,11 @@ const Footer = () => {
             <Link to="/about" className={FOOTER_LEGAL}>
               Privacy Policy
             </Link>
-            <span aria-hidden="true" className="h-3.5 w-px bg-white/15" />
+            <span aria-hidden="true" className="h-3.5 w-px bg-contrast/15" />
             <Link to="/about" className={FOOTER_LEGAL}>
               Terms &amp; Warranty
             </Link>
-            <span aria-hidden="true" className="h-3.5 w-px bg-white/15" />
+            <span aria-hidden="true" className="h-3.5 w-px bg-contrast/15" />
             <Link to="/contact" className={FOOTER_LEGAL}>
               Shipping Policy
             </Link>

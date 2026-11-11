@@ -7,7 +7,7 @@ import { useAdminList } from '../useAdminList.js';
 import { formatDate, formatPrice } from '../../lib/format.js';
 
 const columns = [
-  { key: 'name', label: 'Name', sortable: true, render: (row) => <span className="text-white">{row.name}</span> },
+  { key: 'name', label: 'Name', sortable: true, render: (row) => <span className="text-text-primary">{row.name}</span> },
   {
     key: 'email',
     label: 'Email',
@@ -21,7 +21,7 @@ const columns = [
   { key: 'phone', label: 'Phone', render: (row) => row.phone || '—' },
   { key: 'createdAt', label: 'Joined', sortable: true, render: (row) => formatDate(row.createdAt) },
   { key: 'orders', label: 'Orders', render: (row) => row.orders ?? 0 },
-  { key: 'spent', label: 'Spent', render: (row) => <span className="text-white">{formatPrice(row.spent)}</span> },
+  { key: 'spent', label: 'Spent', render: (row) => <span className="text-text-primary">{formatPrice(row.spent)}</span> },
 ];
 
 /** The customers with an account on the website, with what they have ordered. */

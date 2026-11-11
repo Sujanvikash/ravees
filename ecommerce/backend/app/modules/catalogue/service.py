@@ -94,10 +94,11 @@ def _products(session: Session) -> Sequence[Product]:
 
 
 def storefront(session: Session) -> dict:
-    """The visible categories (with how many visible products each has) and the visible products in them."""
+    """The visible categories (with how many products for sale each has) and the products for sale in them: visible
+    and with a price. A product without a price isn't for sale yet, so the shop doesn't show it."""
     categories = [c for c in _categories(session) if c.visible]
     shown = {c.id for c in categories}
-    products = [p for p in _products(session) if p.visible and p.category_id in shown]
+    products = [p for p in _products(session) if p.visible and p.price is not None and p.category_id in shown]
     counts = Counter(p.category_id for p in products)
     names = {c.id: c.name for c in categories}
     return {

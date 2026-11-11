@@ -47,7 +47,7 @@ const ShowroomCard = ({ showroom }) => {
     <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
       {/* Gallery */}
       <div className="flex flex-col gap-3">
-        <div className="relative aspect-16/10 overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_20px_50px_--alpha(var(--color-black)/60%)]">
+        <div className="relative aspect-16/10 overflow-hidden rounded-2xl border border-gold-400/25 bg-shade shadow-[0_20px_50px_--alpha(var(--color-shadow)/60%)]">
           {photos.map((src, i) => (
             <img
               key={src}
@@ -60,7 +60,7 @@ const ShowroomCard = ({ showroom }) => {
               }`}
             />
           ))}
-          <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full border border-white/15 bg-shade/70 px-2 py-1 text-[0.8rem] text-white">
+          <div className="absolute bottom-4 left-4 flex items-center gap-1 rounded-full border border-contrast/15 bg-shade/70 px-2 py-1 text-[0.8rem] text-text-primary">
             <button type="button" onClick={() => go(-1)} aria-label="Previous photo" className="cursor-pointer rounded-full p-1 hover:text-gold-300">
               <ChevronLeft size={16} strokeWidth={2} />
             </button>
@@ -97,7 +97,7 @@ const ShowroomCard = ({ showroom }) => {
       {/* Details */}
       <div className={`${cardClass('raised')} flex flex-col p-7 md:p-8`}>
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <h3 className="font-serif text-[1.3rem] text-white md:text-[1.4rem]">{showroom.city} Experience Centre</h3>
+          <h3 className="font-serif text-[1.3rem] text-text-primary md:text-[1.4rem]">{showroom.city} Experience Centre</h3>
           {showroom.isFlagship && <Badge>Flagship</Badge>}
         </div>
         <p className="mb-6 text-[0.92rem] leading-[1.6] text-text-secondary">{showroom.address}</p>

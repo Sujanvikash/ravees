@@ -8,11 +8,11 @@ import { useCart } from '../../context/CartContext.jsx';
 import { cardClass } from '../cardClass.js';
 
 /**
- * Checkout's third column: the list with quantities (and each line's amount when `showPrices`), a link back
- * to the shop, and the order summary: `summary` rows ([label, value]), then `total` ([label, value]) in bold.
- * `onClearAll` asks before emptying the list (the page owns the confirmation).
+ * Checkout's third column: the lines with their quantities and amounts, a link back to the shop, and the
+ * order summary: `summary` rows ([label, value]), then `total` ([label, value]) in bold. `onClearAll` asks
+ * before emptying the cart (the page owns the confirmation).
  */
-const CheckoutList = ({ title, summary, total, note, showPrices = false, onClearAll }) => {
+const CheckoutList = ({ title, summary, total, note, onClearAll }) => {
   const { cart, updateQuantity, removeFromCart } = useCart();
 
   return (
@@ -24,7 +24,7 @@ const CheckoutList = ({ title, summary, total, note, showPrices = false, onClear
           <button
             type="button"
             onClick={onClearAll}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 text-[0.85rem] text-gold-300 transition-colors hover:text-white"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 text-[0.85rem] text-gold-300 transition-colors hover:text-text-primary"
           >
             <Trash2 size={16} strokeWidth={1.8} />
             Clear All
@@ -34,18 +34,14 @@ const CheckoutList = ({ title, summary, total, note, showPrices = false, onClear
 
       <ul data-lenis-prevent className="-mr-2 flex max-h-[430px] flex-col overflow-y-auto pr-2">
         {cart.map(({ product, quantity }) => (
-          <li key={product.id} className="flex items-center gap-3 border-b border-white/6 py-3 first:pt-0 last:border-0">
+          <li key={product.id} className="flex items-center gap-3 border-b border-contrast/6 py-3 first:pt-0 last:border-0">
             <Link to={`/product/${product.id}`} className="size-14 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
               <img src={product.image} alt={product.name} className="size-full object-cover" />
             </Link>
             {/* Phones put the quantity under the name, so the name keeps the row's width. */}
             <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-[0.88rem] font-medium leading-snug text-white sm:truncate">{product.name}</p>
-              {showPrices ? (
-                <Price product={product} quantity={quantity} size="sm" />
-              ) : (
-                <span className="text-[0.74rem] text-text-muted">{product.categoryLabel}</span>
-              )}
+              <p className="line-clamp-2 text-[0.88rem] font-medium leading-snug text-text-primary sm:truncate">{product.name}</p>
+              <Price product={product} quantity={quantity} size="sm" />
               <div className="mt-1.5 sm:hidden">
                 <QuantityStepper size="sm" value={quantity} onChange={(q) => updateQuantity(product.id, q)} />
               </div>
@@ -62,7 +58,7 @@ const CheckoutList = ({ title, summary, total, note, showPrices = false, onClear
 
       <Link
         to="/shop"
-        className="inline-flex items-center justify-center gap-2 rounded-lg border border-gold-400/30 px-4 py-3 font-mono text-[0.78rem] font-bold uppercase tracking-[0.12em] text-gold-300 no-underline transition-all hover:border-gold-400 hover:bg-gold-400/10 hover:text-white"
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-gold-400/30 px-4 py-3 font-mono text-[0.78rem] font-bold uppercase tracking-[0.12em] text-gold-300 no-underline transition-all hover:border-gold-400 hover:bg-gold-400/10 hover:text-text-primary"
       >
         <Plus size={16} strokeWidth={2} />
         Add more products
@@ -75,7 +71,7 @@ const CheckoutList = ({ title, summary, total, note, showPrices = false, onClear
         </h3>
         <dl className="flex flex-col">
           {summary.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-4 border-b border-white/6 py-2 text-[0.85rem] last:border-0">
+            <div key={label} className="flex justify-between gap-4 border-b border-contrast/6 py-2 text-[0.85rem] last:border-0">
               <dt className="text-text-muted">{label}</dt>
               <dd className="text-right text-text-primary">{value}</dd>
             </div>
@@ -83,7 +79,7 @@ const CheckoutList = ({ title, summary, total, note, showPrices = false, onClear
         </dl>
         {total && (
           <div className="mt-1 flex justify-between gap-4 border-t border-gold-400/25 pt-3 text-[1.05rem] font-bold">
-            <span className="text-white">{total[0]}</span>
+            <span className="text-text-primary">{total[0]}</span>
             <span className="font-serif text-gold-300">{total[1]}</span>
           </div>
         )}

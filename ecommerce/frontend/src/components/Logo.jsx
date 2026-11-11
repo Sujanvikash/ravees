@@ -22,7 +22,7 @@ const Logo = ({ mark = false, height = 44, className = '' }) => {
     // The plate's padding grows with the logo, so the margin round the artwork looks the same at every size.
     <span
       style={{ height, padding: `${Math.round(height * 0.09)}px ${Math.round(height * 0.14)}px` }}
-      className={`inline-flex shrink-0 items-center rounded-md bg-white shadow-[0_2px_10px_rgb(0_0_0/0.3)] ${className}`.trim()}
+      className={`inline-flex shrink-0 items-center rounded-md bg-white shadow-[0_2px_10px_--alpha(var(--color-shadow)/30%)] ${className}`.trim()}
     >
       <img src={logo} alt="Raave's Evergreen, Christmas Tree & Decoration, since 1997" className="block h-full w-auto" />
     </span>

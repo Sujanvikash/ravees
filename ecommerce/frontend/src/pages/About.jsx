@@ -4,8 +4,9 @@ import Eyebrow from '../components/Eyebrow.jsx';
 import CountUp from '../components/CountUp.jsx';
 import Reveal from '../components/Reveal.jsx';
 import FeatureItem from '../components/FeatureItem.jsx';
-import PageBackdrop from '../components/PageBackdrop.jsx';
-import { whyRaaveBg } from '../assets/backgrounds';
+import Decoration from '../components/Decoration.jsx';
+import HangingBauble from '../components/HangingBauble.jsx';
+import { ornamentBerryCorner } from '../assets/decorations';
 import PageTitle from '../components/PageTitle.jsx';
 import { cardClass } from '../components/cardClass.js';
 
@@ -25,15 +26,23 @@ const PROMISES = [
 ];
 
 /**
- * Why Raave: the nativity backdrop fills the screen, the story and its numbers on the left, John 3:16
- * over the nativity on the right, and the four promises in a band along the bottom.
+ * Why Raave, on the plain ivory page: the story and its numbers on the left, John 3:16 on a white card on
+ * the right (stacked below on smaller screens), and the four promises in a band below. A pine-and-berry
+ * corner and a hanging bauble decorate the empty top right on wide screens.
  */
 const About = () => {
   return (
-    <section className="relative isolate z-20 overflow-hidden bg-bg-darker pt-4 md:pt-5">
-      <PageBackdrop src={whyRaaveBg} fade="left" />
-      <Container>
-        <div className="grid min-h-[min(640px,calc(100svh-var(--header-h)-9rem))] items-center gap-10 py-6 lg:grid-cols-[1.25fr_1fr] lg:py-10">
+    <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 md:pt-5">
+      <Decoration
+        side="hidden xl:block"
+        src={ornamentBerryCorner}
+        fade="none"
+        imgClassName="object-contain! -scale-x-100"
+        className="top-0 right-0 aspect-900/697 w-[clamp(180px,16vw,260px)]"
+      />
+      <HangingBauble side="hidden xl:block" className="right-[calc(16vw+40px)]" width={64} drop={56} />
+      <Container className="w-full">
+        <div className="grid gap-8 py-6 lg:py-12 xl:grid-cols-[1.1fr_1fr] xl:items-center xl:gap-14">
           <div>
             <Reveal>
               <Eyebrow>✦ 27 YEARS IN INDIA &bull; EST. 1998 ✦</Eyebrow>
@@ -57,10 +66,12 @@ const About = () => {
                 <Reveal
                   key={label}
                   delay={i}
-                  className={`${cardClass('glass')} flex flex-col justify-center px-4 py-5`}
+                  className={`${cardClass('glass')} @container flex flex-col justify-center px-4 py-5`}
                 >
+                  {/* The word is sized from its card's width (it is about 6.7 times as wide as it is tall),
+                      so "Countless" fits however narrow the cards get. */}
                   {word ? (
-                    <span className="block font-serif text-[1.15rem] font-bold uppercase tracking-[0.04em] text-gold-300 sm:text-[1.2rem]">
+                    <span className="block font-serif text-[min(1.2rem,14cqw)] font-bold uppercase tracking-[0.04em] text-gold-300">
                       {word}
                     </span>
                   ) : (
@@ -78,26 +89,35 @@ const About = () => {
             </div>
           </div>
 
-          {/* The verse sits low over the nativity, as a caption to it, on a soft dark glow so it reads over the figures. */}
-          <Reveal
-            delay={2}
-            className="rounded-3xl bg-[radial-gradient(ellipse_at_center,--alpha(var(--color-shade)/82%)_0%,--alpha(var(--color-shade)/55%)_55%,transparent_78%)] px-6 py-8 text-center lg:self-end"
-          >
-            <p className="font-quote text-[1.3rem] italic leading-[1.5] text-gold-200 [text-shadow:0_2px_12px_--alpha(var(--color-black)/90%)] sm:text-[1.5rem]">
-              &ldquo;For God so loved the world
-              <br />
-              that He gave His one and only Son...&rdquo;
-            </p>
-            <span className="mt-3 block font-mono text-[0.68rem] uppercase tracking-[0.2em] text-gold-400 [text-shadow:0_1px_8px_--alpha(var(--color-black)/90%)]">
-              John 3:16 &bull; The reason for the season
-            </span>
-          </Reveal>
+          <div className="mx-auto w-full max-w-xl xl:mt-16">
+            <Reveal delay={2} className={`${cardClass('raised')} px-6 py-8 text-center sm:px-10 sm:py-10`}>
+              <span aria-hidden="true" className="mb-3 block text-[1.1rem] text-gold-400">
+                ✦
+              </span>
+              <p className="font-quote text-[1.3rem] italic leading-[1.5] text-text-primary sm:text-[1.5rem]">
+                &ldquo;For God so loved the world
+                <br />
+                that He gave His one and only Son...&rdquo;
+              </p>
+              <span className="mt-3 block font-mono text-[0.68rem] uppercase tracking-[0.2em] text-gold-400">
+                John 3:16 &bull; The reason for the season
+              </span>
+            </Reveal>
+          </div>
         </div>
 
-        {/* The four promises, in a band along the bottom of the page. */}
-        <div className="grid grid-cols-1 gap-6 border-t border-gold-400/15 py-9 sm:grid-cols-2 lg:grid-cols-4">
+        {/* The four promises, divided by thin lines from xl. */}
+        <div className="grid grid-cols-1 gap-6 border-t border-gold-400/15 py-9 sm:grid-cols-2 xl:grid-cols-4 xl:gap-0 xl:divide-x xl:divide-gold-400/25 xl:py-8">
           {PROMISES.map(({ Icon, text }, i) => (
-            <FeatureItem key={text} as={Reveal} delay={i} variant="band" Icon={Icon} title={text} />
+            <FeatureItem
+              key={text}
+              as={Reveal}
+              delay={i}
+              variant="band"
+              Icon={Icon}
+              title={text}
+              className="xl:justify-center xl:px-6"
+            />
           ))}
         </div>
       </Container>

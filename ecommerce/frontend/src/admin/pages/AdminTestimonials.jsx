@@ -102,7 +102,7 @@ const AdminTestimonials = () => {
       {editing && (
         <form onSubmit={save} noValidate className={`${cardClass('form')} flex max-w-[720px] flex-col gap-4 p-6`}>
           <div className="flex items-center justify-between">
-            <h2 className="font-serif text-[1.1rem] text-white">{isNew ? 'New testimonial' : `Editing ${editing.author}`}</h2>
+            <h2 className="font-serif text-[1.1rem] text-text-primary">{isNew ? 'New testimonial' : `Editing ${editing.author}`}</h2>
             <IconButton label="Close" onClick={() => setEditing(null)}>
               <X size={20} />
             </IconButton>

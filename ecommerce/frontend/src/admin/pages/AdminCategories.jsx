@@ -127,7 +127,7 @@ const CategoryCard = ({ cat, productCount, onUp, onDown, moving, onDelete }) => 
                   type="checkbox"
                   checked={value('visible')}
                   onChange={(e) => setDraft((prev) => ({ ...prev, visible: e.target.checked }))}
-                  className="h-4 w-4 accent-gold-500"
+                  className="h-4 w-4 accent-forest"
                 />
                 Visible
               </label>
@@ -226,7 +226,7 @@ const AdminCategories = () => {
       {isAdding && (
         <form onSubmit={saveNewCategory} noValidate className={`${cardClass('form')} flex max-w-[720px] flex-col gap-4 p-6`}>
           <div className="flex items-center justify-between">
-            <h2 className="font-serif text-[1.1rem] text-white">New collection</h2>
+            <h2 className="font-serif text-[1.1rem] text-text-primary">New collection</h2>
             <IconButton label="Close" onClick={() => setIsAdding(false)}>
               <X size={20} />
             </IconButton>

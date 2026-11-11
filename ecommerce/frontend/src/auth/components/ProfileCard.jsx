@@ -12,7 +12,7 @@ import { profileSchema } from '../../lib/validation.js';
 import { useAuthForm } from '../useAuthForm.js';
 
 const CANCEL =
-  'cursor-pointer rounded-lg border border-gold-400/25 bg-transparent px-4 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-gold-400 hover:text-white';
+  'cursor-pointer rounded-lg border border-gold-400/25 bg-transparent px-4 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-gold-400 hover:text-text-primary';
 
 /** The name and phone, editable (the email is the sign-in and stays as it is). */
 const ProfileForm = ({ onSaved, onCancel }) => {
@@ -76,7 +76,7 @@ const ProfileCard = () => {
   return (
     <div className={`${cardClass('panel')} flex flex-col gap-4 p-6 md:p-8`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-serif text-[1.15rem] text-white">
+        <h2 className="flex items-center gap-2 font-serif text-[1.15rem] text-text-primary">
           <User size={18} strokeWidth={2} className="text-gold-400" />
           Profile
         </h2>
@@ -84,7 +84,7 @@ const ProfileCard = () => {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="inline-flex cursor-pointer items-center gap-1.5 text-[0.85rem] text-gold-300 transition-colors hover:text-white"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-[0.85rem] text-gold-300 transition-colors hover:text-text-primary"
           >
             <Pencil size={14} strokeWidth={2} />
             Edit
@@ -104,7 +104,7 @@ const ProfileCard = () => {
         <>
           <div className="flex items-center gap-3">
             <User size={18} strokeWidth={2} className="shrink-0 text-gold-400" />
-            <span className="text-[0.95rem] text-white">{session.name}</span>
+            <span className="text-[0.95rem] text-text-primary">{session.name}</span>
           </div>
           <div className="flex items-center gap-3">
             <Mail size={18} strokeWidth={2} className="shrink-0 text-gold-400" />
@@ -125,7 +125,7 @@ const ProfileCard = () => {
           logout();
           showToast('Signed out');
         }}
-        className="mt-auto inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-transparent px-4 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-ruby-500 hover:text-ruby-500"
+        className="mt-auto inline-flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-contrast/10 bg-transparent px-4 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-ruby-500 hover:text-ruby-500"
       >
         <LogOut size={15} strokeWidth={2} />
         Sign out

@@ -1,15 +1,15 @@
-import { Award, MessageCircle, Store, TreePine } from 'lucide-react';
+import { Award, CreditCard, Store, TreePine } from 'lucide-react';
 import Container from '../Container.jsx';
 import Reveal from '../Reveal.jsx';
 import FeatureItem from '../FeatureItem.jsx';
 import { useStorefront } from '../../context/StorefrontContext.jsx';
 
-// Four plain facts about the brand (from the old site), not promises we can't back up.
+// Four plain facts (three about the brand, from the old site; one about paying here), not promises we can't back up.
 const itemsFor = (storeCount) => [
   { Icon: TreePine, title: 'European-Standard Trees', body: 'Lush, lifelike, easy to set up' },
   { Icon: Award, title: 'India’s Largest Importer', body: 'Since 1997, our 27th year' },
   { Icon: Store, title: `${storeCount} Stores Across India`, body: 'Chennai to Goa, six cities' },
-  { Icon: MessageCircle, title: 'Order on WhatsApp', body: 'Prices and stock on request' },
+  { Icon: CreditCard, title: 'Pay Securely Online', body: 'UPI, cards, net banking and wallets' },
 ];
 
 /** A slim row of four brand facts, under a hero. */

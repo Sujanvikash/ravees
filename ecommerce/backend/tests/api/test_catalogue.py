@@ -42,18 +42,22 @@ def test_the_admin_builds_the_catalogue_and_the_storefront_shows_it(client, admi
     shown = {p['id']: p for p in shop['products']}
     assert shown[tree['id']]['categoryLabel'] == 'Christmas Trees!' and shown[tree['id']]['images'] == [photo['url']]
     assert 'visible' not in shown[tree['id']] and 'imageIds' not in shown[tree['id']]  # the admin's fields stay out
-    assert {c['id']: c['count'] for c in shop['categories']}[trees['id']] == 2
+    # a product without a price isn't for sale: the shop doesn't show it (nor count it)
+    assert on_request['id'] not in shown and {c['id']: c['count'] for c in shop['categories']}[trees['id']] == 1
 
     # hidden products, and every product of a hidden category, leave the storefront
+    client.patch(f'/admin/products/{on_request["id"]}', json={'price': 2400}, headers=admin)
+    assert on_request['id'] in {p['id'] for p in _storefront(client)['products']}
     client.patch(f'/admin/products/{on_request["id"]}', json={'visible': False}, headers=admin)
     assert on_request['id'] not in {p['id'] for p in _storefront(client)['products']}
     client.patch(f'/admin/categories/{trees["id"]}', json={'visible': False}, headers=admin)
     assert tree['id'] not in {p['id'] for p in _storefront(client)['products']}
     client.patch(f'/admin/categories/{trees["id"]}', json={'visible': True}, headers=admin)
 
-    # a price can be taken off again; the MRP is never below the price
+    # a price can be taken off again (the product leaves the shop); the MRP is never below the price
     off = client.patch(f'/admin/products/{tree["id"]}', json={'price': None, 'mrp': None}, headers=admin).json()
     assert off['price'] is None and off['priceOnRequest'] is True
+    assert tree['id'] not in {p['id'] for p in _storefront(client)['products']}
     assert (
         client.patch(f'/admin/products/{tree["id"]}', json={'price': 900, 'mrp': 800}, headers=admin).status_code == 422
     )

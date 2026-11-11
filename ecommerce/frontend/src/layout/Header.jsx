@@ -18,7 +18,7 @@ const NAV_LINKS = [
 ];
 
 const UTIL_BTN =
-  'inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[0.8rem] text-text-primary transition-all duration-300 hover:border-gold-400/40 hover:bg-white/10';
+  'inline-flex items-center gap-1.5 rounded-lg border border-contrast/10 bg-contrast/5 px-2.5 py-1.5 text-[0.8rem] text-text-primary transition-all duration-300 hover:border-gold-400/40 hover:bg-contrast/10';
 
 const BADGE_COUNT =
   'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ruby-500 px-1 text-[0.68rem] font-bold text-white';
@@ -96,7 +96,7 @@ const Header = ({ onOpenCart }) => {
     // Every other page never sets it, so the header just shows.
     <header
       style={{ opacity: 'var(--hero-chrome, 1)', translate: '0 calc((var(--hero-chrome, 1) - 1) * 100%)' }}
-      className="sticky top-0 z-100 h-(--header-h) border-b border-gold-400/15 bg-bg-primary/96 [html[data-hero-chrome-hidden]_&]:invisible"
+      className="sticky top-0 z-100 h-(--header-h) border-b border-gold-400/15 bg-bg-primary [html[data-hero-chrome-hidden]_&]:invisible"
     >
       <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-3 px-4 sm:gap-5 sm:px-6">
         <button
@@ -161,7 +161,7 @@ const Header = ({ onOpenCart }) => {
       </div>
 
       {mobileMenuOpen && (
-        <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_--alpha(var(--color-black)/60%)] sm:px-6 xl:hidden">
+        <nav className="relative flex flex-col gap-1 border-b border-gold-400/30 bg-bg-primary px-4 py-4 shadow-[0_20px_40px_--alpha(var(--color-shadow)/60%)] sm:px-6 xl:hidden">
           <Link
             to="/shop?wishlist=1"
             onClick={() => setMobileMenuOpen(false)}

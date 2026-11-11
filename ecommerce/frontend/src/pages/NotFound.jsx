@@ -1,22 +1,16 @@
 import { Home, Store } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
-import Aurora from '../components/Aurora.jsx';
-import Decoration from '../components/Decoration.jsx';
-import { baublesScatter } from '../assets/decorations';
+import HangingBauble from '../components/HangingBauble.jsx';
 import PageTitle from '../components/PageTitle.jsx';
 
 const NotFound = () => {
   return (
-    <section className="relative z-20 flex min-h-[70vh] items-center justify-center overflow-hidden bg-bg-primary px-6 py-16">
-      <Aurora />
-      {/* Scattered ornaments behind the message: the ones that "wandered off". */}
-      <Decoration
-        src={baublesScatter}
-        opacity={0.3}
-        className="top-1/2 left-1/2 h-[min(640px,85%)] w-[min(900px,100%)] -translate-x-1/2 -translate-y-1/2"
-      />
-      <div className="max-w-[520px] text-center">
+    <section className="relative isolate z-20 flex min-h-[70vh] items-center justify-center overflow-hidden bg-bg-primary px-6 py-16">
+      {/* Two baubles still hanging either side of the message: the one that "wandered off" is missing. */}
+      <HangingBauble side="hidden md:block" className="left-[14%]" width={76} drop={90} />
+      <HangingBauble side="hidden md:block" className="right-[14%]" width={60} drop={40} delay={2.5} />
+      <div className="max-w-[560px] rounded-2xl border border-gold-400/30 bg-surface px-6 py-9 text-center shadow-[0_24px_60px_--alpha(var(--color-shadow)/25%)] sm:px-10">
         <Eyebrow>
           ✦ 404 ✦
         </Eyebrow>

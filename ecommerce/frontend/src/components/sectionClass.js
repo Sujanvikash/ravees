@@ -1,5 +1,5 @@
 /**
- * The page's main section: the dark page background, above the fixed decorations (z-20). Three spacings
+ * The page's main section: the page background, above the fixed decorations (z-20). Three spacings
  * are shared by more than one page:
  *
  *  listing   a little room under the header for a page title (shop, testimonials)

@@ -95,7 +95,7 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
               type="checkbox"
               checked={Boolean(draft.isFlagship ?? showroom.isFlagship)}
               onChange={set('isFlagship')}
-              className="h-4 w-4 accent-gold-500"
+              className="h-4 w-4 accent-forest"
             />
             Flagship location
           </label>
@@ -117,10 +117,10 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
         <FormField label="Stores in this city" htmlFor={field('store-0-name')} labelClassName={ADMIN_LABEL}>
           <div className="flex flex-col gap-3">
             {stores.map((store, i) => (
-              <div key={i} className="flex flex-col gap-2 rounded-lg border border-white/8 p-3">
+              <div key={i} className="flex flex-col gap-2 rounded-lg border border-contrast/8 p-3">
                 <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
-                  <Input id={field(`store-${i}-name`)} size="sm" aria-label={`Store ${i + 1}: name`} placeholder="Name (e.g. Egmore)" value={store.name ?? ''} onChange={(e) => setStore(i, 'name', e.target.value)} />
-                  <Input size="sm" aria-label={`Store ${i + 1}: phone`} placeholder="Phone" value={store.phone ?? ''} onChange={(e) => setStore(i, 'phone', e.target.value)} />
+                  <Input id={field(`store-${i}-name`)} size="sm" aria-label={`Store ${i + 1}: name`} placeholder="Name (e.g. Egmore)" value={store.name ?? ''} onChange={(e) => setStore(i, 'name', e.target.value)} className="w-full min-w-0" />
+                  <Input size="sm" aria-label={`Store ${i + 1}: phone`} placeholder="Phone" value={store.phone ?? ''} onChange={(e) => setStore(i, 'phone', e.target.value)} className="w-full min-w-0" />
                   <IconButton
                     variant="delete"
                     label={`Remove store ${i + 1}`}
@@ -154,7 +154,7 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
             <button
               type="button"
               onClick={() => setDraft({})}
-              className="cursor-pointer rounded-lg border border-gold-400/25 bg-transparent px-5 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-gold-400 hover:text-white"
+              className="cursor-pointer rounded-lg border border-gold-400/25 bg-transparent px-5 py-2.5 text-[0.85rem] text-text-secondary transition-all hover:border-gold-400 hover:text-text-primary"
             >
               Undo changes
             </button>
@@ -162,7 +162,7 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-transparent px-5 py-2.5 text-[0.85rem] text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-contrast/10 bg-transparent px-5 py-2.5 text-[0.85rem] text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
           >
             <Trash2 size={14} strokeWidth={2} />
             Delete location
@@ -268,7 +268,7 @@ const AdminShowrooms = () => {
       {isAdding && (
         <form onSubmit={saveNewLocation} noValidate className={`${cardClass('form')} flex max-w-[480px] flex-col gap-4 p-6`}>
           <div className="flex items-center justify-between">
-            <h2 className="font-serif text-[1.1rem] text-white">New location</h2>
+            <h2 className="font-serif text-[1.1rem] text-text-primary">New location</h2>
             <IconButton label="Close" onClick={() => setIsAdding(false)}>
               <X size={20} />
             </IconButton>

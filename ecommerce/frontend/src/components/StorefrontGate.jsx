@@ -1,12 +1,10 @@
 import { RotateCw } from 'lucide-react';
-import Aurora from './Aurora.jsx';
 import Button from './Button.jsx';
 import Eyebrow from './Eyebrow.jsx';
+import HangingBauble from './HangingBauble.jsx';
 import PageLoader from './PageLoader.jsx';
 import PageTitle from './PageTitle.jsx';
 import WhatsAppLink from './WhatsAppLink.jsx';
-import Decoration from './Decoration.jsx';
-import { pineCrateBaubles } from '../assets/decorations';
 import { useStorefront } from '../context/StorefrontContext.jsx';
 
 /**
@@ -21,14 +19,14 @@ const StorefrontGate = ({ children }) => {
   if (loading || !error) return <PageLoader label="Unwrapping the collection" />;
 
   return (
-    <section className="relative z-20 flex min-h-[70vh] items-center justify-center overflow-hidden bg-bg-primary px-6 py-16">
-      <Aurora />
-      <Decoration
-        src={pineCrateBaubles}
-        opacity={0.25}
-        className="top-1/2 left-1/2 h-[min(560px,85%)] w-[min(820px,100%)] -translate-x-1/2 -translate-y-1/2"
-      />
-      <div role="alert" className="max-w-[520px] text-center">
+    // Like the 404 page: the message on a white card on the ivory page, a bauble hanging either side.
+    <section className="relative isolate z-20 flex min-h-[70vh] items-center justify-center overflow-hidden bg-bg-primary px-6 py-16">
+      <HangingBauble side="hidden md:block" className="left-[12%]" width={72} drop={70} />
+      <HangingBauble side="hidden md:block" className="right-[12%]" width={60} drop={30} delay={2} />
+      <div
+        role="alert"
+        className="max-w-[560px] rounded-2xl border border-gold-400/30 bg-surface px-6 py-9 text-center shadow-[0_24px_60px_--alpha(var(--color-shadow)/25%)] sm:px-10"
+      >
         <Eyebrow>✦ One moment ✦</Eyebrow>
         <PageTitle className="mb-4">The Shop Is Taking A Breather</PageTitle>
         <p className="mb-8 text-[1rem] leading-[1.7] text-text-secondary">

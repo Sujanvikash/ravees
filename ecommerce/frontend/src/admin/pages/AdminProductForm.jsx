@@ -17,7 +17,7 @@ import { ADMIN_CHECK, rupeesOrNull } from '../components/adminForm.js';
 import { cardClass } from '../../components/cardClass.js';
 import { focusFirstError, validate } from '../../lib/validation.js';
 
-// Rupees from a number field: empty means "no price" (the shop shows "Price on request").
+// Rupees from a number field: empty means "no price" (the shop then leaves the product out: not for sale yet).
 const rupees = z
   .string()
   .transform(rupeesOrNull)
@@ -156,7 +156,7 @@ const ProductEditor = ({ existing }) => {
               inputMode="decimal"
               value={form.price}
               onChange={update('price')}
-              placeholder="Empty: price on request"
+              placeholder="Empty: hidden from the shop"
             />
           </FormField>
           <FormField label="MRP (₹, shown struck through)" htmlFor="p-mrp" error={errors.mrp}>
@@ -174,8 +174,8 @@ const ProductEditor = ({ existing }) => {
           </FormField>
         </div>
         <p className="-mt-2 text-[0.75rem] text-text-muted">
-          With a price, customers can pay online. Leave it empty and the shop shows &ldquo;Price on request&rdquo;, with
-          the quote request instead.
+          Customers add products to their cart and pay online. A product without a price isn&apos;t for sale yet: it
+          stays hidden from the shop until it has one.
         </p>
 
         <FormField label="Description" htmlFor="p-description" error={errors.description}>
@@ -200,6 +200,7 @@ const ProductEditor = ({ existing }) => {
                   value={spec.label}
                   onChange={(e) => setSpec(i, 'label', e.target.value)}
                   placeholder="Height"
+                  className="w-full min-w-0"
                 />
                 <Input
                   size="sm"
@@ -207,6 +208,7 @@ const ProductEditor = ({ existing }) => {
                   value={spec.value}
                   onChange={(e) => setSpec(i, 'value', e.target.value)}
                   placeholder="7 ft"
+                  className="w-full min-w-0"
                 />
                 <IconButton
                   variant="delete"
@@ -227,15 +229,15 @@ const ProductEditor = ({ existing }) => {
         <FormField label="On the shop" htmlFor="p-instock">
           <div className="flex flex-wrap gap-x-6 gap-y-2.5">
             <label className={ADMIN_CHECK}>
-              <input id="p-instock" type="checkbox" checked={form.inStock} onChange={update('inStock')} className="h-4 w-4 accent-gold-500" />
+              <input id="p-instock" type="checkbox" checked={form.inStock} onChange={update('inStock')} className="h-4 w-4 accent-forest" />
               In stock
             </label>
             <label className={ADMIN_CHECK}>
-              <input type="checkbox" checked={form.visible} onChange={update('visible')} className="h-4 w-4 accent-gold-500" />
+              <input type="checkbox" checked={form.visible} onChange={update('visible')} className="h-4 w-4 accent-forest" />
               Visible on the website
             </label>
             <label className={ADMIN_CHECK}>
-              <input type="checkbox" checked={form.featured} onChange={update('featured')} className="h-4 w-4 accent-gold-500" />
+              <input type="checkbox" checked={form.featured} onChange={update('featured')} className="h-4 w-4 accent-forest" />
               Featured
             </label>
           </div>
@@ -250,7 +252,7 @@ const ProductEditor = ({ existing }) => {
           </Button>
           <Link
             to="/admin/products"
-            className="inline-flex items-center rounded-lg border border-gold-400/25 px-5 py-2.5 text-[0.88rem] text-text-secondary no-underline transition-all hover:border-gold-400 hover:text-white"
+            className="inline-flex items-center rounded-lg border border-gold-400/25 px-5 py-2.5 text-[0.88rem] text-text-secondary no-underline transition-all hover:border-gold-400 hover:text-text-primary"
           >
             Cancel
           </Link>

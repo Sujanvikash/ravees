@@ -34,7 +34,7 @@ const Account = () => {
           <PasswordCard />
         </div>
 
-        <h2 className="mb-4 flex items-center gap-2 font-serif text-[1.25rem] text-white">
+        <h2 className="mb-4 flex items-center gap-2 font-serif text-[1.25rem] text-text-primary">
           <Package size={18} strokeWidth={2} className="text-gold-400" />
           My Orders
         </h2>

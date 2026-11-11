@@ -11,7 +11,7 @@ const AdminPageHeader = ({ title, subtitle, before, actions }) => (
   <div className="flex flex-wrap items-center justify-between gap-4">
     <div>
       {before}
-      <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-white">{title}</h1>
+      <h1 className="font-serif text-[1.6rem] font-bold tracking-[0.03em] text-text-primary">{title}</h1>
       {subtitle && <p className="mt-1 text-[0.85rem] text-text-secondary">{subtitle}</p>}
     </div>
     {actions && <div className="flex flex-wrap gap-2.5">{actions}</div>}

@@ -4,55 +4,70 @@
 @custom-variant short (@media (max-height: 760px));
 
 @theme {
+  /* The storefront palette: ivory pages, white cards, deep evergreen buttons, antique gold accents.
+     Every page uses it; .theme-dark (below) is kept only for the cinematic hero, which the site doesn't show. */
+
   /* backgrounds */
-  --color-bg-primary: #05160f;
-  --color-bg-dark-emerald: #082117;
-  --color-bg-darker: #06160c;
-  --color-bg-deepest: #020704; /* footer, admin sidebar, image wells, modal backdrop */
-  --color-hero-bg: #0b1a14; /* the home hero behind its frames */
+  --color-bg-primary: #fdfcfa;
+  --color-bg-dark-emerald: #ffffff; /* modals, dropdowns, toasts */
+  --color-bg-darker: #f9f5ec; /* alternate ivory bands */
+  --color-bg-deepest: #fbf8f2; /* footer, image wells */
+  --color-hero-bg: #0b1a14; /* the home hero behind its frames (dark in both palettes) */
+  --color-scrim: rgb(13 39 25 / 0.55); /* behind modals and the cart drawer */
 
-  /* dark-green surfaces, used see-through (e.g. bg-surface/85) over pictures and backgrounds */
-  --color-surface: #081c14; /* cards, chips, fields */
-  --color-shade: #040f0a; /* darkening over photos, hero copy panels */
+  /* surfaces, used see-through (e.g. bg-surface/85) over pictures and backgrounds */
+  --color-surface: #ffffff; /* cards, chips, fields */
+  --color-shade: #fdfcfa; /* the wash over photos that keeps text readable */
+  --color-contrast: #1c231f; /* faint lines and tints against the page: border-contrast/10, bg-contrast/5 */
+  --color-shadow: #8f7f62; /* every drop shadow */
 
-  /* gold / champagne accent scale */
-  --color-gold-100: #fff0c4; /* the light end of gold gradients */
-  --color-gold-200: #faebc3;
-  --color-gold-250: #f5e1a4;
-  --color-gold-300: #f2d48a;
-  --color-gold-400: #e5c78b;
-  --color-gold-500: #dfb76c;
-  --color-gold-550: #c99e52; /* the deep end of gold gradients (logo, wordmark) */
-  --color-gold-600: #b89146;
-  --color-on-gold: #04120a; /* dark text and icons on gold buttons and pills */
-  --color-highlight: #fff6df; /* the faint light line along the top edge of dark cards */
+  /* gold accent scale. 200-400 and 600 are deep enough to read as text on ivory. */
+  --color-gold-100: #f4e6c8; /* the light end of gold gradients */
+  --color-gold-200: #86662a;
+  --color-gold-250: #d9bc84;
+  --color-gold-300: #86662a;
+  --color-gold-400: #8f6e2d;
+  --color-gold-500: #b69152; /* the reference gold: large headings and decoration only */
+  --color-gold-550: #a17d3f; /* the deep end of gold gradients (logo, wordmark) */
+  --color-gold-600: #8f6e2d;
+  --color-on-gold: #ffffff; /* text and icons on solid gold */
+  --color-highlight: #ffffff; /* the faint light line along the top edge of cards */
+  --color-title-start: #8f6e2d; /* where the gradient on page titles begins */
+
+  /* the main call to action (Button's default, chosen chips) */
+  --color-cta-from: #0d2719;
+  --color-cta-to: #163a26;
+  --color-cta-hover-from: #163a26;
+  --color-cta-hover-to: #1f4a31;
+  --color-on-cta: #f1dcae;
+  --color-cta-glow: #8a9a8c;
 
   /* emerald accent scale */
-  --color-emerald-300: #6ee7b7;
-  --color-emerald-400: #34d399;
-  --color-emerald-500: #10b981;
+  --color-emerald-300: #0c5614;
+  --color-emerald-400: #15692a;
+  --color-emerald-500: #1b7a35;
 
   /* ruby (wishlist / alerts) */
   --color-ruby-500: #e11d48;
-  --color-danger: #ff5c5c; /* delete / remove actions */
+  --color-danger: #c8102e; /* delete / remove actions */
   --color-whatsapp: #25d366; /* WhatsApp's own green, for its chat button */
 
-  /* cream: the light surfaces (product cards, the "Our Purpose" band) with dark-green ink on them */
-  --color-cream-50: #fbf7ee;
-  --color-cream-100: #f4ecdc;
-  --color-cream-200: #e6dac2;
-  --color-ink: #11261b;
-  --color-ink-soft: #4b5d52;
+  /* cream: product cards and the "Our Purpose" band, with dark ink on them */
+  --color-cream-50: #ffffff;
+  --color-cream-100: #f9f5ec;
+  --color-cream-200: #ece6d8;
+  --color-ink: #1c231f;
+  --color-ink-soft: #4a544e;
   --color-gold-ink: #8d6a24; /* gold that reads on cream */
-  --color-forest: #0f3322; /* dark green buttons and icon discs on cream */
-  --color-forest-hover: #17492f;
+  --color-forest: #0d2719; /* dark green buttons and icon discs */
+  --color-forest-hover: #163a26;
 
   /* text */
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #9cb3a8;
-  --color-text-muted: #627c70;
-  --color-text-tagline: #a7c2b5; /* the logo's "European standard since 1998" line */
-  --color-text-quote: #f1f5f9; /* testimonial quotes */
+  --color-text-primary: #1c231f;
+  --color-text-secondary: #4a544e;
+  --color-text-muted: #5f6862; /* deep enough for placeholders and disabled labels on the grey field tint */
+  --color-text-tagline: #4a544e; /* the logo's "European standard since 1998" line */
+  --color-text-quote: #1c231f; /* testimonial quotes */
 
   /* fonts */
   --font-serif: 'Cinzel', Georgia, serif;
@@ -163,6 +178,67 @@
   }
 }
 
+/* The admin (on <html> for /admin routes, App.jsx): the storefront's light palette, as one brand, tuned for a
+   work tool. The two accents that carry small status text are deepened so every label reads at WCAG AA on its
+   own tint, and keyboard focus gets a clear evergreen ring. */
+.admin-ui {
+  --color-ruby-500: #b0102f;
+  --color-gold-300: #7a5c24;
+}
+.admin-ui :where(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+}
+
+/* The dark palette. The storefront is light throughout; only the cinematic hero (kept, but not on the site)
+   still uses this, on its own section. Every colour class reads these variables, so a subtree only needs
+   this class to switch. */
+.theme-dark {
+  --color-bg-primary: #05160f;
+  --color-bg-dark-emerald: #082117;
+  --color-bg-darker: #06160c;
+  --color-bg-deepest: #020704;
+  --color-scrim: rgb(2 7 4 / 0.85);
+  --color-surface: #081c14;
+  --color-shade: #040f0a;
+  --color-contrast: #ffffff;
+  --color-shadow: #000000;
+  --color-gold-100: #fff0c4;
+  --color-gold-200: #faebc3;
+  --color-gold-250: #f5e1a4;
+  --color-gold-300: #f2d48a;
+  --color-gold-400: #e5c78b;
+  --color-gold-500: #dfb76c;
+  --color-gold-550: #c99e52;
+  --color-gold-600: #b89146;
+  --color-on-gold: #04120a;
+  --color-highlight: #fff6df;
+  --color-title-start: #ffffff;
+  --color-cta-from: #e5c78b;
+  --color-cta-to: #b89146;
+  --color-cta-hover-from: #fff0c4;
+  --color-cta-hover-to: #e5c78b;
+  --color-on-cta: #04120a;
+  --color-cta-glow: #e5c78b;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-danger: #ff5c5c;
+  --color-cream-50: #fbf7ee;
+  --color-cream-100: #f4ecdc;
+  --color-cream-200: #e6dac2;
+  --color-ink: #11261b;
+  --color-ink-soft: #4b5d52;
+  --color-forest: #0f3322;
+  --color-forest-hover: #17492f;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #9cb3a8;
+  --color-text-muted: #627c70;
+  --color-text-tagline: #a7c2b5;
+  --color-text-quote: #f1f5f9;
+  color: var(--color-text-primary);
+}
+
 /* Reduced motion (an OS accessibility setting): every CSS animation and transition finishes at once,
    so things still change state (hover colours, selected options) but nothing moves, drifts or loops.
    JS-driven motion checks the setting itself (useInView/Reveal, CountUp, SmoothScroll, the hero, Santa).
@@ -207,18 +283,6 @@
 .deco-fade-under {
   -webkit-mask-image: linear-gradient(to right, #000 25%, transparent 75%);
   mask-image: linear-gradient(to right, #000 25%, transparent 75%);
-}
-
-/* "Our Purpose" photo melting into the cream: downward when stacked (phones), sideways from lg. */
-.purpose-photo-fade {
-  -webkit-mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
-}
-@media (min-width: 1024px) {
-  .purpose-photo-fade {
-    -webkit-mask-image: linear-gradient(to right, #000 60%, transparent 100%);
-    mask-image: linear-gradient(to right, #000 60%, transparent 100%);
-  }
 }
 
 /* Snowflakes falling around the Santa companion in December (SantaLayer). */

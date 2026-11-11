@@ -4,10 +4,10 @@ import AdminStatCard from '../components/AdminStatCard.jsx';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useAdminList } from '../useAdminList.js';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
-import { ENQUIRY_STATUS_STYLE, ENQUIRY_TYPES } from '../components/adminLabels.js';
+import { ENQUIRY_STATUS_STYLE, ENQUIRY_TYPES, orderBadgeClass } from '../components/adminLabels.js';
 import { cardClass } from '../../components/cardClass.js';
 import { formatDate, formatPrice } from '../../lib/format.js';
-import { statusBadgeClass, statusLabel } from '../../lib/orders.js';
+import { statusLabel } from '../../lib/orders.js';
 
 // Orders the money has come in for (whatever has happened since).
 const PAID = ['paid', 'shipped', 'delivered'];
@@ -15,11 +15,11 @@ const PAID = ['paid', 'shipped', 'delivered'];
 // A dashboard card's title, with a link to the full page for it on the right.
 const CardHeader = ({ Icon, title, to, link }) => (
   <div className="mb-4 flex items-center justify-between">
-    <h2 className="flex items-center gap-2 font-serif text-[1.1rem] text-white">
+    <h2 className="flex items-center gap-2 font-serif text-[1.1rem] text-text-primary">
       <Icon size={17} strokeWidth={2} className="text-gold-400" />
       {title}
     </h2>
-    <Link to={to} className="inline-flex items-center gap-1 text-[0.8rem] text-gold-300 no-underline hover:text-white">
+    <Link to={to} className="inline-flex items-center gap-1 text-[0.8rem] text-gold-300 no-underline hover:text-text-primary">
       {link} <ArrowRight size={13} strokeWidth={2} />
     </Link>
   </div>
@@ -39,7 +39,7 @@ const AdminDashboard = () => {
   const toShip = orders.items.filter((o) => o.status === 'paid');
   const newEnquiries = enquiries.items.filter((e) => e.status === 'new');
   const hidden = products.items.filter((p) => !p.visible).length;
-  const onRequest = products.items.filter((p) => p.price == null).length;
+  const noPrice = products.items.filter((p) => p.price == null).length;
   // A figure still loading shows a dash rather than a misleading 0.
   const figure = (list, value) => (list.loading ? '—' : value);
   const inAll = (list, one, many) => (list.loading ? '' : `${list.items.length} ${list.items.length === 1 ? one : many} in all`);
@@ -57,7 +57,7 @@ const AdminDashboard = () => {
           Icon={Package}
           label="Products"
           value={products.items.length}
-          hint={[hidden && `${hidden} hidden`, onRequest && `${onRequest} priced on request`].filter(Boolean).join(' · ')}
+          hint={[hidden && `${hidden} hidden`, noPrice && `${noPrice} without a price (hidden)`].filter(Boolean).join(' · ')}
         />
         <AdminStatCard Icon={Users} label="Customers" value={figure(customers, customers.items.length)} />
       </div>
@@ -76,16 +76,16 @@ const AdminDashboard = () => {
           ) : (
             <div className="flex flex-col gap-3">
               {toShip.slice(0, 6).map((order) => (
-                <div key={order.id} className="flex items-start justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0">
+                <div key={order.id} className="flex items-start justify-between gap-3 border-b border-contrast/5 pb-3 last:border-0 last:pb-0">
                   <div className="min-w-0">
-                    <p className="truncate text-[0.85rem] text-white">
+                    <p className="truncate text-[0.85rem] text-text-primary">
                       <span className="font-mono text-gold-300">{order.number}</span> · {order.customer?.name ?? order.address?.name}
                     </p>
                     <span className="text-[0.75rem] text-text-muted">
                       Paid {formatDate(order.paidAt ?? order.createdAt)} · {order.address?.city}
                     </span>
                   </div>
-                  <span className="shrink-0 text-[0.85rem] text-white">{formatPrice(order.total)}</span>
+                  <span className="shrink-0 text-[0.85rem] text-text-primary">{formatPrice(order.total)}</span>
                 </div>
               ))}
             </div>
@@ -99,9 +99,9 @@ const AdminDashboard = () => {
           ) : (
             <div className="flex flex-col gap-3">
               {enquiries.items.slice(0, 6).map((enq) => (
-                <div key={enq.id} className="flex items-start justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0">
+                <div key={enq.id} className="flex items-start justify-between gap-3 border-b border-contrast/5 pb-3 last:border-0 last:pb-0">
                   <div className="min-w-0">
-                    <p className="truncate text-[0.85rem] text-white">{enq.name || 'Unnamed'}</p>
+                    <p className="truncate text-[0.85rem] text-text-primary">{enq.name || 'Unnamed'}</p>
                     <span className="text-[0.75rem] text-text-muted">
                       {ENQUIRY_TYPES[enq.type] ?? enq.type}
                       {enq.details?.items?.length ? ` · ${enq.details.items.length} items` : ''} · {formatDate(enq.createdAt)}
@@ -124,14 +124,14 @@ const AdminDashboard = () => {
           <CardHeader Icon={ReceiptText} title="Latest orders" to="/admin/orders" link="All orders" />
           <div className="flex flex-col gap-3">
             {orders.items.slice(0, 5).map((order) => (
-              <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0">
-                <p className="min-w-0 text-[0.85rem] text-white">
+              <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-contrast/5 pb-3 last:border-0 last:pb-0">
+                <p className="min-w-0 text-[0.85rem] text-text-primary">
                   <span className="font-mono text-gold-300">{order.number}</span> · {order.customer?.name ?? order.address?.name}
                   <span className="ml-2 text-[0.75rem] text-text-muted">{formatDate(order.createdAt)}</span>
                 </p>
                 <div className="flex items-center gap-3">
-                  <span className="text-[0.85rem] text-white">{formatPrice(order.total)}</span>
-                  <span className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</span>
+                  <span className="text-[0.85rem] text-text-primary">{formatPrice(order.total)}</span>
+                  <span className={orderBadgeClass(order.status)}>{statusLabel(order.status)}</span>
                 </div>
               </div>
             ))}

@@ -82,11 +82,17 @@ const AdminProducts = () => {
             {row.image && <img src={row.image} alt="" className="h-full w-full object-cover" />}
           </div>
           <div className="min-w-0">
-            <span className="block font-medium text-white">{row.name}</span>
+            <span className="block font-medium text-text-primary">{row.name}</span>
             <span className="flex flex-wrap gap-2 text-[0.72rem] text-text-muted">
               {!row.visible && (
                 <span className="inline-flex items-center gap-1 text-ruby-500">
                   <EyeOff size={11} strokeWidth={2} /> Hidden
+                </span>
+              )}
+              {/* The shop leaves out a product without a price: it isn't for sale yet. */}
+              {row.visible && row.price == null && (
+                <span className="inline-flex items-center gap-1 text-ruby-500">
+                  <EyeOff size={11} strokeWidth={2} /> Hidden: no price
                 </span>
               )}
               {row.featured && (
@@ -107,11 +113,11 @@ const AdminProducts = () => {
       render: (row) =>
         row.price != null ? (
           <span className="whitespace-nowrap">
-            <span className="text-white">{formatPrice(row.price)}</span>
+            <span className="text-text-primary">{formatPrice(row.price)}</span>
             {row.mrp != null && row.mrp > row.price && <s className="ml-2 text-[0.75rem] text-text-muted">{formatPrice(row.mrp)}</s>}
           </span>
         ) : (
-          <span className="text-text-muted">On request</span>
+          <span className="text-ruby-500">No price</span>
         ),
     },
     {
@@ -119,7 +125,7 @@ const AdminProducts = () => {
       label: 'Stock',
       render: (row) => (
         <span className={`${BADGE} ${row.inStock ? 'bg-emerald-500/15 text-emerald-300' : 'bg-ruby-500/15 text-ruby-500'}`}>
-          {row.inStock ? 'In stock' : 'Backorder'}
+          {row.inStock ? 'In stock' : 'Out of stock'}
         </span>
       ),
     },
@@ -148,7 +154,7 @@ const AdminProducts = () => {
           <button
             type="button"
             onClick={() => setPendingDelete(row)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-transparent text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-contrast/10 bg-transparent text-text-muted transition-all hover:border-ruby-500 hover:text-ruby-500"
             title="Delete"
             aria-label={`Delete ${row.name}`}
           >
@@ -160,12 +166,19 @@ const AdminProducts = () => {
   ];
 
   const hidden = products.items.filter((p) => !p.visible).length;
+  const noPrice = products.items.filter((p) => p.visible && p.price == null).length;
 
   return (
     <div className="flex flex-col gap-6">
       <AdminPageHeader
         title="Products"
-        subtitle={`${products.items.length} products${hidden ? ` · ${hidden} hidden from the website` : ''}`}
+        subtitle={[
+          `${products.items.length} products`,
+          hidden && `${hidden} hidden from the website`,
+          noPrice && `${noPrice} without a price (hidden)`,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
         actions={
           <Button size="sm" to="/admin/products/new">
             <Plus size={15} strokeWidth={2.5} />
@@ -182,7 +195,7 @@ const AdminProducts = () => {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search products..."
             aria-label="Search products"
-            className="w-full border-none bg-transparent text-[0.85rem] text-white outline-none placeholder:text-text-muted"
+            className="w-full border-none bg-transparent text-[0.85rem] text-text-primary outline-none placeholder:text-text-muted"
           />
         </div>
         <Dropdown

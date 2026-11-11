@@ -85,7 +85,7 @@ const Shop = () => {
                   value={query}
                   onChange={(e) => setParam('q', e.target.value)}
                   placeholder="Filter by product name..."
-                  className="w-full min-w-0 border-none bg-transparent font-sans text-[0.85rem] text-white outline-none placeholder:text-text-muted"
+                  className="w-full min-w-0 border-none bg-transparent font-sans text-[0.85rem] text-text-primary outline-none placeholder:text-text-muted"
                 />
               </div>
               <Dropdown options={SORT_OPTIONS} value={sort} onChange={setSort} label="Sort by" icon={ArrowUpDown} />

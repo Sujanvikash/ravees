@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, ImagePlus, LoaderCircle, TriangleAlert, X } 
 import { FIELD_LABEL_CLASS } from '../../components/fieldError.js';
 
 const ROUND =
-  'flex size-7 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/60 text-white transition-all hover:border-gold-400 hover:text-gold-300 disabled:cursor-default disabled:opacity-30';
+  'flex size-7 cursor-pointer items-center justify-center rounded-full border border-contrast/15 bg-surface/90 text-text-primary shadow-[0_2px_6px_--alpha(var(--color-shadow)/30%)] transition-all hover:border-gold-400 hover:text-gold-300 disabled:cursor-default disabled:opacity-30';
 
 /**
  * A product's photos (from usePhotoUploads): a grid of tiles, each with ‹ › to change its place and × to
@@ -44,20 +44,20 @@ const PhotoGallery = ({ uploads, id = 'p-photos' }) => {
                   value={photo.progress}
                   max={1}
                   aria-label="Upload progress"
-                  className="h-1.5 w-full appearance-none overflow-hidden rounded-full border-0 bg-white/10 [&::-moz-progress-bar]:bg-gold-400 [&::-webkit-progress-bar]:bg-white/10 [&::-webkit-progress-value]:bg-gold-400"
+                  className="h-1.5 w-full appearance-none overflow-hidden rounded-full border-0 bg-contrast/10 [&::-moz-progress-bar]:bg-gold-400 [&::-webkit-progress-bar]:bg-contrast/10 [&::-webkit-progress-value]:bg-gold-400"
                 />
               </div>
             )}
 
             {photo.status === 'error' && (
-              <p className="absolute inset-x-1.5 bottom-1.5 flex items-start gap-1 rounded bg-black/75 p-1.5 text-[0.68rem] leading-snug text-ruby-500">
+              <p className="absolute inset-x-1.5 bottom-1.5 flex items-start gap-1 rounded border border-ruby-500/30 bg-surface/95 p-1.5 text-[0.68rem] leading-snug text-ruby-500">
                 <TriangleAlert size={12} strokeWidth={2} className="mt-0.5 shrink-0" />
                 {photo.error}
               </p>
             )}
 
             {i === 0 && photo.status === 'done' && (
-              <span className="absolute top-1.5 left-1.5 rounded bg-gold-500 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-on-gold">Main</span>
+              <span className="absolute top-1.5 left-1.5 rounded bg-cta-from px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-on-cta">Main</span>
             )}
 
             <div className="absolute top-1.5 right-1.5 flex gap-1">
@@ -83,7 +83,7 @@ const PhotoGallery = ({ uploads, id = 'p-photos' }) => {
             id={id}
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="flex aspect-square w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gold-400/30 bg-white/3 px-3 text-center text-[0.78rem] text-gold-300 transition-all hover:border-gold-400 hover:bg-gold-400/10"
+            className="flex aspect-square w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gold-400/30 bg-contrast/3 px-3 text-center text-[0.78rem] text-gold-300 transition-all hover:border-gold-400 hover:bg-gold-400/10"
           >
             <ImagePlus size={24} strokeWidth={1.5} />
             Add photos

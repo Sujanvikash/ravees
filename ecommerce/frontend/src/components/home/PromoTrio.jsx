@@ -7,32 +7,31 @@ import { heroTreeGlow, luxuryGiftBoxes, festiveLanternGlow } from '../../assets/
 const PHOTOS = [heroTreeGlow, luxuryGiftBoxes, festiveLanternGlow];
 
 /**
- * Three promo banners side by side (stacked on phones), each a photo darkened toward its text, a headline
- * and a "Shop …" link into the matching collection. The headlines are the old site's feature banners.
+ * Three promo banners side by side (stacked on phones), each a photo shown as it is (no wash) above a
+ * plain strip with a headline and a "Shop …" link into the matching collection. The headlines are the old
+ * site's feature banners.
  */
 const PromoTrio = ({ className = '' }) => (
   <div className={`grid gap-4 md:grid-cols-3 ${className}`}>
     {PROMOS.map((promo, i) => (
-      <Reveal key={promo.title} delay={i}>
+      <Reveal key={promo.title} delay={i} className="h-full">
         <Link
           to={promo.to}
-          className="group relative isolate flex h-48 overflow-hidden rounded-2xl border border-gold-400/20 no-underline shadow-[0_14px_36px_--alpha(var(--color-black)/45%)] sm:h-56"
+          className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gold-400/20 bg-surface no-underline shadow-[0_14px_36px_--alpha(var(--color-shadow)/45%)]"
         >
-          <img
-            src={PHOTOS[i]}
-            alt=""
-            loading="lazy"
-            className="absolute inset-0 -z-10 size-full object-cover transition-[scale] duration-700 ease-premium group-hover:scale-[1.06]"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,--alpha(var(--color-shade)/92%)_0%,--alpha(var(--color-shade)/70%)_45%,--alpha(var(--color-shade)/10%)_100%)]"
-          />
-          <span className="flex max-w-[78%] flex-col justify-end p-5 sm:p-6">
-            <span className="mb-3 font-serif text-[1.12rem] font-bold leading-[1.3] text-white sm:text-[1.2rem]">
+          <span className="relative block h-36 overflow-hidden sm:h-40">
+            <img
+              src={PHOTOS[i]}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 size-full object-cover transition-[scale] duration-700 ease-premium group-hover:scale-[1.06]"
+            />
+          </span>
+          <span className="flex flex-1 flex-col justify-between border-t border-gold-400/20 p-4 sm:p-5">
+            <span className="mb-3 font-serif text-[1.12rem] font-bold leading-[1.3] text-text-primary sm:text-[1.2rem]">
               {promo.title}
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[0.82rem] font-semibold tracking-[0.06em] text-gold-300 transition-colors group-hover:text-gold-100">
+            <span className="inline-flex items-center gap-1.5 text-[0.82rem] font-semibold tracking-[0.06em] text-gold-300 transition-colors group-hover:text-text-primary">
               {promo.cta}
               <ArrowRight size={15} strokeWidth={2} className="transition-transform duration-300 group-hover:translate-x-1" />
             </span>

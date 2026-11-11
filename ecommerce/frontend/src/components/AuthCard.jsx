@@ -2,13 +2,13 @@ import Aurora from './Aurora.jsx';
 import Eyebrow from './Eyebrow.jsx';
 import Reveal from './Reveal.jsx';
 import Decoration from './Decoration.jsx';
-import { festiveLanternGlow, goldenReindeerStatue } from '../assets/decorations';
+import { ornamentBowCorner } from '../assets/decorations';
 import PageTitle from './PageTitle.jsx';
 import { cardClass } from './cardClass.js';
 
-// Tall side pictures for the storefront sign-in pages: 300px wide, their inner edge 300px from the centre,
-// so they stay clear of the form (at most 480px wide).
-const SIDE_PICTURE = 'top-1/2 h-[400px] w-[300px] -translate-y-1/2';
+// Pine-and-bow corners for the storefront sign-in pages, in the top corners beside the form (at most 480px
+// wide, centred): narrow enough to stay clear of it, from md.
+const CORNER = 'top-0 aspect-900/566 w-[clamp(150px,20vw,300px)]';
 
 /**
  * Centered sign-in style page: dark radial background, a heading, and the form in a card.
@@ -34,13 +34,14 @@ const AuthCard = ({
 }) => {
   return (
     <section
-      className={`relative z-20 flex ${fullHeight ? 'min-h-screen' : 'min-h-[70vh]'} items-center justify-center bg-[radial-gradient(circle_at_center,#071f15_0%,#030c08_100%)] px-6 py-10`}
+      className={`relative z-20 flex ${fullHeight ? 'min-h-screen' : 'min-h-[70vh]'} items-center justify-center bg-[radial-gradient(circle_at_center,var(--color-bg-dark-emerald)_0%,var(--color-bg-deepest)_100%)] px-6 py-10`}
     >
       <Aurora />
       {decorated && (
         <>
-          <Decoration side src={festiveLanternGlow} className={`left-[calc(50%-600px)] ${SIDE_PICTURE}`} />
-          <Decoration side src={goldenReindeerStatue} className={`right-[calc(50%-600px)] ${SIDE_PICTURE}`} />
+          {/* Cut-outs, shown whole on the ivory page (no edge fade); the right one mirrored to hug its corner */}
+          <Decoration side="hidden md:block" src={ornamentBowCorner} fade="none" imgClassName="object-contain!" className={`left-0 ${CORNER}`} />
+          <Decoration side="hidden md:block" src={ornamentBowCorner} fade="none" imgClassName="object-contain! -scale-x-100" className={`right-0 ${CORNER}`} />
         </>
       )}
       <Reveal className={`w-full ${maxWidth}`}>

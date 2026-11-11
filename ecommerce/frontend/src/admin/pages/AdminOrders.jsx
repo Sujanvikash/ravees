@@ -13,9 +13,10 @@ import { useAdminList } from '../useAdminList.js';
 import { useAdminAuth } from '../context/AdminAuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { ADMIN_LABEL } from '../components/adminForm.js';
+import { orderBadgeClass } from '../components/adminLabels.js';
 import { cardClass } from '../../components/cardClass.js';
 import { formatDate, formatPrice } from '../../lib/format.js';
-import { ORDER_STATUSES, addressLines, statusBadgeClass, statusLabel } from '../../lib/orders.js';
+import { ORDER_STATUSES, addressLines, statusLabel } from '../../lib/orders.js';
 
 // The usual next step for an order, offered first when it is opened.
 const NEXT = { paid: 'shipped', shipped: 'delivered' };
@@ -54,7 +55,7 @@ const OrderPanel = ({ order, onSaved }) => {
     <div className="grid gap-6 p-6 md:grid-cols-[1.3fr_1fr] md:p-7">
       <div className="flex min-w-0 flex-col gap-5">
         <div className="flex flex-wrap items-center gap-3 text-[0.82rem] text-text-secondary">
-          <span className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</span>
+          <span className={orderBadgeClass(order.status)}>{statusLabel(order.status)}</span>
           <span>Placed {formatDate(order.createdAt, true)}</span>
         </div>
 
@@ -62,12 +63,12 @@ const OrderPanel = ({ order, onSaved }) => {
           <h3 className={SECTION_TITLE}>Items</h3>
           <ul className="flex list-none flex-col">
             {order.lines.map((line, i) => (
-              <li key={`${line.productId}-${i}`} className="flex items-center gap-3 border-b border-white/6 py-2.5 last:border-0">
+              <li key={`${line.productId}-${i}`} className="flex items-center gap-3 border-b border-contrast/6 py-2.5 last:border-0">
                 <div className="size-12 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-bg-deepest">
                   {line.image && <img src={line.image} alt="" className="size-full object-cover" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[0.86rem] text-white">{line.name}</p>
+                  <p className="text-[0.86rem] text-text-primary">{line.name}</p>
                   <p className="text-[0.75rem] text-text-muted">
                     {formatPrice(line.price)} × {line.qty} · <span className="font-mono">{line.productId}</span>
                   </p>
@@ -86,7 +87,7 @@ const OrderPanel = ({ order, onSaved }) => {
               <dd className="text-text-primary">{order.delivery > 0 ? formatPrice(order.delivery) : 'Free'}</dd>
             </div>
             <div className="flex justify-between text-[0.95rem] font-bold">
-              <dt className="text-white">Total</dt>
+              <dt className="text-text-primary">Total</dt>
               <dd className="text-gold-300">{formatPrice(order.total)}</dd>
             </div>
           </dl>
@@ -108,7 +109,7 @@ const OrderPanel = ({ order, onSaved }) => {
               {order.history.map((step, i) => (
                 <li key={`${step.at}-${i}`} className="flex flex-wrap gap-x-2">
                   <span className="text-text-muted">{formatDate(step.at, true)}</span>
-                  <span className="text-white">{statusLabel(step.status)}</span>
+                  <span className="text-text-primary">{statusLabel(step.status)}</span>
                   {step.note && <span className="text-text-secondary">· {step.note}</span>}
                 </li>
               ))}
@@ -120,7 +121,7 @@ const OrderPanel = ({ order, onSaved }) => {
       <div className="flex min-w-0 flex-col gap-5">
         <div className={`${cardClass('tile')} p-4 text-[0.84rem] text-text-secondary`}>
           <h3 className={SECTION_TITLE}>Customer</h3>
-          <p className="text-white">{name}</p>
+          <p className="text-text-primary">{name}</p>
           {email && (
             <a href={`mailto:${email}`} className="flex items-center gap-1.5 text-text-secondary no-underline hover:text-gold-300">
               <Mail size={13} strokeWidth={2} /> {email}
@@ -210,7 +211,7 @@ const AdminOrders = () => {
       label: 'Customer',
       render: (row) => (
         <div className="min-w-0">
-          <span className="block text-white">{row.customer?.name ?? row.address?.name}</span>
+          <span className="block text-text-primary">{row.customer?.name ?? row.address?.name}</span>
           <span className="text-[0.75rem] text-text-muted">{[row.address?.city, row.address?.state].filter(Boolean).join(', ')}</span>
         </div>
       ),
@@ -220,8 +221,8 @@ const AdminOrders = () => {
       label: 'Items',
       render: (row) => row.lines.reduce((sum, line) => sum + line.qty, 0),
     },
-    { key: 'total', label: 'Total', render: (row) => <span className="text-white">{formatPrice(row.total)}</span> },
-    { key: 'status', label: 'Status', render: (row) => <span className={statusBadgeClass(row.status)}>{statusLabel(row.status)}</span> },
+    { key: 'total', label: 'Total', render: (row) => <span className="text-text-primary">{formatPrice(row.total)}</span> },
+    { key: 'status', label: 'Status', render: (row) => <span className={orderBadgeClass(row.status)}>{statusLabel(row.status)}</span> },
     {
       key: 'open',
       label: '',
@@ -270,7 +271,7 @@ const AdminOrders = () => {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Order number or name..."
           aria-label="Search orders"
-          className="w-full border-none bg-transparent text-[0.85rem] text-white outline-none placeholder:text-text-muted"
+          className="w-full border-none bg-transparent text-[0.85rem] text-text-primary outline-none placeholder:text-text-muted"
         />
       </div>
 

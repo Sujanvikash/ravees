@@ -6,6 +6,7 @@ import AuthCard from '../../components/AuthCard.jsx';
 import FormError from '../../components/FormError.jsx';
 import FormField from '../../components/FormField.jsx';
 import Button from '../../components/Button.jsx';
+import PageTitle from '../../components/PageTitle.jsx';
 import { AdminAuthProvider, useAdminAuth } from '../context/AdminAuthContext.jsx';
 import { Input } from '../../components/Input.jsx';
 
@@ -36,14 +37,16 @@ const LoginForm = () => {
   return (
     <AuthCard
       fullHeight
+      decorated
       maxWidth="max-w-[420px]"
       onSubmit={handleSubmit}
       header={
         <div className="flex flex-col items-center gap-2">
           <Logo height={64} className="mb-1" />
-          <h1 className="font-serif text-[1.3rem] font-bold tracking-[0.14em] text-white">
+          {/* The shop's own title lettering (gold gradient), as on its sign-in pages. */}
+          <PageTitle size="xs" className="tracking-[0.1em]!">
             RAAVE&apos;S ADMIN
-          </h1>
+          </PageTitle>
           <span className="font-mono text-[0.62rem] uppercase tracking-[0.24em] text-gold-400">
             Console sign-in
           </span>

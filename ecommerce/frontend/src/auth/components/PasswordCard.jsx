@@ -78,7 +78,7 @@ const PasswordCard = () => {
 
   return (
     <div className={`${cardClass('panel')} flex flex-col gap-4 p-6 md:p-8`}>
-      <h2 className="flex items-center gap-2 font-serif text-[1.15rem] text-white">
+      <h2 className="flex items-center gap-2 font-serif text-[1.15rem] text-text-primary">
         <KeyRound size={18} strokeWidth={2} className="text-gold-400" />
         Change Password
       </h2>
