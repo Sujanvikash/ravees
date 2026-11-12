@@ -89,9 +89,10 @@ const Header = ({ onOpenCart }) => {
   const requireLogin = useRequireLogin();
   const { wishlistCount } = useWishlist();
   const { session, isAuthenticated } = useCustomerAuth();
-  // Signing in comes back to this page; from a sign-in page, to wherever that one was going to return.
+  // Signing in from the header lands on the home page. On a sign-in page it keeps where that one returns to (the
+  // checkout or cart that asked the customer to sign in).
   const location = useLocation();
-  const signInState = AUTH_PAGES.includes(location.pathname) ? location.state : { from: location.pathname + location.search };
+  const signInState = AUTH_PAGES.includes(location.pathname) ? location.state : undefined;
 
   return (
     // On the home page the hero sets --hero-chrome (0 → 1): the header shows on arrival, slides away once the

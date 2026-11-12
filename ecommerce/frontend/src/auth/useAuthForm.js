@@ -8,8 +8,8 @@ export const AUTH_PAGES = ['/login', '/signup', '/forgot-password', '/reset-pass
 
 /**
  * The shared state and submit flow of the account forms: validate with `schema`, call `submit(data)`
- * (login, signup, reset…), then greet with `welcome(data)` and go back to the page the customer came from
- * (`state.from`, which the header and the sign-in prompts pass; the home page without one), or show the error.
+ * (login, signup, reset…), then greet with `welcome(data)` and go back to the page that asked the customer to
+ * sign in (`state.from`: adding to the cart, the cart, checkout), or else to the home page; or show the error.
  * A form that stays put passes `done(data)` instead of `welcome`. `idPrefix` is the forms' field-id prefix, for
  * focusing the first error.
  */
