@@ -117,11 +117,12 @@ def send(email: Email) -> bool:
 GREEN = '#0f3d2e'
 GOLD = '#a8823a'
 GOLD_LIGHT = '#e3c98b'
-IVORY = '#f4efe4'
+WIDTH = 720  # the email's width at most (phones get their own)
 CREAM = '#fbf8f1'
 INK = '#26302a'
 MUTED = '#6b6457'
 LINE = '#e8dcc4'
+SAVE = '#1d7a46'  # the discount, in a deeper green that reads on white
 SERIF = "Georgia,'Times New Roman',serif"
 SANS = 'Arial,Helvetica,sans-serif'
 
@@ -184,15 +185,14 @@ def _page(
         '<!doctype html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head>'
-        f'<body style="margin:0;padding:0;background:{IVORY}">{hidden}'
-        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{IVORY}">'
-        '<tr><td align="center" style="padding:28px 12px 32px">'
-        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px">'
+        f'<body style="margin:0;padding:0;background:#ffffff">{hidden}'
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">'
+        '<tr><td align="center" style="padding:20px 8px 28px">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:{WIDTH}px">'
         # the logo
         f'<tr><td align="center" style="padding:0 0 20px"><a href="{html.escape(site)}" style="text-decoration:none">'
         f'<img src="{html.escape(_logo_url())}" width="190" alt="Raave’s Evergreen" '
-        f'style="display:block;width:190px;max-width:60%;height:auto;border:0;background:#ffffff;'
-        f'border-radius:6px;padding:6px"></a></td></tr>'
+        'style="display:block;width:190px;max-width:60%;height:auto;border:0"></a></td></tr>'
         # the card
         f'<tr><td style="background:#ffffff;border:1px solid {LINE};border-radius:14px;overflow:hidden">'
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">'
@@ -302,14 +302,24 @@ def _order_table(order: dict) -> str:
     )
     small = f'font-family:{SANS};font-size:13px;color:{MUTED};padding:8px 0 0'
     delivery = order['delivery']
+    # what the customer saved on the MRP (lines keep the MRP when it was above the price)
+    saved = sum((line['mrp'] - line['price']) * line['qty'] for line in order['lines'] if line.get('mrp'))
+    discount = (
+        f'<tr><td colspan="2" style="{small}">Price (MRP)</td><td align="right" style="{small}">'
+        f'{_rupees(order["total"] - delivery + saved)}</td></tr>'
+        f'<tr><td colspan="2" style="{small};color:{SAVE}">Discount</td><td align="right" style="{small};'
+        f'color:{SAVE};white-space:nowrap">&minus;{_rupees(saved)}</td></tr>'
+        if saved > 0
+        else ''
+    )
     totals = (
-        f'<tr><td colspan="2" style="{small}">Delivery</td><td align="right" style="{small}">'
+        f'{discount}<tr><td colspan="2" style="{small}">Delivery</td><td align="right" style="{small}">'
         f'{_rupees(delivery) if delivery else "Free"}</td></tr>'
         f'<tr><td colspan="2" style="font-family:{SANS};font-size:16px;font-weight:bold;color:{GREEN};'
         f'padding:10px 0 2px">Total paid</td><td align="right" style="font-family:{SANS};font-size:16px;'
         f'font-weight:bold;color:{GREEN};padding:10px 0 2px;white-space:nowrap">{_rupees(order["total"])}</td></tr>'
         f'<tr><td colspan="3" style="font-family:{SANS};font-size:11px;color:{MUTED};padding:0">Prices include GST'
-        '</td></tr>'
+        f'{f' &middot; <b style="color:{SAVE}">you saved {_rupees(saved)}</b>' if saved > 0 else ""}</td></tr>'
     )
     a = order['address']
     where = '<br>'.join(

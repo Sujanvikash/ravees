@@ -9,7 +9,8 @@ import { cardClass } from '../cardClass.js';
 
 /**
  * Checkout's third column: the lines with their quantities and amounts, a link back to the shop, and the
- * order summary: `summary` rows ([label, value]), then `total` ([label, value]) in bold. `onClearAll` asks
+ * order summary: `summary` rows ([label, value], or [label, value, 'save'] for the discount, in green), then
+ * `total` ([label, value]) in bold. `onClearAll` asks
  * before emptying the cart (the page owns the confirmation).
  */
 const CheckoutList = ({ title, summary, total, note, onClearAll }) => {
@@ -70,10 +71,14 @@ const CheckoutList = ({ title, summary, total, note, onClearAll }) => {
           Order summary
         </h3>
         <dl className="flex flex-col">
-          {summary.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-4 border-b border-contrast/6 py-2 text-[0.85rem] last:border-0">
-              <dt className="text-text-muted">{label}</dt>
-              <dd className="text-right text-text-primary">{value}</dd>
+          {/* A row marked 'save' (the discount) is in green. */}
+          {summary.map(([label, value, look]) => (
+            <div
+              key={label}
+              className={`flex justify-between gap-4 border-b border-contrast/6 py-2 text-[0.85rem] last:border-0 ${look === 'save' ? 'font-semibold text-emerald-400' : ''}`}
+            >
+              <dt className={look === 'save' ? '' : 'text-text-muted'}>{label}</dt>
+              <dd className={`text-right ${look === 'save' ? '' : 'text-text-primary'}`}>{value}</dd>
             </div>
           ))}
         </dl>

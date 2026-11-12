@@ -20,8 +20,7 @@ import { sectionClass } from '../components/sectionClass.js';
  * stock, or gone from the shop) called out, then the subtotal, delivery and total and on to checkout.
  */
 const Cart = () => {
-  const { cart, unavailable, updateQuantity, removeFromCart, clearCart, totalCount, subtotal, delivery, total, freeDeliveryOver } =
-    useCart();
+  const { cart, unavailable, updateQuantity, removeFromCart, clearCart, totalCount, subtotal, delivery, total, freeDeliveryOver, mrpTotal, discount } = useCart();
   const toFreeDelivery = delivery > 0 && freeDeliveryOver > subtotal ? freeDeliveryOver - subtotal : 0;
 
   return (
@@ -97,6 +96,18 @@ const Cart = () => {
                 <span>Items in cart</span>
                 <span className="font-mono text-text-primary">{totalCount}</span>
               </div>
+              {discount > 0 && (
+                <>
+                  <div className="flex justify-between text-[0.92rem] text-text-secondary">
+                    <span>Price (MRP)</span>
+                    <span className="text-text-primary">{formatPrice(mrpTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-[0.92rem] font-semibold text-emerald-400">
+                    <span>Discount</span>
+                    <span>&minus;{formatPrice(discount)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-[0.92rem] text-text-secondary">
                 <span>Subtotal</span>
                 <span className="text-text-primary">{formatPrice(subtotal)}</span>
@@ -109,6 +120,11 @@ const Cart = () => {
                 <span>Total</span>
                 <span className="font-serif text-[1.2rem] text-gold-300">{formatPrice(total)}</span>
               </div>
+              {discount > 0 && (
+                <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-center text-[0.85rem] font-semibold text-emerald-400">
+                  You save {formatPrice(discount)} on this order
+                </p>
+              )}
               <p className="text-[0.82rem] leading-[1.6] text-text-muted">
                 Prices include GST.
                 {toFreeDelivery > 0 && ` Add ${formatPrice(toFreeDelivery)} more for free delivery.`}

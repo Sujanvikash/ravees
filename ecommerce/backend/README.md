@@ -84,7 +84,8 @@ there, `https://ravees-ecommerce.pages.dev`).
 |---|---|---|
 | `POST /auth/signup` | `{ name, email, phone, password }` (password 8+) | `{ token, customer }` |
 | `POST /auth/login` | `{ email, password }` | `{ token, customer }` (10 wrong tries in 15 minutes: 429) |
-| `GET /auth/me` | | `customer`: `{ id, name, email, phone, createdAt }` |
+| `GET /auth/me` | | `customer`: `{ id, name, email, phone, createdAt, address }` (`address`: the delivery address saved at checkout, or null) |
+| `DELETE /auth/me/address` | | `customer`, with the saved address forgotten |
 | `PATCH /auth/me` | `{ name?, phone? }` | `customer` |
 | `POST /auth/change-password` | `{ current, password }` | `{ token }` (other devices are signed out) |
 | `POST /auth/forgot-password` | `{ email }` | 204 whether or not the email has an account; if it has, a link `SITE_URL/reset-password?token=…` valid 30 minutes is emailed |
@@ -100,7 +101,8 @@ A customer token lasts 30 days, or until the password changes.
 
 ### Orders and payment
 
-1. `POST /orders` (customer): `{ id: <uuid made by the website>, lines: [{ productId, qty }], address: { name, phone, email, line1, line2, city, state, pincode }, notes }`.
+1. `POST /orders` (customer): `{ id: <uuid made by the website>, lines: [{ productId, qty }], address: { name, phone, email, line1, line2, city, state, pincode }, notes, saveAddress }`.
+   With `saveAddress: true` the address is kept on the account, to fill in the next checkout.
    `address.state` must be one of India's states or union territories (any spelling of its name, or TN; it comes back
    as the proper name): it is the invoice's place of supply.
    The server prices it from the catalogue (refusing hidden, out-of-stock, store-exclusive or price-less products), adds the
@@ -114,7 +116,7 @@ A customer token lasts 30 days, or until the password changes.
 
 `GET /orders` (customer): their orders, newest first. `GET /orders/<id>`: one of theirs.
 
-An order: `{ id, number: "RE-2627-00001", status, lines: [{ productId, name, image, price, qty, amount }], subtotal,
+An order: `{ id, number: "RE-2627-00001", status, lines: [{ productId, name, image, price, mrp, qty, amount }], subtotal,
 delivery, total, address, notes, createdAt, paidAt, history: [{ at, status, note }], customer: { name, email, phone },
 invoice }`. Status: `pending` (waiting for payment) → `paid` → `shipped` → `delivered`; or `cancelled`.
 

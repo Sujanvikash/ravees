@@ -69,20 +69,23 @@ const BUSY = { creating: 'Preparing your order...', paying: 'Waiting for payment
  * order).
  */
 const PayOnline = ({ onPaid, onClearAll }) => {
-  const { cart, unavailable, subtotal, delivery, total, freeDeliveryOver } = useCart();
+  const { cart, unavailable, subtotal, mrpTotal, discount, delivery, total, freeDeliveryOver } = useCart();
   const pieces = cart.reduce((sum, line) => sum + line.quantity, 0);
-  const { session, request } = useCustomerAuth();
+  const { session, request, refreshProfile } = useCustomerAuth();
+  // The address saved at the last checkout fills the form in; the account's name, phone and email otherwise.
+  const saved = session?.address ?? {};
   const [form, setForm] = useState(() => ({
-    name: session?.name ?? '',
-    phone: session?.phone ?? '',
-    email: session?.email ?? '',
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
-    pincode: '',
+    name: saved.name ?? session?.name ?? '',
+    phone: saved.phone ?? session?.phone ?? '',
+    email: saved.email ?? session?.email ?? '',
+    line1: saved.line1 ?? '',
+    line2: saved.line2 ?? '',
+    city: saved.city ?? '',
+    state: saved.state ?? '',
+    pincode: saved.pincode ?? '',
     notes: '',
   }));
+  const [saveAddress, setSaveAddress] = useState(true);
   const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [stage, setStage] = useState('idle');
@@ -111,12 +114,15 @@ const PayOnline = ({ onPaid, onClearAll }) => {
       lines: cart.map(({ product, quantity }) => ({ productId: product.id, qty: quantity })),
       address: { ...address, pincode: address.pincode.replace(/\s/g, '') },
       notes,
+      saveAddress,
     };
     const id = orderIdFor(JSON.stringify(body));
 
     setStage('creating');
     try {
       const { order, payment } = await request('/orders', { method: 'POST', body: { id, ...body } });
+      // The server kept the address on the account: the next checkout starts with it.
+      if (saveAddress) refreshProfile();
       if (order.status === 'cancelled') {
         forgetOrder();
         throw new Error('That order was cancelled. Please press Pay again to place a new one.');
@@ -216,6 +222,11 @@ const PayOnline = ({ onPaid, onClearAll }) => {
           />
         </FormField>
 
+        <label className="flex cursor-pointer items-center gap-2.5 text-[0.88rem] text-text-secondary">
+          <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="size-4 accent-forest" />
+          Save this address for next time
+        </label>
+
         <FormError>{error}</FormError>
 
         <Button type="submit" size="lg" full className="uppercase" disabled={busy || unavailable.length > 0}>
@@ -234,6 +245,7 @@ const PayOnline = ({ onPaid, onClearAll }) => {
       <CheckoutList
         title={`Your order (${pieces})`}
         summary={[
+          ...(discount > 0 ? [['Price (MRP)', formatPrice(mrpTotal)], ['Discount', `−${formatPrice(discount)}`, 'save']] : []),
           ['Subtotal', formatPrice(subtotal)],
           ['Delivery', delivery > 0 ? formatPrice(delivery) : 'Free'],
         ]}

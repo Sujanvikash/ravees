@@ -107,6 +107,7 @@ def _priced(session: Session, data: OrderIn) -> list[dict]:
                     'name': product.name,
                     'image': image_url(product.image_ids[0], 'card') if product.image_ids else None,
                     'price': float(product.price),
+                    'mrp': float(product.mrp) if product.mrp and product.mrp > product.price else None,
                     'qty': qty,
                     'amount': float(amount),
                     'hsn': hsn,
@@ -168,6 +169,8 @@ def checkout(session: Session, customer: Customer, data: OrderIn, *, settings: S
         order.razorpay_order_id = None  # another amount needs another Razorpay order; the same amount pays the same
     order.lines, order.subtotal, order.delivery, order.total = lines, subtotal, delivery, total
     order.address, order.notes, order.updated_at = address, data.notes.strip(), at
+    if data.save_address:
+        customer.address = address
     if not order.razorpay_order_id:
         notes = {'order_id': str(order.id), 'customer': customer.email}
         order.razorpay_order_id = razorpay.create_order(int(total * 100), order.number, notes)

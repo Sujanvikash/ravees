@@ -128,6 +128,12 @@ def admin_from_token(session: Session, token: str, settings: Settings) -> Admin:
     return admin
 
 
+def forget_address(session: Session, customer: Customer) -> Customer:
+    customer.address = None
+    session.commit()
+    return customer
+
+
 def update_profile(session: Session, customer: Customer, name: str | None, phone: str | None) -> Customer:
     if name is not None:
         customer.name = ' '.join(name.split())

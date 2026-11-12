@@ -55,6 +55,8 @@ class OrderIn(ApiModel):
     lines: list[LineIn] = Field(min_length=1, max_length=100)
     address: AddressIn
     notes: str = Field(default='', max_length=1000)
+    # keep this address on the customer's account, to fill in the next checkout
+    save_address: bool = False
 
 
 class VerifyIn(ApiModel):
@@ -73,6 +75,8 @@ class LineOut(ApiModel):
     name: str
     image: str | None
     price: float
+    # the MRP when it was above the price (the discount the customer got), else None
+    mrp: float | None = None
     qty: int
     amount: float
 

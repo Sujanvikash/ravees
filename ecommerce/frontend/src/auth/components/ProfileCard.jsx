@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { LogOut, Mail, Pencil, Phone, Save, User } from 'lucide-react';
+import { LogOut, Mail, MapPin, Pencil, Phone, Save, User } from 'lucide-react';
+import { addressLines } from '../../lib/orders.js';
 import Button from '../../components/Button.jsx';
 import FormError from '../../components/FormError.jsx';
 import FormField from '../../components/FormField.jsx';
@@ -67,9 +68,11 @@ const ProfileForm = ({ onSaved, onCancel }) => {
   );
 };
 
-/** The account page's profile card: name, email and phone (editable), and signing out. */
+/** The account page's profile card: name, email and phone (editable), the delivery address saved at checkout
+ * (with a way to remove it), and signing out. */
 const ProfileCard = () => {
-  const { session, logout } = useCustomerAuth();
+  const { session, logout, forgetAddress } = useCustomerAuth();
+  const saved = session.address;
   const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
 
@@ -114,6 +117,29 @@ const ProfileCard = () => {
             <div className="flex items-center gap-3">
               <Phone size={18} strokeWidth={2} className="shrink-0 text-gold-400" />
               <span className="text-[0.95rem] text-text-secondary">{session.phone}</span>
+            </div>
+          )}
+          {saved && (
+            <div className="flex items-start gap-3">
+              <MapPin size={18} strokeWidth={2} className="mt-0.5 shrink-0 text-gold-400" />
+              <div className="min-w-0 flex-1 text-[0.9rem] leading-[1.6] text-text-secondary">
+                <span className="block text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-text-muted">Saved delivery address</span>
+                {addressLines(saved).map((line, i) => (
+                  <span key={i} className="block">
+                    {line}
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const result = await forgetAddress();
+                    showToast(result.ok ? 'Saved address removed' : result.error);
+                  }}
+                  className="mt-1 cursor-pointer border-none bg-transparent p-0 text-[0.82rem] text-gold-300 underline-offset-4 hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           )}
         </>

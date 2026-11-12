@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -9,7 +10,9 @@ from app.core.database import Base
 
 class Customer(Base):
     """A shopper's account. The email (kept lower-case) is the sign-in name. password_changed_at ends every token
-    issued before it (a password change or reset signs the other devices out)."""
+    issued before it (a password change or reset signs the other devices out). address is the delivery address the
+    customer chose to save at checkout ({name, phone, email, line1, line2, city, state, pincode}), to fill in the
+    next one."""
 
     __tablename__ = 'customers'
 
@@ -20,6 +23,7 @@ class Customer(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    address: Mapped[dict | None] = mapped_column(JSONB)
 
 
 class Admin(Base):

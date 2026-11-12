@@ -52,6 +52,12 @@ def me(customer: CurrentCustomer) -> CustomerOut:
     return CustomerOut.model_validate(customer, from_attributes=True)
 
 
+@router.delete('/me/address')
+def forget_address(customer: CurrentCustomer, session: DbSession) -> CustomerOut:
+    """Forgets the delivery address saved at checkout."""
+    return CustomerOut.model_validate(service.forget_address(session, customer), from_attributes=True)
+
+
 @router.patch('/me')
 def update_me(body: ProfileIn, customer: CurrentCustomer, session: DbSession) -> CustomerOut:
     return CustomerOut.model_validate(

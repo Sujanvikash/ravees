@@ -4,7 +4,7 @@ import { useToast } from './ToastContext.jsx';
 import { useStorefront } from './StorefrontContext.jsx';
 import { useRequireLogin } from '../auth/useRequireLogin.js';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
-import { canBuy } from '../lib/catalogue.js';
+import { canBuy, showsMrp } from '../lib/catalogue.js';
 
 const CartContext = createContext(null);
 
@@ -28,6 +28,8 @@ const readLines = (saved) =>
  * subtotal, delivery, total
  *               rupees for `cart`; delivery is `settings.deliveryFee`, free once the subtotal reaches
  *               `freeDeliveryOver` (when that is above 0)
+ * mrpTotal, discount
+ *               the same lines at their MRPs (where the MRP is above the price), and what the customer saves
  * totalCount    pieces in the cart, unavailable ones included (the header badge, Santa's sack)
  */
 export const CartProvider = ({ children }) => {
@@ -93,9 +95,10 @@ export const CartProvider = ({ children }) => {
   const totals = useMemo(() => {
     const totalCount = [...cart, ...unavailable].reduce((sum, line) => sum + line.quantity, 0);
     const subtotal = cart.reduce((sum, { product, quantity }) => sum + product.price * quantity, 0);
+    const mrpTotal = cart.reduce((sum, { product, quantity }) => sum + (showsMrp(product) ? product.mrp : product.price) * quantity, 0);
     const freeOver = Number(settings.freeDeliveryOver) || 0;
     const delivery = cart.length === 0 || (freeOver > 0 && subtotal >= freeOver) ? 0 : Number(settings.deliveryFee) || 0;
-    return { totalCount, subtotal, delivery, total: subtotal + delivery, freeDeliveryOver: freeOver };
+    return { totalCount, subtotal, mrpTotal, discount: mrpTotal - subtotal, delivery, total: subtotal + delivery, freeDeliveryOver: freeOver };
   }, [cart, unavailable, settings]);
 
   const value = { cart, unavailable, addToCart, updateQuantity, removeFromCart, removeUnavailable, clearCart, ...totals };

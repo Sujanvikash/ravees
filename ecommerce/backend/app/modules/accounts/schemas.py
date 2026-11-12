@@ -70,6 +70,8 @@ class CustomerOut(ApiModel):
     email: str
     phone: str
     created_at: datetime
+    # the delivery address saved at checkout, or None
+    address: dict | None = None
 
 
 class SessionOut(ApiModel):

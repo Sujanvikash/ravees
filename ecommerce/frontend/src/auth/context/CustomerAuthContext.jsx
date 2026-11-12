@@ -99,6 +99,25 @@ export const CustomerAuthProvider = ({ children }) => {
     }
   };
 
+  // The account as the server has it now (after a checkout saved the delivery address, say).
+  const refreshProfile = useCallback(async () => {
+    try {
+      setCustomer(await request('/auth/me'));
+    } catch {
+      // the next page load fetches it anyway
+    }
+  }, [request]);
+
+  // Forgets the delivery address saved at checkout.
+  const forgetAddress = async () => {
+    try {
+      setCustomer(await request('/auth/me/address', { method: 'DELETE' }));
+      return { ok: true };
+    } catch (err) {
+      return failure(err);
+    }
+  };
+
   // The server signs other devices out and answers a new token for this one.
   const changePassword = async ({ current, password }) => {
     try {
@@ -137,6 +156,8 @@ export const CustomerAuthProvider = ({ children }) => {
     login,
     logout,
     updateProfile,
+    refreshProfile,
+    forgetAddress,
     changePassword,
     forgotPassword,
     resetPassword,

@@ -10,7 +10,7 @@ import UnavailableItems from '../components/UnavailableItems.jsx';
 import { formatPrice } from '../lib/format.js';
 
 const CartDrawer = ({ isOpen, onClose }) => {
-  const { cart, unavailable, updateQuantity, removeFromCart, totalCount, subtotal } = useCart();
+  const { cart, unavailable, updateQuantity, removeFromCart, totalCount, subtotal, mrpTotal, discount } = useCart();
   const empty = cart.length === 0 && unavailable.length === 0;
 
   useOverlay(isOpen, onClose);
@@ -110,6 +110,18 @@ const CartDrawer = ({ isOpen, onClose }) => {
               <span>Items</span>
               <span className="font-mono text-text-primary">{totalCount}</span>
             </div>
+            {discount > 0 && (
+              <>
+                <div className="mb-2.5 flex justify-between text-[0.88rem] text-text-secondary">
+                  <span>Price (MRP)</span>
+                  <span className="text-text-primary">{formatPrice(mrpTotal)}</span>
+                </div>
+                <div className="mb-2.5 flex justify-between text-[0.88rem] font-semibold text-emerald-400">
+                  <span>Discount</span>
+                  <span>&minus;{formatPrice(discount)}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between border-t border-contrast/10 pt-3 text-[1.1rem] font-bold text-text-primary">
               <span>Subtotal</span>
               <span className="font-serif text-[1.15rem] text-gold-300">{formatPrice(subtotal)}</span>

@@ -55,7 +55,15 @@ def test_checkout_and_paying(client, admin, stock):
     # priced by the server: 3 x 1,200 = 3,600, under 5,000 so delivery is 150
     assert order['number'].startswith('RE-') and order['status'] == 'pending'
     assert order['lines'] == [
-        {'productId': priced, 'name': 'Gold baubles', 'image': None, 'price': 1200.0, 'qty': 3, 'amount': 3600.0}
+        {
+            'productId': priced,
+            'name': 'Gold baubles',
+            'image': None,
+            'price': 1200.0,
+            'mrp': 1500.0,
+            'qty': 3,
+            'amount': 3600.0,
+        }
     ]
     assert (order['subtotal'], order['delivery'], order['total']) == (3600, 150, 3750)
     assert order['address']['pincode'] == '600008' and order['customer']['email'] == customer['email']
@@ -250,3 +258,19 @@ def test_every_step_is_emailed(client, admin, stock):
     mail.OUTBOX.clear()
     client.patch(f'/admin/orders/{unpaid["id"]}', json={'status': 'cancelled'}, headers=admin)
     assert mail.OUTBOX == []
+
+
+def test_the_delivery_address_can_be_saved_for_next_time(client, stock):
+    headers, _ = signup(client)
+    assert client.get('/auth/me', headers=headers).json()['address'] is None
+    line = [{'productId': stock['priced']['id'], 'qty': 1}]
+    body = {'id': str(uuid.uuid4()), 'lines': line, 'address': {**ADDRESS, 'state': 'tamilnadu'}, 'saveAddress': True}
+    assert client.post('/orders', json=body, headers=headers).status_code == 201
+    saved = client.get('/auth/me', headers=headers).json()['address']
+    assert saved['line1'] == '12 Casa Major Road' and saved['state'] == 'Tamil Nadu' and saved['pincode'] == '600008'
+    # an order without the box ticked leaves it as it was
+    other = {**body, 'id': str(uuid.uuid4()), 'address': {**ADDRESS, 'city': 'Madurai'}, 'saveAddress': False}
+    client.post('/orders', json=other, headers=headers)
+    assert client.get('/auth/me', headers=headers).json()['address']['city'] == 'Chennai'
+    assert client.delete('/auth/me/address', headers=headers).json()['address'] is None
+    assert client.get('/auth/me', headers=headers).json()['address'] is None

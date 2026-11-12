@@ -49,7 +49,10 @@ const OrderDetail = () => {
     );
   }
 
+  // What the customer saved on the MRP (each line keeps its MRP when that was above the price).
+  const saved = order.lines.reduce((sum, line) => sum + (line.mrp ? (line.mrp - line.price) * line.qty : 0), 0);
   const summary = [
+    ...(saved > 0 ? [['Price (MRP)', formatPrice(order.subtotal + saved)], ['Discount', `−${formatPrice(saved)}`, 'save']] : []),
     ['Subtotal', formatPrice(order.subtotal)],
     ['Delivery', order.delivery > 0 ? formatPrice(order.delivery) : 'Free'],
   ];
@@ -101,10 +104,10 @@ const OrderDetail = () => {
             </ul>
 
             <dl className="mt-4 flex flex-col border-t border-gold-400/15 pt-3">
-              {summary.map(([label, value]) => (
-                <div key={label} className="flex justify-between gap-4 py-1.5 text-[0.88rem]">
-                  <dt className="text-text-muted">{label}</dt>
-                  <dd className="text-text-primary">{value}</dd>
+              {summary.map(([label, value, look]) => (
+                <div key={label} className={`flex justify-between gap-4 py-1.5 text-[0.88rem] ${look === 'save' ? 'font-semibold text-emerald-400' : ''}`}>
+                  <dt className={look === 'save' ? '' : 'text-text-muted'}>{label}</dt>
+                  <dd className={look === 'save' ? '' : 'text-text-primary'}>{value}</dd>
                 </div>
               ))}
               <div className="mt-1 flex justify-between gap-4 border-t border-gold-400/25 pt-3 text-[1.05rem] font-bold">
