@@ -40,12 +40,12 @@ The shop sends the password reset link and an email to the customer at every ste
 the invoice, shipped, delivered, cancelled), plus a copy of each paid order to `ADMIN_EMAIL`. Until it has a way
 to send, nothing goes out: each email is only written to the API's log.
 
-**The shop's own mailbox (in use):** `info@christmasraave.in` is on Zoho Mail, and the domain's DNS already lets Zoho
+**The shop's own mailbox (in use):** `raaves@christmasraave.in` is on Zoho Mail, and the domain's DNS already lets Zoho
 send for it, so nothing changes at Hostinger. The API logs in to Zoho's mail server like an email app does.
 
-1. Sign in at mail.zoho.in as `info@christmasraave.in`.
+1. Sign in at mail.zoho.in as `raaves@christmasraave.in`.
 2. Allow other apps to send: **Settings (gear) → Mail Accounts → IMAP / POP** (on some accounts **Settings → Mail
-   Accounts → info@… → SMTP**) and make sure IMAP access is on. Zoho's free plan doesn't allow it; a paid plan
+   Accounts → raaves@… → SMTP**) and make sure IMAP access is on. Zoho's free plan doesn't allow it; a paid plan
    (Mail Lite or higher) does.
 3. If the account has two-factor sign-in, make an app password: accounts.zoho.in → **Security → App Passwords →
    Generate**, name it `shop-api`, and copy it. Otherwise use the mailbox's own password.
@@ -53,9 +53,9 @@ send for it, so nothing changes at Hostinger. The API logs in to Zoho's mail ser
    ```
    SMTP_HOST=smtp.zoho.in
    SMTP_PORT=465
-   SMTP_USER=info@christmasraave.in
+   SMTP_USER=raaves@christmasraave.in
    SMTP_PASSWORD=<the app password>
-   MAIL_FROM=Raave's Evergreen <info@christmasraave.in>
+   MAIL_FROM=Raave's Evergreen <raaves@christmasraave.in>
    ADMIN_EMAIL=<the inbox that should get every paid order>
    ```
    then `docker compose up -d`. (`MAIL_FROM` must be the same mailbox: Zoho only sends as the account that logs in.)
@@ -105,9 +105,9 @@ SITE_URL=https://<project>.pages.dev
 CORS_ORIGINS=https://<project>.pages.dev
 SMTP_HOST=smtp.zoho.in
 SMTP_PORT=465
-SMTP_USER=info@christmasraave.in
+SMTP_USER=raaves@christmasraave.in
 SMTP_PASSWORD=
-MAIL_FROM=Raave's Evergreen <info@christmasraave.in>
+MAIL_FROM=Raave's Evergreen <raaves@christmasraave.in>
 ADMIN_EMAIL=
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=

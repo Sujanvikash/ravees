@@ -41,10 +41,10 @@ class FakeServer:
 def mailbox(monkeypatch):
     settings = get_settings()
     monkeypatch.setattr(settings, 'smtp_host', 'smtp.zoho.in')
-    monkeypatch.setattr(settings, 'smtp_user', 'info@christmasraave.in')
+    monkeypatch.setattr(settings, 'smtp_user', 'raaves@christmasraave.in')
     monkeypatch.setattr(settings, 'smtp_password', type(settings.smtp_password)('app-password'))
-    monkeypatch.setattr(settings, 'mail_from', "Raave's Evergreen <info@christmasraave.in>")
-    monkeypatch.setattr(settings, 'mail_reply_to', 'info@christmasraave.in')
+    monkeypatch.setattr(settings, 'mail_from', "Raave's Evergreen <raaves@christmasraave.in>")
+    monkeypatch.setattr(settings, 'mail_reply_to', 'raaves@christmasraave.in')
     monkeypatch.setattr(smtplib, 'SMTP_SSL', FakeServer)
     monkeypatch.setattr(smtplib, 'SMTP', FakeServer)
     for log in (FakeServer.sent, FakeServer.logins, FakeServer.tls):
@@ -57,9 +57,9 @@ def test_an_email_goes_through_the_shops_mailbox(mailbox):
     email = mail.password_reset('asha@example.com', 'Asha Mathew', 'http://shop.test/reset-password?token=x', 30)
     assert mail.send(email) is True
     [message] = FakeServer.sent
-    assert FakeServer.logins == [(('smtp.zoho.in', 465), 'info@christmasraave.in')] and FakeServer.tls == []
-    assert message['To'] == 'asha@example.com' and message['Reply-To'] == 'info@christmasraave.in'
-    assert 'info@christmasraave.in' in message['From'] and message['Subject'] == email.subject
+    assert FakeServer.logins == [(('smtp.zoho.in', 465), 'raaves@christmasraave.in')] and FakeServer.tls == []
+    assert message['To'] == 'asha@example.com' and message['Reply-To'] == 'raaves@christmasraave.in'
+    assert 'raaves@christmasraave.in' in message['From'] and message['Subject'] == email.subject
     # both the plain text and the HTML go, and nothing is only logged
     kinds = [part.get_content_type() for part in message.iter_parts()]
     assert kinds == ['text/plain', 'text/html'] and mail.OUTBOX == []

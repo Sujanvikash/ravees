@@ -3,8 +3,8 @@ const PHONE_E164 = '+918015432248';
 export const PHONE_DISPLAY = '+91 80154 32248';
 export const PHONE_HREF = `tel:${PHONE_E164}`;
 export const ORDER_HOURS = '8 AM – 10 PM';
-// The address the old site (christmasraave.in) lists.
-export const EMAIL = 'info@christmasraave.in';
+// The shop's mailbox (Zoho Mail): the contact page, the invoices and the emails it sends.
+export const EMAIL = 'raaves@christmasraave.in';
 
 export const whatsappHref = (text) =>
   `https://wa.me/${PHONE_E164.slice(1)}${text ? `?text=${encodeURIComponent(text)}` : ''}`;

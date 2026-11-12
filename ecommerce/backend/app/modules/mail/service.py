@@ -2,7 +2,7 @@
 Emails to customers (and a copy of each paid order to the shop): the password reset link, and every step of an
 order (paid with its invoice, shipped, delivered, cancelled).
 
-They go out through the shop's own mailbox by SMTP when SMTP_HOST is set (info@christmasraave.in on Zoho Mail:
+They go out through the shop's own mailbox by SMTP when SMTP_HOST is set (raaves@christmasraave.in on Zoho Mail:
 smtp.zoho.in, port 465), otherwise through Resend's HTTP API when RESEND_API_KEY is. With neither (on a computer, in
 the tests) nothing is sent: each email is written to the log and kept in OUTBOX, so the reset link can still be
 followed. A failed send is logged and never fails the request that caused it: the order is paid, or the reset link

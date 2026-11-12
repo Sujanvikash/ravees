@@ -105,7 +105,7 @@ class Seller(ApiModel):
     gstin: str = Field(default='33AFUPE5958A1ZF', max_length=15)
     state: str = Field(default='Tamil Nadu', max_length=60)
     phone: str = Field(default='+91 97516 65555', max_length=60)
-    email: str = Field(default='info@christmasraave.in', max_length=120)
+    email: str = Field(default='raaves@christmasraave.in', max_length=120)
 
     @field_validator('name', 'phone', 'email')
     @classmethod

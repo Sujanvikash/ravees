@@ -26,10 +26,10 @@ existing database works too: add `?options=-csearch_path%3Dshop` to the URL (and
 | `CORS_ORIGINS` | the website's address(es), comma-separated |
 | `PUBLIC_URL` | this API's own public address (photo links are made from it), e.g. `https://shop-api.example.com` |
 | `SITE_URL` | the website's address, for the links in emails (`/reset-password?token=…`, `/account/orders/…`) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | a mailbox to send the emails through (the shop's: `smtp.zoho.in`, 465, `info@christmasraave.in`); port 465 is SSL, any other STARTTLS. Used when `SMTP_HOST` is set |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | a mailbox to send the emails through (the shop's: `smtp.zoho.in`, 465, `raaves@christmasraave.in`); port 465 is SSL, any other STARTTLS. Used when `SMTP_HOST` is set |
 | `RESEND_API_KEY` | otherwise Resend's API key. With neither, emails are printed to the log instead (setup: `ecommerce/deploy/README.md`) |
-| `MAIL_FROM` | the sender, e.g. `Raave's Evergreen <info@christmasraave.in>` (with SMTP, the mailbox itself) |
-| `MAIL_REPLY_TO` | optional: where a customer's reply to an email goes, e.g. `info@christmasraave.in` |
+| `MAIL_FROM` | the sender, e.g. `Raave's Evergreen <raaves@christmasraave.in>` (with SMTP, the mailbox itself) |
+| `MAIL_REPLY_TO` | optional: where a customer's reply to an email goes, e.g. `raaves@christmasraave.in` |
 | `ADMIN_EMAIL` | optional: gets a copy of every paid order |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay's API keys (test keys start `rzp_test_`) |
 | `RAZORPAY_WEBHOOK_SECRET` | the secret set on the webhook in Razorpay's dashboard |
