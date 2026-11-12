@@ -33,8 +33,8 @@ const THUMB_ARROW =
 
 // Promises that hold for every product, shown as tiles along the bottom.
 const PROMISES = [
-  { Icon: Truck, title: 'Pan India Delivery', body: 'Secure, white-glove shipping to your door' },
-  { Icon: ShieldCheck, title: '10-Year Warranty', body: 'Built for long-lasting festive beauty' },
+  { Icon: Truck, title: 'Pan India Delivery', body: 'To your door, usually in 5–7 business days' },
+  { Icon: ShieldCheck, title: 'Secure Payments', body: 'UPI, cards and net banking, by Razorpay' },
   { Icon: Headphones, title: 'Expert Support', body: `Call ${PHONE_DISPLAY}, ${ORDER_HOURS}` },
   { Icon: Gift, title: 'Bulk & Project Orders', body: 'Single pieces or many, for homes, venues and businesses' },
 ];
@@ -52,7 +52,6 @@ const specRows = (product) =>
     ...withoutSizeSpec(product).map((spec) => [spec.label, spec.value]),
     ['Quality', 'European standard'],
     ['Safety', 'European safety certified'],
-    ['Warranty', '10 years'],
     ['Delivery', product.storeOnly ? 'Buy and take home from our stores' : 'Pan-India, white-glove'],
     !product.storeOnly && [
       'Returns',

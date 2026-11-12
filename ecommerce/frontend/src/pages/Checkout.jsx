@@ -169,8 +169,8 @@ const Checkout = () => {
             {/* The refund rules, seen before paying (above the form on phones). */}
             <p className="mt-6 max-w-[26rem] rounded-xl border border-gold-400/25 bg-gold-400/8 px-4 py-3 text-[0.82rem] leading-[1.65] text-text-secondary">
               <strong className="text-text-primary">All sales are final:</strong> no returns or refunds. If anything
-              arrives damaged, tell us within 24–48 hours of delivery, with an unboxing video. By paying, you agree to
-              our{' '}
+              arrives damaged, tell us within 24–48 hours of delivery, with an unboxing video, for a replacement. By
+              paying, you agree to our{' '}
               <Link to="/terms" className={TEXT_LINK}>
                 Terms
               </Link>{' '}

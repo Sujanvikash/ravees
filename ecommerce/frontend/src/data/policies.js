@@ -4,7 +4,8 @@ import { formatPrice } from '../lib/format.js';
 
 // The shop's policies, one page each (pages/Policy.jsx), in the footer's order. The refund rules are the
 // client's (2026-11-12): no returns and no refunds; damage in delivery is reported within 24–48 hours by email or
-// WhatsApp, and an unboxing video is a must. Razorpay asks for all four pages on the site it takes payments for.
+// WhatsApp for a replacement, and an unboxing video is a must. Delivery usually takes 5–7 business days. There is
+// no warranty, so none is mentioned. Razorpay asks for all four pages on the site it takes payments for.
 //
 // Each policy: `highlights` (the three points at the top) and `sections`, whose `body` items are paragraphs
 // (strings) or bulleted lists (arrays of strings), with optional `links` to the other policies after them.
@@ -16,9 +17,8 @@ export const POLICIES_UPDATED = '12 November 2026';
 const SELLER =
   'SIANNA COLLECTION, New No. 54, Old No. 18, Casa Major Road, Egmore, Chennai 600 008, Tamil Nadu (GSTIN 33AFUPE5958A1ZF)';
 
-// How long orders take, in working days (Monday to Saturday, except public holidays).
-const DISPATCH_DAYS = '2–3';
-const DELIVERY_DAYS = '3–7';
+// How long an order usually takes to arrive, in business days from payment.
+const DELIVERY_DAYS = '5–7';
 
 const REFUND = { to: '/refund-policy', label: 'Refund & Cancellation Policy' };
 const SHIPPING = { to: '/shipping-policy', label: 'Shipping Policy' };
@@ -38,7 +38,7 @@ export const POLICIES = [
     intro: 'Please read this before you order. It covers every order placed and paid for on this website.',
     highlights: [
       { Icon: Ban, title: 'No returns, no refunds', text: 'Every sale is final once it is paid.' },
-      { Icon: Clock, title: 'Damaged? Tell us in 24–48 hours', text: 'From delivery, by email or WhatsApp.' },
+      { Icon: Clock, title: 'Damaged? Tell us in 24–48 hours', text: 'By email or WhatsApp, for a replacement.' },
       { Icon: Video, title: 'Unboxing video is a must', text: 'No video, no damage claim.' },
     ],
     sections: [
@@ -53,7 +53,7 @@ export const POLICIES = [
         heading: 'Cancelling an order',
         body: [
           "Orders can't be cancelled once they are paid.",
-          "If we can't fulfil your order, for example because a product has gone out of stock, we will cancel it, tell you by email and refund the full amount you paid, delivery included, to the way you paid. Razorpay usually returns it to your account within 5–7 working days.",
+          "If we can't fulfil your order, for example because a product has gone out of stock, we will cancel it, tell you by email and refund the full amount you paid, delivery included, to the way you paid. Razorpay usually returns it to your account within 5–7 business days.",
         ],
       },
       {
@@ -61,9 +61,9 @@ export const POLICIES = [
         body: [
           'We pack every order with care. If something still reaches you damaged:',
           [
-            `Contact us within 24–48 hours of delivery, by email at ${EMAIL} or on WhatsApp at ${PHONE_DISPLAY}.`,
+            `Contact us within 24–48 hours of delivery, by email at ${EMAIL} or on WhatsApp at ${PHONE_DISPLAY}, for a replacement.`,
             'Send your order number, a few clear photos of the damage and your unboxing video.',
-            'Once we have checked them, we will replace or repair the damaged item.',
+            'Once we have checked them, we will send you a replacement for the damaged item.',
           ],
           "Claims made more than 48 hours after delivery, or without an unboxing video, can't be accepted.",
         ],
@@ -93,7 +93,7 @@ export const POLICIES = [
     intro: 'We deliver across India. Here is how your order reaches you.',
     highlights: [
       { Icon: Truck, title: 'Pan-India delivery', text: 'To any address in India.' },
-      { Icon: Clock, title: `Ships in ${DISPATCH_DAYS} working days`, text: 'From the day you pay.' },
+      { Icon: Clock, title: `Arrives in ${DELIVERY_DAYS} business days`, text: 'Usually, from the day you pay.' },
       { Icon: Mail, title: 'Updates by email', text: 'When your order is paid, shipped and delivered.' },
     ],
     sections: (settings) => [
@@ -111,11 +111,7 @@ export const POLICIES = [
       {
         heading: 'When your order arrives',
         body: [
-          [
-            `Orders are packed and handed to our delivery partner within ${DISPATCH_DAYS} working days of payment.`,
-            `Delivery then usually takes ${DELIVERY_DAYS} working days, depending on where you are. Remote areas can take longer.`,
-            'Working days are Monday to Saturday, except public holidays.',
-          ],
+          `Orders usually reach you within ${DELIVERY_DAYS} business days of payment, depending on where you are. Remote areas can take longer.`,
           'In the weeks before Christmas, and during strikes, bad weather or other events outside our control, delivery can take longer. We will keep you posted.',
         ],
       },

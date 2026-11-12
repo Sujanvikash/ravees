@@ -1,8 +1,9 @@
 import { TreePine, Sparkles, ShieldCheck, Gem, Flame, Award, Gift, Heart } from 'lucide-react';
 
 // The four points under the description on a product page, per collection. Kept to what the site already
-// promises everywhere (European standard, safety certified, fire-retardant, 10-year warranty), so nothing here
-// claims a technical spec the catalogue doesn't have. Edit freely; a collection not listed uses DEFAULT.
+// promises everywhere (European standard, safety certified, fire-retardant), so nothing here claims a technical
+// spec the catalogue doesn't have. There is no warranty, so none is mentioned (the client, 2026-11-12). Edit freely;
+// a collection not listed uses DEFAULT.
 const DEFAULT = [
   { Icon: Gem, text: 'European Quality Standard' },
   { Icon: Sparkles, text: 'Handpicked Festive Design' },
@@ -14,7 +15,7 @@ export const PRODUCT_FEATURES = {
   trees: [
     { Icon: TreePine, text: 'Lifelike European Foliage' },
     { Icon: Flame, text: 'Fire-Retardant & Non-Toxic' },
-    { Icon: Award, text: '10-Year Warranty' },
+    { Icon: Award, text: 'Made to Last for Seasons' },
     { Icon: ShieldCheck, text: 'European Safety Certified' },
   ],
   lights: [
