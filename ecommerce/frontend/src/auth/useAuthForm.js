@@ -3,11 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext.jsx';
 import { focusFirstError, validate } from '../lib/validation.js';
 
+// The sign-in pages: never where a customer is sent back to once signed in.
+export const AUTH_PAGES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+
 /**
  * The shared state and submit flow of the account forms: validate with `schema`, call `submit(data)`
- * (login, signup, reset…), then greet with `welcome(data)` and go back to where the customer came from
- * (the account page by default), or show the error. A form that stays put passes `done(data)` instead of
- * `welcome`. `idPrefix` is the forms' field-id prefix, for focusing the first error.
+ * (login, signup, reset…), then greet with `welcome(data)` and go back to the page the customer came from
+ * (`state.from`, which the header and the sign-in prompts pass; the home page without one), or show the error.
+ * A form that stays put passes `done(data)` instead of `welcome`. `idPrefix` is the forms' field-id prefix, for
+ * focusing the first error.
  */
 export const useAuthForm = ({ initial, schema, idPrefix, submit, welcome, done }) => {
   const { showToast } = useToast();
@@ -44,7 +48,8 @@ export const useAuthForm = ({ initial, schema, idPrefix, submit, welcome, done }
       done(data);
     } else if (result.ok) {
       showToast(welcome(data));
-      navigate(location.state?.from ?? '/account');
+      const from = location.state?.from;
+      navigate(from && !AUTH_PAGES.includes(from.split('?')[0]) ? from : '/');
     } else {
       setError(result.error);
     }

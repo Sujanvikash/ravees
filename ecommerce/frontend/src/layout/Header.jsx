@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Heart, ShoppingBag, User } from 'lucide-react';
 import Logo from '../components/Logo.jsx';
 import { useRequireLogin } from '../auth/useRequireLogin.js';
+import { AUTH_PAGES } from '../auth/useAuthForm.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
@@ -88,6 +89,9 @@ const Header = ({ onOpenCart }) => {
   const requireLogin = useRequireLogin();
   const { wishlistCount } = useWishlist();
   const { session, isAuthenticated } = useCustomerAuth();
+  // Signing in comes back to this page; from a sign-in page, to wherever that one was going to return.
+  const location = useLocation();
+  const signInState = AUTH_PAGES.includes(location.pathname) ? location.state : { from: location.pathname + location.search };
 
   return (
     // On the home page the hero sets --hero-chrome (0 → 1): the header shows on arrival, slides away once the
@@ -133,6 +137,7 @@ const Header = ({ onOpenCart }) => {
 
           <Link
             to={isAuthenticated ? '/account' : '/login'}
+            state={isAuthenticated ? undefined : signInState}
             className={`${UTIL_BTN} max-md:hidden`}
             title={isAuthenticated ? `Signed in as ${session.name}` : 'Sign in'}
           >
@@ -172,6 +177,7 @@ const Header = ({ onOpenCart }) => {
           </Link>
           <Link
             to={isAuthenticated ? '/account' : '/login'}
+            state={isAuthenticated ? undefined : signInState}
             onClick={() => setMobileMenuOpen(false)}
             className={MOBILE_EXTRA_LINK}
           >
