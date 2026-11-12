@@ -8,6 +8,7 @@ import { inr } from '../lib/money.js';
 import { orderQty, orderValue } from '../lib/orders.js';
 import { parsePurchaseRows } from '../lib/purchaseFile.js';
 import Dialog from './Dialog.jsx';
+import ShortStock from './ShortStock.jsx';
 
 const LOW = 5; // matches Inventory's low-stock line
 const RESTOCK_TO = 10; // "Add low stock" suggests topping each item up to this many units
@@ -28,6 +29,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
   const [browsing, setBrowsing] = useState(false); // search box focused: show the product list
   const [importInfo, setImportInfo] = useState(null);
   const fileRef = useRef(null);
+  const tableRef = useRef(null);
   const shop = locationById(location);
   const existing = Boolean(order.number);
 
@@ -77,6 +79,9 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
   const short = review ? lines.filter((l) => l.qty > adminStock(l.code)) : [];
 
   const setQty = (code, qty) => setLines((prev) => (qty > 0 ? prev.map((l) => (l.code === code ? { ...l, qty } : l)) : prev.filter((l) => l.code !== code)));
+  // each short line down to what the admin has; one it has none of comes off
+  const fitAll = () =>
+    setLines((prev) => prev.flatMap((l) => (l.qty <= adminStock(l.code) ? [l] : adminStock(l.code) > 0 ? [{ ...l, qty: adminStock(l.code) }] : [])));
 
   const title = review ? `Review ${order.number} from ${shop.label}` : existing ? `Edit request ${order.number}` : 'Request stock';
   const subtitle = review
@@ -185,7 +190,7 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
           </div>
         )}
 
-        <div className="max-h-[42vh] min-h-40 overflow-auto rounded-xl border border-line-soft">
+        <div ref={tableRef} className="max-h-[42vh] min-h-40 overflow-auto rounded-xl border border-line-soft">
           {lines.length === 0 ? (
             <p className="px-4 py-12 text-center text-[13px] text-ink-3">No products yet: search above, add low stock, or import an Excel.</p>
           ) : (
@@ -204,63 +209,65 @@ const OrderEditor = ({ order, review = false, onClose, onSave }) => {
                 </tr>
               </thead>
               <tbody>
-                {lines.map((l) => (
-                  <tr key={l.code} className="border-t border-line-soft">
-                    <td className="px-3 py-1.5">
-                      <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
-                      {l.name}
-                    </td>
-                    <td className="px-3 py-1.5 text-right text-ink-3">{stockOf(location, l.code)}</td>
-                    {review && (
-                      <td className={`px-3 py-1.5 text-right ${l.qty > adminStock(l.code) ? 'font-medium text-ruby-ink' : 'text-ink-3'}`}>{adminStock(l.code)}</td>
-                    )}
-                    <td className="px-3 py-1.5">
-                      <div className="mx-auto flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line">
-                        <button type="button" onClick={() => setQty(l.code, l.qty - 1)} aria-label={`One less ${l.name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
-                          <Minus size={14} />
+                {lines.map((l) => {
+                  const over = review && l.qty > adminStock(l.code);
+                  return (
+                    <tr key={l.code} data-code={l.code} className={`border-t border-line-soft ${over ? 'bg-warn-50' : ''}`}>
+                      <td className="px-3 py-1.5">
+                        <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
+                        {l.name}
+                      </td>
+                      <td className="px-3 py-1.5 text-right text-ink-3">{stockOf(location, l.code)}</td>
+                      {review && <td className={`px-3 py-1.5 text-right ${over ? 'font-medium text-ruby-ink' : 'text-ink-3'}`}>{adminStock(l.code)}</td>}
+                      <td className="px-3 py-1.5">
+                        <div className="mx-auto flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line bg-surface">
+                          <button type="button" onClick={() => setQty(l.code, l.qty - 1)} aria-label={`One less ${l.name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
+                            <Minus size={14} />
+                          </button>
+                          <input
+                            inputMode="numeric"
+                            aria-label={`Quantity of ${l.name}`}
+                            value={l.qty}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => {
+                              const n = parseInt(e.target.value.replace(/\D/g, ''), 10);
+                              if (n > 0) setQty(l.code, n);
+                            }}
+                            className="h-full min-w-0 flex-1 border-x border-line bg-transparent text-center font-medium"
+                          />
+                          <button type="button" onClick={() => setQty(l.code, l.qty + 1)} aria-label={`One more ${l.name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        {over && (
+                          <button
+                            type="button"
+                            onClick={() => setQty(l.code, Math.max(adminStock(l.code), 0))}
+                            className="mx-auto mt-0.5 block text-[11px] font-semibold text-warn-ink underline-offset-2 hover:underline"
+                          >
+                            {adminStock(l.code) > 0 ? `Lower to ${adminStock(l.code)}` : 'Admin has none: take it off'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5 text-right text-ink-2">{inr(l.rate)}</td>
+                      <td className="px-3 py-1.5 text-right font-medium">{inr(l.qty * l.rate)}</td>
+                      <td className="px-2 py-1.5 text-right">
+                        <button type="button" onClick={() => setQty(l.code, 0)} aria-label={`Remove ${l.name}`} className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby">
+                          <X size={15} />
                         </button>
-                        <input
-                          inputMode="numeric"
-                          aria-label={`Quantity of ${l.name}`}
-                          value={l.qty}
-                          onFocus={(e) => e.target.select()}
-                          onChange={(e) => {
-                            const n = parseInt(e.target.value.replace(/\D/g, ''), 10);
-                            if (n > 0) setQty(l.code, n);
-                          }}
-                          className="h-full min-w-0 flex-1 border-x border-line bg-transparent text-center font-medium"
-                        />
-                        <button type="button" onClick={() => setQty(l.code, l.qty + 1)} aria-label={`One more ${l.name}`} className="inline-flex size-8 items-center justify-center text-ink-2 hover:bg-mist">
-                          <Plus size={14} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-3 py-1.5 text-right text-ink-2">{inr(l.rate)}</td>
-                    <td className="px-3 py-1.5 text-right font-medium">{inr(l.qty * l.rate)}</td>
-                    <td className="px-2 py-1.5 text-right">
-                      <button type="button" onClick={() => setQty(l.code, 0)} aria-label={`Remove ${l.name}`} className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby">
-                        <X size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
 
         {short.length > 0 && (
-          <p role="status" className="flex items-start gap-2 rounded-xl bg-warn-50 px-4 py-2.5 text-[13px] text-warn-ink">
-            <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span>
-              More than the admin stock holds:{' '}
-              {short
-                .slice(0, 6)
-                .map((l) => `${l.code} (have ${Math.max(adminStock(l.code), 0)}, asked ${l.qty})`)
-                .join(', ')}
-              {short.length > 6 ? ` and ${short.length - 6} more` : ''}. Lower them, or add stock under Inventory before raising the invoice.
-            </span>
-          </p>
+          <ShortStock short={short.map((l) => ({ ...l, have: Math.max(adminStock(l.code), 0) }))} table={tableRef} onFit={fitAll}>
+            Or add stock under Inventory before raising the invoice.
+          </ShortStock>
         )}
 
         {review && order.note && (

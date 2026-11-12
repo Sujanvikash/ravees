@@ -363,7 +363,7 @@ const PurchaseOrders = ({ session, onMenu, onNavigate }) => {
       )}
       {rejecting && <RejectDialog order={rejecting} onClose={() => setRejecting(null)} onConfirm={(reason) => reject(rejecting, reason)} />}
     </div>
-      {printing && <OrderPrint doc={printing} kind="order" />}
+      {printing && <OrderPrint doc={printing} />}
     </>
   );
 };

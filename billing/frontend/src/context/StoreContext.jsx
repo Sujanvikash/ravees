@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { api, download, unreachable, view } from '../lib/api.js';
+import { api, download, fetchBlob, unreachable, view } from '../lib/api.js';
 import { ensureOfflineCounter, markOutbox, offlineKey, queueOfflineSale, readOutbox, removeFromOutbox, subscribeOutbox } from '../lib/offline.js';
 import { keep, kept } from '../lib/snapshots.js';
 import { newId } from '../lib/uid.js';
@@ -41,7 +41,10 @@ const StoreContext = createContext(null);
  *  lightest; effect: none | snow | glow | both (always behind the app, in front on sign-in); snow: light | medium |
  *  heavy | blizzard; strip (Light): green | white; showGst: when off, no GST is shown anywhere (bills, quotations,
  *  figures) and prices are simply the selling price. requireName / requireMobile: whether the counter must have
- *  each before a bill can be collected (a quotation always needs both). */
+ *  each before a bill can be collected (a quotation always needs both). bizAddresses: more addresses an invoice can be
+ *  from ([{ label, text }]). docLooks: how each printed document looks (lib/docLook.js DOC_KINDS: band | classic |
+ *  clean on A4, boxed | plain | framed on the thermal roll). maxDiscountPct: the largest manual discount on a bill,
+ *  as a share of it. */
 export const DEFAULT_SETTINGS = {
   quotePrint: true,
   theme: 'classic',
@@ -67,6 +70,18 @@ export const DEFAULT_SETTINGS = {
   bankAccount: '',
   bankIfsc: '',
   invoiceTerms: '',
+  bizAddresses: [],
+  docLooks: {
+    invoice: 'band',
+    purchaseOrder: 'band',
+    purchaseReturn: 'band',
+    quotation: 'band',
+    bill: 'band',
+    thermalBill: 'boxed',
+    creditNote: 'boxed',
+    paymentReceipt: 'boxed',
+  },
+  maxDiscountPct: 10,
   showGst: true,
   requireName: true,
   requireMobile: true,
@@ -336,12 +351,18 @@ export const StoreProvider = ({ session, children }) => {
       importStock: async (record) =>
         saved('imports', await api('/stock/imports', { method: 'POST', body: { id: newId(), ...record } }), { stock: true }),
 
-      /** A showroom sends stock back to the admin: { lines: [{ code, qty }], reason, note }. It leaves stock now. */
+      /** A showroom sends stock back to the admin: { lines: [{ code, qty }], reason, note, lrNo?, vehicleNo?, cartons? }.
+       *  It leaves stock now. */
       sendStockBack: async (body) =>
         saved('stockReturns', await api('/purchase-returns', { method: 'POST', body: { id: newId(), ...body } }), { stock: true }),
       /** The admin counts a purchase return in. */
       receiveStockBack: async (id, counted, note) =>
         saved('stockReturns', await api(`/purchase-returns/${id}/receive`, { method: 'POST', body: { counted, note } })),
+      /** A return's e-way bill and transport: { ewayNo, lrNo, vehicleNo, cartons, docName?, docBase64? }. */
+      saveReturnDocuments: async (id, body) => saved('stockReturns', await api(`/purchase-returns/${id}/documents`, { method: 'PUT', body })),
+      /** The return's e-way bill PDF. */
+      downloadReturnDocument: (r) => download(`/purchase-returns/${r.id}/document`, r.docName || `${r.number}-e-way-bill.pdf`),
+      viewReturnDocument: (r) => view(`/purchase-returns/${r.id}/document`, r.docName || `${r.number}-e-way-bill.pdf`),
 
       /** Boxes (admin): saves one or many ({ id, boxNo, stockNo, shipment, supplier, lines }; the same id edits a box
        *  still in the warehouse). They are added to the admin's own stock. */
@@ -395,6 +416,18 @@ export const StoreProvider = ({ session, children }) => {
       /** The invoice's uploaded bill as a PDF file. */
       downloadInvoiceDocument: (invoice) => download(`/transfer-invoices/${invoice.id}/document`, invoice.docName || `${invoice.number}.pdf`),
       viewInvoiceDocument: (invoice) => view(`/transfer-invoices/${invoice.id}/document`, invoice.docName || `${invoice.number}.pdf`),
+      /** The invoice's own PDF as the app drew it (a Blob), once one is kept (invoice.pdfStamp says what it was drawn in). */
+      invoicePdf: (invoice) => fetchBlob(`/transfer-invoices/${invoice.id}/pdf`),
+      /** Keeps the invoice's own PDF (a Blob) drawn in `stamp` ('evergreen:band'), so its next preview opens at once. */
+      keepInvoicePdf: async (invoice, stamp, pdf) => {
+        const pdfBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error('The PDF could not be read.'));
+          reader.readAsDataURL(pdf);
+        });
+        return saved('invoices', await api(`/transfer-invoices/${invoice.id}/pdf`, { method: 'PUT', body: { stamp, pdfBase64 } }));
+      },
 
       /** A quotation: { id, lines, name, phone, validUntil (a date), note, … }. Resolves to it with its number. */
       saveQuote: async (quote) => saved('quotes', await api('/quotes', { method: 'POST', body: quote })),

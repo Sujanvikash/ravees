@@ -1,5 +1,5 @@
 """
-The five showrooms and the admin login. The billing frontend has the same list (with each store's name, address,
+The six showrooms and the admin login. The billing frontend has the same list (with each store's name, address,
 phone and GSTIN for its bills and invoices) in src/config.js; keep the ids and bill prefixes in step.
 """
 
@@ -20,6 +20,7 @@ SHOWROOMS: tuple[Showroom, ...] = (
     Showroom('cochin', 'Cochin', 'Ernakulam', 'COK'),
     Showroom('mumbai', 'Mumbai', 'Bandra West', 'MUM'),
     Showroom('pune', 'Pune', 'Camp', 'PUN'),
+    Showroom('hyderabad', 'Hyderabad', 'Jubilee Hills', 'HYD'),
 )
 
 SHOWROOM_IDS: tuple[str, ...] = tuple(s.id for s in SHOWROOMS)
@@ -29,7 +30,7 @@ RETIRED_SHOWROOMS: tuple[str, ...] = ('bengaluru', 'goa')
 
 # The GST state code of each showroom (the place of supply on an invoice to it). A store added later takes its state
 # from its GSTIN, or the admin chooses it on the invoice. The admin's own business is in Tamil Nadu.
-HOME_STATE = {'chennai': '33', 'palavakkam': '33', 'cochin': '32', 'mumbai': '27', 'pune': '27'}
+HOME_STATE = {'chennai': '33', 'palavakkam': '33', 'cochin': '32', 'mumbai': '27', 'pune': '27', 'hyderabad': '36'}
 ADMIN_STATE = '33'
 
 # The admin's own stock (the warehouse). It is kept as a location so stock, imports and history work the same way,

@@ -1,13 +1,13 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import { FileText, FlaskConical, Palette, Phone, Printer, Store, User } from 'lucide-react';
-import logo from '../assets/logo.svg';
+import { Building2, FileText, FlaskConical, Landmark, LayoutTemplate, MapPin, Palette, Percent, Phone, Printer, Store, User, X } from 'lucide-react';
+import DocSample from '../components/DocSamples.jsx';
+import DocumentLooks from '../components/DocumentLooks.jsx';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { BILL_FOOTER, BRAND, LOCATIONS, SELLER, locationById } from '../config.js';
+import { LOCATIONS, SELLER, locationById } from '../config.js';
 import { useSession } from '../context/SessionContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 import { api } from '../lib/api.js';
-import { amount, inr } from '../lib/money.js';
 
 /** An on/off switch with its label and explanation. */
 const Toggle = ({ id, Icon, title, description, on, onChange }) => (
@@ -97,103 +97,122 @@ const Choice = ({ label, hint, options, value, onChange, sub = false }) => (
   </div>
 );
 
-// A short sample sale, so the preview shows the MRP / discount / price columns and a real total.
-const SAMPLE = {
-  lines: [
-    { code: 'SR156', name: 'HO HO WOOD 30CM', mrp: 500, price: 420, qty: 2 },
-    { code: 'D0016', name: 'DEER SINGLE 19IN', mrp: 2500, price: 2120, qty: 1 },
-    { code: 'W0045', name: 'CHRIS.LETTER B A2-6', mrp: 180, price: 180, qty: 3 },
-  ],
-  mrpTotal: 4040,
-  payable: 3500,
+/** The largest manual discount a bill may take, as a percentage (an amount off is held to the same share of the bill). */
+const DiscountLimit = ({ value, onSave }) => {
+  const [v, setV] = useState(String(value));
+  const n = Number(v);
+  const valid = v.trim() !== '' && n >= 0 && n <= 100;
+  const dirty = valid && n !== value;
+  const commit = () => dirty && onSave(Math.round(n * 100) / 100);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-4">
+      <div className="min-w-0">
+        <div className="text-[13px] font-medium">Largest manual discount</div>
+        <div className="mt-0.5 text-xs text-ink-3">
+          The counter shows it by the discount box. A percentage can go up to it; an amount off up to the same share of the bill. Set 0 to turn manual
+          discounts off.
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="flex h-10 items-center gap-1 rounded-xl border border-line bg-white px-3 focus-within:border-evergreen-800/50">
+          <span className="sr-only">Largest manual discount, percent</span>
+          <input
+            inputMode="decimal"
+            value={v}
+            onChange={(e) => setV(e.target.value.replace(/[^\d.]/g, ''))}
+            onKeyDown={(e) => e.key === 'Enter' && commit()}
+            className="w-14 bg-transparent text-right text-sm font-semibold tabular-nums"
+          />
+          <span className="text-sm text-ink-3">%</span>
+        </label>
+        <button
+          type="button"
+          onClick={commit}
+          disabled={!dirty}
+          className="h-10 shrink-0 rounded-xl bg-evergreen-800 px-3.5 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3"
+        >
+          Save
+        </button>
+      </div>
+      {!valid && <p className="w-full text-xs font-medium text-ruby-ink">Between 0 and 100.</p>}
+    </div>
+  );
 };
 
-const Row = ({ label, value, className = '' }) => (
-  <div className={`flex justify-between gap-2 ${className}`}>
-    <span>{label}</span>
-    <span>{value}</span>
-  </div>
-);
-
-/** A live, on-screen sample of the printed bill (components/Receipt.jsx), so a store sees exactly how its own
- *  details land on the receipt as it edits them. Black-and-white, like the print. */
-const BillPreview = ({ values, shop }) => {
-  const composition = Boolean(values.composition);
-  const name = values.storeName?.trim() || shop?.name;
-  const address = values.storeAddress?.trim() ? values.storeAddress.split('\n').filter(Boolean) : (shop?.address ?? []);
-  const phone = values.storePhone?.trim() || shop?.phone;
-  const gstin = values.gstin?.trim() || shop?.gstin;
-  const title = composition ? 'BILL OF SUPPLY' : 'TAX INVOICE';
+/** The admin's other addresses an invoice can be from (besides the two built in): added here or on an invoice
+ *  ("Another address"), taken off here. */
+const MoreAddresses = ({ list, onSave }) => {
+  const [adding, setAdding] = useState(null); // { label, text }
+  const add = () => {
+    const text = adding.text.trim();
+    if (!text) return;
+    onSave([...list, { label: adding.label.trim() || 'Other address', text }]);
+    setAdding(null);
+  };
+  const cls =
+    'rounded-xl border border-line bg-white px-3 py-2 text-sm font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50 focus:outline-none';
   return (
-    <div className="mx-auto w-[264px] rounded-md bg-white p-4 font-mono text-[10px] leading-snug text-black shadow-[0_8px_24px_-12px_rgba(0,0,0,0.4)] ring-1 ring-black/10">
-      <div className="flex flex-col items-center gap-0.5 text-center">
-        <img src={logo} alt="" className="print-ink mb-1 w-[56px]" />
-        {name && <div className="text-[16px] leading-tight font-bold tracking-wide uppercase">{name}</div>}
-        {address.map((a) => (
-          <div key={a}>{a}</div>
-        ))}
-        {phone && <div>Ph: {phone}</div>}
-        {gstin && <div>GSTIN: {gstin}</div>}
-        {composition && <div className="font-bold">Composition Dealer</div>}
-      </div>
-      <div className="my-1.5 border-y border-dashed border-black py-0.5 text-center font-bold tracking-[0.18em]">{title}</div>
-      <div className="mb-1 text-center text-[11px] font-bold">Bill No. PUN262700412</div>
-      <Row label="Date" value="03-11-26 11:43" />
-      <div className="mt-1.5 grid grid-cols-4 gap-x-1.5 border-t border-dashed border-black pt-1 text-[8px] font-bold">
-        <span className="text-right">MRP</span>
-        <span className="text-right">DISC</span>
-        <span className="text-right">PRICE</span>
-        <span className="text-right">AMOUNT</span>
-      </div>
-      <div className="mt-1 flex flex-col gap-1">
-        {SAMPLE.lines.map((l, i) => {
-          const disc = l.mrp > l.price ? Math.round(((l.mrp - l.price) / l.mrp) * 100) : 0;
-          return (
-            <div key={l.code}>
-              <div className="flex items-baseline justify-between gap-1">
-                <span className="font-semibold">
-                  {i + 1}. {l.name}
-                </span>
-                <span className="shrink-0 text-[8px]">
-                  {l.code} ×{l.qty}
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-x-1.5 tabular-nums">
-                <span className="text-right">{amount(l.mrp)}</span>
-                <span className="text-right">{disc ? `${disc}%` : '—'}</span>
-                <span className="text-right">{amount(l.price)}</span>
-                <span className="text-right font-semibold">{amount(l.price * l.qty)}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-1.5 border-t border-dashed border-black pt-1">
-        <Row label="MRP total" value={amount(SAMPLE.mrpTotal)} />
-        <Row label="You saved" value={amount(SAMPLE.mrpTotal - SAMPLE.payable)} />
-      </div>
-      <Row label="TOTAL" value={inr(SAMPLE.payable)} className="my-1.5 border-y border-black py-1 text-[13px] font-bold" />
-      <div className="mt-1.5 flex flex-col items-center gap-0.5 border-t border-dashed border-black pt-1.5 text-center">
-        {BILL_FOOTER.map((f) => (
-          <div key={f} className="font-bold">
-            {f}
+    <div className="flex flex-col gap-2 text-[13px]">
+      {list.length === 0 && !adding && <p className="text-ink-3">None added yet.</p>}
+      {list.map((a, i) => (
+        <div key={a.text} className="flex items-start gap-3 rounded-xl border border-line-soft bg-white px-3 py-2.5">
+          <MapPin size={15} className="mt-0.5 shrink-0 text-ink-3" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <div className="font-medium">{a.label}</div>
+            <div className="text-xs whitespace-pre-line text-ink-3">{a.text}</div>
           </div>
-        ))}
-        {BRAND.email && <div>{BRAND.email}</div>}
-      </div>
-      <div className="mt-1.5 border-y border-black py-1 text-center">
-        <div className="tracking-[0.3em]" aria-hidden="true">
-          * * * * *
+          <button
+            type="button"
+            onClick={() => onSave(list.filter((_, j) => j !== i))}
+            aria-label={`Take ${a.label} off the list`}
+            className="inline-flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-ruby-50 hover:text-ruby"
+          >
+            <X size={15} />
+          </button>
         </div>
-        <div className="mt-0.5 font-display text-[11px] italic">May your tree shine bright and your home be full of joy this Christmas.</div>
-      </div>
+      ))}
+      {adding ? (
+        <div className="flex flex-col gap-2 rounded-xl border border-line-soft bg-white p-3">
+          <input value={adding.label} onChange={(e) => setAdding({ ...adding, label: e.target.value })} placeholder="Name it, e.g. Godown, Puzhal" maxLength={60} className={`${cls} h-10`} />
+          <textarea
+            rows={3}
+            value={adding.text}
+            onChange={(e) => setAdding({ ...adding, text: e.target.value })}
+            placeholder="The address, as it should print"
+            maxLength={300}
+            className={`${cls} resize-none`}
+          />
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setAdding(null)} className="h-9 rounded-xl px-3 text-[13px] font-medium text-ink-2 hover:bg-mist">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={add}
+              disabled={!adding.text.trim()}
+              className="h-9 rounded-xl bg-evergreen-800 px-3.5 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:bg-line disabled:text-ink-3"
+            >
+              Add address
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding({ label: '', text: '' })}
+          disabled={list.length >= 12}
+          className="self-start text-[13px] font-semibold text-evergreen-900 hover:underline disabled:text-ink-3"
+        >
+          + Add another address
+        </button>
+      )}
     </div>
   );
 };
 
 /** The shop-on-the-bill fields and the composition toggle, bound to `values` and saved through onSave(key, value).
- *  The live sample bill on the right mirrors every field (`shop` gives the built-in fall-backs, shown greyed in each
- *  box, which print while it is blank). */
+ *  The sample bill on the right is the real 80mm bill in the look picked for it (Settings → Documents), showing every
+ *  field as it is now (`shop` gives the built-in fall-backs, shown greyed in each box, which print while it is blank). */
 const ShopFields = ({ values, onSave, shop }) => (
   <>
     <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -217,14 +236,16 @@ const ShopFields = ({ values, onSave, shop }) => (
       </div>
       <div className="lg:border-l lg:border-line-soft lg:pl-5">
         <div className="mb-2 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Sample bill</div>
-        <BillPreview values={values} shop={shop} />
+        <div className="mx-auto w-fit origin-top scale-[0.97] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.4)] ring-1 ring-black/10">
+          <DocSample kind="thermalBill" location={shop?.id} shop={values} />
+        </div>
       </div>
     </div>
     <Toggle
       id="setting-composition"
       Icon={Store}
       title="Composition dealer"
-      description="When on, bills print as a “Bill of Supply” with no GST shown on the customer bill (the price already includes it). Only purchase orders and purchase returns carry GST."
+      description="When on, bills print as a “Bill of Supply” with no GST shown on the customer bill (the price already includes it). Only purchase orders carry GST; purchase returns go back at D.Rate with none."
       on={values.composition}
       onChange={(v) => onSave('composition', v)}
     />
@@ -275,14 +296,65 @@ const AdminStoreDetails = () => {
   );
 };
 
-/** Admin only: the app's look, and switches that change what the showrooms can do. They are kept on the server,
- * so they apply on every computer; a change that the server refuses is put back. In the demo, the demo admin can
- * also start the demo again from scratch. */
+/** A card on the Settings page: an icon, a title and what it is for, over its settings. */
+const Panel = ({ Icon, title, description, children }) => (
+  <section className="overflow-hidden rounded-2xl border glass">
+    <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
+      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
+        <Icon size={17} aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-[14px] font-semibold">{title}</h2>
+        {description && <p className="mt-0.5 text-[13px] text-ink-3">{description}</p>}
+      </div>
+    </div>
+    {children}
+  </section>
+);
+
+// The parts of the page, one shown at a time: the admin's, and a showroom's own.
+const SECTIONS = {
+  admin: [
+    { id: 'business', label: 'Business', hint: 'Your details on invoices, addresses, bank', Icon: Building2 },
+    { id: 'showrooms', label: 'Showrooms', hint: 'Each shop’s details on its bills', Icon: Store },
+    { id: 'documents', label: 'Documents', hint: 'How every bill and document looks', Icon: LayoutTemplate },
+    { id: 'counter', label: 'Counter', hint: 'Discounts, customer details, quotations', Icon: Percent },
+    { id: 'appearance', label: 'Appearance', hint: 'Theme, text size, language', Icon: Palette },
+    { id: 'demo', label: 'Demo', hint: 'Start the demo again', Icon: FlaskConical, demo: true },
+  ],
+  location: [
+    { id: 'shop', label: 'Shop on the bill', hint: 'Your details on every bill', Icon: Store },
+    { id: 'appearance', label: 'Appearance', hint: 'Theme, text size, language', Icon: Palette },
+  ],
+};
+const SECTION_KEY = 'billing-settings-section'; // the part last open, per browser
+
+/** The app's settings, kept on the server so they apply on every computer; a change the server refuses is put back.
+ *  The admin's are in parts: the business on its invoices, each showroom's details on its bills, how every printed
+ *  document looks, what the counter may do, the screens' appearance (and, in the demo, starting it again). A showroom
+ *  sets its own details on the bill and its screens' appearance. A menu picks the part shown, remembered per browser. */
 const Settings = ({ onMenu }) => {
   const { settings, setSetting: save, resetDemo } = useStore();
   const session = useSession();
   const admin = session?.role === 'admin';
   const demo = Boolean(session?.demo);
+  const sections = SECTIONS[admin ? 'admin' : 'location'].filter((s) => !s.demo || demo);
+  const [section, setSection] = useState(() => {
+    try {
+      return window.localStorage.getItem(SECTION_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const current = sections.find((s) => s.id === section) ?? sections[0];
+  const pick = (id) => {
+    setSection(id);
+    try {
+      window.localStorage.setItem(SECTION_KEY, id);
+    } catch {
+      // ignore write failures (private browsing, quota, etc.)
+    }
+  };
   const [error, setError] = useState('');
   const [resetting, setResetting] = useState('');
   const setSetting = (key, value) => {
@@ -297,245 +369,285 @@ const Settings = ({ onMenu }) => {
       setResetting(`Couldn’t reset the demo: ${e.message}`);
     }
   };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader crumbs={admin ? ['Admin', 'Settings'] : ['Settings']} onMenu={onMenu} />
+      <PageHeader crumbs={admin ? ['Admin', 'Settings', current.label] : ['Settings', current.label]} onMenu={onMenu} />
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 p-3 lg:px-5 lg:py-4">
-          <p className="text-[13px] text-ink-3">
-            {admin
-              ? 'Saved on the billing server. The business switches apply everywhere; the appearance below is the default each showroom starts from and can change for its own screens.'
-              : 'The look of your showroom’s screens — theme and text size. Saved on the server for your showroom; the admin sets the defaults.'}
-          </p>
-          {error && (
-            <p role="alert" className="text-xs font-medium text-ruby-ink">
-              {error}
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 p-3 lg:flex-row lg:items-start lg:gap-6 lg:px-5 lg:py-4">
+          <nav aria-label="Settings" className="shrink-0 lg:sticky lg:top-4 lg:w-60">
+            <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+              {sections.map((s) => {
+                const on = s.id === current.id;
+                return (
+                  <li key={s.id} className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => pick(s.id)}
+                      aria-current={on ? 'page' : undefined}
+                      className={`flex w-full items-start gap-3 rounded-xl px-3 py-2 text-left transition-colors ${on ? 'bg-evergreen-50 text-evergreen-900 ring-1 ring-evergreen-800/15' : 'text-ink-2 hover:bg-mist hover:text-ink'}`}
+                    >
+                      <s.Icon size={17} className={`mt-px shrink-0 ${on ? 'text-evergreen-800' : 'text-ink-3'}`} aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className={`block text-[13px] whitespace-nowrap ${on ? 'font-semibold' : 'font-medium'}`}>{s.label}</span>
+                        <span className="hidden text-xs text-ink-3 lg:block">{s.hint}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-4 hidden px-3 text-xs text-ink-3 lg:block">
+              {admin
+                ? 'Saved on the billing server and used on every computer. Each showroom can still change the appearance of its own screens.'
+                : 'Saved on the billing server for your showroom. The admin sets everything else.'}
             </p>
-          )}
-          <section className="overflow-hidden rounded-2xl border glass">
-            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
-                <Palette size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-[14px] font-semibold">Appearance</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  {admin
-                    ? 'The default look for every screen, including sign-in. Each showroom can change it for its own screens. Changes show straight away.'
-                    : 'Theme and text size for your showroom’s screens. Changes show straight away.'}
-                </p>
-              </div>
-            </div>
-            <div className="divide-y divide-line-soft">
-              <Choice
-                label="Language"
-                hint="Tamil shows the same words in Tamil script (not translated); numbers and codes stay as they are"
-                options={[
-                  { id: 'en', label: 'English' },
-                  { id: 'ta', label: 'தமிழ் · Tamil' },
-                ]}
-                value={settings.lang}
-                onChange={(v) => setSetting('lang', v)}
-              />
-              <Choice
-                label="Text size"
-                hint="Make everything on screen bigger — for the counter monitor"
-                options={[
-                  { id: 'normal', label: 'Normal' },
-                  { id: 'large', label: 'Large' },
-                  { id: 'larger', label: 'Larger' },
-                ]}
-                value={settings.font}
-                onChange={(v) => setSetting('font', v)}
-              />
-              <Choice
-                label="Theme"
-                hint="Classic is the original look"
-                options={[
-                  { id: 'classic', label: 'Classic' },
-                  { id: 'light', label: 'Light' },
-                  { id: 'dark', label: 'Dark' },
-                ]}
-                value={settings.theme}
-                onChange={(v) => setSetting('theme', v)}
-              />
-              {settings.theme === 'light' && (
-                <Choice
-                  sub
-                  label="Whiteness"
-                  hint="How much of the photo shows through"
-                  options={[
-                    { id: 'light', label: 'Light' },
-                    { id: 'lighter', label: 'Lighter' },
-                    { id: 'lightest', label: 'Lightest' },
-                  ]}
-                  value={settings.wash}
-                  onChange={(v) => setSetting('wash', v)}
-                />
-              )}
-              {settings.theme === 'light' && (
-                <Choice
-                  sub
-                  label="Figures strip"
-                  hint="Above Inventory, Sales and the Dashboard"
-                  options={[
-                    { id: 'green', label: 'Logo green' },
-                    { id: 'white', label: 'White' },
-                  ]}
-                  value={settings.strip}
-                  onChange={(v) => setSetting('strip', v)}
-                />
-              )}
-              <Choice
-                label="Festive effect"
-                hint="Behind the screens, never over them; still if reduced motion is on"
-                options={[
-                  { id: 'none', label: 'None' },
-                  { id: 'snow', label: 'Snowfall' },
-                  { id: 'glow', label: 'Twinkle glow' },
-                  { id: 'both', label: 'Both' },
-                ]}
-                value={settings.effect}
-                onChange={(v) => setSetting('effect', v)}
-              />
-              {(settings.effect === 'snow' || settings.effect === 'both') && (
-                <Choice
-                  sub
-                  label="Snow amount"
-                  options={[
-                    { id: 'light', label: 'Light' },
-                    { id: 'medium', label: 'Medium' },
-                    { id: 'heavy', label: 'Heavy' },
-                    { id: 'blizzard', label: 'Blizzard' },
-                  ]}
-                  value={settings.snow}
-                  onChange={(v) => setSetting('snow', v)}
-                />
-              )}
-            </div>
-          </section>
+          </nav>
 
-          <section className="overflow-hidden rounded-2xl border glass">
-            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
-                <Store size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-[14px] font-semibold">Shop on the bill</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  {admin
-                    ? 'Each showroom’s own details, printed at the top of its bills. Pick a showroom to set its name, address, GSTIN and footer. A blank field falls back to the built-in details.'
-                    : 'Your shop’s own details, printed at the top of every bill. A blank field falls back to the built-in showroom details. A composition dealer bills a “Bill of Supply” with no GST shown — only purchase orders and returns carry GST.'}
-                </p>
-              </div>
-            </div>
-            {admin ? <AdminStoreDetails /> : <ShopFields values={settings} onSave={setSetting} shop={locationById(session.location)} />}
-          </section>
-
-          {admin && (
-            <>
-          <section className="overflow-hidden rounded-2xl border glass">
-            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
-                <FileText size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-[14px] font-semibold">Business details for invoices</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  Your own business, printed as the seller on every tax invoice (the showroom is the buyer, with the details from its Shop on the bill). A
-                  blank name, address, phone or GSTIN prints Tree Classics Trader&rsquo;s, shown greyed in each box. Email, PAN, bank and terms print
-                  only when filled in.
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-4 p-5">
-              <StoreField label="Business name" value={settings.bizName} onSave={(v) => setSetting('bizName', v)} placeholder={SELLER.name} />
-              <StoreField label="Address" hint="one line per line" value={settings.bizAddress} onSave={(v) => setSetting('bizAddress', v)} textarea placeholder={SELLER.address} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <StoreField label="State" value={settings.bizState} onSave={(v) => setSetting('bizState', v)} placeholder="Tamil Nadu" />
-                <StoreField label="GSTIN" value={settings.bizGstin} onSave={(v) => setSetting('bizGstin', v.toUpperCase())} placeholder={SELLER.gstin} />
-                <StoreField label="PAN" value={settings.bizPan} onSave={(v) => setSetting('bizPan', v.toUpperCase())} placeholder="PAN" />
-                <StoreField label="Phone" value={settings.bizPhone} onSave={(v) => setSetting('bizPhone', v)} placeholder={SELLER.phone} />
-                <StoreField label="Email" value={settings.bizEmail} onSave={(v) => setSetting('bizEmail', v)} placeholder="Email" />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <StoreField label="Bank" value={settings.bankName} onSave={(v) => setSetting('bankName', v)} placeholder="Bank and branch" />
-                <StoreField label="Account number" value={settings.bankAccount} onSave={(v) => setSetting('bankAccount', v)} placeholder="Account number" />
-                <StoreField label="IFSC" value={settings.bankIfsc} onSave={(v) => setSetting('bankIfsc', v.toUpperCase())} placeholder="IFSC" />
-              </div>
-              <StoreField label="Terms" hint="printed at the foot of the invoice" value={settings.invoiceTerms} onSave={(v) => setSetting('invoiceTerms', v)} textarea placeholder="Payment terms, jurisdiction…" />
-              <p className="text-xs text-ink-3">
-                An invoice to a showroom is a tax invoice: each product at its cost price (D.Rate) with its GST (18%) on top, split into CGST + SGST inside a
-                state and IGST across states.
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            {error && (
+              <p role="alert" className="rounded-xl bg-ruby-50 px-4 py-2.5 text-[13px] font-medium text-ruby-ink">
+                {error}
               </p>
-            </div>
-          </section>
+            )}
 
-          <section className="overflow-hidden rounded-2xl border glass">
-            <Toggle
-              id="setting-quote-print"
-              Icon={Printer}
-              title="Allow printing and sharing quotations"
-              description="When on, showrooms can print a quotation for the customer, or download it as a PDF and share it (an A4 page with a large QUOTATION watermark that says it is not a bill). When off, quotations can still be written, saved and previewed, but not printed, downloaded or shared."
-              on={settings.quotePrint}
-              onChange={(v) => setSetting('quotePrint', v)}
-            />
-          </section>
+            {current.id === 'business' && (
+              <>
+                <Panel
+                  Icon={FileText}
+                  title="Your business on invoices"
+                  description="Printed as the seller on every tax invoice to a showroom. A blank name, address, phone or GSTIN prints Tree Classics Trader’s, shown greyed in each box; email and PAN print only when filled in."
+                >
+                  <div className="flex flex-col gap-4 p-5">
+                    <StoreField label="Business name" value={settings.bizName} onSave={(v) => setSetting('bizName', v)} placeholder={SELLER.name} />
+                    <StoreField label="Address" hint="one line per line" value={settings.bizAddress} onSave={(v) => setSetting('bizAddress', v)} textarea placeholder={SELLER.address} />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <StoreField label="State" value={settings.bizState} onSave={(v) => setSetting('bizState', v)} placeholder="Tamil Nadu" />
+                      <StoreField label="GSTIN" value={settings.bizGstin} onSave={(v) => setSetting('bizGstin', v.toUpperCase())} placeholder={SELLER.gstin} />
+                      <StoreField label="PAN" value={settings.bizPan} onSave={(v) => setSetting('bizPan', v.toUpperCase())} placeholder="PAN" />
+                      <StoreField label="Phone" value={settings.bizPhone} onSave={(v) => setSetting('bizPhone', v)} placeholder={SELLER.phone} />
+                      <StoreField label="Email" value={settings.bizEmail} onSave={(v) => setSetting('bizEmail', v)} placeholder="Email" />
+                    </div>
+                  </div>
+                </Panel>
+                <Panel
+                  Icon={MapPin}
+                  title="Addresses an invoice can be from"
+                  description={`${SELLER.addresses.map((a) => a.label).join(' and ')} are built in. Add your others here, or with “Another address” while raising an invoice.`}
+                >
+                  <div className="p-5">
+                    <MoreAddresses list={settings.bizAddresses ?? []} onSave={(v) => setSetting('bizAddresses', v)} />
+                  </div>
+                </Panel>
+                <Panel
+                  Icon={Landmark}
+                  title="Bank and terms"
+                  description="Printed at the foot of every invoice, when filled in. An invoice is a tax invoice: each product at its D.Rate with its GST (18%) on top, CGST + SGST inside a state and IGST across states."
+                >
+                  <div className="flex flex-col gap-4 p-5">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <StoreField label="Bank" value={settings.bankName} onSave={(v) => setSetting('bankName', v)} placeholder="Bank and branch" />
+                      <StoreField label="Account number" value={settings.bankAccount} onSave={(v) => setSetting('bankAccount', v)} placeholder="Account number" />
+                      <StoreField label="IFSC" value={settings.bankIfsc} onSave={(v) => setSetting('bankIfsc', v.toUpperCase())} placeholder="IFSC" />
+                    </div>
+                    <StoreField label="Terms" value={settings.invoiceTerms} onSave={(v) => setSetting('invoiceTerms', v)} textarea placeholder="Payment terms, jurisdiction…" />
+                  </div>
+                </Panel>
+              </>
+            )}
 
-          <section className="overflow-hidden rounded-2xl border glass">
-            <div className="flex items-start gap-4 border-b border-line-soft px-5 py-4">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-evergreen-50 text-evergreen-800">
-                <User size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <div className="text-[14px] font-semibold">Customer details on a bill</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  What the counter must have before a bill can be collected. Turn one off for quick walk-in billing; it
-                  can still be typed, and if it is, it’s checked. Quotations always ask for both.
-                </p>
-              </div>
-            </div>
-            <div className="divide-y divide-line-soft">
-              <Toggle
-                id="setting-require-name"
-                Icon={User}
-                title="Require customer name"
-                description="When on, a bill needs the customer’s name before it can be collected. When off, the name is optional."
-                on={settings.requireName}
-                onChange={(v) => setSetting('requireName', v)}
-              />
-              <Toggle
-                id="setting-require-mobile"
-                Icon={Phone}
-                title="Require mobile number"
-                description="When on, a bill needs a valid 10-digit mobile number before it can be collected. When off, the number is optional."
-                on={settings.requireMobile}
-                onChange={(v) => setSetting('requireMobile', v)}
-              />
-            </div>
-          </section>
+            {current.id === 'showrooms' && (
+              <Panel
+                Icon={Store}
+                title="Shop on the bill"
+                description="Each showroom’s own details, printed at the top of its bills. Pick a showroom to set its name, address, phone and GSTIN; a blank field prints the built-in details."
+              >
+                <AdminStoreDetails />
+              </Panel>
+            )}
 
-            </>
-          )}
+            {current.id === 'shop' && (
+              <Panel
+                Icon={Store}
+                title="Shop on the bill"
+                description="Your shop’s own details, printed at the top of every bill. A blank field prints the built-in showroom details. A composition dealer bills a “Bill of Supply” with no GST shown."
+              >
+                <ShopFields values={settings} onSave={setSetting} shop={locationById(session.location)} />
+              </Panel>
+            )}
 
-          {admin && demo && (
-            <section className="flex items-start gap-4 overflow-hidden rounded-2xl border glass px-5 py-4">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-warn-50 text-warn-ink">
-                <FlaskConical size={17} aria-hidden="true" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-semibold">Demo data</div>
-                <p className="mt-0.5 text-[13px] text-ink-3">
-                  Throws away everything done in the demo and starts it again clean: the five showrooms, the product list and the
-                  season’s stock in the admin stock, with no sales, customers or orders. The real data is never touched.
-                </p>
-                {resetting && <p className="mt-2 text-[13px] font-medium text-ink-2">{resetting}</p>}
-              </div>
-              <button type="button" onClick={reset} disabled={resetting.endsWith('…')} className="h-9 shrink-0 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:opacity-60">
-                Reset demo
-              </button>
-            </section>
-          )}
+            {current.id === 'documents' && (
+              <Panel
+                Icon={LayoutTemplate}
+                title="Documents"
+                description="Pick how each document looks, for every showroom. Every A4 document puts its title (TAX INVOICE, QUOTATION…) at the very top; its colours are still picked on its preview. An invoice already raised keeps its PDF until it is next previewed."
+              >
+                <DocumentLooks looks={settings.docLooks ?? {}} onChange={(next) => setSetting('docLooks', next)} />
+              </Panel>
+            )}
+
+            {current.id === 'counter' && (
+              <>
+                <Panel Icon={Percent} title="Discounts" description="The most the counter can take off a bill by hand, in every showroom. Offer prices aren’t affected.">
+                  <DiscountLimit key={settings.maxDiscountPct} value={settings.maxDiscountPct} onSave={(v) => setSetting('maxDiscountPct', v)} />
+                </Panel>
+                <Panel
+                  Icon={User}
+                  title="Customer details on a bill"
+                  description="What the counter must have before a bill can be collected. Turn one off for quick walk-in billing; it can still be typed, and if it is, it’s checked. Quotations always ask for both."
+                >
+                  <div className="divide-y divide-line-soft">
+                    <Toggle
+                      id="setting-require-name"
+                      Icon={User}
+                      title="Require customer name"
+                      description="When on, a bill needs the customer’s name before it can be collected. When off, the name is optional."
+                      on={settings.requireName}
+                      onChange={(v) => setSetting('requireName', v)}
+                    />
+                    <Toggle
+                      id="setting-require-mobile"
+                      Icon={Phone}
+                      title="Require mobile number"
+                      description="When on, a bill needs a valid 10-digit mobile number before it can be collected. When off, the number is optional."
+                      on={settings.requireMobile}
+                      onChange={(v) => setSetting('requireMobile', v)}
+                    />
+                  </div>
+                </Panel>
+                <section className="overflow-hidden rounded-2xl border glass">
+                  <Toggle
+                    id="setting-quote-print"
+                    Icon={Printer}
+                    title="Allow printing and sharing quotations"
+                    description="When on, showrooms can print a quotation for the customer, or download it as a PDF and share it (an A4 page with a large QUOTATION watermark that says it is not a bill). When off, quotations can still be written, saved and previewed, but not printed, downloaded or shared."
+                    on={settings.quotePrint}
+                    onChange={(v) => setSetting('quotePrint', v)}
+                  />
+                </section>
+              </>
+            )}
+
+            {current.id === 'appearance' && (
+              <Panel
+                Icon={Palette}
+                title="Appearance"
+                description={
+                  admin
+                    ? 'The default look for every screen, including sign-in. Each showroom can change it for its own screens. Changes show straight away.'
+                    : 'Theme and text size for your showroom’s screens. Changes show straight away.'
+                }
+              >
+                <div className="divide-y divide-line-soft">
+                  <Choice
+                    label="Language"
+                    hint="Tamil shows the same words in Tamil script (not translated); numbers and codes stay as they are"
+                    options={[
+                      { id: 'en', label: 'English' },
+                      { id: 'ta', label: 'தமிழ் · Tamil' },
+                    ]}
+                    value={settings.lang}
+                    onChange={(v) => setSetting('lang', v)}
+                  />
+                  <Choice
+                    label="Text size"
+                    hint="Make everything on screen bigger — for the counter monitor"
+                    options={[
+                      { id: 'normal', label: 'Normal' },
+                      { id: 'large', label: 'Large' },
+                      { id: 'larger', label: 'Larger' },
+                    ]}
+                    value={settings.font}
+                    onChange={(v) => setSetting('font', v)}
+                  />
+                  <Choice
+                    label="Theme"
+                    hint="Classic is the original look"
+                    options={[
+                      { id: 'classic', label: 'Classic' },
+                      { id: 'light', label: 'Light' },
+                      { id: 'dark', label: 'Dark' },
+                    ]}
+                    value={settings.theme}
+                    onChange={(v) => setSetting('theme', v)}
+                  />
+                  {settings.theme === 'light' && (
+                    <Choice
+                      sub
+                      label="Whiteness"
+                      hint="How much of the photo shows through"
+                      options={[
+                        { id: 'light', label: 'Light' },
+                        { id: 'lighter', label: 'Lighter' },
+                        { id: 'lightest', label: 'Lightest' },
+                      ]}
+                      value={settings.wash}
+                      onChange={(v) => setSetting('wash', v)}
+                    />
+                  )}
+                  {settings.theme === 'light' && (
+                    <Choice
+                      sub
+                      label="Figures strip"
+                      hint="Above Inventory, Sales and the Dashboard"
+                      options={[
+                        { id: 'green', label: 'Logo green' },
+                        { id: 'white', label: 'White' },
+                      ]}
+                      value={settings.strip}
+                      onChange={(v) => setSetting('strip', v)}
+                    />
+                  )}
+                  <Choice
+                    label="Festive effect"
+                    hint="Behind the screens, never over them; still if reduced motion is on"
+                    options={[
+                      { id: 'none', label: 'None' },
+                      { id: 'snow', label: 'Snowfall' },
+                      { id: 'glow', label: 'Twinkle glow' },
+                      { id: 'both', label: 'Both' },
+                    ]}
+                    value={settings.effect}
+                    onChange={(v) => setSetting('effect', v)}
+                  />
+                  {(settings.effect === 'snow' || settings.effect === 'both') && (
+                    <Choice
+                      sub
+                      label="Snow amount"
+                      options={[
+                        { id: 'light', label: 'Light' },
+                        { id: 'medium', label: 'Medium' },
+                        { id: 'heavy', label: 'Heavy' },
+                        { id: 'blizzard', label: 'Blizzard' },
+                      ]}
+                      value={settings.snow}
+                      onChange={(v) => setSetting('snow', v)}
+                    />
+                  )}
+                </div>
+              </Panel>
+            )}
+
+            {current.id === 'demo' && (
+              <Panel
+                Icon={FlaskConical}
+                title="Demo data"
+                description="Throws away everything done in the demo and starts it again clean: the five showrooms, the product list and the season’s stock in the admin stock, with no sales, customers or orders. The real data is never touched."
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                  <p className="text-[13px] font-medium text-ink-2">{resetting || 'Only the demo is reset.'}</p>
+                  <button
+                    type="button"
+                    onClick={reset}
+                    disabled={resetting.endsWith('…')}
+                    className="h-9 shrink-0 rounded-xl bg-evergreen-800 px-4 text-[13px] font-semibold text-white hover:bg-evergreen-900 disabled:opacity-60"
+                  >
+                    Reset demo
+                  </button>
+                </div>
+              </Panel>
+            )}
+          </div>
         </div>
       </div>
     </div>

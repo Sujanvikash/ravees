@@ -93,6 +93,9 @@ const save = (blob, name) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+/** A file the API keeps (an invoice's own PDF), as a Blob. */
+export const fetchBlob = async (path) => (await fetchFile(path, 'file')).blob;
+
 /** Downloads a file the API makes (e.g. the sales report) and saves it under the name the server gives it. */
 export const download = async (path, fallbackName) => {
   const { blob, name } = await fetchFile(path, fallbackName);

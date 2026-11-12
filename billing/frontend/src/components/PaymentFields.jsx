@@ -34,8 +34,9 @@ export const Switch = ({ checked, onChange, children }) => (
   </label>
 );
 
-/** The inputs for the chosen method, for an entry from hooks/usePaymentEntry.js. */
-export const PaymentFields = ({ due, method, upiId, entry, idPrefix = 'pay' }) => {
+/** The inputs for the chosen method, for an entry from hooks/usePaymentEntry.js. `focus` puts the cursor in the first
+ *  one when they appear (off where they appear while another box is being typed in: a credit bill's "Paying now"). */
+export const PaymentFields = ({ due, method, upiId, entry, idPrefix = 'pay', focus = true }) => {
   const { tendered, setTendered, approval, setApproval, parts, setParts, change, split, splitLeft, splitValid } = entry.state;
   const id = (name) => `${idPrefix}-${name}`;
 
@@ -52,7 +53,7 @@ export const PaymentFields = ({ due, method, upiId, entry, idPrefix = 'pay' }) =
               id={id('tendered')}
               type="text"
               inputMode="decimal"
-              autoFocus
+              autoFocus={focus}
               autoComplete="off"
               value={tendered}
               onChange={(e) => setTendered(e.target.value)}
@@ -110,7 +111,7 @@ export const PaymentFields = ({ due, method, upiId, entry, idPrefix = 'pay' }) =
           <input
             id={id('approval')}
             type="text"
-            autoFocus
+            autoFocus={focus}
             autoComplete="off"
             value={approval}
             onChange={(e) => setApproval(e.target.value)}
@@ -136,7 +137,7 @@ export const PaymentFields = ({ due, method, upiId, entry, idPrefix = 'pay' }) =
                 id={id(`split-${part}`)}
                 type="text"
                 inputMode="decimal"
-                autoFocus={i === 0}
+                autoFocus={focus && i === 0}
                 autoComplete="off"
                 value={parts[part]}
                 onChange={(e) => setParts((p) => ({ ...p, [part]: e.target.value }))}

@@ -49,6 +49,13 @@ class DocumentsIn(ApiModel):
     doc_base64: str | None = None
 
 
+class PdfIn(ApiModel):
+    """The invoice's own PDF as the app drew it (base64), and what it was drawn in ('evergreen:band')."""
+
+    stamp: str = Field(min_length=1, max_length=64)
+    pdf_base64: str
+
+
 class PayIn(ApiModel):
     ref: str = Field(default='', max_length=100)
     note: str = Field(default='', max_length=1000)
@@ -67,6 +74,7 @@ class InvoiceOut(ApiModel):
     bill_no: str
     doc_name: str
     has_document: bool
+    pdf_stamp: str
     paid_at: datetime | None
     paid_ref: str
     note: str
@@ -94,6 +102,7 @@ class InvoiceOut(ApiModel):
             bill_no=inv.bill_no,
             doc_name=inv.doc_name,
             has_document=inv.doc_data is not None,
+            pdf_stamp=inv.pdf_stamp,
             paid_at=inv.paid_at,
             paid_ref=inv.paid_ref,
             note=inv.note,

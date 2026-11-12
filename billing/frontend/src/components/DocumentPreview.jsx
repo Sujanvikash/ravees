@@ -16,29 +16,51 @@ const primary =
  * shown (lib/docPages.js), which are also what the PDF holds. `stamp` changes whenever the document does (another
  * colour, say), so the pages are made again. `toolbar` sits on the left (a colour choice); `actions` replace the
  * print, download and share buttons (an unsaved quotation offers to save it instead); `note` says why some are missing.
+ * A document that keeps its own PDF (an invoice): `kept` loads it (a Blob) when the one kept was drawn as the document
+ * is now, and the preview shows that PDF straight away instead of drawing the pages again; `onBuilt(pdf)` is handed
+ * each PDF drawn here, to keep. "Draw again" draws it afresh anyway (business details changed since, say).
  */
-const DocumentPreview = ({ id, title, subtitle, stamp, fileName, watermark, footer, onClose, onPrint, canExport = true, toolbar, actions, note, children }) => {
+const DocumentPreview = ({ id, title, subtitle, stamp, fileName, watermark, footer, onClose, onPrint, canExport = true, toolbar, actions, note, kept, onBuilt, children }) => {
   const docRef = useRef(null);
-  const [built, setBuilt] = useState({ stamp: null }); // { stamp, images, pdf } or { stamp, error }
+  const [built, setBuilt] = useState({ key: null }); // { key, images, pdf } drawn, { key, url, pdf } kept, or { key, error }
+  const [redraw, setRedraw] = useState(0);
   const [message, setMessage] = useState(null);
   const [shareable] = useState(canShareFiles);
-  const ready = built.stamp === stamp ? built : null;
+  const key = `${stamp}|${redraw}`;
+  const ready = built.key === key ? built : null;
   const [markText, markColor] = [watermark?.text, watermark?.color];
+  // as they are now: the pages are only drawn (or the kept PDF loaded) again when the document itself changes
+  const latest = useRef({ kept, onBuilt });
+  useEffect(() => {
+    latest.current = { kept, onBuilt };
+  });
 
   // made ahead, so Download and Share answer at once (a phone only opens the share sheet straight after a tap)
   useEffect(() => {
     let current = true;
+    let url = null;
     // the document's own element, so its parts (and a table's rows) are what's shared out over the pages
-    buildPages(docRef.current.firstElementChild, { watermark: markText && { text: markText, color: markColor }, footer })
-      .then(async (pages) => {
+    const draw = () =>
+      buildPages(docRef.current.firstElementChild, { watermark: markText && { text: markText, color: markColor }, footer }).then(async (pages) => {
         const pdf = await pdfOf(pages);
-        if (current) setBuilt({ stamp, images: pages.map((p) => p.toDataURL('image/jpeg', 0.85)), pdf });
-      })
-      .catch((err) => current && setBuilt({ stamp, error: err?.message || 'The preview could not be made.' }));
+        if (!current) return;
+        setBuilt({ key, images: pages.map((p) => p.toDataURL('image/jpeg', 0.85)), pdf });
+        latest.current.onBuilt?.(pdf);
+      });
+    const load = !key.endsWith('|0') ? null : latest.current.kept;
+    (load
+      ? load().then((pdf) => {
+          if (!current) return;
+          url = URL.createObjectURL(pdf);
+          setBuilt({ key, url, pdf });
+        }, draw) // the kept one can't be had: draw it
+      : draw()
+    ).catch((err) => current && setBuilt({ key, error: err?.message || 'The preview could not be made.' }));
     return () => {
       current = false;
+      if (url) URL.revokeObjectURL(url);
     };
-  }, [stamp, markText, markColor, footer]);
+  }, [key, markText, markColor, footer]);
 
   const save = () => {
     download(ready.pdf, fileName);
@@ -79,6 +101,15 @@ const DocumentPreview = ({ id, title, subtitle, stamp, fileName, watermark, foot
           )}
         </div>
       </div>
+      {ready?.url && !message && (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-mist-2 px-6 py-2 text-[13px] text-ink-3">
+          The PDF kept with it, opened as it was made.
+          <button type="button" onClick={() => setRedraw((n) => n + 1)} className="font-semibold text-evergreen-900 hover:underline">
+            Draw it again
+          </button>
+          <span>if the business details have changed since.</span>
+        </p>
+      )}
       {(message || note) && (
         <p
           role="status"
@@ -88,6 +119,9 @@ const DocumentPreview = ({ id, title, subtitle, stamp, fileName, watermark, foot
         </p>
       )}
 
+      {ready?.url ? (
+        <iframe title={title} src={`${ready.url}#view=FitH`} className="block h-[68vh] w-full border-0 bg-mist" />
+      ) : (
       <div className="max-h-[68vh] overflow-y-auto bg-mist px-4 py-5 sm:px-8">
         {ready?.error ? (
           <p className="py-16 text-center text-[13px] text-ruby-ink">{ready.error}</p>
@@ -108,6 +142,7 @@ const DocumentPreview = ({ id, title, subtitle, stamp, fileName, watermark, foot
           </div>
         )}
       </div>
+      )}
 
       {/* the document itself, at the printed width just off screen: what the pages are made from */}
       {createPortal(

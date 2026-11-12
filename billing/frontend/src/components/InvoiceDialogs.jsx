@@ -12,6 +12,7 @@ import { invoiceLine, STATUS, storeBuyer } from '../lib/invoices.js';
 import { inr } from '../lib/money.js';
 import { parsePurchaseRows } from '../lib/purchaseFile.js';
 import Dialog from './Dialog.jsx';
+import ShortStock from './ShortStock.jsx';
 
 const MAX_PDF = 2 * 1024 * 1024;
 
@@ -159,7 +160,7 @@ const singlesOf = (invoice, boxes) => {
  * single products.
  */
 export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
-  const { boxes, saveInvoice, updateInvoice, stockOf, settings } = useStore();
+  const { boxes, saveInvoice, updateInvoice, stockOf, settings, setSetting } = useStore();
   const editing = Boolean(invoice);
   const [location, setLocation] = useState(invoice?.location ?? order?.location ?? '');
   const [buyer, setBuyer] = useState(invoice?.buyer ?? null); // { name, address, phone, gstin, state } once loaded
@@ -170,12 +171,14 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
   const [scan, setScan] = useState('');
   const [note, setNote] = useState(invoice?.note ?? '');
   const [from, setFrom] = useState(invoice?.sellerAddress || SELLER.addresses[0].text); // the admin's address it is from
+  const [other, setOther] = useState(null); // { label, text, keep }: another address, typed in here
   const [notice, setNotice] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [detailsOf, setDetailsOf] = useState(invoice?.buyer ? invoice.location : null); // whose details are in the form
   const [last, setLast] = useState(null); // { code, at }: the product added last, marked in the list and scrolled to
   const lastRow = useRef(null);
+  const tableRef = useRef(null);
   const fileRef = useRef(null);
 
   // choosing a showroom fills in its details (an invoice being edited keeps its own until the showroom changes)
@@ -303,6 +306,8 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
     if (!ready || !buyer.name.trim()) return setError(`Enter ${city}’s name as the invoice should show it.`);
     if (!buyer.state) return setError(`Choose ${city}’s state: it decides between IGST and CGST + SGST.`);
     if (!chosen.length && !singles.length) return setError('Scan a box or a product to put on this invoice.');
+    const sellerAddress = other ? other.text.trim() : from;
+    if (!sellerAddress) return setError(`Type the address this invoice is from, or pick one of ${settings.bizName?.trim() || SELLER.name}’s.`);
     setSaving(true);
     setError('');
     const details = { ...buyer, name: buyer.name.trim(), address: buyer.address.trim(), phone: buyer.phone.trim(), gstin: buyer.gstin.trim().toUpperCase() };
@@ -312,12 +317,16 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
       boxIds: chosen.map((b) => b.id),
       lines: singles.map((l) => ({ code: l.code, qty: l.qty })),
       note: note.trim(),
-      sellerAddress: from,
+      sellerAddress,
     };
     try {
       if (keep) {
         const own = { storeName: details.name, storeAddress: details.address, storePhone: details.phone, gstin: details.gstin };
         await api(`/settings?location=${encodeURIComponent(location)}`, { method: 'PATCH', body: own });
+      }
+      // another address, kept in the list for the next invoices unless asked not to
+      if (other?.keep && !froms.some((o) => o.text === sellerAddress)) {
+        await setSetting('bizAddresses', [...(settings.bizAddresses ?? []), { label: other.label.trim() || 'Other address', text: sellerAddress }]);
       }
       onDone(editing ? await updateInvoice(invoice.id, body) : await saveInvoice({ ...body, orderId: order?.id }));
     } catch (err) {
@@ -326,9 +335,11 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
     }
   };
 
-  // the addresses it can be from: the two built in, the one in Settings, and the one an older invoice already has
+  // the addresses it can be from: the two built in, the others kept from earlier invoices, the one in Settings, and the
+  // one an older invoice already has
   const froms = [
     ...SELLER.addresses,
+    ...(settings.bizAddresses ?? []),
     { label: 'Business address in Settings', text: settings.bizAddress?.trim() },
     { label: 'As on this invoice', text: invoice?.sellerAddress?.trim() },
   ].filter((o, i, all) => o.text && all.findIndex((x) => x.text === o.text) === i);
@@ -341,6 +352,13 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
 
   const units = lines.reduce((t, l) => t + l.qty, 0);
   const singleQty = new Map(singles.map((l) => [l.code, l.qty]));
+  // Only single products can be lowered: what a short line's boxes hold stays, so its singles go down to the rest.
+  const boxedOf = (l) => l.qty - (singleQty.get(l.code) ?? 0);
+  const fitSingle = (l) => Math.max(available(l.code) - boxedOf(l), 0);
+  const fitAll = () => {
+    const fits = new Map(short.map((l) => [l.code, fitSingle(l)]));
+    setSingles((s) => s.flatMap((l) => (!fits.has(l.code) ? [l] : fits.get(l.code) > 0 ? [{ ...l, qty: fits.get(l.code) }] : [])));
+  };
 
   return (
     <Dialog
@@ -464,7 +482,7 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
               </p>
             ) : (
               <div className="overflow-hidden rounded-xl border border-line-soft">
-                <div className="max-h-[56vh] overflow-auto">
+                <div ref={tableRef} className="max-h-[56vh] overflow-auto">
                   <table className="w-full min-w-[50rem] text-[13px] tabular-nums">
                     <thead className="sticky top-0 z-1 bg-mist-2 text-left text-xs text-ink-3">
                       <tr>
@@ -485,18 +503,31 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
                         const single = singleQty.get(l.code) ?? 0;
                         const boxed = l.qty - single;
                         const isLast = l.code === last?.code;
+                        const over = l.qty > available(l.code);
                         return (
-                          <tr key={l.code} ref={isLast ? lastRow : undefined} className={`border-t border-line-soft ${isLast ? 'bg-evergreen-50' : ''}`}>
+                          <tr
+                            key={l.code}
+                            ref={isLast ? lastRow : undefined}
+                            data-code={l.code}
+                            className={`border-t border-line-soft ${over ? 'bg-warn-50' : isLast ? 'bg-evergreen-50' : ''}`}
+                          >
                             <td className="px-3 py-1.5">
                               <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
                               {l.name}
                             </td>
-                            <td className={`px-3 py-1.5 text-right ${l.qty > available(l.code) ? 'font-medium text-ruby-ink' : 'text-ink-3'}`}>
-                              {Math.max(available(l.code), 0)}
-                            </td>
+                            <td className={`px-3 py-1.5 text-right ${over ? 'font-medium text-ruby-ink' : 'text-ink-3'}`}>{Math.max(available(l.code), 0)}</td>
                             <td className="px-3 py-1">
                               {single > 0 && <QtyStepper name={l.name} value={single} onChange={(n) => setQty(l.code, n)} />}
                               {boxed > 0 && <div className="text-center text-xs text-ink-3">{single > 0 ? `+ ${boxed}` : boxed} in boxes</div>}
+                              {over && single > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setQty(l.code, fitSingle(l))}
+                                  className="mx-auto mt-0.5 block text-[11px] font-semibold text-warn-ink underline-offset-2 hover:underline"
+                                >
+                                  {fitSingle(l) > 0 ? `Lower to ${fitSingle(l)}` : boxed > 0 ? 'Take the singles off' : 'Admin has none: take it off'}
+                                </button>
+                              )}
                             </td>
                             <td className="px-3 py-1.5 text-right text-ink-2">{inr(l.rate)}</td>
                             <td className="px-3 py-1.5 text-right">{inr(l.amount)}</td>
@@ -524,14 +555,13 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
               </div>
             )}
             {short.length > 0 && (
-              <Notice>
-                More than the admin stock holds:{' '}
-                {short
-                  .slice(0, 6)
-                  .map((l) => `${l.code} (have ${Math.max(available(l.code), 0)}, on this invoice ${l.qty})`)
-                  .join(', ')}
-                {short.length > 6 ? ` and ${short.length - 6} more` : ''}. Add stock under Inventory or lower the quantities.
-              </Notice>
+              <ShortStock
+                short={short.map((l) => ({ ...l, have: Math.max(available(l.code), 0) }))}
+                table={tableRef}
+                onFit={short.some((l) => singleQty.has(l.code)) ? fitAll : undefined}
+              >
+                {short.some((l) => boxedOf(l) > available(l.code)) ? 'A box that holds more than the admin has must come off. ' : ''}Or add stock under Inventory.
+              </ShortStock>
             )}
           </section>
           {error && <Notice>{error}</Notice>}
@@ -634,15 +664,66 @@ export const InvoiceEditor = ({ order, invoice, onClose, onDone }) => {
               {froms.map((o) => (
                 <label
                   key={o.text}
-                  className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-[13px] ${from === o.text ? 'border-evergreen-800/50 bg-evergreen-50' : 'border-line hover:bg-mist'}`}
+                  className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-[13px] ${!other && from === o.text ? 'border-evergreen-800/50 bg-evergreen-50' : 'border-line hover:bg-mist'}`}
                 >
-                  <input type="radio" name="invoice-from" checked={from === o.text} onChange={() => setFrom(o.text)} className="mt-0.5 size-4 shrink-0 accent-evergreen-800" />
+                  <input
+                    type="radio"
+                    name="invoice-from"
+                    checked={!other && from === o.text}
+                    onChange={() => {
+                      setFrom(o.text);
+                      setOther(null);
+                    }}
+                    className="mt-0.5 size-4 shrink-0 accent-evergreen-800"
+                  />
                   <span className="min-w-0">
                     <span className="block font-medium">{o.label}</span>
                     <span className="block text-xs whitespace-pre-line text-ink-3">{o.text}</span>
                   </span>
                 </label>
               ))}
+              <div className={`rounded-xl border px-3 py-2.5 text-[13px] ${other ? 'border-evergreen-800/50 bg-evergreen-50' : 'border-line hover:bg-mist'}`}>
+                <label className="flex cursor-pointer items-center gap-2.5">
+                  <input
+                    type="radio"
+                    name="invoice-from"
+                    checked={Boolean(other)}
+                    onChange={() => setOther((o) => o ?? { label: '', text: '', keep: true })}
+                    className="size-4 shrink-0 accent-evergreen-800"
+                  />
+                  <span className="font-medium">Another address</span>
+                </label>
+                {other && (
+                  <div className="mt-2.5 flex flex-col gap-2 pl-6.5">
+                    <label className="flex flex-col gap-1 text-xs font-medium text-ink-2">
+                      Name it
+                      <input
+                        value={other.label}
+                        onChange={(e) => setOther({ ...other, label: e.target.value })}
+                        placeholder="e.g. Godown, Puzhal"
+                        maxLength={60}
+                        className="h-9 rounded-lg border border-line bg-surface px-2.5 text-[13px] font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs font-medium text-ink-2">
+                      Address, as it should print
+                      <textarea
+                        rows={3}
+                        value={other.text}
+                        onChange={(e) => setOther({ ...other, text: e.target.value })}
+                        placeholder="Door no., street, area, city – PIN"
+                        maxLength={300}
+                        autoFocus
+                        className="resize-none rounded-lg border border-line bg-surface px-2.5 py-2 text-[13px] font-normal text-ink placeholder:text-ink-3 focus:border-evergreen-800/50"
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-ink-2">
+                      <input type="checkbox" checked={other.keep} onChange={(e) => setOther({ ...other, keep: e.target.checked })} className="size-4 accent-evergreen-800" />
+                      Keep it in this list for the next invoices
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
           </fieldset>
           <label className="flex flex-col gap-1.5 text-[13px] font-medium text-ink-2">
@@ -937,6 +1018,12 @@ export const InvoiceDetail = ({ id, focus, onClose, onPreview, onPrint, onEdit }
             </div>
           )}
         </div>
+      </div>
+      {/* kept in view at the foot while the invoice scrolls, so it can be closed from anywhere */}
+      <div className="sticky bottom-0 flex justify-end border-t border-line-soft bg-mist-2 px-6 py-3">
+        <button type="button" onClick={onClose} className={secondary}>
+          Close
+        </button>
       </div>
     </Dialog>
   );

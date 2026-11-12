@@ -16,13 +16,13 @@ const Postcard = ({ account, index, onPick }) => {
     <button
       type="button"
       onClick={() => onPick(account)}
-      className={`group relative flex flex-col items-start rounded-md bg-[#fffdf8] px-4 pt-5 pb-9 text-left shadow-[0_2px_4px_rgba(0,0,0,0.06),0_18px_32px_-14px_rgba(60,40,10,0.35)] transition duration-200 before:pointer-events-none before:absolute before:inset-2 before:rounded-[3px] before:border before:border-dashed before:border-evergreen-800/25 before:content-[''] hover:-translate-y-1.5 hover:rotate-0 hover:shadow-[0_4px_8px_rgba(0,0,0,0.06),0_28px_40px_-16px_rgba(23,92,38,0.45)] sm:h-72 sm:w-52 sm:px-5 sm:pt-6 ${TILT[index % TILT.length]}`}
+      className={`group relative flex flex-col items-start rounded-md bg-[#fffdf8] px-4 pt-5 pb-9 text-left shadow-[0_2px_4px_rgba(0,0,0,0.06),0_18px_32px_-14px_rgba(60,40,10,0.35)] transition duration-200 before:pointer-events-none before:absolute before:inset-2 before:rounded-[3px] before:border before:border-dashed before:border-evergreen-800/25 before:content-[''] hover:-translate-y-1.5 hover:rotate-0 hover:shadow-[0_4px_8px_rgba(0,0,0,0.06),0_28px_40px_-16px_rgba(23,92,38,0.45)] sm:h-72 sm:w-52 sm:px-5 sm:pt-6 xl:w-auto xl:px-4 ${TILT[index % TILT.length]}`}
     >
       <span className="absolute top-4 right-4 bg-raave-red px-1.5 py-1 font-mono text-[11px] font-bold tracking-wider text-white shadow-[0_0_0_1px_var(--color-raave-red)] outline-[3px] outline-offset-[-2px] outline-[#fffdf8] outline-dotted">
         {shop.billPrefix}
       </span>
       <Landmark id={shop.id} className="mt-8 h-14 w-auto text-evergreen-800 transition-transform duration-200 group-hover:scale-105 sm:mt-10 sm:h-[5.5rem]" />
-      <span className="mt-3 font-display text-xl font-bold sm:mt-4 sm:text-[26px]">{shop.city}</span>
+      <span className="mt-3 font-display text-xl font-bold sm:mt-4 sm:text-[26px] xl:text-[23px]">{shop.city}</span>
       <span className="text-xs text-ink-3 sm:text-[13px]">{shop.area}</span>
       <span className="absolute inset-x-4 bottom-5 h-2 border-y border-line sm:inset-x-5" aria-hidden="true" />
     </button>
@@ -99,7 +99,7 @@ const Login = ({ onSignedIn }) => {
           </button>
         </label>
       )}
-      <div className={`w-full ${account ? 'max-w-lg' : 'max-w-6xl'}`}>
+      <div className={`w-full ${account ? 'max-w-lg' : 'max-w-7xl'}`}>
         <img src={logo} alt={BRAND.name} className="brand-logo mx-auto h-16 w-auto" />
 
         {!account ? (
@@ -118,7 +118,11 @@ const Login = ({ onSignedIn }) => {
               </p>
             )}
 
-            <div className="mt-8 grid w-full grid-cols-2 gap-3 sm:mt-10 sm:flex sm:flex-wrap sm:justify-center sm:gap-6">
+            {/* every showroom on one row on a wide screen, however many there are */}
+            <div
+              style={{ '--stores': SHOWROOMS.length }}
+              className="mt-8 grid w-full grid-cols-2 gap-3 sm:mt-10 sm:flex sm:flex-wrap sm:justify-center sm:gap-6 xl:grid xl:grid-cols-[repeat(var(--stores),minmax(0,1fr))] xl:gap-5"
+            >
               {SHOWROOMS.map((a, i) => (
                 <Postcard key={a.username} account={a} index={i} onPick={pick} />
               ))}

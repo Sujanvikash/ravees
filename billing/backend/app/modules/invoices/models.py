@@ -21,7 +21,9 @@ class TransferInvoice(Base):
     the admin picked it (the warehouse at Manali or the registered office); empty on invoices raised before
     2026-11-11, which print the business address in Settings. The admin records the e-way bill number and/or
     the bill number (and may keep the PDF), marks it paid, and then adds its items to the showroom's stock.
-    history [{at, by, action, note?}] as on purchase orders."""
+    history [{at, by, action, note?}] as on purchase orders. pdf_data is the invoice's own PDF as the app drew it, made
+    when it is raised and again when its colours or look change (pdf_stamp says which: 'evergreen:band'…); an edit or
+    a cancellation drops it, so the next preview makes it again."""
 
     __tablename__ = 'transfer_invoices'
 
@@ -37,6 +39,8 @@ class TransferInvoice(Base):
     bill_no: Mapped[str] = mapped_column(String(64), default='')
     doc_name: Mapped[str] = mapped_column(String(200), default='')
     doc_data: Mapped[bytes | None] = mapped_column(LargeBinary)
+    pdf_data: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
+    pdf_stamp: Mapped[str] = mapped_column(String(64), default='')
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     paid_ref: Mapped[str] = mapped_column(String(100), default='')
     note: Mapped[str] = mapped_column(Text, default='')

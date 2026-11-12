@@ -3,8 +3,9 @@ The settings behind Settings in the app, split into two kinds:
 
   Appearance (per showroom) — theme, wash, effect, snow, strip, font. Each showroom sets its own
     look for its own screen; the admin sets the defaults (also used on the sign-in screen, before anyone is in).
-  Business (global, admin only) — whether showrooms may print quotations, whether GST is shown at all, and
-    whether a bill needs the customer's name / mobile.
+  Business (global, admin only) — whether showrooms may print quotations, whether GST is shown at all,
+    whether a bill needs the customer's name / mobile, the largest manual discount a bill may take, and the look of
+    the printed documents (A4 and the thermal bill).
 
 Kept as JSON in app_settings: the global defaults under 'ui', each showroom's appearance overrides under
 'ui:<location>'. Anything not saved yet has its default. The sign-in screen reads the global ones before anyone
@@ -43,8 +44,34 @@ BUSINESS = frozenset(
         'bank_account',
         'bank_ifsc',
         'invoice_terms',
+        'biz_addresses',
     }
 )
+
+
+A4Look = Literal['band', 'classic', 'clean']
+SlipLook = Literal['boxed', 'plain', 'framed']
+
+
+class DocLooks(ApiModel):
+    """How each document the app prints looks, picked by the admin for every showroom: an A4 document band | classic
+    | clean (the title at the top in each), a slip on the 80mm thermal roll boxed | plain | framed."""
+
+    invoice: A4Look = 'band'
+    purchase_order: A4Look = 'band'
+    purchase_return: A4Look = 'band'
+    quotation: A4Look = 'band'
+    bill: A4Look = 'band'  # a bill printed on A4
+    thermal_bill: SlipLook = 'boxed'
+    credit_note: SlipLook = 'boxed'
+    payment_receipt: SlipLook = 'boxed'
+
+
+class BizAddress(ApiModel):
+    """Another address of the admin's that an invoice can be from, kept for the next invoices."""
+
+    label: str = Field(max_length=60)
+    text: str = Field(max_length=300)
 
 
 class AppSettingsOut(ApiModel):
@@ -83,6 +110,13 @@ class AppSettingsOut(ApiModel):
     bank_account: str = Field(default='', max_length=30)
     bank_ifsc: str = Field(default='', max_length=16)
     invoice_terms: str = Field(default='', max_length=400)
+    # more addresses an invoice can be from, besides the two built in (added on the invoice itself)
+    biz_addresses: list[BizAddress] = Field(default_factory=list, max_length=12)
+
+    # the look of each printed document (see DocLooks)
+    doc_looks: DocLooks = Field(default_factory=DocLooks)
+    # the largest manual discount on a bill, as a percentage of its value (an amount off is held to the same share)
+    max_discount_pct: float = Field(default=10, ge=0, le=100)
 
     # off: GST isn't shown anywhere (bills, quotations, figures, the report); prices are the selling price
     show_gst: bool = True
@@ -120,6 +154,9 @@ class AppSettingsPatch(ApiModel):
     bank_account: str | None = Field(default=None, max_length=30)
     bank_ifsc: str | None = Field(default=None, max_length=16)
     invoice_terms: str | None = Field(default=None, max_length=400)
+    biz_addresses: list[BizAddress] | None = Field(default=None, max_length=12)
+    doc_looks: DocLooks | None = None
+    max_discount_pct: float | None = Field(default=None, ge=0, le=100)
     show_gst: bool | None = None
     require_name: bool | None = None
     require_mobile: bool | None = None
@@ -150,8 +187,8 @@ def get(session: Session, location: str | None = None) -> AppSettingsOut:
     for name in AppSettingsOut.model_fields:
         if name in values:
             try:
-                AppSettingsOut(**{name: values[name]})
-                clean[name] = values[name]
+                # the value as the model reads it (a nested one, the document looks, as its model)
+                clean[name] = getattr(AppSettingsOut(**{name: values[name]}), name)
             except ValueError:
                 pass
     return defaults.model_copy(update=clean)

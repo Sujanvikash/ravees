@@ -52,6 +52,18 @@ const PATHS = {
   ],
   // Shaniwar Wada: the fort wall, two bastions and the arched Delhi Gate between them
   pune: ['M4 46V30H24M56 30H76V46', 'M24 46V24H34V46M46 46V24H56V46', 'M34 26H46', 'M36 46V33Q40 27 44 33V46', 'M39 46V36M41 46V36'],
+  // The Charminar: the square gateway with its great pointed arch, the arcaded gallery above, and a minaret at each
+  // corner with its balconies and onion dome
+  hyderabad: [
+    'M18 46V18H62V46',
+    'M31 46V35Q31 29 40 26Q49 29 49 35V46',
+    'M18 24H62',
+    'M23 24V21Q25 19 27 21V24M31 24V21Q33 19 35 21V24M45 24V21Q47 19 49 21V24M53 24V21Q55 19 57 21V24',
+    'M12 46V12H18M68 46V12H62',
+    'M10.5 30H19.5M60.5 30H69.5M10.5 18H19.5M60.5 18H69.5',
+    'M12 12Q12 7 15 5.5Q18 7 18 12M62 12Q62 7 65 5.5Q68 7 68 12',
+    'M15 5.5V2.5M65 5.5V2.5',
+  ],
 };
 
 // battlements, drawn as a thick dashed line along the top of a wall

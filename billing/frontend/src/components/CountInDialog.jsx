@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CircleAlert, CircleCheck, Minus, PackageCheck, Plus, ScanBarcode } from 'lucide-react';
 import { findProduct } from '../lib/catalogue.js';
-import { orderQty } from '../lib/orders.js';
+import { keptBack, orderQty } from '../lib/orders.js';
 import Dialog from './Dialog.jsx';
 import { Segmented } from './Filters.jsx';
 
@@ -9,9 +9,13 @@ import { Segmented } from './Filters.jsx';
  * Counting a sent purchase order in at the showroom. Counted quantities start at what was sent (adjust
  * any that differ), or switch to scanner counting: everything starts at 0 and each scan adds one. What is
  * counted is what goes into stock; differences are kept on the order.
+ * A purchase return counted in by the admin also shows what the showroom had of each product when it sent it
+ * (Held), so what it kept back stands out next to what arrived.
  */
 const CountInDialog = ({ order, onClose, onConfirm, subtitle = 'Check the delivery against the order. What you count is added to stock.' }) => {
   const sent = Object.fromEntries(order.lines.map((l) => [l.code, l.qty]));
+  const withHeld = order.lines.some((l) => l.held != null);
+  const back = keptBack(order);
   const [mode, setMode] = useState('sent');
   const [counted, setCounted] = useState(sent);
   const [scan, setScan] = useState('');
@@ -80,11 +84,30 @@ const CountInDialog = ({ order, onClose, onConfirm, subtitle = 'Check the delive
           </p>
         )}
 
+        {back.lines > 0 && (
+          <p role="status" className="flex items-start gap-2 rounded-xl bg-warn-50 px-4 py-2.5 text-[13px] text-warn-ink">
+            <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="font-semibold">
+                The showroom kept back {back.units.toLocaleString('en-IN')} units
+                {back.short.length > 0 && `: ${back.short.length} ${back.short.length === 1 ? 'product' : 'products'} sent in part (marked Held below)`}
+                {back.kept.length > 0 && `${back.short.length ? ', and' : ':'} ${back.kept.length} ${back.kept.length === 1 ? 'product' : 'products'} not sent at all`}.
+              </span>
+              {order.note && ` Its note: “${order.note}”`}
+            </span>
+          </p>
+        )}
+
         <div className="max-h-[46vh] overflow-auto rounded-xl border border-line-soft">
           <table className="w-full min-w-[36rem] text-[13px] tabular-nums">
             <thead className="sticky top-0 z-1 bg-mist-2 text-left text-xs text-ink-3">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">Product</th>
+                {withHeld && (
+                  <th scope="col" className="px-3 py-2 text-right font-medium" title="What the showroom had when it sent it">
+                    Held
+                  </th>
+                )}
                 <th scope="col" className="px-3 py-2 text-right font-medium">Sent</th>
                 <th scope="col" className="px-3 py-2 text-center font-medium">Counted</th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">Difference</th>
@@ -94,12 +117,15 @@ const CountInDialog = ({ order, onClose, onConfirm, subtitle = 'Check the delive
               {order.lines.map((l) => {
                 const c = counted[l.code] ?? 0;
                 const d = c - l.qty;
+                const kept = l.held != null ? l.held - l.qty : 0;
                 return (
-                  <tr key={l.code} className={`border-t border-line-soft ${d ? 'bg-warn-50/50' : ''}`}>
+                  <tr key={l.code} className={`border-t border-line-soft ${d || kept > 0 ? 'bg-warn-50/50' : ''}`}>
                     <td className="px-3 py-1.5">
                       <span className="mr-2 rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
                       {l.name}
+                      {kept > 0 && <span className="ml-2 text-[11px] font-medium whitespace-nowrap text-warn-ink">{kept} kept back</span>}
                     </td>
+                    {withHeld && <td className={`px-3 py-1.5 text-right ${kept > 0 ? 'font-medium text-warn-ink' : 'text-ink-3'}`}>{l.held ?? '—'}</td>}
                     <td className="px-3 py-1.5 text-right text-ink-2">{l.qty}</td>
                     <td className="px-3 py-1.5">
                       <div className="mx-auto flex h-8 w-28 items-center overflow-hidden rounded-lg border border-line bg-surface">

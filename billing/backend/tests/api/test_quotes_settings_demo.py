@@ -147,6 +147,47 @@ def test_business_details_are_the_admins_alone(client, chennai, admin):
         client.patch('/settings', json={'bizName': '', 'bizGstin': '', 'bankAccount': ''}, headers=admin)
 
 
+def test_more_invoice_addresses_the_document_looks_and_the_discount_limit(client, chennai, admin):
+    s = client.get('/settings', headers=chennai).json()
+    assert (
+        s['docLooks']['invoice'] == 'band'
+        and s['docLooks']['thermalBill'] == 'boxed'
+        and s['maxDiscountPct'] == 10
+        and s['bizAddresses'] == []
+    )
+    godown = {'bizAddresses': [{'label': 'Godown, Puzhal', 'text': 'No. 7, Puzhal, Chennai – 600 066'}]}
+    assert client.patch('/settings', json=godown, headers=chennai).status_code == 403
+    looks = {'docLooks': {**s['docLooks'], 'invoice': 'clean', 'creditNote': 'framed'}, 'maxDiscountPct': 12.5}
+    assert client.patch('/settings', json=looks, headers=chennai).status_code == 403  # the admin's to choose
+    try:
+        assert (
+            client.patch('/settings', json={**godown, **looks}, headers=admin).json()['bizAddresses']
+            == godown['bizAddresses']
+        )
+        # every showroom prints in the admin's look and keeps to its discount limit, but never sees its addresses
+        seen = client.get('/settings', headers=chennai).json()
+        assert (
+            seen['docLooks']['invoice'],
+            seen['docLooks']['creditNote'],
+            seen['maxDiscountPct'],
+            seen['bizAddresses'],
+        ) == (
+            'clean',
+            'framed',
+            12.5,
+            [],
+        )
+        assert client.patch('/settings', json={'maxDiscountPct': 101}, headers=admin).status_code == 422
+        assert client.patch('/settings', json={'docLooks': {'invoice': 'fancy'}}, headers=admin).status_code == 422
+        assert client.patch('/settings', json={'docLooks': {'thermalBill': 'band'}}, headers=admin).status_code == 422
+    finally:
+        client.patch(
+            '/settings',
+            json={'bizAddresses': [], 'docLooks': s['docLooks'], 'maxDiscountPct': 10},
+            headers=admin,
+        )
+
+
 @pytest.fixture(scope='module')
 def demo_built():
     build_demo()

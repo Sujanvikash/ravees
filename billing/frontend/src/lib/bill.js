@@ -4,21 +4,38 @@ import { findProduct } from './catalogue.js';
 /** What a product sells for: its offer price when it has one, else MRP. */
 export const priceOf = (product) => product.offer || product.mrp;
 
+/** The most a manual discount may take off a bill of `gross` (GST-inclusive) at `cap` percent (the admin's limit,
+ *  Settings → maxDiscountPct), in rupees rounded down to the paisa. */
+export const maxDiscount = (gross, cap) => Math.floor(gross * cap + 1e-6) / 100;
+
+/** A manual discount held to the limit: a percentage to `cap`, a flat amount to `cap` percent of `gross`; null when
+ *  the limit is 0, the same discount back when it is within it. A flat amount isn't held while the bill is empty
+ *  (nothing to measure it against yet). */
+export const capDiscount = (discount, gross, cap = 100) => {
+  if (!discount || !(discount.value > 0)) return discount;
+  if (discount.kind === 'percent') return discount.value > cap ? (cap > 0 ? { ...discount, value: cap } : null) : discount;
+  if (!(gross > 0) || cap >= 100) return discount;
+  const most = maxDiscount(gross, cap);
+  return discount.value > most ? (most > 0 ? { ...discount, value: most } : null) : discount;
+};
+
 /** The rupee amount a manual discount ({ kind: 'percent' | 'amount', value }) takes off a GST-inclusive
- *  subtotal. A percentage is capped at 100%, a flat amount at the whole subtotal (mirrors sales/bill.py). */
-export const discountOff = (gross, discount) => {
+ *  subtotal. A percentage is capped at 100%, a flat amount at the whole subtotal (mirrors sales/bill.py), and
+ *  both at `cap` percent of it when a lower limit is given. */
+export const discountOff = (gross, discount, cap = 100) => {
   if (!discount || !(discount.value > 0)) return 0;
-  if (discount.kind === 'percent') return (gross * Math.min(discount.value, 100)) / 100;
-  return Math.min(discount.value, gross);
+  if (discount.kind === 'percent') return (gross * Math.min(discount.value, cap, 100)) / 100;
+  return Math.min(discount.value, cap >= 100 ? gross : maxDiscount(gross, cap));
 };
 
 /**
  * Bill items ({ code, qty }) → lines with their product and amounts, plus the totals: MRP total, offer
- * savings, taxable value and GST per rate (split into CGST + SGST), round-off and the amount payable.
- * Items whose code is no longer in the product list are dropped. A manual `discount` comes off the selling
- * subtotal and is spread across the GST rates in proportion, so the taxable value and GST drop with it.
+ * savings, the selling subtotal (gross), taxable value and GST per rate (split into CGST + SGST), round-off and
+ * the amount payable. Items whose code is no longer in the product list are dropped. A manual `discount` comes off
+ * the selling subtotal, held to `cap` percent of it (capDiscount), and is spread across the GST rates in
+ * proportion, so the taxable value and GST drop with it.
  */
-export const buildBill = (items, discount = null) => {
+export const buildBill = (items, discount = null, cap = 100) => {
   const lines = items
     .map((item) => ({ ...item, product: findProduct(item.code) }))
     .filter((line) => line.product)
@@ -43,7 +60,8 @@ export const buildBill = (items, discount = null) => {
     byRate.set(rate, row);
   }
 
-  const off = discountOff(gross, discount);
+  const held = capDiscount(discount, gross, cap);
+  const off = discountOff(gross, held, cap);
   const factor = gross > 0 ? (gross - off) / gross : 1;
   const gstRows = [...byRate.values()]
     .map((r) => ({ rate: r.rate, taxable: r.taxable * factor, tax: r.tax * factor }))
@@ -60,9 +78,10 @@ export const buildBill = (items, discount = null) => {
     qty,
     mrpTotal,
     savings: mrpTotal - gross,
+    gross,
     discount: off,
-    discountKind: off > 0 ? discount.kind : null,
-    discountValue: off > 0 ? discount.value : 0,
+    discountKind: off > 0 ? held.kind : null,
+    discountValue: off > 0 ? held.value : 0,
     taxable,
     tax,
     gstRows,

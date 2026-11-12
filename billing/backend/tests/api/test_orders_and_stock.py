@@ -1,5 +1,7 @@
+import base64
 import uuid
 
+import pytest
 from openpyxl import Workbook
 
 from app import cli
@@ -167,3 +169,60 @@ def test_admin_stock(client, admin, chennai):
     assert client.get('/cash/day?location=warehouse', headers=admin).status_code == 422
     new = {'location': 'warehouse', 'name': 'Thing', 'dept': 'Trees', 'mrp': 10}
     assert client.post('/products', json=new, headers=admin).status_code == 422
+
+
+def test_a_purchase_return_at_d_rate_and_what_was_kept_back(client, admin, chennai):
+    one, two = season_code(client, chennai, 16), season_code(client, chennai, 17)
+    body = {
+        'id': str(uuid.uuid4()),
+        'location': 'chennai',
+        'file': 'x.xlsx',
+        'lines': [{'code': one, 'qty': 6}, {'code': two, 'qty': 2}],
+    }
+    assert client.post('/stock/imports', json=body, headers=admin).status_code == 201
+    held = stock_of(client, chennai, 'chennai', one)
+
+    send = {
+        'id': str(uuid.uuid4()),
+        'reason': 'end-of-season',
+        'lines': [{'code': one, 'qty': 4}],
+        'lrNo': 'LR 12',
+        'vehicleNo': 'tn01ab1234',
+        'cartons': 3,
+    }
+    r = client.post('/purchase-returns', json=send, headers=chennai)
+    assert r.status_code == 201, r.text
+    r = r.json()
+    line = r['lines'][0]
+    # what it had is kept on the line, so the admin sees it sent back fewer than it held
+    assert (line['qty'], line['held']) == (4, held)
+    # valued at the D.Rate (the product's cost) only: a purchase return carries no GST
+    cost = next(p for p in client.get('/products', headers=admin).json()['products'] if p['code'] == one)['cost']
+    assert line['rate'] == cost and line['amount'] == pytest.approx(round(cost * 4, 2))
+    assert 'gst' not in line and 'tax' not in line and 'total' not in r and 'interState' not in r
+    assert r['subtotal'] == pytest.approx(line['amount'])
+    assert r['issuer']['state'] and r['vehicleNo'] == 'TN01AB1234' and (r['lrNo'], r['cartons']) == ('LR 12', 3)
+    # at the end of the season, what it still has and isn't sending is on the return too
+    kept = {k['code']: k for k in r['kept']}
+    assert one not in kept and kept[two]['qty'] == stock_of(client, chennai, 'chennai', two)
+    assert kept[two]['amount'] == pytest.approx(round(kept[two]['rate'] * kept[two]['qty'], 2))
+
+    # the showroom records the e-way bill; another showroom can't see the return; the admin can read its PDF
+    pdf = base64.b64encode(b'%PDF-1.4 e-way').decode()
+    docs = {'ewayNo': '1234 5678 9012', 'docName': 'eway.pdf', 'docBase64': pdf, 'lrNo': 'LR 13', 'cartons': 4}
+    d = client.put(f'/purchase-returns/{r["id"]}/documents', json=docs, headers=chennai)
+    assert d.status_code == 200, d.text
+    d = d.json()
+    assert d['hasDocument'] and d['ewayNo'] == '1234 5678 9012' and (d['lrNo'], d['cartons']) == ('LR 13', 4)
+    assert d['history'][-1]['action'] == 'documents' and d['history'][-1]['by'] == 'Chennai Egmore'
+    pune = login(client, 'pune')
+    assert client.put(f'/purchase-returns/{r["id"]}/documents', json=docs, headers=pune).status_code == 404
+    assert client.get(f'/purchase-returns/{r["id"]}/document', headers=pune).status_code == 404
+    got = client.get(f'/purchase-returns/{r["id"]}/document', headers=admin)
+    assert got.status_code == 200 and got.content.startswith(b'%PDF')
+    not_pdf = {**docs, 'docBase64': base64.b64encode(b'hello').decode()}
+    assert client.put(f'/purchase-returns/{r["id"]}/documents', json=not_pdf, headers=admin).status_code == 422
+
+    # a return for another reason doesn't list what stays behind
+    other = {'id': str(uuid.uuid4()), 'reason': 'another-store', 'lines': [{'code': two, 'qty': 1}]}
+    assert client.post('/purchase-returns', json=other, headers=chennai).json()['kept'] is None

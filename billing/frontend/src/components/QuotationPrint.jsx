@@ -4,24 +4,12 @@ import { useStore } from '../context/StoreContext.jsx';
 import { gstLines } from '../lib/bill.js';
 import { formatMobile } from '../lib/customer.js';
 import { amount, inr } from '../lib/money.js';
+import { useDoc, useDocTable } from '../lib/docLook.js';
 import { useQuoteColour } from '../lib/quoteColour.js';
+import { DocFoot, DocFrame, DocHead, DocSums, Meta, Parties, PartyBox } from './DocParts.jsx';
 
 const date = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 const dateTime = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-
-const Label = ({ children }) => <div className="mb-1 text-[9.5px] font-bold tracking-[0.16em] text-(--q-accent) uppercase">{children}</div>;
-const Meta = ({ label, value }) => (
-  <div className="flex justify-between gap-4">
-    <span>{label}</span>
-    <span className="font-semibold">{value}</span>
-  </div>
-);
-const Sum = ({ label, value, className = '' }) => (
-  <div className={`flex justify-between gap-4 py-0.5 ${className}`}>
-    <span>{label}</span>
-    <span>{value}</span>
-  </div>
-);
 
 /** What prints instead when a quotation is sent to a narrow receipt printer: it must never pass for a bill. */
 const NarrowNotice = () => (
@@ -40,12 +28,13 @@ const NarrowNotice = () => (
 
 /**
  * The quotation itself, as it comes out on A4: printed (QuotationPrint below) and in its preview and PDF
- * (DocumentPreview). In the colours picked (lib/quoteColour.js): the accent heads the page, the table and the total,
- * alternate rows are tinted; black and white keeps it to ink only, for a plain laser printer. The logo heads the
- * page, and it says plainly that this is not a bill and no payment is to be made against it. Each top-level part
- * stays whole on a page; only the table's rows are shared out over pages (lib/docPages.js).
+ * (DocumentPreview). In the look the admin picked (Settings → Documents; `look` overrides it for a preview there) and
+ * the colours picked (lib/quoteColour.js), made of the shared parts in DocParts.jsx with QUOTATION at the top of the
+ * page; black and white keeps it to ink only, for a plain laser printer. The showroom and its logo issue it, and it
+ * says plainly that this is not a bill and no payment is to be made against it. Each top-level part stays whole on a
+ * page; only the table's rows are shared out over pages (lib/docPages.js).
  */
-export const QuotationDocument = ({ quote, pictures = {}, colour }) => {
+export const QuotationDocument = ({ quote, pictures = {}, colour, look }) => {
   const shop = locationById(quote.location) ?? {};
   const settings = useStore().settings;
   const { showGst, composition } = settings;
@@ -56,136 +45,126 @@ export const QuotationDocument = ({ quote, pictures = {}, colour }) => {
   const phone = settings.storePhone?.trim() || shop.phone;
   const gstin = settings.gstin?.trim() || shop.gstin;
   const { totals } = quote;
-  const mono = colour.mono;
-  // the products' pictures ({ code: data URL }); the column shows only if any has one
-  const withPictures = quote.lines.some((l) => pictures[l.code]);
+  const taxLine = [composition && 'Composition Dealer', (gst || composition) && gstin && `GSTIN: ${gstin}`].filter(Boolean).join('  |  ');
   return (
-    <div
-      style={{ '--q-accent': colour.accent, '--q-soft': colour.soft, '--q-line': colour.line }}
-      className="text-[11.5px] leading-normal text-black [print-color-adjust:exact]"
-    >
-      {/* header: the logo and showroom on the left, the document on the right */}
-      <div className="flex items-start justify-between gap-8 border-b-2 border-(--q-accent) pb-4">
-        <div className="flex items-start gap-4">
-          <img src={logo} alt={BRAND.name} className={`h-[64px] w-auto ${mono ? 'print-ink' : ''}`} />
-          <div className="text-[10.5px] leading-snug">
-            <div className="text-[16px] leading-tight font-bold text-(--q-accent) uppercase">
-              {storeName || (shop.city ? `${shop.city} showroom · ${shop.area}` : BRAND.name)}
-            </div>
-            <div className="mb-0.5 text-[9.5px] font-semibold tracking-wide text-black/70">
-              {BRAND.name} · {BRAND.tagline}
-            </div>
-            {address.map((a) => (
-              <div key={a}>{a}</div>
-            ))}
-            {phone && <div>Ph: {phone}</div>}
-            {composition && <div className="font-bold">Composition Dealer</div>}
-            {(gst || composition) && gstin && <div>GSTIN: {gstin}</div>}
-            {BRAND.email && <div>{BRAND.email}</div>}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="font-display text-[28px] leading-none font-bold tracking-[0.12em] text-(--q-accent)">QUOTATION</div>
-          <div className="mt-1.5 text-[9.5px] font-bold tracking-[0.16em]">NOT A BILL · NOT A TAX INVOICE</div>
-          <div className="mt-2 inline-block rounded-md border border-(--q-line) bg-(--q-soft) px-2 py-0.5 font-mono text-[12px] font-semibold">
-            {quote.quoteNo}
-          </div>
-        </div>
-      </div>
+    <DocFrame colour={colour} kind="quotation" look={look}>
+      <DocHead
+        title="QUOTATION"
+        tag="Not a bill · not a tax invoice"
+        number={quote.quoteNo}
+        date={date.format(new Date(quote.at))}
+        name={storeName || (shop.city ? `${shop.city} showroom · ${shop.area}` : BRAND.name)}
+        lines={[`${BRAND.name} · ${BRAND.tagline}`, ...address]}
+        contact={[phone && `Ph: ${phone}`, BRAND.email].filter(Boolean).join('  |  ')}
+        taxLine={taxLine}
+        logo={<img src={logo} alt={BRAND.name} className={`h-[60px] w-auto shrink-0 ${colour.mono ? 'print-ink' : ''}`} />}
+      />
 
-      <div className="mt-5 grid grid-cols-2 gap-10">
-        <div>
-          <Label>Quoted for</Label>
-          {quote.company && <div className="text-[14px] font-bold uppercase">{quote.company}</div>}
-          <div className={quote.company ? 'font-semibold' : 'text-[14px] font-semibold'}>{quote.name || '—'}</div>
+      <Parties>
+        <PartyBox label="Quoted for">
+          {quote.company && <div className="text-[13px] font-bold uppercase">{quote.company}</div>}
+          <div className={quote.company ? 'font-semibold' : 'text-[13px] font-semibold'}>{quote.name || '—'}</div>
           <div>{quote.phone ? formatMobile(quote.phone) : '—'}</div>
           {quote.address && quote.address.split('\n').map((a) => <div key={a}>{a}</div>)}
           {quote.gstin && <div>GSTIN: {quote.gstin}</div>}
-        </div>
-        <div>
-          <Label>Details</Label>
+        </PartyBox>
+        <PartyBox label="Details" tinted>
           <Meta label="Date" value={dateTime.format(new Date(quote.at))} />
           <Meta label="Valid until" value={date.format(new Date(quote.validUntil))} />
           {quote.deliveryDate && <Meta label="Delivery by (approx.)" value={date.format(new Date(`${quote.deliveryDate}T00:00:00`))} />}
           <Meta label="Prepared by" value={`${quote.by} showroom`} />
-        </div>
-      </div>
+        </PartyBox>
+      </Parties>
 
-      <table className="mt-6 w-full border-collapse tabular-nums">
-        <thead>
-          <tr
-            className={`text-left text-[9.5px] tracking-[0.14em] uppercase ${mono ? 'border-y-2 border-black' : 'bg-(--q-accent) text-white'}`}
-          >
-            <th className="py-1.5 pr-2 pl-1.5 font-bold">#</th>
-            {withPictures && <th className="py-1.5 pr-2 font-bold" aria-label="Picture" />}
-            <th className="py-1.5 pr-2 font-bold">Code</th>
-            <th className="py-1.5 pr-2 font-bold">Item</th>
-            <th className="py-1.5 pr-2 text-right font-bold">Qty</th>
-            <th className="py-1.5 pr-2 text-right font-bold">MRP</th>
-            <th className="py-1.5 pr-2 text-right font-bold">Rate</th>
-            <th className="py-1.5 pr-1.5 text-right font-bold">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {quote.lines.map((l, i) => (
-            <tr key={l.code} className="border-b border-(--q-line) align-top break-inside-avoid even:bg-(--q-soft)">
-              <td className="py-1.5 pr-2 pl-1.5">{i + 1}</td>
-              {withPictures && (
-                <td className="py-1.5 pr-2">
-                  {pictures[l.code] && (
-                    <img src={pictures[l.code]} alt={l.name} className="size-16 border border-(--q-line) bg-white object-contain" />
-                  )}
-                </td>
-              )}
-              <td className="py-1.5 pr-2 font-mono text-[10.5px]">{l.code}</td>
-              <td className="py-1.5 pr-2">{l.name}</td>
-              <td className="py-1.5 pr-2 text-right">{l.qty}</td>
-              <td className="py-1.5 pr-2 text-right">{amount(l.mrp)}</td>
-              <td className="py-1.5 pr-2 text-right">{amount(l.price)}</td>
-              <td className="py-1.5 pr-1.5 text-right font-semibold">{amount(l.price * l.qty)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <QuoteTable lines={quote.lines} pictures={pictures} />
 
-      <div className="mt-5 flex items-start justify-between gap-10 break-inside-avoid">
-        <div className="max-w-[55%] text-[11px]">
-          {quote.note && (
-            <div className="mb-2">
-              <span className="font-semibold">Instructions: </span>
-              {quote.note}
+      <DocSums
+        note={
+          <>
+            {quote.note && (
+              <div className="mb-2">
+                <span className="font-semibold">Instructions: </span>
+                {quote.note}
+              </div>
+            )}
+            <div>
+              {totals.count} items · {totals.qty} qty.{gst && ' Prices include GST.'}
             </div>
-          )}
-          <div>
-            {totals.count} items · {totals.qty} qty.{gst && ' Prices include GST.'}
-          </div>
-        </div>
-        <div className="w-64">
-          <Sum label="MRP total" value={amount(totals.mrpTotal)} />
-          {totals.savings > 0 && <Sum label="Offer discount" value={`−${amount(totals.savings)}`} />}
-          {gst && <Sum label="Taxable value" value={amount(totals.taxable)} />}
-          {gst && gstLines(totals.gstRows).map((g) => <Sum key={g.label} label={g.label} value={amount(g.value)} />)}
-          <Sum
-            label="Quoted total"
-            value={inr(totals.payable)}
-            className={`mt-1.5 py-1.5 text-[14px] font-bold ${mono ? 'border-y-2 border-black' : 'rounded-md bg-(--q-accent) px-2 text-white'}`}
-          />
-        </div>
-      </div>
+          </>
+        }
+        rows={[
+          ['MRP total', amount(totals.mrpTotal)],
+          ...(totals.savings > 0 ? [['Offer discount', `−${amount(totals.savings)}`]] : []),
+          ...(gst ? [['Taxable value', amount(totals.taxable)], ...gstLines(totals.gstRows).map((g) => [g.label, amount(g.value)])] : []),
+        ]}
+        grand={['Quoted total', inr(totals.payable)]}
+      />
 
-      <div className="mt-8 border-2 border-(--q-accent) bg-(--q-soft) p-3 text-center break-inside-avoid">
-        <div className="text-[12px] font-bold tracking-[0.08em] text-(--q-accent)">THIS IS A QUOTATION ONLY. IT IS NOT A BILL OR TAX INVOICE.</div>
-        <div className="mt-1">
-          Do not make any payment against this document. A bill is issued only at the time of purchase. Prices and availability are valid
-          until {date.format(new Date(quote.validUntil))} and may change after that.
-        </div>
-      </div>
+      <NotABill validUntil={quote.validUntil} />
 
-      <div className="mt-6 flex items-end justify-between border-t border-(--q-accent) pt-2 text-[10.5px]">
-        <span>
-          {BRAND.name} · {BRAND.tagline}
-        </span>
-        <span className="font-display text-(--q-accent) italic">Thank you &amp; Merry Christmas!</span>
+      <DocFoot>
+        {BRAND.name} · {BRAND.tagline} · <span className="font-display text-(--q-accent) italic">Thank you &amp; Merry Christmas!</span>
+      </DocFoot>
+    </DocFrame>
+  );
+};
+
+/** The quotation's lines: a top-level <table> of the frame (so its rows are shared out over the pages), in the
+ *  frame's look. The products' pictures ({ code: data URL }) get a column only if any has one. */
+const QuoteTable = ({ lines, pictures }) => {
+  const t = useDocTable();
+  const withPictures = lines.some((l) => pictures[l.code]);
+  return (
+    <table className={t.table}>
+      <thead>
+        <tr className={t.head}>
+          <th className={t.th}>#</th>
+          {withPictures && <th className={t.th} aria-label="Picture" />}
+          <th className={t.th}>Code</th>
+          <th className={`${t.th} text-left`}>Item</th>
+          <th className={`${t.th} text-right`}>Qty</th>
+          <th className={`${t.th} text-right`}>MRP</th>
+          <th className={`${t.th} text-right`}>Rate</th>
+          <th className={`${t.th} text-right`}>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((l, i) => (
+          <tr key={l.code} className={`${t.row} align-top break-inside-avoid`}>
+            <td className={`${t.td} text-center`}>{i + 1}</td>
+            {withPictures && (
+              <td className={t.td}>
+                {pictures[l.code] && <img src={pictures[l.code]} alt={l.name} className="size-16 border border-(--q-line) bg-white object-contain" />}
+              </td>
+            )}
+            <td className={`${t.td} text-center font-mono text-[10px] whitespace-nowrap`}>{l.code}</td>
+            <td className={t.td}>{l.name}</td>
+            <td className={`${t.td} text-right`}>{l.qty}</td>
+            <td className={`${t.td} text-right`}>{amount(l.mrp)}</td>
+            <td className={`${t.td} text-right`}>{amount(l.price)}</td>
+            <td className={`${t.td} text-right font-semibold`}>{amount(l.price * l.qty)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+/** The plain warning at the foot that this is a quotation, not a bill, in the frame's look. */
+const NotABill = ({ validUntil }) => {
+  const { look, mono } = useDoc();
+  const box =
+    look === 'clean'
+      ? 'border-y border-(--q-accent) py-2.5'
+      : look === 'classic'
+        ? `border border-(--q-accent) p-3 ${mono ? '' : 'bg-(--q-soft)'}`
+        : `rounded-md border-2 border-(--q-accent) p-3 ${mono ? '' : 'bg-(--q-soft)'}`;
+  return (
+    <div className={`mt-8 text-center break-inside-avoid ${box}`}>
+      <div className="text-[12px] font-bold tracking-[0.08em] text-(--q-accent)">THIS IS A QUOTATION ONLY. IT IS NOT A BILL OR TAX INVOICE.</div>
+      <div className="mt-1">
+        Do not make any payment against this document. A bill is issued only at the time of purchase. Prices and availability are valid until{' '}
+        {date.format(new Date(validUntil))} and may change after that.
       </div>
     </div>
   );
@@ -196,7 +175,7 @@ export const QuotationDocument = ({ quote, pictures = {}, colour }) => {
  * only it prints. An outlined QUOTATION watermark sits behind every page. Printed on a narrow receipt printer, only a
  * blunt "not a bill" notice comes out.
  */
-const QuotationPrint = ({ quote, pictures = {} }) => {
+const QuotationPrint = ({ quote, pictures = {}, look }) => {
   const colour = useQuoteColour();
   return (
     <div className="hidden [page:quote] print:block">
@@ -214,7 +193,7 @@ const QuotationPrint = ({ quote, pictures = {} }) => {
         </div>
 
         <div className="relative">
-          <QuotationDocument quote={quote} pictures={pictures} colour={colour} />
+          <QuotationDocument quote={quote} pictures={pictures} colour={colour} look={look} />
         </div>
       </div>
     </div>

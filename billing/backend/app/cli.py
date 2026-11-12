@@ -9,7 +9,7 @@ Commands for running the billing API.
     uv run python -m app.cli refresh-demo                  # build it only if it is missing or out of date
     uv run python -m app.cli import-invoices               # the invoices issued before the app, once
 
-seed fills the database: the five showrooms, a login for each plus the admin (default passwords), and the
+seed fills the database: the six showrooms, a login for each plus the admin (default passwords), and the
 product catalogue from seed/products-clean.xlsx. Safe to run again: it never changes a password, and it keeps
 the admin's season choices unless --season-from-excel is given. Run again after the showroom list changes, it adds
 the new showrooms with their logins and takes off the ones no longer used (Bengaluru and Goa), as Remove on the

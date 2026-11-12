@@ -1,1 +1,1 @@
-"""The five showrooms."""
+"""The six showrooms."""

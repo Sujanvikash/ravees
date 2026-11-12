@@ -22,7 +22,7 @@ import { useClock } from '../hooks/useClock.js';
 import { useCustomerLookup } from '../hooks/useCustomerLookup.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 import { useScanner } from '../hooks/useScanner.js';
-import { billNumber, buildBill, countLabel, nextSeq } from '../lib/bill.js';
+import { billNumber, buildBill, capDiscount, countLabel, nextSeq } from '../lib/bill.js';
 import { findProduct, SEASON, seasonCount } from '../lib/catalogue.js';
 import { isValidMobile, isValidName, phoneDigits } from '../lib/customer.js';
 import { inr } from '../lib/money.js';
@@ -75,7 +75,10 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
   const lookup = useCustomerLookup({ phone, name, setPhone, setName });
   const nameRef = useRef(null);
 
-  const totals = useMemo(() => buildBill(bill.items, bill.discount), [bill.items, bill.discount]);
+  // a manual discount is held to the admin's limit (Settings), here and in what is sent
+  const cap = settings.maxDiscountPct;
+  const totals = useMemo(() => buildBill(bill.items, bill.discount, cap), [bill.items, bill.discount, cap]);
+  const discount = capDiscount(bill.discount, totals.gross, cap) || undefined;
   // offline, the next number of this counter's own offline series (lib/offline.js)
   const billNo =
     (!offline.online && peekOfflineNo(offlineKey(session), location, now)) || billNumber(shop.billPrefix, nextSeq(sales, shop.billPrefix, now), now);
@@ -192,11 +195,11 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     try {
       if (exchange) {
         const { saleId, lines: back, reason } = exchange;
-        const result = await recordReturn({ id: ids.current.ret, saleId, lines: back, reason, exchange: { id: ids.current.sale, lines, payment, discount: bill.discount || undefined } });
+        const result = await recordReturn({ id: ids.current.ret, saleId, lines: back, reason, exchange: { id: ids.current.sale, lines, payment, discount } });
         sale = result.sale;
         note = result.creditNote;
       } else {
-        sale = await recordSale({ id: ids.current.sale, lines, phone: phoneDigits(phone), name: name.trim(), payment, discount: bill.discount || undefined });
+        sale = await recordSale({ id: ids.current.sale, lines, phone: phoneDigits(phone), name: name.trim(), payment, discount });
       }
     } catch (err) {
       setBusy(false);

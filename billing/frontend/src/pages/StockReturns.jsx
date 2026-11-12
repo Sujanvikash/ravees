@@ -1,14 +1,19 @@
 import { Fragment, useEffect, useState } from 'react';
-import { ChevronDown, History, PackageCheck, Printer, Undo2 } from 'lucide-react';
+import { ChevronDown, Eye, History, PackageCheck, Paperclip, Printer, Undo2 } from 'lucide-react';
+import ColourPicker from '../components/ColourPicker.jsx';
 import CountInDialog from '../components/CountInDialog.jsx';
+import DocumentPreview from '../components/DocumentPreview.jsx';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
-import OrderPrint from '../components/OrderPrint.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import ReturnEway from '../components/ReturnEway.jsx';
+import ReturnPrint, { ReturnDocument } from '../components/ReturnPrint.jsx';
+import ReturnTally from '../components/ReturnTally.jsx';
 import SendBackDialog from '../components/SendBackDialog.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { inr } from '../lib/money.js';
-import { orderGst, orderQty, orderTotal, orderValue, PO_GST } from '../lib/orders.js';
+import { orderQty, returnIssuer, returnTally } from '../lib/orders.js';
+import { setStockDocColour, useStockDocColour } from '../lib/quoteColour.js';
 import Pager from '../components/Pager.jsx';
 import { usePages } from '../hooks/usePages.js';
 import { rowClick } from '../lib/rowClick.js';
@@ -25,7 +30,7 @@ const REASON_LABEL = {
   damaged: 'Damaged',
   other: 'Other',
 };
-const ACTION_LABEL = { sent: 'Sent back', received: 'Counted in by the admin' };
+const ACTION_LABEL = { sent: 'Sent back', received: 'Counted in by the admin', documents: 'E-way bill and transport recorded' };
 
 const TABS = {
   location: [
@@ -42,16 +47,22 @@ const TABS = {
 
 const primary =
   'inline-flex h-8 items-center gap-1.5 rounded-lg bg-evergreen-800 px-3 text-[13px] font-semibold text-white hover:bg-evergreen-900';
+const rowButton = 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink';
 
 /**
  * Purchase returns, the way stock goes back from a showroom, and only ever to the admin:
  *   showroom sends items back (end of the season, another showroom needs them, damaged) → they leave its stock
  *   → admin counts them in when they arrive; any shortfall is kept on the return.
- * A showroom sees its own and sends; the admin sees every showroom's and counts them in.
+ * A showroom sees its own and sends; the admin sees every showroom's and counts them in. Each return is a
+ * document valued at D.Rate with no GST (PURCHASE RETURN, from the showroom to Tree Classics Trader) to preview,
+ * print or share, with its e-way
+ * bill and transport recorded on it. What a showroom kept back (sent fewer of than it had, or at the end of the
+ * season didn't send at all) is marked on the return in the list, in its details and when the admin counts it in.
  */
 const StockReturns = ({ session, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { stockReturns, receiveStockBack } = useStore();
+  const { stockReturns, receiveStockBack, settings } = useStore();
+  const colour = useStockDocColour();
   const [tab, setTab] = useState(TABS[session.role][0].id);
   const [location, setLocation] = useState(admin ? null : session.location);
   const [sending, setSending] = useState(false);
@@ -60,6 +71,7 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
   const [flash, setFlash] = useState(null);
   const [printing, setPrinting] = useState(null); // the return on the print page
   const [printJob, setPrintJob] = useState(0);
+  const [preview, setPreview] = useState(null); // the return in its preview
 
   useEffect(() => {
     if (printJob) window.print();
@@ -158,9 +170,8 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
                       <th scope="col" className="py-1.5 pr-3 font-medium">Status</th>
                       <th scope="col" className="py-1.5 pr-3 font-medium">Reason</th>
                       <th scope="col" className="py-1.5 pr-3 font-medium">Updated</th>
-                      <th scope="col" className="py-1.5 pr-3 text-right font-medium">Products</th>
-                      <th scope="col" className="py-1.5 pr-3 text-right font-medium">Units</th>
-                      {admin && <th scope="col" className="py-1.5 pr-3 text-right font-medium">Value at cost</th>}
+                      <th scope="col" className="py-1.5 pr-3 text-right font-medium">Returned</th>
+                      <th scope="col" className="py-1.5 pr-3 text-right font-medium">Not returned</th>
                       <th scope="col" className="py-1.5 pr-4 text-right font-medium">
                         <span className="sr-only">Actions</span>
                       </th>
@@ -169,6 +180,8 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
                   <tbody>
                     {paged.rows.map((r) => {
                       const isOpen = open === r.id;
+                      const tally = returnTally(r);
+                      const noEway = Boolean(r.issuer) && !r.ewayNo && !r.hasDocument;
                       return (
                         <Fragment key={r.id}>
                           <tr onClick={rowClick(() => setOpen(isOpen ? null : r.id))} className={`cursor-pointer border-b border-line-soft ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
@@ -185,23 +198,39 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
                             </td>
                             <td className="py-1.5 pr-3 font-mono text-xs">{r.number}</td>
                             {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(r.location)?.label}</td>}
-                            <td className="py-1.5 pr-3">
+                            <td className="py-1.5 pr-3 whitespace-nowrap">
                               <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${RETURN_STATUS[r.status].className}`}>{RETURN_STATUS[r.status].label}</span>
                             </td>
                             <td className="py-1.5 pr-3 text-ink-2">{REASON_LABEL[r.reason] ?? r.reason}</td>
                             <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(r.updatedAt))}</td>
-                            <td className="py-1.5 pr-3 text-right">{r.lines.length}</td>
                             <td className="py-1.5 pr-3 text-right">
-                              {r.status === 'received' ? `${orderQty(r.counted ?? [])} of ${orderQty(r.lines)}` : orderQty(r.lines)}
+                              <div className="font-semibold">{tally.returned.units.toLocaleString('en-IN')} pcs</div>
+                              <div className="text-xs text-ink-3">{inr(tally.returned.value)}</div>
+                              {tally.missing?.units > 0 && <div className="text-xs font-medium text-warn-ink">{tally.missing.units} didn&rsquo;t arrive</div>}
                             </td>
-                            {admin && <td className="py-1.5 pr-3 text-right font-medium">{inr(orderValue(r.lines))}</td>}
+                            <td className="py-1.5 pr-3 text-right">
+                              {!tally.known ? (
+                                <span className="text-ink-3">—</span>
+                              ) : tally.notReturned.units ? (
+                                <>
+                                  <div className="font-semibold text-ruby-ink">{tally.notReturned.units.toLocaleString('en-IN')} pcs</div>
+                                  <div className="text-xs text-ruby-ink">{inr(tally.notReturned.value)}</div>
+                                </>
+                              ) : (
+                                <span className="text-xs text-ink-3">None</span>
+                              )}
+                            </td>
                             <td className="py-1.5 pr-4">
                               <div className="flex justify-end gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => print(r)}
-                                  className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink"
-                                >
+                                {noEway && !admin && (
+                                  <button type="button" onClick={() => setOpen(r.id)} className={`${rowButton} border border-dashed border-warn-ink/40 text-warn-ink`}>
+                                    <Paperclip size={14} aria-hidden="true" /> Add e-way bill
+                                  </button>
+                                )}
+                                <button type="button" onClick={() => setPreview(r)} className={rowButton}>
+                                  <Eye size={14} aria-hidden="true" /> View
+                                </button>
+                                <button type="button" onClick={() => print(r)} className={rowButton}>
                                   <Printer size={14} aria-hidden="true" /> Print
                                 </button>
                                 {admin && r.status === 'sent' && (
@@ -214,37 +243,11 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
                           </tr>
                           {isOpen && (
                             <tr className="border-b border-line-soft bg-mist-2">
-                              <td colSpan={admin ? 10 : 8} className="px-4 pt-1 pb-4">
+                              <td colSpan={admin ? 9 : 8} className="px-4 pt-1 pb-4">
                                 <div className="ml-8 grid animate-pop gap-3 md:grid-cols-[minmax(0,1fr)_16rem]">
                                   <div className="flex flex-col gap-2">
-                                  <ul className="flex flex-col rounded-xl border border-line-soft bg-surface p-2">
-                                    {r.lines.map((l) => {
-                                      const got = r.counted?.find((c) => c.code === l.code)?.qty ?? 0;
-                                      return (
-                                        <li key={l.code} className="flex items-center gap-3 px-2 py-1.5">
-                                          <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
-                                          <span className="min-w-0 flex-1 truncate">{l.name}</span>
-                                          {r.status === 'received' && got !== l.qty && <span className="text-xs font-medium text-warn-ink">counted {got}</span>}
-                                          <span className="text-xs text-ink-3">{l.qty}</span>
-                                          {admin && <span className="w-28 text-right text-xs text-ink-2 tabular-nums">× {inr(l.rate)} cost</span>}
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                  <div className="flex flex-col gap-1 rounded-xl border border-line-soft bg-surface px-3 py-2 text-[13px] tabular-nums">
-                                    <div className="flex justify-between text-ink-2">
-                                      <span>Goods value</span>
-                                      <span>{inr(orderValue(r.lines))}</span>
-                                    </div>
-                                    <div className="flex justify-between text-ink-2">
-                                      <span>GST {PO_GST}%</span>
-                                      <span>{inr(orderGst(r.lines))}</span>
-                                    </div>
-                                    <div className="flex justify-between border-t border-line-soft pt-1 font-semibold">
-                                      <span>Total credit</span>
-                                      <span>{inr(orderTotal(r.lines))}</span>
-                                    </div>
-                                  </div>
+                                  <ReturnTally doc={r} shop={locationById(r.location)?.label ?? 'the showroom'} />
+                                  <ReturnEway key={r.updatedAt} doc={r} />
                                   </div>
                                   <ol aria-label="History" className="flex flex-col gap-2 text-xs">
                                     {r.history.map((h) => (
@@ -288,6 +291,21 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
           }}
         />
       )}
+      {preview && (
+        <DocumentPreview
+          id="return-preview"
+          title={`Purchase return ${preview.number}`}
+          subtitle={`${locationById(preview.location)?.label} · ${orderQty(preview.lines).toLocaleString('en-IN')} units`}
+          stamp={`${preview.id}|${preview.updatedAt}|${colour.id}|${settings.docLooks?.purchaseReturn}`}
+          fileName={`${preview.number}.pdf`}
+          footer={`${preview.number} · ${returnIssuer(preview).name}`}
+          onClose={() => setPreview(null)}
+          onPrint={() => print(preview)}
+          toolbar={<ColourPicker value={colour.id} onChange={setStockDocColour} />}
+        >
+          <ReturnDocument doc={preview} seller={settings} colour={colour} />
+        </DocumentPreview>
+      )}
       {counting && (
         <CountInDialog
           order={counting}
@@ -297,7 +315,7 @@ const StockReturns = ({ session, onMenu, onNavigate }) => {
         />
       )}
     </div>
-      {printing && <OrderPrint doc={printing} kind="return" />}
+      {printing && <ReturnPrint doc={printing} seller={settings} />}
     </>
   );
 };

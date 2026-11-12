@@ -8,7 +8,7 @@ from app.modules.auth.dependencies import CurrentUser
 
 from . import service
 from .models import TransferInvoice
-from .schemas import DocumentsIn, InvoiceChangeIn, InvoiceIn, InvoiceOut, PayIn
+from .schemas import DocumentsIn, InvoiceChangeIn, InvoiceIn, InvoiceOut, PayIn, PdfIn
 
 router = APIRouter(prefix='/transfer-invoices', tags=['transfer-invoices'])
 
@@ -52,6 +52,19 @@ def get_document(invoice_id: uuid.UUID, user: CurrentUser, session: DbSession) -
     data, name = service.get_document(session, user, invoice_id)
     safe = name.replace('"', '')
     return Response(data, media_type='application/pdf', headers={'Content-Disposition': f'inline; filename="{safe}"'})
+
+
+@router.put('/{invoice_id}/pdf')
+def set_pdf(invoice_id: uuid.UUID, body: PdfIn, user: CurrentUser, session: DbSession) -> InvoiceOut:
+    """Admin: keeps the invoice's own PDF as the app drew it, so its preview opens at once."""
+    return _out(session, [service.set_pdf(session, user, invoice_id, body)])[0]
+
+
+@router.get('/{invoice_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}})
+def get_pdf(invoice_id: uuid.UUID, user: CurrentUser, session: DbSession) -> Response:
+    """The invoice's own PDF, once one is kept: the admin's any, a showroom its own."""
+    data, name = service.get_pdf(session, user, invoice_id)
+    return Response(data, media_type='application/pdf', headers={'Content-Disposition': f'inline; filename="{name}"'})
 
 
 @router.post('/{invoice_id}/pay', responses=CONFLICT)

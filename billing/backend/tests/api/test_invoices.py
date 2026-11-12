@@ -1,3 +1,4 @@
+import base64
 import json
 import re
 import uuid
@@ -340,3 +341,30 @@ def test_invoices_issued_before_the_app_come_in_once(client, admin, chennai, tmp
     with session_scope() as session:
         [again] = import_issued(session, path)
     assert not again.added and stock_of(client, admin, 'warehouse', a) == in_admin_a - 3
+
+
+def test_the_invoice_keeps_its_own_pdf(client, admin, chennai):
+    code = season_code(client, chennai, 13)
+    one = box('TI-9.A', [{'code': code, 'qty': 2}])
+    enter(client, admin, [one])
+    inv = invoice(client, admin, [one]).json()
+    url = f'/transfer-invoices/{inv["id"]}'
+    assert inv['pdfStamp'] == '' and client.get(f'{url}/pdf', headers=admin).status_code == 404
+
+    pdf = b'%PDF-1.4 the invoice'
+    body = {'stamp': 'evergreen:band', 'pdfBase64': base64.b64encode(pdf).decode()}
+    assert client.put(f'{url}/pdf', json=body, headers=chennai).status_code == 403  # only the admin keeps it
+    r = client.put(f'{url}/pdf', json=body, headers=admin)
+    assert r.status_code == 200 and r.json()['pdfStamp'] == 'evergreen:band'
+    assert r.json()['history'] == inv['history']  # not a change to the invoice
+    got = client.get(f'{url}/pdf', headers=admin)
+    assert got.status_code == 200 and got.content == pdf and got.headers['content-type'] == 'application/pdf'
+    assert client.get(f'{url}/pdf', headers=chennai).content == pdf  # the showroom reads its own
+    assert client.get(f'{url}/pdf', headers=login(client, 'pune')).status_code == 404
+    bad = client.put(f'{url}/pdf', json={'stamp': 'x', 'pdfBase64': base64.b64encode(b'hello').decode()}, headers=admin)
+    assert bad.status_code == 422
+
+    # an edit drops it: the next preview draws it again
+    edited = client.put(url, json={'location': 'chennai', 'boxIds': [one['id']], 'note': 'later'}, headers=admin)
+    assert edited.status_code == 200 and edited.json()['pdfStamp'] == ''
+    assert client.get(f'{url}/pdf', headers=admin).status_code == 404

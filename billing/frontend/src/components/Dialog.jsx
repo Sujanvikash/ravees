@@ -2,7 +2,8 @@ import { X } from 'lucide-react';
 
 /**
  * The modal shell every dialog uses: a blurred backdrop, a white panel, a title row with a close button.
- * Esc is handled by the app's keyboard shortcuts, so it is not wired here.
+ * Esc is handled by the app's keyboard shortcuts, so it is not wired here. The panel clips rather than hides its
+ * overflow, so a `sticky bottom-0` bar inside it stays in view while a long dialog scrolls.
  */
 const Dialog = ({ id, title, subtitle, onClose, size = 'max-w-3xl', children }) => (
   <div
@@ -13,7 +14,7 @@ const Dialog = ({ id, title, subtitle, onClose, size = 'max-w-3xl', children }) 
       role="dialog"
       aria-modal="true"
       aria-labelledby={`${id}-title`}
-      className={`w-full ${size} animate-rise overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_24px_60px_-12px_rgba(9,9,11,0.25)]`}
+      className={`w-full ${size} animate-rise overflow-clip rounded-2xl border border-line bg-surface shadow-[0_24px_60px_-12px_rgba(9,9,11,0.25)]`}
     >
       {title && (
         <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4">

@@ -7,7 +7,7 @@
 export const BRAND = {
   name: "Raave's Evergreen",
   tagline: 'Christmas Tree & Decoration · Since 1997',
-  email: 'hello@raavesevergreen.com',
+  email: 'info@christmasraave.in',
   receiptNote: '', // e.g. the exchange / return policy, printed under "Thank you"
 };
 
@@ -66,6 +66,17 @@ const DETAILS = {
     phone: '82202 63913 / 9962424246',
     gstin: '27DDFPR0896L1ZT',
     state: '27',
+  },
+  hyderabad: {
+    name: 'SANTA SIGNATURE',
+    address: [
+      '1st Floor, Road No. 36, Building No. 8-2-2938/82/241/A,',
+      'Plot No. 1101, Jubilee Hills, Near BSNL,',
+      'Hyderabad, Telangana – 500 033',
+    ],
+    phone: '',
+    gstin: '36MICPS1685R1Z3',
+    state: '36',
   },
 };
 

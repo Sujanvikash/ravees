@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { ArrowRight, CircleCheck, LockKeyhole, Phone, Tag, User, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, CircleAlert, CircleCheck, LockKeyhole, Phone, Tag, User, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext.jsx';
 import { checkPassword } from '../lib/auth.js';
-import { countLabel, gstLines } from '../lib/bill.js';
+import { capDiscount, countLabel, gstLines, maxDiscount } from '../lib/bill.js';
 import { isValidMobile, isValidName } from '../lib/customer.js';
 import { typedMobile } from '../lib/customer.js';
 import { CustomerStatus, CustomerSuggestions } from './CustomerSuggest.jsx';
@@ -145,12 +145,18 @@ const DiscountUnlock = ({ onUnlock, onRemove }) => {
  * does. `off` is the rupees it took off. The toggle keeps its own `kind` so it still works with the field empty.
  * The field stays locked until the store's password is entered, and locks again once the discount is cleared.
  * A discount already on the bill (recalled, or after a refresh) still applies; changing it asks again.
+ * It is held to the admin's limit, `cap` percent of the bill's selling subtotal `gross` (Settings, 10% unless
+ * changed), shown by the field before anything is typed. More than that typed goes in as the most it can be, and
+ * a box says why; a discount that grows past it as the bill shrinks (or the limit drops) is lowered the same way.
  */
-const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
+const DiscountControl = ({ discount, off, onDiscount, gross, cap, disabled }) => {
   const [open, setOpen] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [kind, setKind] = useState(discount?.kind ?? 'amount');
   const [text, setText] = useState(discount ? String(discount.value) : '');
+  const [limit, setLimit] = useState(null); // the box's message, after a discount was held to the limit
+  const most = maxDiscount(gross, cap);
+  const allowed = cap > 0;
 
   // Keep the field in step when the discount changes from outside (a recall, or the bill clearing after a
   // sale) without stomping what's being typed: only re-seed when the incoming value isn't already in the box.
@@ -170,13 +176,43 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
         setText(''); // bill cleared: empty the field but leave the chosen type as it is, and lock it again
         setUnlocked(false);
         setOpen(false);
+        setLimit(null);
       }
     }
   }
 
+  // A discount on the bill that is now over the limit (items taken off, or the admin lowered it): the field shows
+  // the most it can be straight away (so the change above doesn't take it for one from outside), the bill gets it
+  // just after, and the box says so.
+  const held = capDiscount(discount, gross, cap);
+  const overSig = held !== discount ? `${sig}>${held?.value ?? 0}` : '';
+  const [lastOver, setLastOver] = useState('');
+  if (overSig !== lastOver) {
+    setLastOver(overSig);
+    if (overSig) {
+      setText(held ? String(held.value) : '');
+      setLimit(
+        held
+          ? `The discount is lowered to the most this bill can take: ${cap}% (${inr(most)}).`
+          : 'Discounts are turned off in Settings, so this bill’s discount is taken off.',
+      );
+    }
+  }
+  useEffect(() => {
+    if (held !== discount) onDiscount(held);
+  }, [held, discount, onDiscount]);
+
+  const limitText = `The most a bill can be discounted is ${cap}% (${inr(most)}). Ask the admin to change the limit in Settings.`;
   const apply = (nextKind, nextText) => {
     const value = parseAmount(nextText);
-    onDiscount(value > 0 ? { kind: nextKind, value } : null);
+    const next = value > 0 ? { kind: nextKind, value } : null;
+    const capped = capDiscount(next, gross, cap);
+    if (capped !== next) {
+      // more than the limit: the most it can be goes in instead, and the box says why
+      setText(capped ? String(capped.value) : '');
+      setLimit(limitText);
+    } else setLimit(null);
+    onDiscount(capped);
   };
   const pick = (nextKind) => {
     setKind(nextKind);
@@ -187,6 +223,7 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
     onDiscount(null);
     setOpen(false);
     setUnlocked(false);
+    setLimit(null);
   };
 
   const kindClass = (value) =>
@@ -199,7 +236,7 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        disabled={disabled}
+        disabled={disabled || (!allowed && !discount)}
         className="flex w-full items-center justify-between gap-2 px-3 py-2 text-[13px] disabled:opacity-40"
       >
         <span className="flex items-center gap-1.5 text-ink-2">
@@ -211,7 +248,7 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
             {kind === 'percent' && <span className="ml-1 text-ink-3">({discount.value}%)</span>}
           </span>
         ) : (
-          <span className="text-ink-3">{open ? 'Enter below' : 'Add'}</span>
+          <span className="text-ink-3">{!allowed ? 'Turned off' : open ? 'Enter below' : `Add · up to ${cap}%`}</span>
         )}
       </button>
       {open && !unlocked && (
@@ -241,8 +278,9 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
                 setText(e.target.value);
                 apply(kind, e.target.value);
               }}
-              placeholder={kind === 'percent' ? 'e.g. 10 (percent off)' : 'e.g. 500 (rupees off)'}
+              placeholder={kind === 'percent' ? `up to ${cap} (percent off)` : `up to ${inr(most)} (rupees off)`}
               aria-label={kind === 'percent' ? 'Discount percentage' : 'Discount amount in rupees'}
+              aria-describedby="discount-limit"
               className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 text-[13px] font-medium tabular-nums placeholder:font-normal placeholder:text-ink-3/70 focus:border-evergreen-800/50 focus:shadow-[0_0_0_3px_rgba(23,92,38,0.10)] focus:outline-none"
             />
             {off > 0 && (
@@ -256,6 +294,18 @@ const DiscountControl = ({ discount, off, onDiscount, disabled }) => {
               </button>
             )}
           </div>
+          <p id="discount-limit" className="text-xs text-ink-3 tabular-nums">
+            {kind === 'percent' ? `Max ${cap}% · ${inr(most)}` : `Max ${inr(most)} · ${cap}% of the bill`}
+          </p>
+        </div>
+      )}
+      {limit && (
+        <div role="alert" className="mx-2 mb-2 flex animate-pop items-start gap-2 rounded-lg bg-warn-50 px-3 py-2 text-xs font-medium text-warn-ink">
+          <CircleAlert size={14} className="mt-px shrink-0" aria-hidden="true" />
+          <span className="flex-1">{limit}</span>
+          <button type="button" onClick={() => setLimit(null)} className="shrink-0 font-semibold underline-offset-2 hover:underline">
+            OK
+          </button>
         </div>
       )}
     </div>
@@ -279,7 +329,7 @@ const OrderPanel = ({
   onMethod,
   onCollect,
 }) => {
-  const { showGst, composition, requireName, requireMobile } = useStore().settings;
+  const { showGst, composition, requireName, requireMobile, maxDiscountPct } = useStore().settings;
   const gst = showGst && !composition; // a composition dealer's bill shows no GST
 
   // Each field is satisfied when it holds a valid value, or is optional and left blank. A value that is
@@ -345,7 +395,7 @@ const OrderPanel = ({
         <div className="flex flex-col gap-2 text-[13px]">
           <Row label="MRP total" value={inr(bill.mrpTotal)} />
           <Row label="Offer discount" value={inr(-bill.savings)} className={bill.savings > 0 ? 'text-ok-ink' : 'text-ink-2'} />
-          <DiscountControl discount={discount} off={bill.discount} onDiscount={onDiscount} disabled={!bill.count} />
+          <DiscountControl discount={discount} off={bill.discount} onDiscount={onDiscount} gross={bill.gross} cap={maxDiscountPct} disabled={!bill.count} />
           <div className="my-1 h-px bg-line-soft" />
           {gst && <Row label="Taxable value" value={inr(bill.taxable)} />}
           {gst && gstLines(bill.gstRows).map((g) => <Row key={g.label} label={g.label} value={inr(g.value)} />)}

@@ -22,7 +22,7 @@ from app.modules.system import repository as app_settings
 from app.modules.users import service as users_service
 
 SEED_KEY = 'demo_seed'  # in the demo's own app_settings: seed_fingerprint() of what it was built from
-BUILD = 'clean-3'  # what the demo holds; change it when that changes, so the server builds the demo again on start
+BUILD = 'clean-4'  # what the demo holds; change it when that changes, so the server builds the demo again on start
 
 
 @dataclass(frozen=True, slots=True)

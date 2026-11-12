@@ -46,3 +46,8 @@ export const useQuoteColour = quote.use;
 const invoice = colourChoice('billing-invoice-colour');
 export const setInvoiceColour = invoice.set;
 export const useInvoiceColour = invoice.use;
+
+// purchase returns and purchase orders share one, picked on a return's preview
+const stockDoc = colourChoice('billing-stock-doc-colour');
+export const setStockDocColour = stockDoc.set;
+export const useStockDocColour = stockDoc.use;

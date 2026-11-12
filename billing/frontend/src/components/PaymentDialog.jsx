@@ -108,7 +108,8 @@ const PaymentDialog = ({ bill, billNo, upiId, method, onMethod, phone, name, onB
           {payNow > 0 ? (
             <>
               <PaymentMethods value={method} onChange={onMethod} />
-              <PaymentFields key={method} due={payNow} method={method} upiId={upiId} entry={entry} />
+              {/* they appear as a credit bill's "Paying now" is typed: the cursor stays in it */}
+              <PaymentFields key={method} due={payNow} method={method} upiId={upiId} entry={entry} focus={document.activeElement?.id !== 'pay-now'} />
             </>
           ) : (
             <p className="rounded-xl border border-dashed border-line-strong px-4 py-3 text-[13px] text-ink-2">

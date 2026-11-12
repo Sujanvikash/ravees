@@ -162,7 +162,7 @@ const CollectBalance = ({ sale, onClose }) => {
           </div>
 
           <PaymentMethods value={method} onChange={setMethod} />
-          {amount > 0 && <PaymentFields key={method} idPrefix="collect" due={amount} method={method} upiId={locationById(sale.location)?.upiId} entry={entry} />}
+          {amount > 0 && <PaymentFields key={method} idPrefix="collect" due={amount} method={method} upiId={locationById(sale.location)?.upiId} entry={entry} focus={document.activeElement?.id !== 'collect-amount'} />}
 
           {error && (
             <p role="alert" className="text-xs font-medium text-ruby-ink">

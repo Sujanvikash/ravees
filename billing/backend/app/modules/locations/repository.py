@@ -19,7 +19,7 @@ def labels(session: Session) -> dict[str, str]:
 
 
 def add_missing_showrooms(session: Session) -> int:
-    """Adds any of the five showrooms not in the table yet, and the admin's warehouse. One already there keeps its
+    """Adds any of the six showrooms not in the table yet, and the admin's warehouse. One already there keeps its
     row (and its numbering) but takes the list's city and area. Returns how many showrooms were added."""
     existing = {location.id: location for location in session.scalars(select(Location))}
     if WAREHOUSE.id not in existing:

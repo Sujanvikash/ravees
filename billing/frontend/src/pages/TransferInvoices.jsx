@@ -7,9 +7,11 @@ import InvoicePrint, { InvoiceDocument } from '../components/InvoicePrint.jsx';
 import { LocationPicker, SearchBox, Segmented } from '../components/Filters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import Pager from '../components/Pager.jsx';
+import PdfKeeper from '../components/PdfKeeper.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { usePages } from '../hooks/usePages.js';
+import { useDocLook } from '../lib/docLook.js';
 import { STATUS, storeBuyer } from '../lib/invoices.js';
 import { inr } from '../lib/money.js';
 import { setInvoiceColour, useInvoiceColour } from '../lib/quoteColour.js';
@@ -38,8 +40,12 @@ const rowButton =
  * is still missing.
  */
 const TransferInvoices = ({ intent, onMenu }) => {
-  const { invoices, settings, viewInvoiceDocument } = useStore();
+  const { invoices, settings, viewInvoiceDocument, invoicePdf, keepInvoicePdf } = useStore();
   const colour = useInvoiceColour();
+  // what an invoice's own PDF is drawn in: kept with it, and drawn again only when these change (or the invoice does).
+  // The last part is the invoice's layout: raise it when InvoiceDocument changes, so the PDFs kept are drawn again.
+  const pdfStamp = `${colour.id}:${useDocLook('invoice')}:2`;
+  const [keeping, setKeeping] = useState([]); // ids of invoices just raised or edited, whose PDF is being drawn to keep
   const [printing, setPrinting] = useState(null); // { invoice, buyer } on the print page
   const [printJob, setPrintJob] = useState(0);
   const [preview, setPreview] = useState(null); // { invoice, buyer } in the preview
@@ -83,7 +89,13 @@ const TransferInvoices = ({ intent, onMenu }) => {
     viewInvoiceDocument(invoice).catch((err) => setProblem(`${invoice.number}: ${err.message}`));
   };
 
+  // draws the invoice's own PDF in the background, so its preview opens at once
+  const keepPdf = (invoice) => setKeeping((ids) => [...ids.filter((id) => id !== invoice.id), invoice.id]);
+  const nextToKeep = keeping.map((id) => invoices.find((i) => i.id === id)).find((i) => i?.buyer);
+  const kept = () => setKeeping((ids) => ids.filter((id) => id !== nextToKeep.id));
+
   const created = (invoice) => {
+    keepPdf(invoice);
     setCreating(null);
     setTab('all');
     setOpenId(invoice.id);
@@ -96,6 +108,7 @@ const TransferInvoices = ({ intent, onMenu }) => {
   };
 
   const edited = (invoice) => {
+    keepPdf(invoice);
     setEditing(null);
     setOpenId(invoice.id);
     setFlash(`${invoice.number} saved.`);
@@ -248,7 +261,9 @@ const TransferInvoices = ({ intent, onMenu }) => {
             id="invoice-preview"
             title={`Invoice ${preview.invoice.number}`}
             subtitle={`${preview.buyer.name} · ${inr(preview.invoice.total)}`}
-            stamp={`${preview.invoice.id}|${preview.invoice.updatedAt}|${colour.id}`}
+            stamp={`${preview.invoice.id}|${preview.invoice.updatedAt}|${pdfStamp}`}
+            kept={invoices.find((i) => i.id === preview.invoice.id)?.pdfStamp === pdfStamp ? () => invoicePdf(preview.invoice) : null}
+            onBuilt={(pdf) => keepInvoicePdf(preview.invoice, pdfStamp, pdf).catch(() => {})}
             fileName={`${preview.invoice.number}.pdf`}
             footer={`${preview.invoice.number} · ${preview.buyer.name}`}
             onClose={() => setPreview(null)}
@@ -257,6 +272,16 @@ const TransferInvoices = ({ intent, onMenu }) => {
           >
             <InvoiceDocument invoice={preview.invoice} seller={settings} buyer={preview.buyer} colour={colour} />
           </DocumentPreview>
+        )}
+        {nextToKeep && (
+          <PdfKeeper
+            key={`${nextToKeep.id}|${nextToKeep.updatedAt}|${pdfStamp}`}
+            footer={`${nextToKeep.number} · ${nextToKeep.buyer.name}`}
+            onMade={(pdf) => keepInvoicePdf(nextToKeep, pdfStamp, pdf).catch(() => {}).finally(kept)}
+            onFail={kept}
+          >
+            <InvoiceDocument invoice={nextToKeep} seller={settings} buyer={nextToKeep.buyer} colour={colour} />
+          </PdfKeeper>
         )}
       </div>
       {printing && <InvoicePrint invoice={printing.invoice} seller={settings} buyer={printing.buyer} />}

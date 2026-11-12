@@ -25,9 +25,10 @@ from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
 from .models import TransferInvoice
-from .schemas import BuyerIn, DocumentsIn, InvoiceChangeIn, InvoiceIn, PayIn
+from .schemas import BuyerIn, DocumentsIn, InvoiceChangeIn, InvoiceIn, PayIn, PdfIn
 
 MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
+MAX_PDF_BYTES = 40 * 1024 * 1024  # the invoice's own PDF: its pages are pictures, a long invoice runs to a few MB
 CENT = Decimal('0.01')
 RUPEE = Decimal(1)
 
@@ -293,6 +294,7 @@ def edit_invoice(
     for box in boxes:
         box.location_id = location.id
     _fill(session, invoice, location, data, lines)
+    _drop_pdf(invoice)
     _log(invoice, 'edited', '', at)
     session.commit()
     return invoice
@@ -324,6 +326,43 @@ def set_documents(
     _log(invoice, 'documents', ', '.join(x for x in noted if x), at or clock.now())
     session.commit()
     return invoice
+
+
+def _drop_pdf(invoice: TransferInvoice) -> None:
+    invoice.pdf_data, invoice.pdf_stamp = None, ''
+
+
+def _decode_pdf(data: str, limit: int, too_big: str) -> bytes:
+    try:
+        raw = base64.b64decode(data.split(',')[-1], validate=True)
+    except (binascii.Error, ValueError):
+        raise InvalidInput('The PDF could not be read.') from None
+    if len(raw) > limit:
+        raise InvalidInput(too_big)
+    if not raw.startswith(b'%PDF'):
+        raise InvalidInput('That isn’t a PDF.')
+    return raw
+
+
+def set_pdf(session: Session, user: User, invoice_id: uuid.UUID, data: PdfIn) -> TransferInvoice:
+    """Keeps the invoice's own PDF as the app drew it (when it is raised, or in other colours or another look), so
+    its preview opens at once. Not a change to the invoice, so its history doesn't record it."""
+    _admin(user)
+    invoice = _get(session, invoice_id)
+    invoice.pdf_data = _decode_pdf(data.pdf_base64, MAX_PDF_BYTES, 'The invoice’s PDF is over 40 MB.')
+    invoice.pdf_stamp = data.stamp.strip()
+    session.commit()
+    return invoice
+
+
+def get_pdf(session: Session, user: User, invoice_id: uuid.UUID) -> tuple[bytes, str]:
+    """The invoice's own PDF: the admin's any, a showroom only its own."""
+    invoice = session.get(TransferInvoice, invoice_id)
+    if not invoice or (not user.is_admin and invoice.location_id != user.location_id):
+        raise NotFound('No such invoice.')
+    if invoice.pdf_data is None:
+        raise NotFound('No PDF kept for that invoice yet.')
+    return invoice.pdf_data, f'{invoice.number}.pdf'
 
 
 def get_document(session: Session, user: User, invoice_id: uuid.UUID) -> tuple[bytes, str]:
@@ -382,6 +421,7 @@ def cancel(
             order.history = [*order.history, _entry('reopened', invoice.number, at)]
             order.updated_at = at
     invoice.status = 'cancelled'
+    _drop_pdf(invoice)  # the next one is stamped CANCELLED
     _log(invoice, 'cancelled', note.strip(), at)
     session.commit()
     return invoice
