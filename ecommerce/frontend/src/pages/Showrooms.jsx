@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import SectionHeading from '../components/SectionHeading.jsx';
 import ShowroomCard from '../components/ShowroomCard.jsx';
 import { useStorefront } from '../context/StorefrontContext.jsx';
@@ -14,7 +15,11 @@ const CORNER = 'top-0 aspect-900/697 w-[clamp(150px,16vw,250px)]';
 
 const Showrooms = () => {
   const { showrooms, stores } = useStorefront();
-  const [activeIdx, setActiveIdx] = useState(0);
+  // `?city=Chennai` (the home page's store cards) opens at that city.
+  const [searchParams] = useSearchParams();
+  const [activeIdx, setActiveIdx] = useState(() =>
+    Math.max(0, showrooms.findIndex((room) => room.city.toLowerCase() === (searchParams.get('city') ?? '').toLowerCase()))
+  );
   // Set on the first city switch: from then on the card slides in on every change (its first
   // appearance is the scroll Reveal's job).
   const [switched, setSwitched] = useState(false);
