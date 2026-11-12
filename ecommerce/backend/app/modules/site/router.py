@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Response
 
+from app.core.config import BACKEND_DIR
 from app.core.dependencies import DbSession
 from app.modules.accounts.dependencies import CurrentAdmin
 from app.modules.catalogue import service as catalogue
@@ -21,6 +22,8 @@ from .schemas import (
 )
 
 router = APIRouter(tags=['storefront'])
+# the logo the emails show: a PNG, since mail apps don't show SVG (made from the website's src/assets/logo.svg)
+EMAIL_LOGO = (BACKEND_DIR / 'app' / 'static' / 'email-logo.png').read_bytes()
 admin_router = APIRouter(prefix='/admin', tags=['admin'])
 
 
@@ -39,6 +42,11 @@ def storefront(session: DbSession, response: Response) -> StorefrontOut:
             'settings': service.get_settings(session),
         }
     )
+
+
+@router.get('/brand/email-logo.png')
+def email_logo() -> Response:
+    return Response(EMAIL_LOGO, media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
 
 @admin_router.get('/showrooms')

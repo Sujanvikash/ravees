@@ -74,6 +74,10 @@ them up on the live shop; `seed` loads them on a new one).
 
 `GET /media/<imageId>.webp` serves a photo (`?size=card` for 600px); cached for a year.
 
+`GET /brand/email-logo.png` is the logo the emails show (a PNG: mail apps don't show SVG). The emails' links all
+start from `SITE_URL`, so it must be the address where the new website is live (until christmasraave.in points
+there, `https://ravees-ecommerce.pages.dev`).
+
 ### Customers
 
 | Request | Body | Answer |
