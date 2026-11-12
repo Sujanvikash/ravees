@@ -12,7 +12,7 @@ import { VISIT_US } from '../../data/home.js';
 /**
  * "Visit us": a full-width ivory band with the old site's invitation and "Find a Store" above a card per store
  * (Egmore and ECR each have their own), four to a row from lg: the city, the store and its first phone number.
- * Each card opens the Stores page at its city.
+ * Each card opens the Stores page at its store.
  */
 const StoresBand = () => {
   const { showrooms, stores } = useStorefront();
@@ -39,10 +39,10 @@ const StoresBand = () => {
           {stores.map((store, i) => {
             const phone = (store.phone || showrooms.find((room) => room.city === store.city)?.phone || '').split('/')[0].trim();
             return (
-              <Reveal as="li" key={`${store.city}-${store.name}`} delay={i % 4}>
+              <Reveal as="li" key={store.slug} delay={i % 4}>
                 <div className="flex h-full flex-col rounded-xl border border-gold-400/20 bg-surface p-4 shadow-[0_8px_24px_--alpha(var(--color-shadow)/15%)]">
                   <Link
-                    to={`/showrooms?city=${encodeURIComponent(store.city)}`}
+                    to={`/showrooms?store=${store.slug}`}
                     className="mb-1.5 flex items-center gap-2 font-serif text-[1.05rem] font-bold text-text-primary no-underline hover:text-gold-300"
                   >
                     <MapPin size={17} strokeWidth={1.8} className="shrink-0 text-gold-400" aria-hidden="true" />

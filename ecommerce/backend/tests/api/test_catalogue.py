@@ -1,3 +1,9 @@
+import io
+
+from PIL import Image as Pil
+
+from app.modules.mail import service as mail
+
 from .conftest import category, png, product, upload
 
 
@@ -125,3 +131,24 @@ def test_store_exclusives_and_hsn(client, admin):
     assert shown[priced['id']]['storeOnly'] is True and shown[priced['id']]['price'] == 9000
     off = client.patch(f'/admin/products/{only_here["id"]}', json={'storeOnly': False}, headers=admin).json()
     assert off['storeOnly'] is False and only_here['id'] not in {p['id'] for p in _storefront(client)['products']}
+
+
+def test_photos_for_emails_are_small_square_jpegs(client, admin):
+    photo = upload(client, admin, png(1200, 800))
+    r = client.get(f'/media/{photo["id"]}.jpg')
+    assert (
+        r.status_code == 200 and r.headers['content-type'] == 'image/jpeg' and 'immutable' in r.headers['cache-control']
+    )
+    assert Pil.open(io.BytesIO(r.content)).size == (200, 200)
+    assert client.get('/media/not-a-photo.jpg').status_code == 404
+    # an order email shows each product's photo through it, and a star for a product without one
+    line = {'name': 'Gold baubles', 'qty': 1, 'price': 100.0, 'amount': 100.0}
+    order = {
+        'number': 'RE-2627-00009',
+        'lines': [{**line, 'image': photo['cardUrl']}, {**line, 'image': None}],
+        'delivery': 0,
+        'total': 200.0,
+        'address': {'name': 'Asha', 'city': 'Chennai', 'state': 'Tamil Nadu', 'pincode': '600008'},
+    }
+    table = mail._order_table(order)
+    assert f'/media/{photo["id"]}.jpg' in table and '.webp' not in table and '&#10022;' in table

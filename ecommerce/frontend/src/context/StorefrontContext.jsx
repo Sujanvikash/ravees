@@ -97,8 +97,14 @@ export const StorefrontProvider = ({ children }) => {
         ...(data?.categories ?? []).map((c) => ({ ...c, image: c.image ?? firstPhoto(c.id) ?? NO_PHOTO })),
       ],
       showrooms,
-      // Every store in every city, in one list.
-      stores: showrooms.flatMap((room) => (room.stores ?? []).map((store) => ({ ...store, city: room.city }))),
+      // Every store in every city, in one list: each is a branch of its own on the site. `label` is how it is
+      // named: the city, or "Chennai – Egmore" where a city has more than one; `slug` picks it in /showrooms?store=.
+      stores: showrooms.flatMap((room) =>
+        (room.stores ?? []).map((store) => {
+          const label = room.stores.length > 1 ? `${room.city} – ${store.name}` : room.city;
+          return { ...store, city: room.city, showroom: room, label, slug: label.toLowerCase().replace(/[^a-z0-9]+/g, '-') };
+        })
+      ),
       testimonials: data?.testimonials ?? [],
       settings: { deliveryFee: 0, freeDeliveryOver: 0, ...data?.settings },
       productById: (id) => byId.get(id),

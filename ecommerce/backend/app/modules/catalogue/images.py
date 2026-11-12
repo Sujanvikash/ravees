@@ -10,6 +10,7 @@ from app.core.errors import InvalidInput
 
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 LARGE, CARD = 1600, 600
+THUMB = 200  # the emails' square product photos (shown at about 60px, sharp on 3x screens)
 # a photo bigger than this many pixels is refused before it is decoded (a "decompression bomb")
 Pil.MAX_IMAGE_PIXELS = 60_000_000
 
@@ -27,6 +28,18 @@ def _webp(picture: Pil.Image, box: int, quality: int) -> bytes:
     copy.thumbnail((box, box), Pil.Resampling.LANCZOS)
     out = io.BytesIO()
     copy.save(out, 'WEBP', quality=quality, method=6)
+    return out.getvalue()
+
+
+def email_thumb(card: bytes, box: int = THUMB) -> bytes:
+    """A photo's card size as a square JPEG on white (centre-cropped), for emails: not every mail app shows WebP,
+    and a square crop keeps an email's product rows even without object-fit."""
+    with Pil.open(io.BytesIO(card)) as source:
+        picture = source.convert('RGBA')
+    white = Pil.new('RGB', picture.size, (255, 255, 255))
+    white.paste(picture, mask=picture.getchannel('A'))
+    out = io.BytesIO()
+    ImageOps.fit(white, (box, box), Pil.Resampling.LANCZOS).save(out, 'JPEG', quality=85, optimize=True)
     return out.getvalue()
 
 

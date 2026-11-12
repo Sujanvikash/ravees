@@ -50,6 +50,18 @@ const OrderList = () => {
             to={`/account/orders/${order.id}`}
             className={`${cardClass('tile')} group flex items-center gap-4 p-5 no-underline transition-all hover:border-gold-400/40`}
           >
+            {/* The first products' photos, overlapping, with how many more */}
+            <div className="hidden shrink-0 items-center sm:flex">
+              {order.lines.slice(0, 3).map((line, i) => (
+                <span
+                  key={`${line.productId}-${i}`}
+                  className={`size-12 overflow-hidden rounded-lg border-2 border-surface bg-white shadow-[0_2px_6px_--alpha(var(--color-shadow)/20%)] ${i ? '-ml-4' : ''}`}
+                >
+                  {line.image && <img src={line.image} alt="" className="size-full object-cover" />}
+                </span>
+              ))}
+              {order.lines.length > 3 && <span className="ml-1.5 text-[0.75rem] text-text-muted">+{order.lines.length - 3}</span>}
+            </div>
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span className="font-mono text-[0.78rem] tracking-[0.08em] text-gold-300">{order.number}</span>

@@ -61,7 +61,7 @@ const COLUMN_DIVIDER = 'xl:border-l xl:border-gold-400/15 xl:pl-12';
 const Footer = () => {
   const [email, setEmail] = useState('');
   const { showToast } = useToast();
-  const { showrooms } = useStorefront();
+  const { stores } = useStorefront();
 
   const handleNewsletter = (e) => {
     e.preventDefault();
@@ -136,14 +136,12 @@ const Footer = () => {
           <div className={COLUMN_DIVIDER}>
             <h4 className={HEADING}>Showroom Locations</h4>
             <ul className="flex list-none flex-col gap-3.5">
-              {showrooms.map((room) => (
-                <li key={room.id ?? room.city}>
-                  <Link to="/showrooms" className={FOOTER_LINK}>
+              {/* Every store, Chennai's two apart; each opens its own page of the store finder. */}
+              {stores.map((store) => (
+                <li key={store.slug}>
+                  <Link to={`/showrooms?store=${store.slug}`} className={FOOTER_LINK}>
                     <MapPin size={17} strokeWidth={1.6} className={FOOTER_LINK_ICON} />
-                    <span className={FOOTER_LINK_LABEL}>
-                      {room.city}
-                      {room.isFlagship ? ' Flagship' : ''}
-                    </span>
+                    <span className={FOOTER_LINK_LABEL}>{store.label}</span>
                   </Link>
                 </li>
               ))}

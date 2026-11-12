@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Phone, Sparkles, Check, Navigation, MapPin } from 'lucide-react';
-import Badge from './Badge.jsx';
 import Button from './Button.jsx';
 import { heroTreeGlow, festiveLanternGlow, luxuryGiftBoxes, pineCrateBaubles } from '../assets/decorations';
 import { cardClass } from './cardClass.js';
@@ -35,7 +34,6 @@ const ShowroomCard = ({ showroom, store }) => {
   const [lead, ...rest] = showroom.features ?? [];
   const phone = store.phone || showroom.phone;
   const timing = store.timing || showroom.timing;
-  const flagship = showroom.isFlagship && showroom.stores?.[0]?.name === store.name;
   const title = store.name && store.name !== showroom.city ? `${store.name}, ${showroom.city}` : showroom.city;
 
   return (
@@ -98,7 +96,6 @@ const ShowroomCard = ({ showroom, store }) => {
         <div className={`${cardClass('raised')} flex flex-col p-7 md:p-8`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <h3 className="font-serif text-[1.3rem] text-text-primary md:text-[1.4rem]">{title}</h3>
-            {flagship && <Badge>Flagship</Badge>}
           </div>
           <p className="mb-6 flex gap-2 text-[0.92rem] leading-[1.6] text-text-secondary">
             <MapPin size={18} strokeWidth={1.8} className={ICON} aria-hidden="true" />

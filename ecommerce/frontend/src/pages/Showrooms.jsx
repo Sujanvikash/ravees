@@ -15,15 +15,18 @@ const CORNER = 'top-0 aspect-900/697 w-[clamp(150px,16vw,250px)]';
 
 const Showrooms = () => {
   const { showrooms, stores } = useStorefront();
-  // `?city=Chennai` (the home page's store cards) opens at that city.
+  // One tab per store (Chennai's two are tabs of their own). `?store=chennai-egmore` (the home page's store cards,
+  // the footer) opens at that store, `?city=Goa` at the city's first.
   const [searchParams] = useSearchParams();
-  const [activeIdx, setActiveIdx] = useState(() =>
-    Math.max(0, showrooms.findIndex((room) => room.city.toLowerCase() === (searchParams.get('city') ?? '').toLowerCase()))
-  );
+  const [activeIdx, setActiveIdx] = useState(() => {
+    const wanted = searchParams.get('store');
+    const city = (searchParams.get('city') ?? '').toLowerCase();
+    return Math.max(0, stores.findIndex((store) => (wanted ? store.slug === wanted : store.city.toLowerCase() === city)));
+  });
   // Set on the first city switch: from then on the card slides in on every change (its first
   // appearance is the scroll Reveal's job).
   const [switched, setSwitched] = useState(false);
-  const showroom = showrooms[activeIdx] ?? showrooms[0];
+  const branch = stores[activeIdx] ?? stores[0];
 
   // The gold pill behind the active city slides to whichever button is chosen. Measured from the
   // buttons (they wrap onto two lines on phones), and again whenever the row resizes.
@@ -69,9 +72,9 @@ const Showrooms = () => {
               }`}
               style={pill ?? undefined}
             />
-            {showrooms.map((room, i) => (
+            {stores.map((store, i) => (
               <button
-                key={room.id ?? room.city}
+                key={store.slug}
                 ref={(el) => {
                   pillRefs.current[i] = el;
                 }}
@@ -83,20 +86,17 @@ const Showrooms = () => {
                   i === activeIdx ? 'border-transparent text-on-cta' : CHIP_IDLE
                 }`}
               >
-                {room.city}
+                {store.label}
               </button>
             ))}
           </div>
         </Reveal>
 
-        {showroom && (
+        {branch && (
           <Reveal>
-            {/* Keyed by city, so each switch remounts it and replays the slide-in. Every store in the city, each
-                with its photos, details and map. */}
-            <div key={showroom.city} className={`flex flex-col gap-10 ${switched ? 'animate-slide-in' : ''}`}>
-              {(showroom.stores?.length ? showroom.stores : [{ name: showroom.city }]).map((store) => (
-                <ShowroomCard key={store.name} showroom={showroom} store={store} />
-              ))}
+            {/* Keyed by store, so each switch remounts it and replays the slide-in: its photos, details and map. */}
+            <div key={branch.slug} className={switched ? 'animate-slide-in' : ''}>
+              <ShowroomCard showroom={branch.showroom} store={branch} />
             </div>
           </Reveal>
         )}

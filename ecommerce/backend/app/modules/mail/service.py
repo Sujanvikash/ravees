@@ -11,6 +11,7 @@ made, either way.
 
 import html
 import logging
+import re
 import smtplib
 import ssl
 from dataclasses import dataclass
@@ -273,11 +274,27 @@ def _date(value: datetime | str | None) -> str:
     return at.astimezone(clock.IST).strftime('%d %b %Y').lstrip('0')
 
 
+def _thumb(image: str | None) -> str:
+    """The product's photo beside its line: the square JPEG of its photo (GET /media/<id>.jpg), or a gold star on
+    ivory for a product without one."""
+    found = re.search(r'/media/([0-9a-fA-F-]{36})\.webp', image or '')
+    box = f'width:56px;height:56px;border-radius:8px;border:1px solid {LINE}'
+    if not found:
+        return (
+            f'<div style="{box};background:{CREAM};text-align:center;line-height:56px;color:{GOLD};font-size:18px">'
+            '&#10022;</div>'
+        )
+    url = image[: found.start()] + f'/media/{found[1]}.jpg'
+    return f'<img src="{html.escape(url)}" width="56" height="56" alt="" style="display:block;{box}">'
+
+
 def _order_table(order: dict) -> str:
-    """The order's summary card: its number and date, each line, delivery and the total, then where it goes."""
+    """The order's summary card: its number and date, each product with its photo, delivery and the total, then
+    where it goes."""
     cell = f'font-family:{SANS};font-size:14px;color:{INK};padding:10px 0;border-bottom:1px solid {LINE}'
     rows = ''.join(
-        f'<tr><td style="{cell}">{html.escape(line["name"])}'
+        f'<tr><td width="68" style="{cell};width:68px;vertical-align:top">{_thumb(line.get("image"))}</td>'
+        f'<td style="{cell};vertical-align:top">{html.escape(line["name"])}'
         f'<div style="font-size:12px;color:{MUTED};margin-top:2px">Qty {line["qty"]} &times; {_rupees(line["price"])}'
         f'</div></td><td align="right" style="{cell};white-space:nowrap;vertical-align:top">'
         f'{_rupees(line["amount"])}</td></tr>'
@@ -286,12 +303,12 @@ def _order_table(order: dict) -> str:
     small = f'font-family:{SANS};font-size:13px;color:{MUTED};padding:8px 0 0'
     delivery = order['delivery']
     totals = (
-        f'<tr><td style="{small}">Delivery</td><td align="right" style="{small}">'
+        f'<tr><td colspan="2" style="{small}">Delivery</td><td align="right" style="{small}">'
         f'{_rupees(delivery) if delivery else "Free"}</td></tr>'
-        f'<tr><td style="font-family:{SANS};font-size:16px;font-weight:bold;color:{GREEN};padding:10px 0 2px">Total '
-        f'paid</td><td align="right" style="font-family:{SANS};font-size:16px;font-weight:bold;color:{GREEN};'
-        f'padding:10px 0 2px;white-space:nowrap">{_rupees(order["total"])}</td></tr>'
-        f'<tr><td colspan="2" style="font-family:{SANS};font-size:11px;color:{MUTED};padding:0">Prices include GST'
+        f'<tr><td colspan="2" style="font-family:{SANS};font-size:16px;font-weight:bold;color:{GREEN};'
+        f'padding:10px 0 2px">Total paid</td><td align="right" style="font-family:{SANS};font-size:16px;'
+        f'font-weight:bold;color:{GREEN};padding:10px 0 2px;white-space:nowrap">{_rupees(order["total"])}</td></tr>'
+        f'<tr><td colspan="3" style="font-family:{SANS};font-size:11px;color:{MUTED};padding:0">Prices include GST'
         '</td></tr>'
     )
     a = order['address']

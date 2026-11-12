@@ -6,7 +6,7 @@ from fastapi.concurrency import run_in_threadpool
 from app.core.dependencies import DbSession
 from app.modules.accounts.dependencies import CurrentAdmin
 
-from . import service
+from . import images, service
 from .images import MAX_UPLOAD_BYTES
 from .models import Category, Product
 from .schemas import (
@@ -33,6 +33,16 @@ def photo(image_id: str, session: DbSession, size: Literal['large', 'card'] = 'l
     return Response(
         service.image_bytes(session, image_id, size),
         media_type='image/webp',
+        headers={'Cache-Control': f'public, max-age={YEAR}, immutable'},
+    )
+
+
+@router.get('/media/{image_id}.jpg')
+def email_photo(image_id: str, session: DbSession) -> Response:
+    """A photo as a small square JPEG, for the order emails (mail apps don't all show WebP)."""
+    return Response(
+        images.email_thumb(service.image_bytes(session, image_id, 'card')),
+        media_type='image/jpeg',
         headers={'Cache-Control': f'public, max-age={YEAR}, immutable'},
     )
 

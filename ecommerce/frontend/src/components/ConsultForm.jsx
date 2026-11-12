@@ -24,9 +24,10 @@ const HEIGHT_OPTIONS = [
  */
 const ConsultForm = ({ onSent }) => {
   const { showToast } = useToast();
-  const { showrooms } = useStorefront();
+  const { stores } = useStorefront();
   const { session, request } = useCustomerAuth();
-  const defaultShowroom = (showrooms.find((room) => room.isFlagship) ?? showrooms[0])?.city ?? 'Online';
+  // Each store is a choice of its own (Chennai – Egmore, Chennai – ECR, …); the flagship's first store first.
+  const defaultShowroom = (stores.find((store) => store.showroom.isFlagship) ?? stores[0])?.label ?? 'Online';
   const blank = () => ({
     name: session?.name ?? '',
     email: session?.email ?? '',
@@ -123,10 +124,9 @@ const ConsultForm = ({ onSent }) => {
       <div className="grid gap-3.5 sm:grid-cols-2">
         <FormField label="Preferred Showroom" htmlFor="consult-showroom">
           <Select id="consult-showroom" value={form.showroom} onChange={update('showroom')}>
-            {showrooms.map((room) => (
-              <option key={room.id ?? room.city} value={room.city} className="bg-bg-dark-emerald">
-                {room.city}
-                {room.isFlagship ? ' (Flagship)' : ''}
+            {stores.map((store) => (
+              <option key={store.slug} value={store.label} className="bg-bg-dark-emerald">
+                {store.label}
               </option>
             ))}
             <option value="Online" className="bg-bg-dark-emerald">

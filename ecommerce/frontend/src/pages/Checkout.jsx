@@ -83,10 +83,25 @@ const Checkout = () => {
         }
       >
         <p className="mb-2 font-mono text-[0.85rem] uppercase tracking-[0.18em] text-gold-300">Order {order.number}</p>
-        <p className="mb-8 text-[1rem] leading-[1.7] text-text-secondary">
+        <p className="mb-6 text-[1rem] leading-[1.7] text-text-secondary">
           Your payment of {formatPrice(order.total)} is confirmed and a receipt is on its way to {order.address?.email ?? 'your email'}.
           We will let you know as soon as your order ships.
         </p>
+        {/* What was bought, with its photos. */}
+        <ul className="mb-8 flex list-none flex-col rounded-xl border border-gold-400/20 bg-surface px-4 text-left">
+          {order.lines.map((line, i) => (
+            <li key={`${line.productId}-${i}`} className="flex items-center gap-3 border-b border-contrast/6 py-3 last:border-0">
+              <span className="size-14 shrink-0 overflow-hidden rounded-lg border border-gold-400/20 bg-white">
+                {line.image && <img src={line.image} alt="" className="size-full object-cover" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[0.9rem] font-medium text-text-primary">{line.name}</span>
+                <span className="text-[0.78rem] text-text-muted">Qty {line.qty}</span>
+              </span>
+              <span className="text-[0.9rem] font-semibold text-text-primary">{formatPrice(line.amount)}</span>
+            </li>
+          ))}
+        </ul>
       </Done>
     );
   }
