@@ -34,6 +34,7 @@ const productSchema = z
     inStock: z.boolean(),
     visible: z.boolean(),
     featured: z.boolean(),
+    storeOnly: z.boolean(),
   })
   .refine((d) => d.mrp === null || d.price !== null, { path: ['mrp'], message: 'An MRP is only shown beside a price: add the price too' })
   .refine((d) => d.mrp === null || d.price === null || d.mrp >= d.price, { path: ['mrp'], message: 'The MRP should be at least the price' });
@@ -41,9 +42,14 @@ const productSchema = z
 const INLINE_BTN =
   'inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg border border-gold-400/25 bg-transparent px-3 py-2 text-[0.8rem] text-gold-300 transition-all hover:border-gold-400 hover:bg-gold-400/10';
 
+// The shop API's limit (catalogue/service.py): a collection shows at most this many products.
+const MAX_PER_CATEGORY = 10;
+
 /** The editor itself, for a product (`existing`) or a new one. */
 const ProductEditor = ({ existing }) => {
   const { products, categories } = useAdminData();
+  // Visible products in a collection, this one left out (its own place doesn't count against it).
+  const shownIn = (category) => products.items.filter((p) => p.category === category && p.visible && p.id !== existing?.id).length;
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -57,6 +63,7 @@ const ProductEditor = ({ existing }) => {
     inStock: existing?.inStock ?? true,
     visible: existing?.visible ?? true,
     featured: existing?.featured ?? false,
+    storeOnly: existing?.storeOnly ?? false,
   }));
   const [specs, setSpecs] = useState(() => (existing?.specs ?? []).map((spec) => ({ ...spec })));
   const uploads = usePhotoUploads((existing?.imageIds ?? []).map((id, i) => ({ id, url: existing.images?.[i] })));
@@ -98,6 +105,7 @@ const ProductEditor = ({ existing }) => {
       inStock: data.inStock,
       visible: data.visible,
       featured: data.featured,
+      storeOnly: data.storeOnly,
       imageIds: uploads.ids,
     };
 
@@ -240,7 +248,17 @@ const ProductEditor = ({ existing }) => {
               <input type="checkbox" checked={form.featured} onChange={update('featured')} className="h-4 w-4 accent-forest" />
               Featured
             </label>
+            <label className={ADMIN_CHECK}>
+              <input type="checkbox" checked={form.storeOnly} onChange={update('storeOnly')} className="h-4 w-4 accent-forest" />
+              Store exclusive (sold only in the stores)
+            </label>
           </div>
+          <p className="mt-2 text-[0.75rem] leading-[1.6] text-text-muted">
+            A store exclusive is shown on the website with a “Store Exclusive” badge and a “Find in Store” button, with
+            or without a price, and can’t be bought online. Each collection shows at most {MAX_PER_CATEGORY} products:{' '}
+            {shownIn(form.category)} of {MAX_PER_CATEGORY} in{' '}
+            {categories.items.find((c) => c.id === form.category)?.name ?? 'this one'} now.
+          </p>
         </FormField>
 
         <FormError>{error}</FormError>

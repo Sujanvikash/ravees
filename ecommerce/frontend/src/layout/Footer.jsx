@@ -8,7 +8,6 @@ import {
   Gift,
   Lightbulb,
   MapPin,
-  MessageSquareQuote,
   Phone,
   Sparkles,
   Star,
@@ -27,13 +26,12 @@ import { footerBottomLeft, footerBottomRight, footerTopLeft, footerTopRight } fr
 const CUTOUT = { fade: 'none', imgClassName: 'object-contain!' };
 
 const COLLECTION_LINKS = [
-  { label: 'European Christmas Trees', to: '/shop?category=christmas-trees', Icon: TreePine },
-  { label: 'Tree Hangings & Baubles', to: '/shop?category=tree-hangings', Icon: Sparkles },
-  { label: 'LED Cluster Lights', to: '/shop?category=christmas-lights', Icon: Lightbulb },
-  { label: 'Wreaths & Garlands', to: '/shop?category=wreath-garlands', Icon: CircleDashed },
-  { label: 'Nativity & Crib Sets', to: '/shop?category=nativity-sets', Icon: Star },
-  { label: 'Santa Toys & Home Decor', to: '/shop?category=santa-toy', Icon: Gift },
-  { label: 'Christmas Stories', to: '/stories', Icon: MessageSquareQuote },
+  { label: 'Christmas Trees', to: '/shop?category=trees', Icon: TreePine },
+  { label: 'Lights', to: '/shop?category=lights', Icon: Lightbulb },
+  { label: 'Baubles', to: '/shop?category=baubles', Icon: Sparkles },
+  { label: 'Décor Items', to: '/shop?category=decor-items', Icon: Gift },
+  { label: 'Wreath & Garlands', to: '/shop?category=wreath-garlands', Icon: CircleDashed },
+  { label: 'Store Exclusives', to: '/shop?category=exclusive', Icon: Star },
 ];
 
 const SOCIALS = [
@@ -116,7 +114,7 @@ const Footer = () => {
             <Logo height={84} className="mb-6" />
             <p className="mb-6 max-w-[360px] text-[0.9rem] leading-[1.75] text-text-secondary">
               India&apos;s largest importer of European-standard artificial Christmas trees, cluster lights,
-              and luxury holiday decor. Celebrating 27 glorious years in India.
+              and luxury holiday decor. India’s No. 1 in Christmas, since 1997.
             </p>
             <div className="flex gap-3">
               {SOCIALS.map(({ Icon, title, href }) => (
@@ -205,7 +203,7 @@ const Footer = () => {
 
         <div className="flex flex-col items-center justify-between gap-4 border-t border-gold-400/20 pt-6 text-[0.8rem] text-text-muted sm:flex-row">
           <p className="text-center sm:text-left">
-            &copy; 2026 Raave&apos;s Evergreen. All rights reserved. 27th Anniversary Edition.
+            &copy; 2026 Raave&apos;s Evergreen. All rights reserved. No. 1 in Christmas.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <Link to="/about" className={FOOTER_LEGAL}>

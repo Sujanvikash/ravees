@@ -50,7 +50,7 @@ const Showrooms = () => {
         <SectionHeading
           flourishes={false}
           className="mb-5!"
-          eyebrow={`✦ ${stores.length} STORES ACROSS INDIA ✦`}
+          eyebrow={`✦ ${stores.length} STORES IN ${showrooms.length} CITIES ✦`}
           title="Visit Our Stores"
           subtitle="Wherever you are, step into the nearest Christmas Raaves store and let us help you create a magical and memorable festive season!"
         />
@@ -86,9 +86,12 @@ const Showrooms = () => {
 
         {showroom && (
           <Reveal>
-            {/* Keyed by city, so each switch remounts it and replays the slide-in. */}
-            <div key={showroom.city} className={switched ? 'animate-slide-in' : ''}>
-              <ShowroomCard showroom={showroom} />
+            {/* Keyed by city, so each switch remounts it and replays the slide-in. Every store in the city, each
+                with its photos, details and map. */}
+            <div key={showroom.city} className={`flex flex-col gap-10 ${switched ? 'animate-slide-in' : ''}`}>
+              {(showroom.stores?.length ? showroom.stores : [{ name: showroom.city }]).map((store) => (
+                <ShowroomCard key={store.name} showroom={showroom} store={store} />
+              ))}
             </div>
           </Reveal>
         )}

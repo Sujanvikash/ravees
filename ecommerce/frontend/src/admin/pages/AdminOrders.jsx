@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { History, Mail, MapPin, Phone, ReceiptText, RotateCw, Save, Search, Truck } from 'lucide-react';
+import { FileText, History, Mail, MapPin, Phone, ReceiptText, RotateCw, Save, Search, Truck } from 'lucide-react';
 import Modal from '../../components/Modal.jsx';
 import Chip from '../../components/Chip.jsx';
 import Button from '../../components/Button.jsx';
@@ -57,6 +57,12 @@ const OrderPanel = ({ order, onSaved }) => {
         <div className="flex flex-wrap items-center gap-3 text-[0.82rem] text-text-secondary">
           <span className={orderBadgeClass(order.status)}>{statusLabel(order.status)}</span>
           <span>Placed {formatDate(order.createdAt, true)}</span>
+          {order.invoice && (
+            <Button size="sm" variant="outline" to={`/admin/orders/${order.id}/invoice`} className="ml-auto px-3! py-1.5!">
+              <FileText size={14} strokeWidth={2} />
+              Invoice {order.invoice.number}
+            </Button>
+          )}
         </div>
 
         <div>
@@ -166,7 +172,9 @@ const OrderPanel = ({ order, onSaved }) => {
               placeholder="e.g. Sent with DTDC, tracking no. D12345678"
             />
           </FormField>
-          <p className="text-[0.72rem] text-text-muted">The customer is emailed when the order is marked shipped.</p>
+          <p className="text-[0.72rem] text-text-muted">
+            The customer is emailed every time the status changes (paid, shipped, delivered, cancelled), with the note.
+          </p>
           <FormError>{error}</FormError>
           <Button size="sm" type="submit" disabled={saving || (status === order.status && !note.trim())} className="self-start">
             <Save size={14} strokeWidth={2} />

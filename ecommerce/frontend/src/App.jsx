@@ -14,14 +14,13 @@ const Showrooms = lazy(() => import('./pages/Showrooms.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
 const Contact = lazy(() => import('./pages/Contact.jsx'));
 const Testimonials = lazy(() => import('./pages/Testimonials.jsx'));
-const Stories = lazy(() => import('./pages/Stories.jsx'));
-const StoryPost = lazy(() => import('./pages/StoryPost.jsx'));
 const Login = lazy(() => import('./auth/pages/Login.jsx'));
 const Signup = lazy(() => import('./auth/pages/Signup.jsx'));
 const ForgotPassword = lazy(() => import('./auth/pages/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('./auth/pages/ResetPassword.jsx'));
 const Account = lazy(() => import('./auth/pages/Account.jsx'));
 const OrderDetail = lazy(() => import('./auth/pages/OrderDetail.jsx'));
+const OrderInvoice = lazy(() => import('./auth/pages/OrderInvoice.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 // Admin dashboard — its own chunk, never downloaded by storefront-only visitors
@@ -37,6 +36,7 @@ const AdminEnquiries = lazy(() => import('./admin/pages/AdminEnquiries.jsx'));
 const AdminOrders = lazy(() => import('./admin/pages/AdminOrders.jsx'));
 const AdminCustomers = lazy(() => import('./admin/pages/AdminCustomers.jsx'));
 const AdminSettings = lazy(() => import('./admin/pages/AdminSettings.jsx'));
+const AdminInvoice = lazy(() => import('./admin/pages/AdminInvoice.jsx'));
 
 const App = () => {
   const isAdmin = useLocation().pathname.startsWith('/admin');
@@ -60,8 +60,6 @@ const App = () => {
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
         <Route path="testimonials" element={<Testimonials />} />
-        <Route path="stories" element={<Stories />} />
-        <Route path="stories/:slug" element={<StoryPost />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
@@ -70,6 +68,26 @@ const App = () => {
         <Route path="account/orders/:id" element={<RequireCustomer><OrderDetail /></RequireCustomer>} />
         <Route path="*" element={<NotFound />} />
       </Route>
+
+      {/* Invoices: pages of their own, without the shop's or the admin's frame, so they print as the invoice alone */}
+      <Route
+        path="account/orders/:id/invoice"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <RequireCustomer>
+              <OrderInvoice />
+            </RequireCustomer>
+          </Suspense>
+        }
+      />
+      <Route
+        path="admin/orders/:id/invoice"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <AdminInvoice />
+          </Suspense>
+        }
+      />
 
       {/* Admin */}
       <Route

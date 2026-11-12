@@ -9,13 +9,14 @@ import HangingBauble from '../components/HangingBauble.jsx';
 import { ornamentBerryCorner } from '../assets/decorations';
 import PageTitle from '../components/PageTitle.jsx';
 import { cardClass } from '../components/cardClass.js';
+import { useStorefront } from '../context/StorefrontContext.jsx';
 
 // Numbers count up when they scroll into view; the suffix is shown as-is. A stat without a value is a word.
-const STATS = [
-  { value: 27, suffix: '+', label: 'Years of Holiday Magic' },
+const statsFor = (storeCount) => [
+  { word: 'No. 1', label: 'In Christmas, India-wide' },
+  { value: new Date().getFullYear() - 1997, suffix: '+', label: 'Years of Holiday Magic' },
   { value: 100, suffix: 'K+', label: 'Homes & Sanctuaries Blessed' },
-  { value: 5, suffix: '', label: 'Flagship Destinations' },
-  { word: 'Countless', label: 'Cherished Memories' },
+  { value: storeCount, suffix: '', label: 'Stores Across India' },
 ];
 
 const PROMISES = [
@@ -31,6 +32,7 @@ const PROMISES = [
  * corner and a hanging bauble decorate the empty top right on wide screens.
  */
 const About = () => {
+  const { stores } = useStorefront();
   return (
     <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 md:pt-5">
       <Decoration
@@ -45,7 +47,7 @@ const About = () => {
         <div className="grid gap-8 py-6 lg:py-12 xl:grid-cols-[1.1fr_1fr] xl:items-center xl:gap-14">
           <div>
             <Reveal>
-              <Eyebrow>✦ 27 YEARS IN INDIA &bull; EST. 1998 ✦</Eyebrow>
+              <Eyebrow>✦ INDIA&apos;S NO. 1 IN CHRISTMAS &bull; SINCE 1997 ✦</Eyebrow>
               <PageTitle size="xl" className="mb-5">
                 More Than A Brand
                 <br />
@@ -55,14 +57,14 @@ const About = () => {
 
             <Reveal delay={1}>
               <p className="max-w-[38rem] text-[1.02rem] leading-[1.8] text-text-secondary">
-                Twenty-seven years ago, Raave&apos;s Evergreen embarked on a single mission: to replace brittle,
-                flimsy plastic trees in India with genuine, breathtaking European-standard artificial Christmas
-                trees that honour the sanctity and joy of the festive season.
+                Since 1997, Raave&apos;s Evergreen has had a single mission: to replace brittle, flimsy plastic
+                trees in India with genuine, breathtaking European-standard artificial Christmas trees that honour
+                the sanctity and joy of the festive season. That mission made us India&apos;s No. 1 in Christmas.
               </p>
             </Reveal>
 
             <div className="mt-6 grid max-w-[44rem] grid-cols-2 gap-3 sm:grid-cols-4">
-              {STATS.map(({ value, suffix, word, label }, i) => (
+              {statsFor(stores.length).map(({ value, suffix, word, label }, i) => (
                 <Reveal
                   key={label}
                   delay={i}

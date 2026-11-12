@@ -5,9 +5,9 @@ Commands for running the shop API.
 
 seed makes the admin login (ADMIN_USERNAME / ADMIN_PASSWORD; without a password one is made up and printed) when
 there is none, and never changes one that exists. On an empty shop it also loads the starting catalogue from
-seed/catalogue.json (the old website's categories, products, showrooms and testimonials) with its photos from
-seed/images; once the shop has categories it leaves the catalogue alone, so the admin's edits are safe. Products
-start without prices ("Enquire for price"): the admin adds them.
+seed/catalogue.json (the five categories, the old website's products, the stores and testimonials) with its photos
+from seed/images; once the shop has categories it leaves the catalogue alone, so the admin's edits are safe.
+Products start without prices, so hidden from the shop until the admin adds them.
 """
 
 import argparse
@@ -62,6 +62,7 @@ def load_catalogue(session, seed_file: Path = SEED_DIR / 'catalogue.json') -> st
                 image_id=photo(c['image']) if c.get('image') else None,
                 position=position,
                 visible=True,
+                hsn=c.get('hsn', ''),
             )
         )
     session.flush()
@@ -77,8 +78,9 @@ def load_catalogue(session, seed_file: Path = SEED_DIR / 'catalogue.json') -> st
                 price=None,
                 mrp=None,
                 in_stock=p.get('inStock', True),
-                visible=True,
+                visible=p.get('visible', True),
                 featured=False,
+                store_only=p.get('storeOnly', False),
                 position=position,
                 image_ids=[photo(name) for name in p.get('images', [])],
                 created_at=at,
@@ -96,7 +98,17 @@ def load_catalogue(session, seed_file: Path = SEED_DIR / 'catalogue.json') -> st
                 timing=s.get('timing', ''),
                 features=s.get('features', []),
                 map_query=s.get('mapQuery', ''),
-                stores=s.get('stores', []),
+                stores=[
+                    {
+                        'name': store['name'],
+                        'address': store.get('address', ''),
+                        'phone': store.get('phone', ''),
+                        'timing': store.get('timing', ''),
+                        'map_url': store.get('mapUrl', ''),
+                        'image_ids': [photo(name) for name in store.get('images', [])],
+                    }
+                    for store in s.get('stores', [])
+                ],
                 position=position,
             )
         )

@@ -93,3 +93,35 @@ def test_photos_must_be_photos(client, admin):
         headers=admin,
     )
     assert missing.status_code == 422
+
+
+def test_a_category_shows_at_most_ten_products(client, admin):
+    group = category(client, admin, 'Baubles')
+    ten = [product(client, admin, group['id'], price=100) for _ in range(10)]
+    eleventh = client.post('/admin/products', json={'name': 'One more', 'category': group['id']}, headers=admin)
+    assert eleventh.status_code == 409 and 'Baubles already shows 10 products' in eleventh.text
+    # saved hidden it fits, and can be shown once another is hidden
+    spare = product(client, admin, group['id'], price=100, visible=False)
+    url = f'/admin/products/{spare["id"]}'
+    assert client.patch(url, json={'visible': True}, headers=admin).status_code == 409
+    client.patch(f'/admin/products/{ten[0]["id"]}', json={'visible': False}, headers=admin)
+    assert client.patch(url, json={'visible': True}, headers=admin).status_code == 200
+    # nor can one be moved into a full category
+    other = category(client, admin)
+    stranger = product(client, admin, other['id'], price=100)
+    moved = client.patch(f'/admin/products/{stranger["id"]}', json={'category': group['id']}, headers=admin)
+    assert moved.status_code == 409
+
+
+def test_store_exclusives_and_hsn(client, admin):
+    group = category(client, admin, 'Lights', hsn='9405')
+    assert group['hsn'] == '9405'
+    assert client.post('/admin/categories', json={'name': 'Odd', 'hsn': '12'}, headers=admin).status_code == 422
+    # a store exclusive is shown with or without a price, and marked as one
+    only_here = product(client, admin, group['id'], name='Crystal lantern', storeOnly=True)
+    priced = product(client, admin, group['id'], name='Grand chandelier', price=9000, storeOnly=True)
+    shown = {p['id']: p for p in _storefront(client)['products']}
+    assert shown[only_here['id']]['storeOnly'] is True and shown[only_here['id']]['price'] is None
+    assert shown[priced['id']]['storeOnly'] is True and shown[priced['id']]['price'] == 9000
+    off = client.patch(f'/admin/products/{only_here["id"]}', json={'storeOnly': False}, headers=admin).json()
+    assert off['storeOnly'] is False and only_here['id'] not in {p['id'] for p in _storefront(client)['products']}

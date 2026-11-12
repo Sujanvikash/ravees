@@ -24,7 +24,8 @@ class Image(Base):
 
 
 class Category(Base):
-    """A shop category; its id is a slug made from its first name (christmas-trees) and never changes."""
+    """A shop category; its id is a slug made from its first name (trees) and never changes. hsn is the HSN code
+    its products' invoice lines print (empty: 9505, festive articles)."""
 
     __tablename__ = 'categories'
 
@@ -34,10 +35,12 @@ class Category(Base):
     image_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('images.id', ondelete='SET NULL'))
     position: Mapped[int] = mapped_column(Integer, default=0)
     visible: Mapped[bool] = mapped_column(Boolean, default=True)
+    hsn: Mapped[str] = mapped_column(String(8), default='')
 
 
 class Product(Base):
-    """A product on the website. price and mrp are rupees with GST; no price means "Enquire for price".
+    """A product on the website. price and mrp are rupees with GST; without a price it isn't for sale (not shown).
+    A store_only product is a store exclusive: shown on the website, sold only in the stores (never in the cart).
     specs [{label, value}], sizes [str] and image_ids [uuid as str, the first is the main photo] are in order."""
 
     __tablename__ = 'products'
@@ -53,6 +56,7 @@ class Product(Base):
     in_stock: Mapped[bool] = mapped_column(Boolean, default=True)
     visible: Mapped[bool] = mapped_column(Boolean, default=True)
     featured: Mapped[bool] = mapped_column(Boolean, default=False)
+    store_only: Mapped[bool] = mapped_column(Boolean, default=False)
     position: Mapped[int] = mapped_column(Integer, default=0)
     image_ids: Mapped[list[str]] = mapped_column(JSONB, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

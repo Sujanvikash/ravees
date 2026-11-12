@@ -13,7 +13,6 @@ const NAV_LINKS = [
   { to: '/shop', label: 'Collections' },
   { to: '/about', label: 'Why Raave' },
   { to: '/showrooms', label: 'Showrooms' },
-  { to: '/stories', label: 'Stories' },
   { to: '/contact', label: 'Contact' },
 ];
 

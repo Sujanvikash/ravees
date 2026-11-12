@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart, MapPin, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useSanta } from '../context/SantaContext.jsx';
 import { useInView } from '../hooks/useInView.js';
 import Price from './Price.jsx';
+import { canBuy } from '../lib/catalogue.js';
 
 // Round icon button over the photo (wishlist): white discs that read on any photo.
 const ACTION_CIRCLE =
@@ -13,7 +14,8 @@ const ACTION_CIRCLE =
 
 /**
  * Product card: a cream card topped by a full-width square photo, a stock badge, the category in gold,
- * the name, the price and one full-width "Add to Cart" (a disabled "Out of Stock" when it is).
+ * the name, the price and one full-width "Add to Cart" (a disabled "Out of Stock" when it is). A store
+ * exclusive has a gold "Store Exclusive" badge and "Find in Store" (to the stores page) instead.
  * The photo and the name open the product page.
  */
 const ProductCard = ({ product, onQuickView }) => {
@@ -44,7 +46,7 @@ const ProductCard = ({ product, onQuickView }) => {
   return (
     <div
       // Santa only walks over to a button that can be pressed.
-      onMouseEnter={() => product.inStock && hoverCard(addBtnRef.current)}
+      onMouseEnter={() => canBuy(product) && hoverCard(addBtnRef.current)}
       onMouseLeave={leaveCard}
       className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-cream-200 bg-cream-50 shadow-[0_12px_30px_--alpha(var(--color-shadow)/35%)] transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-[0_22px_44px_--alpha(var(--color-shadow)/50%),0_0_24px_--alpha(var(--color-gold-400)/18%)]"
     >
@@ -79,11 +81,11 @@ const ProductCard = ({ product, onQuickView }) => {
       </Link>
 
       <span
-        className={`absolute top-2.5 left-2.5 rounded-md px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-[0.02em] text-white shadow-[0_2px_6px_--alpha(var(--color-shadow)/20%)] sm:text-[0.64rem] ${
-          product.inStock ? 'bg-forest' : 'bg-ruby-500'
+        className={`absolute top-2.5 left-2.5 rounded-md px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-[0.02em] shadow-[0_2px_6px_--alpha(var(--color-shadow)/20%)] sm:text-[0.64rem] ${
+          product.storeOnly ? 'bg-gold-400 text-ink' : product.inStock ? 'bg-forest text-white' : 'bg-ruby-500 text-white'
         }`}
       >
-        {product.inStock ? 'In Stock' : 'Out of Stock'}
+        {product.storeOnly ? 'Store Exclusive' : product.inStock ? 'In Stock' : 'Out of Stock'}
       </span>
 
       <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
@@ -115,6 +117,16 @@ const ProductCard = ({ product, onQuickView }) => {
 
         <Price product={product} tone="cream" size="sm" className="mb-2" />
 
+        {product.storeOnly ? (
+          <Link
+            to="/showrooms"
+            title="Sold only in our stores"
+            className="mt-auto inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-forest px-2 py-1 text-[0.74rem] font-semibold text-forest no-underline transition-colors duration-200 hover:bg-forest hover:text-cream-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500 sm:text-[0.76rem]"
+          >
+            Find in Store
+            <MapPin size={13} strokeWidth={2} aria-hidden="true" />
+          </Link>
+        ) : (
         <button
           ref={addBtnRef}
           type="button"
@@ -132,6 +144,7 @@ const ProductCard = ({ product, onQuickView }) => {
             'Out of Stock'
           )}
         </button>
+        )}
       </div>
     </div>
   );

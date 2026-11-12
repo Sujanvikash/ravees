@@ -1,5 +1,6 @@
 """
-Emails to customers (and a copy of each paid order to the shop), sent through Resend's HTTP API.
+Emails to customers (and a copy of each paid order to the shop), sent through Resend's HTTP API: the password
+reset link, and every step of an order (paid with its invoice, shipped, delivered, cancelled).
 
 Without RESEND_API_KEY (on a computer, in the tests) nothing is sent: each email is written to the log and kept in
 OUTBOX, so the reset link can still be followed. A failed send is logged and never fails the request that caused it:
@@ -15,6 +16,8 @@ import httpx
 from app.core.config import get_settings
 
 RESEND_URL = 'https://api.resend.com/emails'
+# the shop's number, at the foot of every email
+SHOP_PHONE = '+91 80154 32248'
 
 log = logging.getLogger('shop.mail')
 
@@ -47,6 +50,8 @@ def send(email: Email) -> bool:
         'html': email.html,
         'text': email.text,
     }
+    if settings.mail_reply_to:
+        body['reply_to'] = [settings.mail_reply_to]
     try:
         response = httpx.post(RESEND_URL, json=body, headers={'Authorization': f'Bearer {key}'}, timeout=15)
         response.raise_for_status()
@@ -57,23 +62,41 @@ def send(email: Email) -> bool:
     return True
 
 
-def _page(title: str, paragraphs: list[str], button: tuple[str, str] | None = None, extra: str = '') -> str:
-    """A plain, branded HTML email: the paragraphs are already escaped HTML."""
+def _button(label: str, url: str, *, outline: bool = False) -> str:
+    look = (
+        'background:#ffffff;color:#0f3d2e;border:1px solid #0f3d2e'
+        if outline
+        else 'background:#0f3d2e;color:#f5e6c4;border:1px solid #0f3d2e'
+    )
+    return (
+        f'<a href="{html.escape(url)}" style="{look};display:inline-block;margin:0 8px 8px 0;padding:11px 20px;'
+        f'border-radius:6px;text-decoration:none;font-weight:600">{html.escape(label)}</a>'
+    )
+
+
+def _page(
+    title: str,
+    paragraphs: list[str],
+    button: tuple[str, str] | None = None,
+    extra: str = '',
+    second: tuple[str, str] | None = None,
+) -> str:
+    """A plain, branded HTML email: the paragraphs are already escaped HTML. `second` is an outlined button
+    beside the main one (the invoice)."""
     action = ''
     if button:
-        label, url = button
         action = (
-            f'<p style="margin:28px 0"><a href="{html.escape(url)}" style="background:#0f3d2e;color:#f5e6c4;'
-            'padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600">'
-            f'{html.escape(label)}</a></p>'
+            f'<p style="margin:26px 0 20px">{_button(*button)}{_button(*second, outline=True) if second else ""}</p>'
         )
+
     body = ''.join(f'<p style="margin:0 0 14px">{p}</p>' for p in paragraphs)
     return (
         '<div style="background:#f6f1e7;padding:32px 12px;font-family:Arial,Helvetica,sans-serif;color:#1f2a24">'
         '<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:10px;padding:32px">'
         '<div style="font-family:Georgia,serif;font-size:22px;color:#0f3d2e;margin-bottom:18px">Raave’s Evergreen</div>'
         f'<h1 style="font-size:18px;margin:0 0 16px">{html.escape(title)}</h1>{body}{action}{extra}'
-        '<p style="margin:28px 0 0;font-size:12px;color:#6b7280">Raave’s Evergreen · Christmas trees and decorations</p>'
+        '<p style="margin:28px 0 0;font-size:12px;color:#6b7280">Raave’s Evergreen · No. 1 in Christmas · '
+        f'Christmas trees and decorations · {SHOP_PHONE}</p>'
         '</div></div>'
     )
 
@@ -145,22 +168,42 @@ def _order_text(order: dict) -> str:
     return f'{lines}\n  Delivery: {delivery}\n  Total paid: {_rupees(order["total"])}'
 
 
-def order_paid(order: dict, url: str) -> Email:
-    """To the customer once an order is paid. `order` is the order as the API answers it (OrderOut, dumped)."""
+def _first_name(order: dict) -> tuple[str, str]:
+    """The customer's name, and their first name ready for HTML."""
     name = order['customer']['name']
-    first = html.escape(name.split()[0] if name else 'there')
+    return name, html.escape(name.split()[0] if name else 'there')
+
+
+def _invoice_line(order: dict) -> str:
+    invoice = order.get('invoice')
+    return f'Your tax invoice {invoice["number"]} is ready to download.' if invoice else ''
+
+
+def order_paid(order: dict, url: str, invoice_url: str) -> Email:
+    """To the customer once an order is paid (ordered), with its invoice. `order` is the order as the API answers
+    it (OrderOut, dumped)."""
+    name, first = _first_name(order)
+    invoice = _invoice_line(order)
     return Email(
         to=order['customer']['email'],
         subject=f'Order {order["number"]} confirmed – Raave’s Evergreen',
         html=_page(
             f'Thank you for your order {order["number"]}',
-            [f'Hello {first},', 'We’ve received your payment. We’ll email you again when your order is on its way.'],
+            [
+                f'Hello {first},',
+                'We’ve received your payment and your order is confirmed. We’ll email you again when it is on '
+                + 'its way.',
+            ]
+            + ([html.escape(invoice)] if invoice else []),
             ('See your order', url),
             _order_table(order),
+            ('Download invoice', invoice_url) if invoice else None,
         ),
         text=(
-            f'Hello {name},\n\nThank you: your order {order["number"]} is paid.\n\n{_order_text(order)}\n\n'
-            f'See it at {url}\nWe’ll email you again when it is on its way.'
+            f'Hello {name},\n\nThank you: your order {order["number"]} is paid and confirmed.\n\n'
+            f'{_order_text(order)}\n\nSee it at {url}\n'
+            + (f'{invoice} {invoice_url}\n' if invoice else '')
+            + 'We’ll email you again when it is on its way.'
         ),
     )
 
@@ -181,15 +224,56 @@ def order_for_shop(order: dict, to: str) -> Email:
     )
 
 
-def order_shipped(order: dict, url: str, note: str) -> Email:
-    name = order['customer']['name']
-    first = html.escape(name.split()[0] if name else 'there')
-    paragraphs = [f'Hello {first},', f'Your order {html.escape(order["number"])} is on its way.']
+def _update(order: dict, url: str, note: str, *, subject: str, title: str, says: str, **extra) -> Email:
+    """An email about a step in the order's life: what happened, the admin's note (a courier's tracking number,
+    say), and a link to the order."""
+    name, first = _first_name(order)
+    paragraphs = [f'Hello {first},', html.escape(says)]
     if note:
-        paragraphs.append(html.escape(note))
+        paragraphs.append(f'<b>Note from us:</b> {html.escape(note)}')
     return Email(
         to=order['customer']['email'],
-        subject=f'Order {order["number"]} is on its way – Raave’s Evergreen',
-        html=_page('Your order is on its way', paragraphs, ('See your order', url)),
-        text=f'Hello {name},\n\nYour order {order["number"]} is on its way.\n{note}\n\nSee it at {url}',
+        subject=f'{subject} – Raave’s Evergreen',
+        html=_page(title, paragraphs, ('See your order', url), **extra),
+        text=f'Hello {name},\n\n{says}\n' + (f'Note from us: {note}\n' if note else '') + f'\nSee it at {url}',
+    )
+
+
+def order_shipped(order: dict, url: str, note: str) -> Email:
+    number = order['number']
+    return _update(
+        order,
+        url,
+        note,
+        subject=f'Order {number} is on its way',
+        title='Your order is on its way',
+        says=f'Your order {number} has been shipped and is on its way to you.',
+    )
+
+
+def order_delivered(order: dict, url: str, invoice_url: str, note: str) -> Email:
+    number = order['number']
+    return _update(
+        order,
+        url,
+        note,
+        subject=f'Order {number} delivered',
+        title='Your order has been delivered',
+        says=f'Your order {number} has been delivered. We hope it brings a merry Christmas to your home!',
+        second=('Download invoice', invoice_url) if order.get('invoice') else None,
+    )
+
+
+def order_cancelled(order: dict, url: str, note: str) -> Email:
+    number = order['number']
+    return _update(
+        order,
+        url,
+        note,
+        subject=f'Order {number} cancelled',
+        title='Your order has been cancelled',
+        says=(
+            f'Your order {number} has been cancelled. The amount you paid will be refunded to the way you paid. '
+            f'If you have any questions, call us on {SHOP_PHONE}.'
+        ),
     )

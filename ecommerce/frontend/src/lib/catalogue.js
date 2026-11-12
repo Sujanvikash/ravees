@@ -1,10 +1,23 @@
 /**
  * Helpers over the storefront's product list (StorefrontContext). Every product on sale has a price (rupees,
  * GST included); one without a price isn't for sale yet, and the shop leaves it out. Never make a price up.
+ * A store exclusive (`storeOnly`) is shown, with or without a price, but sold only in the stores: it never goes
+ * in the cart.
  */
 
 /** True when the MRP is worth showing struck through: there is one and it is above the price. */
-export const showsMrp = (product) => product?.mrp != null && product.mrp > product.price;
+export const showsMrp = (product) => product?.price != null && product?.mrp != null && product.mrp > product.price;
+
+/** Whether the product can go in the cart: sold online (not a store exclusive) and in stock. */
+export const canBuy = (product) => Boolean(product?.inStock && !product.storeOnly);
+
+/** The product's badge: "Store Exclusive", "In Stock" or "Out of Stock", with its Badge variant. */
+export const stockBadge = (product) =>
+  product.storeOnly
+    ? { label: 'Store Exclusive', variant: 'gold' }
+    : product.inStock
+      ? { label: 'In Stock', variant: 'emerald' }
+      : { label: 'Out of Stock', variant: 'ruby' };
 
 /** The products of one category, in catalogue order (all of them when `limit` is left out). */
 export const productsIn = (products, category, limit) => {

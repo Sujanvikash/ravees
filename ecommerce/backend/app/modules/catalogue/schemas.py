@@ -21,6 +21,8 @@ class CategoryPatch(ApiModel):
     icon: str | None = Field(default=None, max_length=16)
     image_id: uuid.UUID | None = None
     visible: bool | None = None
+    # the HSN code its invoice lines print: 4, 6 or 8 digits (empty: 9505)
+    hsn: str | None = Field(default=None, pattern=r'^\s*(\d{4}|\d{6}|\d{8})?\s*$')
 
     _name = field_validator('name')(_clean_text)
 
@@ -40,6 +42,7 @@ class ProductPatch(ApiModel):
     in_stock: bool | None = None
     visible: bool | None = None
     featured: bool | None = None
+    store_only: bool | None = None
     image_ids: list[uuid.UUID] | None = Field(default=None, max_length=20)
 
     _name = field_validator('name')(_clean_text)
@@ -95,6 +98,7 @@ class AdminCategoryOut(CategoryOut):
     image_id: uuid.UUID | None
     position: int
     visible: bool
+    hsn: str
 
 
 class ProductOut(ApiModel):
@@ -112,6 +116,7 @@ class ProductOut(ApiModel):
     mrp: float | None
     price_on_request: bool
     featured: bool
+    store_only: bool
 
 
 class AdminProductOut(ProductOut):

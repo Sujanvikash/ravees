@@ -15,7 +15,7 @@ import { cardClass } from '../../components/cardClass.js';
 import { ADMIN_CHECK, ADMIN_LABEL } from '../components/adminForm.js';
 
 /** One collection's card: its photo, icon, name and visibility, saved together; its place and delete. */
-const CategoryCard = ({ cat, productCount, onUp, onDown, moving, onDelete }) => {
+const CategoryCard = ({ cat, productCount, shownCount, onUp, onDown, moving, onDelete }) => {
   const { categories } = useAdminData();
   const { showToast } = useToast();
   const fileRef = useRef(null);
@@ -111,13 +111,24 @@ const CategoryCard = ({ cat, productCount, onUp, onDown, moving, onDelete }) => 
               onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
             />
           </FormField>
-          <div className="grid grid-cols-[80px_1fr] items-end gap-3">
+          <div className="grid grid-cols-[64px_96px_1fr] items-end gap-3">
             <FormField label="Icon" htmlFor={`cat-${cat.id}-icon`} labelClassName={ADMIN_LABEL}>
               <Input
                 id={`cat-${cat.id}-icon`}
                 size="sm"
                 value={value('icon')}
                 onChange={(e) => setDraft((prev) => ({ ...prev, icon: e.target.value }))}
+              />
+            </FormField>
+            {/* The HSN code its products' invoice lines print (lights 9405; empty prints 9505, festive articles). */}
+            <FormField label="HSN" htmlFor={`cat-${cat.id}-hsn`} labelClassName={ADMIN_LABEL}>
+              <Input
+                id={`cat-${cat.id}-hsn`}
+                size="sm"
+                inputMode="numeric"
+                placeholder="9505"
+                value={value('hsn') ?? ''}
+                onChange={(e) => setDraft((prev) => ({ ...prev, hsn: e.target.value.trim() }))}
               />
             </FormField>
             <FormField label="On the website" htmlFor={`cat-${cat.id}-visible`} labelClassName={ADMIN_LABEL}>
@@ -141,7 +152,7 @@ const CategoryCard = ({ cat, productCount, onUp, onDown, moving, onDelete }) => 
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[0.78rem] text-text-muted">
-          {productCount} product{productCount === 1 ? '' : 's'} in this collection
+          {productCount} product{productCount === 1 ? '' : 's'} in this collection ({shownCount} of at most 10 shown)
         </p>
         <Button size="sm" onClick={save} disabled={!dirty || saving || photo.busy}>
           <Save size={14} strokeWidth={2} />
@@ -270,6 +281,7 @@ const AdminCategories = () => {
             key={cat.id}
             cat={cat}
             productCount={products.items.filter((p) => p.category === cat.id).length}
+            shownCount={products.items.filter((p) => p.category === cat.id && p.visible).length}
             moving={moving}
             onUp={i > 0 ? () => move(i, -1) : null}
             onDown={i < categories.items.length - 1 ? () => move(i, 1) : null}

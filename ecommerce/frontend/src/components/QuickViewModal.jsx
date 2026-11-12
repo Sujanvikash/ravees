@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight, Expand, FileText, ShoppingBag } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Expand, FileText, MapPin, ShoppingBag } from 'lucide-react';
 import Modal from './Modal.jsx';
 import Button from './Button.jsx';
 import Badge from './Badge.jsx';
@@ -9,6 +9,7 @@ import WhatsAppLink from './WhatsAppLink.jsx';
 import Price from './Price.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { withoutSizeSpec } from '../lib/productSpecs.js';
+import { stockBadge } from '../lib/catalogue.js';
 import { featuresFor } from '../data/productFeatures.js';
 
 const ROUND_BTN =
@@ -18,7 +19,7 @@ const LABEL = 'text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-tex
 /**
  * Quick specifications, on a plain white card: the photo (with ‹ › and thumbnails once a product has more
  * than one) beside the collection, name, description, the collection's points, the price, and Add to Cart
- * (disabled when out of stock) / Full Details / a question on WhatsApp. The name is in the details, so the
+ * (disabled when out of stock; "Find in Store" for a store exclusive) / Full Details / a question on WhatsApp. The name is in the details, so the
  * header only says what this is.
  */
 const QuickViewModal = ({ product, onClose }) => {
@@ -35,6 +36,7 @@ const QuickViewModal = ({ product, onClose }) => {
   const photos = product ? (product.images.length ? product.images : [product.image]) : [];
   const go = (d) => setPhoto((i) => (i + d + photos.length) % photos.length);
   const current = photos[photo] ?? product?.image;
+  const badge = product ? stockBadge(product) : null;
 
   return (
     <Modal
@@ -87,10 +89,13 @@ const QuickViewModal = ({ product, onClose }) => {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <span className="font-mono text-[0.72rem] uppercase tracking-[0.16em] text-gold-300">{product.categoryLabel}</span>
-              <Badge variant={product.inStock ? 'emerald' : 'ruby'}>{product.inStock ? 'In Stock' : 'Out of Stock'}</Badge>
+              <Badge variant={badge.variant}>{badge.label}</Badge>
             </div>
             <h4 className="font-serif text-[1.6rem] font-semibold leading-tight text-text-primary">{product.name}</h4>
             <Price product={product} size="lg" />
+            {product.storeOnly && (
+              <p className="text-[0.85rem] font-semibold text-gold-300">Exclusive to our stores: available in the showrooms, not online.</p>
+            )}
             <p className="text-[0.92rem] leading-[1.7] text-text-secondary">{product.description}</p>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -127,16 +132,23 @@ const QuickViewModal = ({ product, onClose }) => {
             )}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Button
-                disabled={!product.inStock}
-                onClick={() => {
-                  addToCart(product);
-                  onClose();
-                }}
-              >
-                <ShoppingBag size={17} strokeWidth={2} />
-                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-              </Button>
+              {product.storeOnly ? (
+                <Button to="/showrooms" onClick={onClose}>
+                  <MapPin size={17} strokeWidth={2} />
+                  Find in Store
+                </Button>
+              ) : (
+                <Button
+                  disabled={!product.inStock}
+                  onClick={() => {
+                    addToCart(product);
+                    onClose();
+                  }}
+                >
+                  <ShoppingBag size={17} strokeWidth={2} />
+                  {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                </Button>
+              )}
               <Link
                 to={`/product/${product.id}`}
                 onClick={onClose}

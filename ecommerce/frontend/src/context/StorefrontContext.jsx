@@ -37,6 +37,7 @@ const normalizeProduct = (p) => {
   return {
     ...p,
     description: p.description ?? '',
+    storeOnly: Boolean(p.storeOnly),
     categoryLabel: p.categoryLabel ?? '',
     specs: p.specs ?? [],
     sizes: p.sizes ?? [],
@@ -76,8 +77,9 @@ export const StorefrontProvider = ({ children }) => {
   }, []);
 
   const value = useMemo(() => {
-    // The API only sends products for sale; a saved copy from before that rule may still hold price-less ones.
-    const products = (data?.products ?? []).filter((p) => p.price != null).map(normalizeProduct);
+    // The API only sends products for sale (with a price) and store exclusives; a saved copy from before that
+    // rule may still hold price-less ones.
+    const products = (data?.products ?? []).filter((p) => p.price != null || p.storeOnly).map(normalizeProduct);
     const byId = new Map(products.map((p) => [p.id, p]));
     // A category without a photo of its own shows its first product's.
     const firstPhoto = (category) => products.find((p) => p.category === category)?.image;

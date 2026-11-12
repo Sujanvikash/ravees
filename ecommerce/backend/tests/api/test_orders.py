@@ -27,13 +27,15 @@ def _sign(secret: str, message: bytes) -> str:
 
 @pytest.fixture
 def stock(client, admin) -> dict:
-    """A category with a 1,200 rupee product, a price-on-request one and a hidden one; delivery 150, free from 5,000."""
+    """A category with a 1,200 rupee product, a price-on-request one, a hidden one and a store exclusive; delivery
+    150, free from 5,000."""
     group = category(client, admin)
     client.patch('/admin/settings', json={'deliveryFee': 150, 'freeDeliveryOver': 5000}, headers=admin)
     return {
         'priced': product(client, admin, group['id'], name='Gold baubles', price=1200, mrp=1500),
         'on_request': product(client, admin, group['id'], name='Grand tree'),
         'hidden': product(client, admin, group['id'], name='Old stock', price=100, visible=False),
+        'store_only': product(client, admin, group['id'], name='Showroom tree', price=50000, storeOnly=True),
     }
 
 
@@ -81,6 +83,7 @@ def test_checkout_and_paying(client, admin, stock):
     assert paid.status_code == 200 and paid.json()['status'] == 'paid' and paid.json()['paidAt']
     to = {e.to for e in mail.OUTBOX}
     assert to == {customer['email'], 'orders@shop.test'} and 'confirmed' in mail.OUTBOX[0].subject
+    assert f'/account/orders/{order["id"]}/invoice' in mail.OUTBOX[0].text
     assert client.post(url, json={**forged, 'razorpaySignature': signature}, headers=headers).json()['status'] == 'paid'
     assert len(mail.OUTBOX) == 2  # once
 
@@ -96,9 +99,11 @@ def test_checkout_and_paying(client, admin, stock):
 
 def test_what_cannot_be_bought_online(client, admin, stock):
     headers, _ = signup(client)
-    for key in ('on_request', 'hidden'):
+    for key in ('on_request', 'hidden', 'store_only'):
         r = _checkout(client, headers, [{'productId': stock[key]['id'], 'qty': 1}])
         assert r.status_code == 422, key
+    store_only = _checkout(client, headers, [{'productId': stock['store_only']['id'], 'qty': 1}])
+    assert 'sold only in our stores' in store_only.text
     assert 'no online price' in _checkout(client, headers, [{'productId': stock['on_request']['id'], 'qty': 1}]).text
     client.patch(f'/admin/products/{stock["priced"]["id"]}', json={'inStock': False}, headers=admin)
     assert 'out of stock' in _checkout(client, headers, [{'productId': stock['priced']['id'], 'qty': 1}]).text
@@ -163,3 +168,85 @@ def test_the_admin_moves_orders_along(client, admin, stock):
     assert listed[started['order']['id']]['customer']['email'] == customer['email']
     who = {c['email']: c for c in client.get('/admin/customers', headers=admin).json()}
     assert who[customer['email']]['orders'] == 1 and who[customer['email']]['spent'] == 1350
+
+
+def test_the_invoice_of_a_paid_order(client, admin, stock):
+    seller = client.get('/admin/settings/invoice', headers=admin).json()
+    client.put('/admin/settings/invoice', json={**seller, 'gstin': '33ABCDE1234F1Z5'}, headers=admin)
+    headers, _ = signup(client)
+    # in Tamil Nadu, where the seller is: CGST + SGST; 2 x 1,200 + 150 delivery = 2,550 with 18% GST in it
+    started = _checkout(client, headers, [{'productId': stock['priced']['id'], 'qty': 2}]).json()
+    assert started['order']['invoice'] is None  # not before it is paid
+    url = f'/admin/orders/{started["order"]["id"]}'
+    paid = client.patch(url, json={'status': 'paid', 'note': 'Paid by bank transfer'}, headers=admin).json()
+    invoice = paid['invoice']
+    assert invoice['number'].startswith('INV-') and invoice['orderNumber'] == paid['number']
+    assert invoice['seller']['gstin'] == '33ABCDE1234F1Z5' and invoice['seller']['stateCode'] == '33'
+    assert invoice['intraState'] is True and invoice['placeOfSupply'] == 'Tamil Nadu (33)'
+    assert invoice['gstRate'] == 18
+    goods, delivery = invoice['lines']
+    assert (goods['hsn'], goods['qty'], goods['rate'], goods['taxable'], goods['tax'], goods['amount']) == (
+        '9505',
+        2,
+        1016.95,
+        2033.9,
+        366.1,
+        2400,
+    )
+    assert (delivery['description'], delivery['hsn'], delivery['taxable'], delivery['tax']) == (
+        'Delivery charges',
+        '9965',
+        127.12,
+        22.88,
+    )
+    assert invoice['taxable'] == 2161.02 and invoice['cgst'] == 194.49 and invoice['sgst'] == 194.49
+    assert invoice['igst'] == 0 and invoice['total'] == 2550
+    assert invoice['amountInWords'] == 'Rupees Two Thousand Five Hundred Fifty Only'
+    # the customer sees the same invoice; marking it paid emailed them the confirmation with it
+    assert client.get(f'/orders/{paid["id"]}', headers=headers).json()['invoice']['number'] == invoice['number']
+    again = client.get(url, headers=admin).json()['invoice']
+    assert {k: v for k, v in again.items() if k not in ('date', 'paidAt')} == {
+        k: v for k, v in invoice.items() if k not in ('date', 'paidAt')
+    }
+    assert any('confirmed' in e.subject and '/invoice' in e.text for e in mail.OUTBOX)
+
+    # changing the seller later leaves this invoice as it was; the next one is numbered after it
+    client.put('/admin/settings/invoice', json={**seller, 'name': 'Raaves Evergreen LLP'}, headers=admin)
+    assert client.get(url, headers=admin).json()['invoice']['seller']['name'] == seller['name']
+    away = dict(ADDRESS, state='Kerala')
+    body = {'id': str(uuid.uuid4()), 'lines': [{'productId': stock['priced']['id'], 'qty': 5}], 'address': away}
+    other = client.post('/orders', json=body, headers=headers).json()['order']
+    second = client.patch(f'/admin/orders/{other["id"]}', json={'status': 'paid'}, headers=admin).json()['invoice']
+    assert int(second['number'][-5:]) == int(invoice['number'][-5:]) + 1
+    # to another state: IGST (6,000, free delivery)
+    assert second['intraState'] is False and second['igst'] == 915.25 and second['cgst'] == second['sgst'] == 0
+    assert second['seller']['name'] == 'Raaves Evergreen LLP'
+    assert second['amountInWords'] == 'Rupees Six Thousand Only'
+
+
+def test_every_step_is_emailed(client, admin, stock):
+    headers, customer = signup(client)
+    started = _checkout(client, headers, [{'productId': stock['priced']['id'], 'qty': 1}]).json()
+    url = f'/admin/orders/{started["order"]["id"]}'
+    for status, subject in [('paid', 'confirmed'), ('shipped', 'on its way'), ('delivered', 'delivered')]:
+        mail.OUTBOX.clear()
+        client.patch(url, json={'status': status, 'note': f'{status} note'}, headers=admin)
+        mine = [e for e in mail.OUTBOX if e.to == customer['email']]
+        assert len(mine) == 1 and subject in mine[0].subject, status
+    assert 'delivered note' in mine[0].text and '/invoice' in mine[0].html
+    # a note on its own isn't emailed
+    mail.OUTBOX.clear()
+    client.patch(url, json={'status': 'delivered', 'note': 'Left with the neighbour'}, headers=admin)
+    assert mail.OUTBOX == []
+
+    # a paid order cancelled is emailed; an unpaid checkout cancelled isn't
+    paid = _checkout(client, headers, [{'productId': stock['priced']['id'], 'qty': 1}]).json()['order']
+    client.patch(f'/admin/orders/{paid["id"]}', json={'status': 'paid'}, headers=admin)
+    mail.OUTBOX.clear()
+    client.patch(f'/admin/orders/{paid["id"]}', json={'status': 'cancelled', 'note': 'Out of stock'}, headers=admin)
+    [email] = mail.OUTBOX
+    assert 'cancelled' in email.subject and 'refunded' in email.text and 'Out of stock' in email.text
+    unpaid = _checkout(client, headers, [{'productId': stock['priced']['id'], 'qty': 1}]).json()['order']
+    mail.OUTBOX.clear()
+    client.patch(f'/admin/orders/{unpaid["id"]}', json={'status': 'cancelled'}, headers=admin)
+    assert mail.OUTBOX == []

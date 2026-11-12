@@ -4,6 +4,7 @@ import { useToast } from './ToastContext.jsx';
 import { useStorefront } from './StorefrontContext.jsx';
 import { useRequireLogin } from '../auth/useRequireLogin.js';
 import { useCustomerAuth } from '../auth/context/CustomerAuthContext.jsx';
+import { canBuy } from '../lib/catalogue.js';
 
 const CartContext = createContext(null);
 
@@ -22,8 +23,8 @@ const readLines = (saved) =>
  *
  * cart          [{ product, quantity }]: the lines that can be bought (the product is on sale and in stock)
  * unavailable   [{ productId, product, quantity }]: lines that can't be bought now, because the product is
- *               out of stock (`product` set) or no longer in the shop (`product` null). Checkout won't take
- *               payment until they are removed (`removeUnavailable`).
+ *               out of stock or now sold only in the stores (`product` set) or no longer in the shop (`product`
+ *               null). Checkout won't take payment until they are removed (`removeUnavailable`).
  * subtotal, delivery, total
  *               rupees for `cart`; delivery is `settings.deliveryFee`, free once the subtotal reaches
  *               `freeDeliveryOver` (when that is above 0)
@@ -41,8 +42,8 @@ export const CartProvider = ({ children }) => {
   const { cart, unavailable } = useMemo(() => {
     const lines = readLines(saved).map(({ productId, quantity }) => ({ productId, product: productById(productId) ?? null, quantity }));
     return {
-      cart: lines.filter((line) => line.product?.inStock).map(({ product, quantity }) => ({ product, quantity })),
-      unavailable: lines.filter((line) => !line.product?.inStock),
+      cart: lines.filter((line) => canBuy(line.product)).map(({ product, quantity }) => ({ product, quantity })),
+      unavailable: lines.filter((line) => !canBuy(line.product)),
     };
   }, [saved, productById]);
 
@@ -50,6 +51,10 @@ export const CartProvider = ({ children }) => {
   // quiet: skip the "Added" toast (the caller gives its own feedback, e.g. Santa's speech bubble).
   // onNeedLogin: called instead of the sign-in redirect when signed out; return true if handled.
   const addToCart = (product, { quiet = false, onNeedLogin } = {}) => {
+    if (product.storeOnly) {
+      showToast(`"${product.name}" is a store exclusive: find it in our stores`);
+      return false;
+    }
     if (!product.inStock) {
       showToast(`"${product.name}" is out of stock`);
       return false;

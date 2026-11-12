@@ -51,6 +51,11 @@ def all_orders(_: CurrentAdmin, session: DbSession) -> list[OrderOut]:
     return [OrderOut.model_validate(o) for o in service.list_orders(session)]
 
 
+@admin_router.get('/{order_id}')
+def one_order(order_id: uuid.UUID, _: CurrentAdmin, session: DbSession) -> OrderOut:
+    return OrderOut.model_validate(service.admin_order(session, order_id))
+
+
 @admin_router.patch('/{order_id}')
 def set_status(order_id: uuid.UUID, body: StatusIn, _: CurrentAdmin, session: DbSession) -> OrderOut:
     return OrderOut.model_validate(service.set_status(session, order_id, body.status, body.note))

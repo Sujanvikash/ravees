@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, History, MapPin, PackageOpen, Receipt, RotateCw } from 'lucide-react';
+import { ChevronLeft, FileText, History, MapPin, PackageOpen, Receipt, RotateCw } from 'lucide-react';
 import Aurora from '../../components/Aurora.jsx';
 import Button from '../../components/Button.jsx';
 import Eyebrow from '../../components/Eyebrow.jsx';
@@ -15,7 +15,7 @@ const CARD_TITLE = 'mb-4 flex items-center gap-2 font-serif text-[1.1rem] text-t
 
 /**
  * One of the customer's orders (`/account/orders/:id`, where the order emails link): what was bought, the
- * total, where it is going and what has happened to it so far.
+ * total, where it is going and what has happened to it so far, and its tax invoice once it is paid.
  */
 const OrderDetail = () => {
   const { id } = useParams();
@@ -71,6 +71,12 @@ const OrderDetail = () => {
           <span className={statusBadgeClass(order.status)}>{statusLabel(order.status)}</span>
           <span>Placed {formatDate(order.createdAt, true)}</span>
           {order.paidAt && <span>· Paid {formatDate(order.paidAt, true)}</span>}
+          {order.invoice && (
+            <Button size="sm" variant="outline" to={`/account/orders/${order.id}/invoice`} className="ml-auto">
+              <FileText size={15} strokeWidth={2} />
+              Invoice {order.invoice.number}
+            </Button>
+          )}
         </div>
 
         <div className="grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">

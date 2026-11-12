@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ExternalLink, Search, EyeOff, Star, Tags } from 'lucide-react';
+import { ExternalLink, EyeOff, Pencil, Plus, Search, Star, Store, Tags, Trash2 } from 'lucide-react';
 import DataTable from '../components/DataTable.jsx';
 import MoveButtons from '../components/MoveButtons.jsx';
 import ConfirmDialog from '../../components/ConfirmDialog.jsx';
@@ -89,10 +89,15 @@ const AdminProducts = () => {
                   <EyeOff size={11} strokeWidth={2} /> Hidden
                 </span>
               )}
-              {/* The shop leaves out a product without a price: it isn't for sale yet. */}
-              {row.visible && row.price == null && (
+              {/* The shop leaves out a product without a price (it isn't for sale yet), unless it is a store exclusive. */}
+              {row.visible && row.price == null && !row.storeOnly && (
                 <span className="inline-flex items-center gap-1 text-ruby-500">
                   <EyeOff size={11} strokeWidth={2} /> Hidden: no price
+                </span>
+              )}
+              {row.storeOnly && (
+                <span className="inline-flex items-center gap-1 text-gold-300">
+                  <Store size={11} strokeWidth={2} /> Store exclusive
                 </span>
               )}
               {row.featured && (
@@ -166,7 +171,10 @@ const AdminProducts = () => {
   ];
 
   const hidden = products.items.filter((p) => !p.visible).length;
-  const noPrice = products.items.filter((p) => p.visible && p.price == null).length;
+  const noPrice = products.items.filter((p) => p.visible && p.price == null && !p.storeOnly).length;
+  const exclusives = products.items.filter((p) => p.storeOnly).length;
+  // Each collection shows at most 10 products (the shop API's limit).
+  const shown = (id) => products.items.filter((p) => p.category === id && p.visible).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -176,6 +184,8 @@ const AdminProducts = () => {
           `${products.items.length} products`,
           hidden && `${hidden} hidden from the website`,
           noPrice && `${noPrice} without a price (hidden)`,
+          exclusives && `${exclusives} store exclusive${exclusives > 1 ? 's' : ''}`,
+          'at most 10 shown per collection',
         ]
           .filter(Boolean)
           .join(' · ')}
@@ -203,7 +213,10 @@ const AdminProducts = () => {
           icon={Tags}
           value={category}
           onChange={setCategory}
-          options={[{ value: 'all', label: 'All collections' }, ...categories.items.map((c) => ({ value: c.id, label: c.name }))]}
+          options={[
+            { value: 'all', label: 'All collections' },
+            ...categories.items.map((c) => ({ value: c.id, label: `${c.name} (${shown(c.id)}/10 shown)` })),
+          ]}
         />
       </div>
 

@@ -8,6 +8,7 @@ from app.modules.catalogue.schemas import OrderIdsIn
 from . import service
 from .models import Showroom, Testimonial
 from .schemas import (
+    Seller,
     ShopSettings,
     ShopSettingsPatch,
     ShowroomIn,
@@ -31,7 +32,7 @@ def storefront(session: DbSession, response: Response) -> StorefrontOut:
     return StorefrontOut.model_validate(
         {
             **catalogue.storefront(session),
-            'showrooms': [ShowroomOut.model_validate(s, from_attributes=True) for s in service.showrooms(session)],
+            'showrooms': [ShowroomOut.model_validate(service.showroom_out(s)) for s in service.showrooms(session)],
             'testimonials': [
                 TestimonialOut.model_validate(t, from_attributes=True) for t in service.testimonials(session)
             ],
@@ -42,12 +43,12 @@ def storefront(session: DbSession, response: Response) -> StorefrontOut:
 
 @admin_router.get('/showrooms')
 def list_showrooms(_: CurrentAdmin, session: DbSession) -> list[ShowroomOut]:
-    return [ShowroomOut.model_validate(s, from_attributes=True) for s in service.showrooms(session)]
+    return [ShowroomOut.model_validate(service.showroom_out(s)) for s in service.showrooms(session)]
 
 
 @admin_router.post('/showrooms', status_code=201)
 def create_showroom(body: ShowroomIn, _: CurrentAdmin, session: DbSession) -> ShowroomOut:
-    return ShowroomOut.model_validate(service.save_showroom(session, body), from_attributes=True)
+    return ShowroomOut.model_validate(service.showroom_out(service.save_showroom(session, body)))
 
 
 @admin_router.put('/showrooms/order', status_code=204)
@@ -58,7 +59,7 @@ def order_showrooms(body: OrderIdsIn, _: CurrentAdmin, session: DbSession) -> Re
 
 @admin_router.patch('/showrooms/{showroom_id}')
 def update_showroom(showroom_id: str, body: ShowroomPatch, _: CurrentAdmin, session: DbSession) -> ShowroomOut:
-    return ShowroomOut.model_validate(service.save_showroom(session, body, showroom_id), from_attributes=True)
+    return ShowroomOut.model_validate(service.showroom_out(service.save_showroom(session, body, showroom_id)))
 
 
 @admin_router.delete('/showrooms/{showroom_id}', status_code=204)
@@ -104,3 +105,15 @@ def get_settings(_: CurrentAdmin, session: DbSession) -> ShopSettings:
 @admin_router.patch('/settings')
 def update_settings(body: ShopSettingsPatch, _: CurrentAdmin, session: DbSession) -> ShopSettings:
     return service.update_settings(session, body)
+
+
+@admin_router.get('/settings/invoice')
+def get_seller(_: CurrentAdmin, session: DbSession) -> Seller:
+    """Who the invoices of online orders are from."""
+    return service.get_seller(session)
+
+
+@admin_router.put('/settings/invoice')
+def save_seller(body: Seller, _: CurrentAdmin, session: DbSession) -> Seller:
+    """New invoices use these details; invoices already made keep the ones they were made with."""
+    return service.save_seller(session, body)

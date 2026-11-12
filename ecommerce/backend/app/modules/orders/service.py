@@ -4,6 +4,9 @@ and the admin moving an order along until it is delivered.
 
 Paying: POST /orders makes the order (pending) and its Razorpay order; the website opens Razorpay Checkout; the
 payment is confirmed by its signature, from the browser (verify) or from Razorpay's webhook, whichever comes first.
+A paid order gets its tax invoice (invoice.py) at that moment, numbered INV-2627-00001 in its own series.
+
+The customer is emailed at every step: paid (with the invoice), shipped, delivered, and cancelled once paid.
 """
 
 import json
@@ -26,6 +29,7 @@ from app.modules.mail import service as mail
 from app.modules.site import service as site
 
 from . import razorpay
+from .invoice import invoice_out
 from .models import NumberSeries, Order
 from .schemas import OrderIn
 
@@ -43,15 +47,15 @@ NEXT = {
 }
 
 
-def _next_number(session: Session, at: datetime) -> str:
-    """RE-2627-00001: the financial year and its running number. One INSERT ... ON CONFLICT DO UPDATE ...
-    RETURNING, so two checkouts never get the same number."""
-    period = clock.financial_year(at).replace('-', '')
-    stmt = insert(NumberSeries).values(period=period, next_no=2)
+def _next_number(session: Session, at: datetime, prefix: str = 'RE', series: str = '') -> str:
+    """RE-2627-00001: the financial year and its running number (invoices: INV-2627-00001, in the series "INV").
+    One INSERT ... ON CONFLICT DO UPDATE ... RETURNING, so two checkouts never get the same number."""
+    year = clock.financial_year(at).replace('-', '')
+    stmt = insert(NumberSeries).values(period=f'{series}{year}', next_no=2)
     stmt = stmt.on_conflict_do_update(
         index_elements=[NumberSeries.period], set_={'next_no': NumberSeries.next_no + 1}
     ).returning(NumberSeries.next_no - 1)
-    return f'RE-{period}-{session.execute(stmt).scalar_one():05d}'
+    return f'{prefix}-{year}-{session.execute(stmt).scalar_one():05d}'
 
 
 def order_out(order: Order, customer: Customer) -> dict:
@@ -70,6 +74,7 @@ def order_out(order: Order, customer: Customer) -> dict:
         'razorpay_payment_id': order.razorpay_payment_id,
         'history': order.history,
         'customer': {'name': customer.name, 'email': customer.email, 'phone': customer.phone},
+        'invoice': invoice_out(order),
     }
 
 
@@ -78,14 +83,18 @@ def _priced(session: Session, data: OrderIn) -> list[dict]:
     wanted: dict[str, int] = {}
     for line in data.lines:
         wanted[line.product_id] = min(99, wanted.get(line.product_id, 0) + line.qty)
-    rows = session.execute(select(Product, Category.visible).join(Category).where(Product.id.in_(wanted))).all()
-    found = {product.id: (product, shown) for product, shown in rows}
+    rows = session.execute(
+        select(Product, Category.visible, Category.hsn).join(Category).where(Product.id.in_(wanted))
+    ).all()
+    found = {product.id: (product, shown, hsn) for product, shown, hsn in rows}
     problems = []
     lines = []
     for product_id, qty in wanted.items():
-        product, shown = found.get(product_id, (None, False))
+        product, shown, hsn = found.get(product_id, (None, False, ''))
         if not product or not product.visible or not shown:
             problems.append('one of the products is no longer on the website')
+        elif product.store_only:
+            problems.append(f'{product.name} is sold only in our stores')
         elif not product.in_stock:
             problems.append(f'{product.name} is out of stock')
         elif product.price is None:
@@ -100,6 +109,7 @@ def _priced(session: Session, data: OrderIn) -> list[dict]:
                     'price': float(product.price),
                     'qty': qty,
                     'amount': float(amount),
+                    'hsn': hsn,
                 }
             )
     if problems:
@@ -172,17 +182,34 @@ def _own(session: Session, customer: Customer, order_id: uuid.UUID, *, lock: boo
     return order
 
 
-def _mark_paid(order: Order, payment_id: str, note: str, at: datetime) -> None:
+def _invoice(session: Session, order: Order, at: datetime) -> None:
+    """Gives a paid order its tax invoice (once): the next invoice number and a copy of the seller's details."""
+    if order.invoice_no:
+        return
+    seller = site.get_seller(session)
+    order.invoice_no = _next_number(session, at, 'INV', 'INV')
+    order.invoiced_at = at
+    order.seller = {**seller.model_dump(by_alias=False), 'state_code': seller.state_code}
+
+
+def _mark_paid(session: Session, order: Order, payment_id: str, note: str, at: datetime) -> None:
     order.status = 'paid'
     order.razorpay_payment_id = payment_id
     order.paid_at = at
     order.updated_at = at
     order.history = [*order.history, {'at': at.isoformat(), 'status': 'paid', 'note': note}]
+    _invoice(session, order, at)
+
+
+def _links(order: dict, settings: Settings) -> tuple[str, str]:
+    """The order's page and its invoice on the website."""
+    page = f'{settings.site_url}/account/orders/{order["id"]}'
+    return page, f'{page}/invoice'
 
 
 def _tell_paid(order: dict, settings: Settings) -> None:
-    """The customer's confirmation and the shop's copy, after the payment is saved."""
-    mail.send(mail.order_paid(order, f'{settings.site_url}/account/orders/{order["id"]}'))
+    """The customer's confirmation (with the invoice) and the shop's copy, after the payment is saved."""
+    mail.send(mail.order_paid(order, *_links(order, settings)))
     if settings.admin_email:
         mail.send(mail.order_for_shop(order, settings.admin_email))
 
@@ -201,7 +228,7 @@ def verify(
         raise InvalidInput(
             'We couldn’t confirm that payment. If money left your account, contact us with your order number.'
         )
-    _mark_paid(order, payment_id, 'Paid online', clock.now())
+    _mark_paid(session, order, payment_id, 'Paid online', clock.now())
     session.commit()
     out = order_out(order, customer)
     _tell_paid(out, settings)
@@ -229,7 +256,7 @@ def webhook(session: Session, body: bytes, signature: str) -> None:
     if int(payment.get('amount', 0)) < int(order.total * 100):
         log.warning('Razorpay payment %s for %s is less than the order total.', payment_id, order.number)
         return
-    _mark_paid(order, payment_id, 'Paid online (confirmed by Razorpay)', clock.now())
+    _mark_paid(session, order, payment_id, 'Paid online (confirmed by Razorpay)', clock.now())
     session.commit()
     _tell_paid(order_out(order, session.get(Customer, order.customer_id)), get_settings())
 
@@ -246,8 +273,17 @@ def get_order(session: Session, customer: Customer, order_id: uuid.UUID) -> dict
     return order_out(_own(session, customer, order_id), customer)
 
 
+def admin_order(session: Session, order_id: uuid.UUID) -> dict:
+    order = session.get(Order, order_id)
+    if not order:
+        raise NotFound('No such order.')
+    return order_out(order, session.get(Customer, order.customer_id))
+
+
 def set_status(session: Session, order_id: uuid.UUID, status: str, note: str) -> dict:
-    """The admin moves an order along (or adds a note to it). The customer is emailed when it ships."""
+    """The admin moves an order along (or adds a note to it). Every change of status is emailed to the customer
+    (with the note): paid (by hand, with the invoice), shipped, delivered, and cancelled unless it was never paid.
+    A note on its own isn't emailed; the customer sees it on the order's page."""
     order = session.get(Order, order_id, with_for_update=True)
     if not order:
         raise NotFound('No such order.')
@@ -257,15 +293,24 @@ def set_status(session: Session, order_id: uuid.UUID, status: str, note: str) ->
     if status == order.status and not note:
         raise InvalidInput('Write a note, or choose another status.')
     at = clock.now()
-    shipped = status == 'shipped' and order.status != 'shipped'
-    if status == 'paid' and order.status != 'paid':
+    was = order.status
+    if status == 'paid' and was != 'paid':
         order.paid_at = at
+        _invoice(session, order, at)
     order.status = status
     order.updated_at = at
     order.history = [*order.history, {'at': at.isoformat(), 'status': status, 'note': note}]
     session.commit()
     out = order_out(order, session.get(Customer, order.customer_id))
-    if shipped:
+    if status != was:
         settings = get_settings()
-        mail.send(mail.order_shipped(out, f'{settings.site_url}/account/orders/{order.id}', note))
+        page, invoice = _links(out, settings)
+        if status == 'paid':
+            _tell_paid(out, settings)
+        elif status == 'shipped':
+            mail.send(mail.order_shipped(out, page, note))
+        elif status == 'delivered':
+            mail.send(mail.order_delivered(out, page, invoice, note))
+        elif status == 'cancelled' and was != 'pending':
+            mail.send(mail.order_cancelled(out, page, note))
     return out

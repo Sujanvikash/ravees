@@ -11,27 +11,27 @@ const DEFAULT = [
 ];
 
 export const PRODUCT_FEATURES = {
-  'christmas-trees': [
+  trees: [
     { Icon: TreePine, text: 'Lifelike European Foliage' },
     { Icon: Flame, text: 'Fire-Retardant & Non-Toxic' },
     { Icon: Award, text: '10-Year Warranty' },
     { Icon: ShieldCheck, text: 'European Safety Certified' },
   ],
-  'christmas-lights': [
+  lights: [
     { Icon: TreePine, text: 'Perfect for Christmas Trees' },
     { Icon: Sparkles, text: 'Warm Festive Glow' },
     { Icon: Gem, text: 'European Quality Standard' },
     { Icon: ShieldCheck, text: 'European Safety Certified' },
   ],
-  'tree-hangings': [
+  baubles: [
     { Icon: TreePine, text: 'Made for Your Tree' },
     { Icon: Sparkles, text: 'Handpicked Festive Design' },
     { Icon: Gem, text: 'European Quality Standard' },
     { Icon: Heart, text: 'Heirloom Keepsake Feel' },
   ],
-  'nativity-sets': [
-    { Icon: Heart, text: 'The Reason for the Season' },
-    { Icon: Sparkles, text: 'Finely Detailed Figures' },
+  'decor-items': [
+    { Icon: Heart, text: 'Made for Festive Homes' },
+    { Icon: Sparkles, text: 'Finely Detailed Pieces' },
     { Icon: Gem, text: 'European Quality Standard' },
     { Icon: Gift, text: 'A Gift for Generations' },
   ],

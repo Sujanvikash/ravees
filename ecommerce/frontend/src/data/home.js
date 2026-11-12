@@ -24,17 +24,17 @@ export const WHY_CHOOSE = [
 export const PROMOS = [
   {
     title: 'European standard Christmas trees and decorations under one roof',
-    to: '/shop?category=christmas-trees',
+    to: '/shop?category=trees',
     cta: 'Shop Trees',
   },
   {
     title: 'All Christmas decor from lights to tree skirts',
-    to: '/shop?category=tree-hangings',
+    to: '/shop?category=decor-items',
     cta: 'Shop Decor',
   },
   {
     title: 'Christmas Raave’s Lights Create Magical Moments',
-    to: '/shop?category=christmas-lights',
+    to: '/shop?category=lights',
     cta: 'Shop Lights',
   },
 ];
@@ -42,7 +42,7 @@ export const PROMOS = [
 // The old home page's slider and its red promo card.
 export const HERO_SLIDES = [
   {
-    eyebrow: 'Since 1997 · 27th year in India',
+    eyebrow: 'No. 1 in Christmas · Since 1997',
     title: 'Christmas Raave’s Festive Beats Await You',
     text: 'Let the rhythm spark your joy!',
     cta: { label: 'Shop the Collection', to: '/shop' },
@@ -51,15 +51,29 @@ export const HERO_SLIDES = [
     eyebrow: 'Christmas Lights',
     title: 'Christmas Raave’s Lights Illuminate Your Soul',
     text: 'Dance through magical, glowing moments.',
-    cta: { label: 'Shop Lights', to: '/shop?category=christmas-lights' },
+    cta: { label: 'Shop Lights', to: '/shop?category=lights' },
   },
   {
     eyebrow: 'Christmas Trees',
     title: 'European Standard Trees, Under One Roof',
     text: 'Lush, lifelike trees that become the centrepiece of your celebrations.',
-    cta: { label: 'Shop Trees', to: '/shop?category=christmas-trees' },
+    cta: { label: 'Shop Trees', to: '/shop?category=trees' },
   },
 ];
+
+// "No. 1 in Christmas": the client's claim for the brand (2026-11-12), with what stands behind it. `{stores}` and
+// `{cities}` are filled in from the shop's store list.
+export const NUMBER_ONE = {
+  eyebrow: 'Since 1997',
+  title: 'India’s No. 1 in Christmas',
+  text: 'For nearly three decades, Raave’s Evergreen has been where India comes for Christmas: the country’s largest importer of European-standard artificial Christmas trees, lights and decorations, trusted by homes, cathedrals and hotels to make the season shine.',
+  points: [
+    { title: 'Since 1997', text: 'Nearly 30 seasons of bringing Christmas home to India.' },
+    { title: 'India’s largest importer', text: 'European-standard trees, lights and décor, chosen piece by piece.' },
+    { title: '{stores} stores in {cities} cities', text: 'Chennai, Bangalore, Pune, Mumbai, Goa, Hyderabad and Kochi.' },
+    { title: 'Everything under one roof', text: 'Trees, lights, baubles, décor, wreaths and garlands.' },
+  ],
+};
 
 export const VISIT_US = {
   title: 'Wherever you are, step into the nearest Christmas Raaves store',

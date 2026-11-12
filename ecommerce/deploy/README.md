@@ -36,9 +36,40 @@ name, and Caddy gets a real certificate for it).
 
 ### 2. Resend (password-reset and order emails)
 
-resend.com → **Domains → Add domain**: a domain you control (a subdomain such as `mail.yourdomain.in` keeps it
-apart from your normal email). Add the records it shows at your DNS provider and wait for "Verified". Then **API Keys
-→ Create** (sending access). Emails reach customers only from a verified domain.
+The shop sends its emails through [Resend](https://resend.com): the password reset link, and an email to the customer
+at every step of an order (confirmed with the invoice, shipped, delivered, cancelled), plus a copy of each paid order
+to the shop. Until `RESEND_API_KEY` is set, nothing is sent: each email is only written to the API's log.
+
+1. **Sign up** at resend.com with the shop's email (the free plan sends 3,000 emails a month, 100 a day).
+2. **Domains → Add domain** → `mail.christmasraave.in`, region **Tokyo (ap-northeast-1)** (the nearest to India). A
+   subdomain keeps these records apart from the email you already get at `@christmasraave.in`, which carries on
+   working as it is.
+3. Resend shows three or four DNS records. Add each one where `christmasraave.in`'s DNS is managed (Hostinger:
+   **Domains → christmasraave.in → DNS / Nameservers → Manage DNS records**). Type and value exactly as Resend shows;
+   for the **Name**, type only the part before `.christmasraave.in` (Hostinger adds the domain itself):
+
+   | Type | Name (at Hostinger) | Value (copy from Resend) |
+   |---|---|---|
+   | TXT | `resend._domainkey.mail` | the long `p=MIGfMA0…` key (DKIM) |
+   | MX | `send.mail` | `feedback-smtp.ap-northeast-1.amazonses.com`, priority 10 |
+   | TXT | `send.mail` | `v=spf1 include:amazonses.com ~all` |
+   | TXT (optional, recommended) | `_dmarc.mail` | `v=DMARC1; p=none;` |
+
+4. Back in Resend press **Verify DNS records**. It usually turns **Verified** within minutes (DNS can take up to a
+   few hours).
+5. **API Keys → Create API key**: name `shop-api`, permission **Sending access**, domain `mail.christmasraave.in`.
+   Copy the key (it starts `re_`; Resend shows it only once).
+6. On the shop server (`~/ecommerce/.env`, step 6) set:
+   ```
+   RESEND_API_KEY=re_…
+   MAIL_FROM=Raave's Evergreen <orders@mail.christmasraave.in>
+   MAIL_REPLY_TO=info@christmasraave.in
+   ADMIN_EMAIL=<the inbox that should get every paid order>
+   ```
+   then `docker compose up -d` to restart the API with them.
+7. **Test it:** on the website use **Forgot password** with your own account's email: the reset email should arrive
+   within a minute. If not, `docker compose logs --tail 50 shop-api | grep -i email` shows Resend's answer, and
+   Resend's **Emails** page lists every email sent (and why one bounced).
 
 ### 3. Razorpay
 
@@ -78,7 +109,8 @@ PUBLIC_URL=https://shop-api.<static ip>.sslip.io
 SITE_URL=https://<project>.pages.dev
 CORS_ORIGINS=https://<project>.pages.dev
 RESEND_API_KEY=
-MAIL_FROM=Raave's Evergreen <no-reply@mail.yourdomain.in>
+MAIL_FROM=Raave's Evergreen <orders@mail.christmasraave.in>
+MAIL_REPLY_TO=info@christmasraave.in
 ADMIN_EMAIL=
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
@@ -100,8 +132,9 @@ grep ADMIN_PASSWORD .env          # the admin password
 curl https://<API_DOMAIN>/health    # {"status":"ok"}
 ```
 
-`seed` makes the admin login and loads the starting catalogue (the old website's categories, products, photos,
-showrooms and testimonials), without prices. Sign in at `<website>/admin`, add prices, and change the admin password.
+`seed` makes the admin login and loads the starting catalogue (the five categories, the old website's products and
+photos, the stores with their photos and the testimonials), without prices. Sign in at `<website>/admin`, add prices,
+check **Settings → Invoices** (SIANNA COLLECTION, Egmore, by default), and change the admin password.
 
 ## Day to day
 

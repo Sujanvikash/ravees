@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronUp, Expand, Gift, Headphones, Heart, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronUp, Expand, Gift, Headphones, Heart, MapPin, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
 import WhatsAppLink from '../components/WhatsAppLink.jsx';
 import { PHONE_DISPLAY, ORDER_HOURS } from '../data/site.js';
 import Badge from '../components/Badge.jsx';
@@ -15,6 +15,7 @@ import Price from '../components/Price.jsx';
 import { featuresFor } from '../data/productFeatures.js';
 import { withoutSizeSpec } from '../lib/productSpecs.js';
 import { formatPrice } from '../lib/format.js';
+import { canBuy, stockBadge } from '../lib/catalogue.js';
 import { useStorefront } from '../context/StorefrontContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
@@ -46,15 +47,15 @@ const OUTLINE =
 const specRows = (product) =>
   [
     ['Collection', product.categoryLabel],
-    ['Availability', product.inStock ? 'In stock' : 'Out of stock'],
+    ['Availability', product.storeOnly ? 'Only in our stores' : product.inStock ? 'In stock' : 'Out of stock'],
     product.sizes.length > 0 && ['Sizes available', product.sizes.join(', ')],
     ...withoutSizeSpec(product).map((spec) => [spec.label, spec.value]),
     ['Quality', 'European standard'],
     ['Safety', 'European safety certified'],
     ['Warranty', '10 years'],
-    ['Delivery', 'Pan-India, white-glove'],
+    ['Delivery', product.storeOnly ? 'Buy and take home from our stores' : 'Pan-India, white-glove'],
     ['Orders', 'Single pieces, bulk & projects'],
-    ['Price', `${formatPrice(product.price)} incl. GST`],
+    ['Price', product.price == null ? 'Ask in store' : `${formatPrice(product.price)} incl. GST`],
   ].filter(Boolean);
 
 /**
@@ -92,6 +93,7 @@ const ProductDetail = () => {
   const first = Math.min(Math.max(0, activeImage - (THUMBS - 1)), Math.max(0, photos.length - THUMBS));
   const rows = specRows(product);
   const half = Math.ceil(rows.length / 2);
+  const badge = stockBadge(product);
 
   return (
     <section className="relative isolate z-20 overflow-hidden bg-bg-primary pt-4 pb-10 md:pt-6 md:pb-14">
@@ -168,7 +170,7 @@ const ProductDetail = () => {
 
             <div className="flex items-center gap-3">
               <span className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-gold-400">{product.categoryLabel}</span>
-              <Badge variant={product.inStock ? 'emerald' : 'ruby'}>{product.inStock ? 'In Stock' : 'Out of Stock'}</Badge>
+              <Badge variant={badge.variant}>{badge.label}</Badge>
             </div>
 
             <PageTitle size="lg" className="xl:pr-40">{product.name}</PageTitle>
@@ -182,7 +184,11 @@ const ProductDetail = () => {
 
             <div className="flex flex-col gap-1.5">
               <Price product={product} size="lg" />
-              <span className="text-[0.76rem] text-text-muted">Inclusive of GST · pay securely online</span>
+              <span className="text-[0.76rem] text-text-muted">
+                {product.storeOnly
+                  ? 'Exclusive to our stores: available in the showrooms, not online'
+                  : 'Inclusive of GST · pay securely online'}
+              </span>
             </div>
 
             {product.sizes.length > 0 && (
@@ -203,9 +209,16 @@ const ProductDetail = () => {
                 toast). */}
             <div
               className="grid gap-3 sm:grid-cols-[1.4fr_1.2fr_auto]"
-              onMouseEnter={() => product.inStock && hoverCard(addBtnRef.current)}
+              onMouseEnter={() => canBuy(product) && hoverCard(addBtnRef.current)}
               onMouseLeave={leaveCard}
             >
+              {product.storeOnly ? (
+                <Button size="lg" className="uppercase" to="/showrooms">
+                  <MapPin size={18} strokeWidth={2} />
+                  Find in Store
+                  <ArrowRight size={18} strokeWidth={2} />
+                </Button>
+              ) : (
               <Button
                 ref={addBtnRef}
                 size="lg"
@@ -225,6 +238,7 @@ const ProductDetail = () => {
                   'Out of Stock'
                 )}
               </Button>
+              )}
               <WhatsAppLink
                 text={`Hi Raave's Evergreen, I have a question about ${product.name}${selectedSize ? ` (${selectedSize})` : ''}.`}
                 className={OUTLINE}

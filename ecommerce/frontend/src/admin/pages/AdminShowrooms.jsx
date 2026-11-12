@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Save, Star, Plus, Trash2, X } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -11,11 +11,49 @@ import Chip from '../../components/Chip.jsx';
 import { Input, Textarea } from '../../components/Input.jsx';
 import AdminPageHeader from '../components/AdminPageHeader.jsx';
 import MoveButtons from '../components/MoveButtons.jsx';
+import PhotoGallery from '../components/PhotoGallery.jsx';
+import { usePhotoUploads } from '../components/usePhotoUploads.js';
 import { cardClass } from '../../components/cardClass.js';
 import { ADMIN_CHECK, ADMIN_LABEL } from '../components/adminForm.js';
 
 const INLINE_BTN =
   'inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg border border-gold-400/25 bg-transparent px-3 py-2 text-[0.8rem] text-gold-300 transition-all hover:border-gold-400 hover:bg-gold-400/10';
+
+let nextStore = 0;
+
+/**
+ * One store in the city: its name, phone, hours, address, Google Maps link and photos (uploaded as soon as they
+ * are chosen; the first is the main one on the website). Reports its photos to the editor once they are up.
+ */
+const StoreFields = ({ store, i, field, onChange, onRemove, onBusy }) => {
+  const uploads = usePhotoUploads((store.imageIds ?? []).map((id, k) => ({ id, url: store.images?.[k] })));
+  const ids = uploads.ids.join(',');
+  const saved = (store.imageIds ?? []).join(',');
+
+  useEffect(() => {
+    onBusy(store.key, uploads.busy);
+    if (!uploads.busy && ids !== saved) onChange(store.key, 'imageIds', ids ? ids.split(',') : []);
+  }, [uploads.busy, ids, saved, store.key, onBusy, onChange]);
+
+  const text = (key) => (e) => onChange(store.key, key, e.target.value);
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-contrast/8 p-3">
+      <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
+        <Input id={field(`store-${i}-name`)} size="sm" aria-label={`Store ${i + 1}: name`} placeholder="Name (e.g. Egmore)" value={store.name ?? ''} onChange={text('name')} className="w-full min-w-0" />
+        <Input size="sm" aria-label={`Store ${i + 1}: phone`} placeholder="Phone" value={store.phone ?? ''} onChange={text('phone')} className="w-full min-w-0" />
+        <IconButton variant="delete" label={`Remove store ${i + 1}`} onClick={onRemove}>
+          <Trash2 size={13} strokeWidth={2} />
+        </IconButton>
+      </div>
+      <Input size="sm" aria-label={`Store ${i + 1}: address`} placeholder="Address" value={store.address ?? ''} onChange={text('address')} />
+      <div className="grid gap-2 sm:grid-cols-[1fr_2fr]">
+        <Input size="sm" aria-label={`Store ${i + 1}: hours`} placeholder="Hours (e.g. 10 AM – 9 PM)" value={store.timing ?? ''} onChange={text('timing')} />
+        <Input size="sm" aria-label={`Store ${i + 1}: Google Maps link`} placeholder="Google Maps link (Share → Copy link)" value={store.mapUrl ?? ''} onChange={text('mapUrl')} />
+      </div>
+      <PhotoGallery uploads={uploads} id={field(`store-${i}-photos`)} />
+    </div>
+  );
+};
 
 /** The editor for one showroom (a city): its details, highlights and the stores in it. */
 const ShowroomEditor = ({ showroom, onDelete }) => {
@@ -24,12 +62,23 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
   const [draft, setDraft] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState({});
 
   const value = (key) => draft[key] ?? showroom[key] ?? '';
   const set = (key) => (e) => setDraft((prev) => ({ ...prev, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
-  const stores = draft.stores ?? showroom.stores ?? [];
-  const setStore = (i, key, text) =>
-    setDraft((prev) => ({ ...prev, stores: stores.map((store, k) => (k === i ? { ...store, [key]: text } : store)) }));
+  // Each store keeps a key of its own while it is edited, so its photos stay with it when another is removed.
+  const initialStores = useMemo(() => (showroom.stores ?? []).map((store, i) => ({ ...store, key: `saved-${i}` })), [showroom]);
+  const stores = draft.stores ?? initialStores;
+  const setStores = useCallback(
+    (update) => setDraft((prev) => ({ ...prev, stores: update(prev.stores ?? initialStores) })),
+    [initialStores]
+  );
+  const storeChange = useCallback(
+    (key, name, text) => setStores((list) => list.map((store) => (store.key === key ? { ...store, [name]: text } : store))),
+    [setStores]
+  );
+  const storeBusy = useCallback((key, isBusy) => setBusy((prev) => (Boolean(prev[key]) === isBusy ? prev : { ...prev, [key]: isBusy })), []);
+  const uploading = stores.some((store) => busy[store.key]);
   const dirty = Object.keys(draft).length > 0;
   const field = (key) => `sr-${key}`;
 
@@ -39,7 +88,14 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
     if (patch.features) patch.features = patch.features.map((f) => f.trim()).filter(Boolean);
     if (patch.stores) {
       patch.stores = patch.stores
-        .map((store) => ({ name: (store.name ?? '').trim(), address: (store.address ?? '').trim(), phone: (store.phone ?? '').trim() }))
+        .map((store) => ({
+          name: (store.name ?? '').trim(),
+          address: (store.address ?? '').trim(),
+          phone: (store.phone ?? '').trim(),
+          timing: (store.timing ?? '').trim(),
+          mapUrl: (store.mapUrl ?? '').trim(),
+          imageIds: store.imageIds ?? [],
+        }))
         .filter((store) => store.name || store.address || store.phone);
     }
     if (patch.city !== undefined && !patch.city.trim()) {
@@ -114,27 +170,25 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
           />
         </FormField>
 
-        <FormField label="Stores in this city" htmlFor={field('store-0-name')} labelClassName={ADMIN_LABEL}>
+        <FormField label="Stores in this city (each with its photos)" htmlFor={field('store-0-name')} labelClassName={ADMIN_LABEL}>
           <div className="flex flex-col gap-3">
             {stores.map((store, i) => (
-              <div key={i} className="flex flex-col gap-2 rounded-lg border border-contrast/8 p-3">
-                <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
-                  <Input id={field(`store-${i}-name`)} size="sm" aria-label={`Store ${i + 1}: name`} placeholder="Name (e.g. Egmore)" value={store.name ?? ''} onChange={(e) => setStore(i, 'name', e.target.value)} className="w-full min-w-0" />
-                  <Input size="sm" aria-label={`Store ${i + 1}: phone`} placeholder="Phone" value={store.phone ?? ''} onChange={(e) => setStore(i, 'phone', e.target.value)} className="w-full min-w-0" />
-                  <IconButton
-                    variant="delete"
-                    label={`Remove store ${i + 1}`}
-                    onClick={() => setDraft((prev) => ({ ...prev, stores: stores.filter((_, k) => k !== i) }))}
-                  >
-                    <Trash2 size={13} strokeWidth={2} />
-                  </IconButton>
-                </div>
-                <Input size="sm" aria-label={`Store ${i + 1}: address`} placeholder="Address" value={store.address ?? ''} onChange={(e) => setStore(i, 'address', e.target.value)} />
-              </div>
+              <StoreFields
+                key={store.key}
+                store={store}
+                i={i}
+                field={field}
+                onChange={storeChange}
+                onBusy={storeBusy}
+                onRemove={() => setStores((list) => list.filter((other) => other.key !== store.key))}
+              />
             ))}
             <button
               type="button"
-              onClick={() => setDraft((prev) => ({ ...prev, stores: [...stores, { name: '', address: '', phone: '' }] }))}
+              onClick={() => {
+                nextStore += 1;
+                setStores((list) => [...list, { key: `new-${nextStore}`, name: '', address: '', phone: '', imageIds: [] }]);
+              }}
               className={INLINE_BTN}
             >
               <Plus size={14} strokeWidth={2} />
@@ -146,9 +200,9 @@ const ShowroomEditor = ({ showroom, onDelete }) => {
         <FormError>{error}</FormError>
 
         <div className="mt-auto flex flex-wrap gap-3">
-          <Button size="sm" onClick={save} disabled={!dirty || saving} className="self-start">
+          <Button size="sm" onClick={save} disabled={!dirty || saving || uploading} className="self-start">
             <Save size={15} strokeWidth={2} />
-            {saving ? 'Saving...' : dirty ? 'Save changes' : 'No changes'}
+            {saving ? 'Saving...' : uploading ? 'Uploading photos…' : dirty ? 'Save changes' : 'No changes'}
           </Button>
           {dirty && (
             <button

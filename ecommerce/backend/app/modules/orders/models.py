@@ -15,8 +15,10 @@ PAID_STATUSES = ('paid', 'shipped', 'delivered')
 
 class Order(Base):
     """A customer's order, paid through Razorpay. Its id is made by the website, so a checkout sent twice is one
-    order. lines [{product_id, name, image, price, qty, amount}] are a copy of the products as they were bought;
-    address {name, phone, email, line1, line2, city, state, pincode}; history [{at, status, note}]."""
+    order. lines [{product_id, name, image, price, qty, amount, hsn}] are a copy of the products as they were bought;
+    address {name, phone, email, line1, line2, city, state, pincode}; history [{at, status, note}].
+    Once paid it has a tax invoice: invoice_no (INV-2627-00001), invoiced_at, and seller, a copy of the seller's
+    details at that moment {name, address, gstin, state, state_code, phone, email}."""
 
     __tablename__ = 'orders'
 
@@ -33,13 +35,17 @@ class Order(Base):
     razorpay_order_id: Mapped[str | None] = mapped_column(String(40), unique=True)
     razorpay_payment_id: Mapped[str | None] = mapped_column(String(40))
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    invoice_no: Mapped[str | None] = mapped_column(String(24), unique=True)
+    invoiced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    seller: Mapped[dict | None] = mapped_column(JSONB)
     history: Mapped[list[dict]] = mapped_column(JSONB, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class NumberSeries(Base):
-    """The next order number of each financial year (RE-2627-00001)."""
+    """The next number of each financial year: orders by period "2627" (RE-2627-00001), invoices by "INV2627"
+    (INV-2627-00001)."""
 
     __tablename__ = 'number_series'
 

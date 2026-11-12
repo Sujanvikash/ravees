@@ -1,4 +1,4 @@
-from .conftest import signup
+from .conftest import signup, upload
 
 
 def test_enquiries(client, admin):
@@ -32,11 +32,22 @@ def test_too_many_enquiries_from_one_place(client):
 
 
 def test_showrooms_testimonials_and_settings(client, admin):
-    stores = [{'name': 'Egmore', 'address': 'Casa Major Road', 'phone': '98400 00000'}]
+    photo = upload(client, admin)
+    stores = [
+        {'name': 'Egmore', 'address': 'Casa Major Road', 'phone': '98400 00000', 'imageIds': [photo['id']]},
+        {'name': 'ECR', 'address': ' East Coast Road ', 'mapUrl': 'https://maps.app.goo.gl/x'},
+    ]
     first = client.post(
         '/admin/showrooms', json={'city': 'Chennai', 'isFlagship': True, 'stores': stores}, headers=admin
     )
-    assert first.status_code == 201 and first.json()['stores'] == stores
+    assert first.status_code == 201
+    egmore, ecr = first.json()['stores']
+    assert (
+        egmore['phone'] == '98400 00000' and egmore['imageIds'] == [photo['id']] and egmore['images'] == [photo['url']]
+    )
+    assert ecr['address'] == 'East Coast Road' and ecr['mapUrl'] == 'https://maps.app.goo.gl/x' and ecr['images'] == []
+    gone = {**stores[0], 'imageIds': ['00000000-0000-0000-0000-000000000000']}
+    assert client.post('/admin/showrooms', json={'city': 'Pune', 'stores': [gone]}, headers=admin).status_code == 422
     second = client.post(
         '/admin/showrooms', json={'city': 'Kochi', 'isFlagship': True, 'features': [' Lights ', '']}, headers=admin
     ).json()
@@ -74,3 +85,18 @@ def test_showrooms_testimonials_and_settings(client, admin):
     assert settings['deliveryFee'] == 99
     assert client.get('/storefront').json()['settings']['deliveryFee'] == 99
     assert client.patch('/admin/settings', json={'deliveryFee': -1}, headers=admin).status_code == 422
+
+
+def test_who_the_invoices_are_from(client, admin):
+    seller = client.get('/admin/settings/invoice', headers=admin).json()
+    # the Egmore store's business until the admin changes it
+    assert seller['name'] == 'SIANNA COLLECTION' and seller['state'] == 'Tamil Nadu'
+    assert seller['gstin'] == '33AFUPE5958A1ZF' and 'Egmore' in seller['address']
+    mine = {**seller, 'gstin': '33abcde1234f1z5', 'state': 'tamilnadu', 'address': ' 54 Casa Major Road \n\n Egmore '}
+    saved = client.put('/admin/settings/invoice', json=mine, headers=admin).json()
+    assert saved['gstin'] == '33ABCDE1234F1Z5' and saved['state'] == 'Tamil Nadu'
+    assert saved['address'] == '54 Casa Major Road\nEgmore'
+    # a GSTIN of another state, a GSTIN of the wrong shape, a state that isn't one
+    for wrong in ({'state': 'Kerala'}, {'gstin': '33ABC'}, {'state': 'Narnia'}):
+        assert client.put('/admin/settings/invoice', json={**mine, **wrong}, headers=admin).status_code == 422
+    assert client.get('/admin/settings/invoice').status_code == 401

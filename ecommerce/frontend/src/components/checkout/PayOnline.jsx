@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Building2, CreditCard, Hash, Home, Lock, Mail, MapIcon, MapPin, NotebookPen, Phone, User } from 'lucide-react';
+import { STATES } from '../../lib/states.js';
 import Button from '../Button.jsx';
 import FormError from '../FormError.jsx';
 import FormField from '../FormField.jsx';
@@ -191,7 +192,12 @@ const PayOnline = ({ onPaid, onClearAll }) => {
             <Input id="pay-city" {...errorProps('pay-city', errors.city)} icon={MapPin} required autoComplete="address-level2" value={form.city} onChange={update('city')} placeholder="Chennai" />
           </FormField>
           <FormField label="State" htmlFor="pay-state" required error={errors.state}>
-            <Input id="pay-state" {...errorProps('pay-state', errors.state)} icon={MapIcon} required autoComplete="address-level1" value={form.state} onChange={update('state')} placeholder="Tamil Nadu" />
+            <Input id="pay-state" {...errorProps('pay-state', errors.state)} icon={MapIcon} required autoComplete="address-level1" list="pay-states" value={form.state} onChange={update('state')} placeholder="Tamil Nadu" />
+            <datalist id="pay-states">
+              {STATES.map((state) => (
+                <option key={state} value={state} />
+              ))}
+            </datalist>
           </FormField>
           <FormField label="Pincode" htmlFor="pay-pincode" required error={errors.pincode}>
             <Input id="pay-pincode" {...errorProps('pay-pincode', errors.pincode)} icon={Hash} required inputMode="numeric" autoComplete="postal-code" maxLength={7} value={form.pincode} onChange={update('pincode')} placeholder="600008" />

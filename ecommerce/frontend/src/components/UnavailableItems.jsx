@@ -4,7 +4,8 @@ import IconButton from './IconButton.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
 /**
- * The cart lines that can't be bought right now (out of stock, or no longer in the shop), said plainly, with a
+ * The cart lines that can't be bought right now (out of stock, sold only in the stores now, or no longer in the
+ * shop), said plainly, with a
  * way to take them out. Shown in the cart, the cart drawer and checkout, which won't take payment while there
  * are any. Renders nothing when every line can be bought.
  *
@@ -38,7 +39,7 @@ const UnavailableItems = ({ onNavigate, className = '' }) => {
               )}
               <span className="text-text-muted">
                 {' '}
-                × {quantity} · {product ? 'Out of stock' : 'No longer available'}
+                × {quantity} · {!product ? 'No longer available' : product.storeOnly ? 'Sold only in our stores' : 'Out of stock'}
               </span>
             </div>
             <IconButton

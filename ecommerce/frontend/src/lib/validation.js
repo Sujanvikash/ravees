@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { stateName } from './states.js';
 
 /**
  * Zod schemas for the storefront forms, plus `validate`, which every form's submit handler calls.
@@ -51,7 +52,10 @@ export const deliverySchema = z.object({
   line1: requiredText('Please enter the house number and street').pipe(z.string().min(4, 'Please add a little more detail')),
   line2: z.string().trim().max(200, 'Please keep this under 200 characters'),
   city: requiredText('Please enter your city').pipe(z.string().min(2, 'City looks too short')),
-  state: requiredText('Please enter your state').pipe(z.string().min(2, 'State looks too short')),
+  // one of India's states, by its proper name: it decides the tax on the invoice
+  state: requiredText('Please choose your state')
+    .refine((v) => stateName(v), 'Choose your state from the list')
+    .transform((v) => stateName(v)),
   pincode: requiredText('Please enter the pincode').refine((v) => /^[1-9]\d{5}$/.test(v.replace(/\s/g, '')), 'Enter a valid 6-digit pincode'),
   notes,
 });

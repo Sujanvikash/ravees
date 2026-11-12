@@ -26,7 +26,12 @@ const Shop = () => {
   const [quickView, setQuickView] = useState(null);
   const [sort, setSort] = useState('featured');
   const { wishlist } = useWishlist();
-  const { products, categories } = useStorefront();
+  const { products, categories: shopCategories } = useStorefront();
+  // "Store Exclusives" (sold only in the stores) follows "All Collections" when there are any.
+  const exclusives = products.filter((p) => p.storeOnly).length;
+  const categories = exclusives
+    ? [shopCategories[0], { id: 'exclusive', name: 'Store Exclusives', icon: '★', count: exclusives }, ...shopCategories.slice(1)]
+    : shopCategories;
 
   const category = searchParams.get('category') ?? 'all';
   const query = searchParams.get('q') ?? '';
@@ -42,7 +47,7 @@ const Shop = () => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = products.filter((p) => {
-      const matchesCat = category === 'all' || p.category === category;
+      const matchesCat = category === 'all' || p.category === category || (category === 'exclusive' && p.storeOnly);
       const matchesQuery =
         !q ||
         p.name.toLowerCase().includes(q) ||

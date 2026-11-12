@@ -14,10 +14,10 @@ const ShopByCategory = ({ className = '' }) => {
   return (
     <div id="categories" className={className}>
       <SectionHeading eyebrow="✦ OUR COLLECTIONS ✦" title="Shop by Category" />
-      <ul className="grid grid-cols-4 gap-x-3 gap-y-5 lg:grid-cols-8 lg:gap-x-5">
-        {/* One left-to-right wave per row: all 8 across on desktop, each row of 4 on phones. */}
+      {/* Centred under the heading: three a row on phones, all in one row from sm. */}
+      <ul className="flex flex-wrap justify-center gap-x-3 gap-y-5 lg:gap-x-10">
         {categories.map(({ id, name, count, image }) => (
-          <Reveal as="li" key={id} delay="auto">
+          <Reveal as="li" key={id} delay="auto" className="w-[calc((100%-1.5rem)/3)] sm:w-[calc((100%-3.75rem)/6)] lg:w-36">
             <Link
               to={id === 'all' ? '/shop' : `/shop?category=${id}`}
               className="group flex flex-col items-center text-center no-underline"

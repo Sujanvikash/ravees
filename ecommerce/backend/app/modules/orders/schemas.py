@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import EmailStr, Field, field_validator
 
+from app.core.india import STATES, state_code
 from app.core.schemas import ApiModel
 
 # the same as models.STATUSES
@@ -30,6 +31,15 @@ class AddressIn(ApiModel):
     @classmethod
     def _one_line(cls, value: str) -> str:
         return ' '.join(value.split())
+
+    @field_validator('state')
+    @classmethod
+    def _state(cls, value: str) -> str:
+        """One of India's states, by its proper name: it decides the tax on the invoice."""
+        code = state_code(value)
+        if not code:
+            raise ValueError('Choose your state from the list.')
+        return STATES[code]
 
     @field_validator('pincode')
     @classmethod
@@ -79,6 +89,55 @@ class HistoryEntry(ApiModel):
     note: str = ''
 
 
+class InvoiceLine(ApiModel):
+    description: str
+    hsn: str
+    qty: int
+    rate: float
+    taxable: float
+    tax: float
+    amount: float
+
+
+class InvoiceSeller(ApiModel):
+    name: str
+    address: str
+    gstin: str
+    state: str
+    state_code: str
+    phone: str
+    email: str
+
+
+class InvoiceBuyer(ApiModel):
+    name: str
+    lines: list[str]
+    phone: str
+    email: str
+
+
+class InvoiceOut(ApiModel):
+    """A paid order's tax invoice (see invoice.py): GST at gst_rate% is included in every amount."""
+
+    number: str
+    date: datetime
+    order_number: str
+    seller: InvoiceSeller
+    buyer: InvoiceBuyer
+    place_of_supply: str
+    intra_state: bool
+    gst_rate: int
+    lines: list[InvoiceLine]
+    taxable: float
+    cgst: float
+    sgst: float
+    igst: float
+    total: float
+    amount_in_words: str
+    payment_id: str | None
+    paid_at: datetime | None
+
+
 class OrderOut(ApiModel):
     id: uuid.UUID
     number: str
@@ -94,6 +153,7 @@ class OrderOut(ApiModel):
     razorpay_payment_id: str | None
     history: list[HistoryEntry]
     customer: OrderCustomer
+    invoice: InvoiceOut | None = None
 
 
 class PaymentOut(ApiModel):

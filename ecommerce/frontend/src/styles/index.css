@@ -52,7 +52,7 @@
   --color-danger: #c8102e; /* delete / remove actions */
   --color-whatsapp: #25d366; /* WhatsApp's own green, for its chat button */
 
-  /* cream: product cards and the "Our Purpose" band, with dark ink on them */
+  /* cream: product cards and cream panels, with dark ink on them */
   --color-cream-50: #ffffff;
   --color-cream-100: #f9f5ec;
   --color-cream-200: #ece6d8;
@@ -350,5 +350,13 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-gold-400);
+  }
+}
+
+/* Printing a tax invoice (components/InvoiceDocument.jsx, on a page of its own): plain A4 with a small margin. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
   }
 }

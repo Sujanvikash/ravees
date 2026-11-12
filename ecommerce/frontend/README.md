@@ -1,7 +1,7 @@
 # ecommerce/frontend
 
 The Raave's Evergreen website: the shop front (collections, product pages, cart and checkout, showrooms,
-stories) and the admin at `/admin`. React 19, Vite 8, Tailwind CSS v4 and react-router-dom 7, in plain JSX.
+invoices) and the admin at `/admin`. React 19, Vite 8, Tailwind CSS v4 and react-router-dom 7, in plain JSX.
 
 ```bash
 npm install
