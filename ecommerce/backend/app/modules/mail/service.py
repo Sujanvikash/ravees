@@ -39,6 +39,18 @@ class Email:
 OUTBOX: list[Email] = []
 
 
+def _sign_in(server: smtplib.SMTP, user: str, password: str) -> None:
+    """Logs in with AUTH PLAIN alone when the server offers it. smtplib's login() tries LOGIN after a refused PLAIN,
+    and Gmail hangs up on that second try, so the log would say "Connection unexpectedly closed" instead of Gmail's
+    own reason ("Username and Password not accepted")."""
+    server.ehlo()
+    if 'PLAIN' in server.esmtp_features.get('auth', '').upper().split():
+        server.user, server.password = user, password
+        server.auth('PLAIN', server.auth_plain)
+    else:
+        server.login(user, password)
+
+
 def _by_smtp(email: Email, settings: Settings) -> bool:
     """Through the mailbox's own server: SSL from the start on port 465, STARTTLS on any other (587)."""
     message = EmailMessage()
@@ -57,7 +69,7 @@ def _by_smtp(email: Email, settings: Settings) -> bool:
             server = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20)
             server.starttls(context=context)
         with server:
-            server.login(settings.smtp_user, settings.smtp_password.get_secret_value())
+            _sign_in(server, settings.smtp_user, settings.smtp_password.get_secret_value())
             server.send_message(message)
     except (smtplib.SMTPException, OSError) as error:
         log.error('Email to %s (%s) failed: %s', email.to, email.subject, error)

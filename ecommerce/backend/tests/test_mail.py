@@ -18,6 +18,11 @@ class FakeServer:
 
     def __init__(self, host, port, timeout=None, context=None):
         self.address = (host, port)
+        self.esmtp_features = {}
+        self.user = self.password = None
+
+    def ehlo(self):
+        self.esmtp_features = {'auth': ' LOGIN PLAIN XOAUTH2'}
 
     def __enter__(self):
         return self
@@ -28,10 +33,18 @@ class FakeServer:
     def starttls(self, context=None):
         FakeServer.tls.append(self.address)
 
+    def auth_plain(self, challenge=None):
+        return f'\0{self.user}\0{self.password}'
+
+    def auth(self, mechanism, authobject):
+        # like Gmail: a refused PLAIN is a 535 with the reason; the code must not go on to try LOGIN
+        assert mechanism == 'PLAIN'
+        if self.password != 'app-password':
+            raise smtplib.SMTPAuthenticationError(535, b'5.7.8 Username and Password not accepted')
+        FakeServer.logins.append((self.address, self.user))
+
     def login(self, user, password):
-        if password != 'app-password':
-            raise smtplib.SMTPAuthenticationError(535, b'Authentication failed')
-        FakeServer.logins.append((self.address, user))
+        raise smtplib.SMTPServerDisconnected('Connection unexpectedly closed')
 
     def send_message(self, message):
         FakeServer.sent.append(message)
@@ -74,4 +87,5 @@ def test_port_587_starts_tls(mailbox, monkeypatch):
 def test_a_failed_send_is_logged_not_raised(mailbox, monkeypatch, caplog):
     monkeypatch.setattr(mailbox, 'smtp_password', type(mailbox.smtp_password)('wrong'))
     assert mail.send(mail.Email('a@example.com', 'Hi', '<p>Hi</p>', 'Hi')) is False
-    assert FakeServer.sent == [] and 'Authentication failed' in caplog.text
+    # Gmail's own reason reaches the log, not a hang-up
+    assert FakeServer.sent == [] and 'Username and Password not accepted' in caplog.text
