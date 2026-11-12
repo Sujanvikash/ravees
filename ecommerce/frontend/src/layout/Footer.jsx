@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaWhatsapp } from 'react-icons/fa';
 import {
@@ -50,6 +50,14 @@ const FOOTER_LINK =
   'group inline-flex items-center gap-3 text-[0.88rem] text-text-secondary no-underline transition-colors duration-300 hover:text-gold-300 focus-visible:text-gold-300';
 const FOOTER_LINK_ICON = 'shrink-0 text-gold-400/80 transition-colors duration-300 group-hover:text-gold-300';
 const FOOTER_LINK_LABEL = 'transition-transform duration-300 ease-premium group-hover:translate-x-1 group-focus-visible:translate-x-1';
+
+// The policy pages (data/policies.js), along the bottom.
+const LEGAL_LINKS = [
+  { label: 'Refund Policy', to: '/refund-policy' },
+  { label: 'Shipping Policy', to: '/shipping-policy' },
+  { label: 'Terms & Conditions', to: '/terms' },
+  { label: 'Privacy Policy', to: '/privacy-policy' },
+];
 
 // Legal links in a row along the bottom: a smaller ✦ springs in above the word, like the header.
 const FOOTER_LEGAL =
@@ -204,17 +212,14 @@ const Footer = () => {
             &copy; 2026 Raave&apos;s Evergreen. All rights reserved. No. 1 in Christmas.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-            <Link to="/about" className={FOOTER_LEGAL}>
-              Privacy Policy
-            </Link>
-            <span aria-hidden="true" className="h-3.5 w-px bg-contrast/15" />
-            <Link to="/about" className={FOOTER_LEGAL}>
-              Terms &amp; Warranty
-            </Link>
-            <span aria-hidden="true" className="h-3.5 w-px bg-contrast/15" />
-            <Link to="/contact" className={FOOTER_LEGAL}>
-              Shipping Policy
-            </Link>
+            {LEGAL_LINKS.map(({ label, to }, i) => (
+              <Fragment key={to}>
+                {i > 0 && <span aria-hidden="true" className="h-3.5 w-px bg-contrast/15" />}
+                <Link to={to} className={FOOTER_LEGAL}>
+                  {label}
+                </Link>
+              </Fragment>
+            ))}
             <button
               type="button"
               aria-label="Back to top"

@@ -54,6 +54,12 @@ const specRows = (product) =>
     ['Safety', 'European safety certified'],
     ['Warranty', '10 years'],
     ['Delivery', product.storeOnly ? 'Buy and take home from our stores' : 'Pan-India, white-glove'],
+    !product.storeOnly && [
+      'Returns',
+      <Link key="returns" to="/refund-policy" className="text-gold-300 underline-offset-4 hover:underline">
+        No returns or refunds
+      </Link>,
+    ],
     ['Orders', 'Single pieces, bulk & projects'],
     ['Price', product.price == null ? 'Ask in store' : `${formatPrice(product.price)} incl. GST`],
   ].filter(Boolean);

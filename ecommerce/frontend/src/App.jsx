@@ -14,6 +14,7 @@ const Showrooms = lazy(() => import('./pages/Showrooms.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
 const Contact = lazy(() => import('./pages/Contact.jsx'));
 const Testimonials = lazy(() => import('./pages/Testimonials.jsx'));
+const Policy = lazy(() => import('./pages/Policy.jsx'));
 const Login = lazy(() => import('./auth/pages/Login.jsx'));
 const Signup = lazy(() => import('./auth/pages/Signup.jsx'));
 const ForgotPassword = lazy(() => import('./auth/pages/ForgotPassword.jsx'));
@@ -60,6 +61,11 @@ const App = () => {
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
         <Route path="testimonials" element={<Testimonials />} />
+        {/* The shop's policies (data/policies.js), one page each */}
+        <Route path="refund-policy" element={<Policy />} />
+        <Route path="shipping-policy" element={<Policy />} />
+        <Route path="terms" element={<Policy />} />
+        <Route path="privacy-policy" element={<Policy />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />
         <Route path="forgot-password" element={<ForgotPassword />} />

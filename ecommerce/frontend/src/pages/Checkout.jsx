@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ArrowRight, CheckCircle2, Headphones, PackageCheck, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Headphones, PackageCheck, ShieldCheck, ShoppingBag, Truck, Video } from 'lucide-react';
 import Button from '../components/Button.jsx';
 import FeatureItem from '../components/FeatureItem.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
@@ -15,6 +16,8 @@ import Decoration from '../components/Decoration.jsx';
 import { luxuryGiftBoxes } from '../assets/decorations';
 import PageTitle from '../components/PageTitle.jsx';
 import { sectionClass } from '../components/sectionClass.js';
+
+const TEXT_LINK = 'text-gold-300 underline underline-offset-4 hover:text-text-primary';
 
 // The left column's three points.
 const PROMISES = [
@@ -83,9 +86,20 @@ const Checkout = () => {
         }
       >
         <p className="mb-2 font-mono text-[0.85rem] uppercase tracking-[0.18em] text-gold-300">Order {order.number}</p>
-        <p className="mb-6 text-[1rem] leading-[1.7] text-text-secondary">
+        <p className="mb-4 text-[1rem] leading-[1.7] text-text-secondary">
           Your payment of {formatPrice(order.total)} is confirmed and a receipt is on its way to {order.address?.email ?? 'your email'}.
           We will let you know as soon as your order ships.
+        </p>
+        <p className="mb-6 flex items-start gap-2.5 rounded-xl border border-gold-400/25 bg-gold-400/8 px-4 py-3 text-left text-[0.88rem] leading-[1.6] text-text-secondary">
+          <Video size={18} strokeWidth={1.8} className="mt-0.5 shrink-0 text-gold-400" aria-hidden="true" />
+          <span>
+            <strong className="text-text-primary">When it arrives, record a video as you open the package.</strong> If
+            anything is damaged, send it to us within 24–48 hours of delivery (see our{' '}
+            <Link to="/refund-policy" className={TEXT_LINK}>
+              Refund Policy
+            </Link>
+            ).
+          </span>
         </p>
         {/* What was bought, with its photos. */}
         <ul className="mb-8 flex list-none flex-col rounded-xl border border-gold-400/20 bg-surface px-4 text-left">
@@ -151,6 +165,21 @@ const Checkout = () => {
                 <FeatureItem key={text} variant="point" Icon={Icon} title={text} className="sm:min-w-[14rem]" />
               ))}
             </div>
+
+            {/* The refund rules, seen before paying (above the form on phones). */}
+            <p className="mt-6 max-w-[26rem] rounded-xl border border-gold-400/25 bg-gold-400/8 px-4 py-3 text-[0.82rem] leading-[1.65] text-text-secondary">
+              <strong className="text-text-primary">All sales are final:</strong> no returns or refunds. If anything
+              arrives damaged, tell us within 24–48 hours of delivery, with an unboxing video. By paying, you agree to
+              our{' '}
+              <Link to="/terms" className={TEXT_LINK}>
+                Terms
+              </Link>{' '}
+              and{' '}
+              <Link to="/refund-policy" className={TEXT_LINK}>
+                Refund Policy
+              </Link>
+              .
+            </p>
 
             <figure className="mt-8 hidden max-w-[17rem] text-center xl:block">
               <div aria-hidden="true" className="flex items-center gap-3 text-gold-400">
