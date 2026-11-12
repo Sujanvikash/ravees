@@ -3,7 +3,7 @@ Settings for the whole test run, applied before the app is imported.
 
 The app never sees your real DATABASE_URL here: it points at TEST_DATABASE_URL when that is set, and otherwise at an
 address nothing listens on. The API tests in tests/api create their tables on TEST_DATABASE_URL and are skipped when
-it isn't set or can't be reached. Razorpay and Resend are never called: payments use test keys and a stand-in for
+it isn't set or can't be reached. Razorpay, Resend and SMTP servers are never called: payments use test keys and a stand-in for
 making the Razorpay order, and emails go to mail.OUTBOX.
 """
 
@@ -30,6 +30,7 @@ os.environ['ENVIRONMENT'] = 'test'
 os.environ['PUBLIC_URL'] = 'http://shop-api.test'
 os.environ['SITE_URL'] = 'http://shop.test'
 os.environ['RESEND_API_KEY'] = ''
+os.environ['SMTP_HOST'] = ''
 os.environ['ADMIN_EMAIL'] = 'orders@shop.test'
 os.environ['RAZORPAY_KEY_ID'] = 'rzp_test_key'
 os.environ['RAZORPAY_KEY_SECRET'] = 'razorpay-test-secret'

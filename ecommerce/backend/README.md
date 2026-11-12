@@ -1,7 +1,7 @@
 # ecommerce/backend
 
 The shop API for the Raave's Evergreen website: the catalogue (five categories of at most 10 products each, store
-exclusives, photos), customer accounts with password reset by email (Resend), the admin, enquiries, orders paid with
+exclusives, photos), customer accounts with password reset by email, the admin, enquiries, orders paid with
 Razorpay with a GST tax invoice and an email at every step, the stores (with photos) and testimonials. Python 3.13, FastAPI, SQLAlchemy 2, PostgreSQL and Alembic, managed with [uv](https://docs.astral.sh/uv/),
 built the same way as `billing/backend` (it is a separate app with its own database).
 
@@ -26,7 +26,9 @@ existing database works too: add `?options=-csearch_path%3Dshop` to the URL (and
 | `CORS_ORIGINS` | the website's address(es), comma-separated |
 | `PUBLIC_URL` | this API's own public address (photo links are made from it), e.g. `https://shop-api.example.com` |
 | `SITE_URL` | the website's address, for the links in emails (`/reset-password?token=…`, `/account/orders/…`) |
-| `RESEND_API_KEY`, `MAIL_FROM` | Resend's API key and the sender, e.g. `Raave's Evergreen <orders@mail.christmasraave.in>`. Without a key, emails are printed to the log instead (setup: `ecommerce/deploy/README.md`) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | a mailbox to send the emails through (the shop's: `smtp.zoho.in`, 465, `info@christmasraave.in`); port 465 is SSL, any other STARTTLS. Used when `SMTP_HOST` is set |
+| `RESEND_API_KEY` | otherwise Resend's API key. With neither, emails are printed to the log instead (setup: `ecommerce/deploy/README.md`) |
+| `MAIL_FROM` | the sender, e.g. `Raave's Evergreen <info@christmasraave.in>` (with SMTP, the mailbox itself) |
 | `MAIL_REPLY_TO` | optional: where a customer's reply to an email goes, e.g. `info@christmasraave.in` |
 | `ADMIN_EMAIL` | optional: gets a copy of every paid order |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay's API keys (test keys start `rzp_test_`) |
@@ -127,7 +129,7 @@ charge is a line of its own (SAC 9965) at the same rate. HSN per line comes from
   "amountInWords": "Rupees Two Thousand Five Hundred Fifty Only", "paymentId": "pay_…", "paidAt": "…" }
 ```
 
-**Emails** (Resend): the customer is emailed at every change of status: paid (the confirmation, with the invoice
+**Emails** (the shop's Zoho mailbox by SMTP, or Resend): the customer is emailed at every change of status: paid (the confirmation, with the invoice
 link `SITE_URL/account/orders/<id>/invoice`; the shop's `ADMIN_EMAIL` gets a copy), shipped, delivered (with the
 invoice), and cancelled (only once it was paid). Each carries the admin's note. A note without a change of status
 isn't emailed.

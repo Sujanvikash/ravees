@@ -41,7 +41,12 @@ class Settings(BaseSettings):
     login_window_minutes: int = Field(default=15, ge=1)
     reset_link_minutes: int = Field(default=30, ge=5, le=24 * 60)
 
-    # email through Resend; without a key, emails are written to the log instead
+    # email through a mailbox's SMTP server (the shop's Zoho mailbox: smtp.zoho.in, 465) or else through Resend;
+    # with neither, emails are written to the log instead
+    smtp_host: str = ''
+    smtp_port: int = 465
+    smtp_user: str = ''
+    smtp_password: SecretStr = SecretStr('')
     resend_api_key: SecretStr = SecretStr('')
     mail_from: str = "Raave's Evergreen <onboarding@resend.dev>"
     # where a customer's reply to an email goes (the shop's own inbox); empty: back to mail_from

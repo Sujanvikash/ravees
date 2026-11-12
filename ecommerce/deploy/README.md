@@ -34,42 +34,37 @@ Migrations run when it starts. The shop has its own server so the website's traf
 The API's address: until there is a domain, `shop-api.<static ip>.sslip.io` works (sslip.io answers with the IP in the
 name, and Caddy gets a real certificate for it).
 
-### 2. Resend (password-reset and order emails)
+### 2. Email (password-reset and order emails)
 
-The shop sends its emails through [Resend](https://resend.com): the password reset link, and an email to the customer
-at every step of an order (confirmed with the invoice, shipped, delivered, cancelled), plus a copy of each paid order
-to the shop. Until `RESEND_API_KEY` is set, nothing is sent: each email is only written to the API's log.
+The shop sends the password reset link and an email to the customer at every step of an order (confirmed with
+the invoice, shipped, delivered, cancelled), plus a copy of each paid order to `ADMIN_EMAIL`. Until it has a way
+to send, nothing goes out: each email is only written to the API's log.
 
-1. **Sign up** at resend.com with the shop's email (the free plan sends 3,000 emails a month, 100 a day).
-2. **Domains → Add domain** → `mail.christmasraave.in`, region **Tokyo (ap-northeast-1)** (the nearest to India). A
-   subdomain keeps these records apart from the email you already get at `@christmasraave.in`, which carries on
-   working as it is.
-3. Resend shows three or four DNS records. Add each one where `christmasraave.in`'s DNS is managed (Hostinger:
-   **Domains → christmasraave.in → DNS / Nameservers → Manage DNS records**). Type and value exactly as Resend shows;
-   for the **Name**, type only the part before `.christmasraave.in` (Hostinger adds the domain itself):
+**The shop's own mailbox (in use):** `info@christmasraave.in` is on Zoho Mail, and the domain's DNS already lets Zoho
+send for it, so nothing changes at Hostinger. The API logs in to Zoho's mail server like an email app does.
 
-   | Type | Name (at Hostinger) | Value (copy from Resend) |
-   |---|---|---|
-   | TXT | `resend._domainkey.mail` | the long `p=MIGfMA0…` key (DKIM) |
-   | MX | `send.mail` | `feedback-smtp.ap-northeast-1.amazonses.com`, priority 10 |
-   | TXT | `send.mail` | `v=spf1 include:amazonses.com ~all` |
-   | TXT (optional, recommended) | `_dmarc.mail` | `v=DMARC1; p=none;` |
-
-4. Back in Resend press **Verify DNS records**. It usually turns **Verified** within minutes (DNS can take up to a
-   few hours).
-5. **API Keys → Create API key**: name `shop-api`, permission **Sending access**, domain `mail.christmasraave.in`.
-   Copy the key (it starts `re_`; Resend shows it only once).
-6. On the shop server (`~/ecommerce/.env`, step 6) set:
+1. Sign in at mail.zoho.in as `info@christmasraave.in`.
+2. Allow other apps to send: **Settings (gear) → Mail Accounts → IMAP / POP** (on some accounts **Settings → Mail
+   Accounts → info@… → SMTP**) and make sure IMAP access is on. Zoho's free plan doesn't allow it; a paid plan
+   (Mail Lite or higher) does.
+3. If the account has two-factor sign-in, make an app password: accounts.zoho.in → **Security → App Passwords →
+   Generate**, name it `shop-api`, and copy it. Otherwise use the mailbox's own password.
+4. On the shop server, in `~/ecommerce/.env`:
    ```
-   RESEND_API_KEY=re_…
-   MAIL_FROM=Raave's Evergreen <orders@mail.christmasraave.in>
-   MAIL_REPLY_TO=info@christmasraave.in
+   SMTP_HOST=smtp.zoho.in
+   SMTP_PORT=465
+   SMTP_USER=info@christmasraave.in
+   SMTP_PASSWORD=<the app password>
+   MAIL_FROM=Raave's Evergreen <info@christmasraave.in>
    ADMIN_EMAIL=<the inbox that should get every paid order>
    ```
-   then `docker compose up -d` to restart the API with them.
-7. **Test it:** on the website use **Forgot password** with your own account's email: the reset email should arrive
-   within a minute. If not, `docker compose logs --tail 50 shop-api | grep -i email` shows Resend's answer, and
-   Resend's **Emails** page lists every email sent (and why one bounced).
+   then `docker compose up -d`. (`MAIL_FROM` must be the same mailbox: Zoho only sends as the account that logs in.)
+5. **Test it:** on the website use **Forgot password** with your own account's email; it should arrive within a
+   minute, and it shows in the mailbox's Sent folder. If not, `docker compose logs --tail 50 shop-api | grep -i
+   email` shows the error (for example "Authentication failed": the password, or SMTP access not switched on).
+
+**Or Resend** (an email service; needs DNS records for the domain): leave `SMTP_HOST` empty, add a domain at
+resend.com with the records it shows, and set `RESEND_API_KEY=re_…` and a `MAIL_FROM` on that domain.
 
 ### 3. Razorpay
 
@@ -108,9 +103,11 @@ JWT_SECRET=$(openssl rand -hex 32)
 PUBLIC_URL=https://shop-api.<static ip>.sslip.io
 SITE_URL=https://<project>.pages.dev
 CORS_ORIGINS=https://<project>.pages.dev
-RESEND_API_KEY=
-MAIL_FROM=Raave's Evergreen <orders@mail.christmasraave.in>
-MAIL_REPLY_TO=info@christmasraave.in
+SMTP_HOST=smtp.zoho.in
+SMTP_PORT=465
+SMTP_USER=info@christmasraave.in
+SMTP_PASSWORD=
+MAIL_FROM=Raave's Evergreen <info@christmasraave.in>
 ADMIN_EMAIL=
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
@@ -119,7 +116,7 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=$(openssl rand -hex 8)
 EOF
 chmod 600 .env
-nano .env        # paste the Resend and Razorpay keys
+nano .env        # paste the mailbox password and the Razorpay keys
 ```
 
 ### 7. The first deploy

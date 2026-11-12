@@ -1,19 +1,24 @@
 """
-Emails to customers (and a copy of each paid order to the shop), sent through Resend's HTTP API: the password
-reset link, and every step of an order (paid with its invoice, shipped, delivered, cancelled).
+Emails to customers (and a copy of each paid order to the shop): the password reset link, and every step of an
+order (paid with its invoice, shipped, delivered, cancelled).
 
-Without RESEND_API_KEY (on a computer, in the tests) nothing is sent: each email is written to the log and kept in
-OUTBOX, so the reset link can still be followed. A failed send is logged and never fails the request that caused it:
-the order is paid, or the reset link made, either way.
+They go out through the shop's own mailbox by SMTP when SMTP_HOST is set (info@christmasraave.in on Zoho Mail:
+smtp.zoho.in, port 465), otherwise through Resend's HTTP API when RESEND_API_KEY is. With neither (on a computer, in
+the tests) nothing is sent: each email is written to the log and kept in OUTBOX, so the reset link can still be
+followed. A failed send is logged and never fails the request that caused it: the order is paid, or the reset link
+made, either way.
 """
 
 import html
 import logging
+import smtplib
+import ssl
 from dataclasses import dataclass
+from email.message import EmailMessage
 
 import httpx
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 
 RESEND_URL = 'https://api.resend.com/emails'
 # the shop's number, at the foot of every email
@@ -30,18 +35,48 @@ class Email:
     text: str
 
 
-# the emails "sent" without a Resend key, newest last (the tests read the reset link from here)
+# the emails "sent" with no way to send them, newest last (the tests read the reset link from here)
 OUTBOX: list[Email] = []
 
 
+def _by_smtp(email: Email, settings: Settings) -> bool:
+    """Through the mailbox's own server: SSL from the start on port 465, STARTTLS on any other (587)."""
+    message = EmailMessage()
+    message['From'] = settings.mail_from
+    message['To'] = email.to
+    message['Subject'] = email.subject
+    if settings.mail_reply_to:
+        message['Reply-To'] = settings.mail_reply_to
+    message.set_content(email.text)
+    message.add_alternative(email.html, subtype='html')
+    context = ssl.create_default_context()
+    try:
+        if settings.smtp_port == 465:
+            server = smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=20, context=context)
+        else:
+            server = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20)
+            server.starttls(context=context)
+        with server:
+            server.login(settings.smtp_user, settings.smtp_password.get_secret_value())
+            server.send_message(message)
+    except (smtplib.SMTPException, OSError) as error:
+        log.error('Email to %s (%s) failed: %s', email.to, email.subject, error)
+        return False
+    return True
+
+
 def send(email: Email) -> bool:
-    """Sends one email. Returns whether it went (or, without a key, was logged)."""
+    """Sends one email. Returns whether it went (or, with no way to send it, was logged)."""
     settings = get_settings()
+    if settings.smtp_host:
+        return _by_smtp(email, settings)
     key = settings.resend_api_key.get_secret_value()
     if not key:
         OUTBOX.append(email)
         del OUTBOX[:-50]
-        log.warning('Email not sent (no RESEND_API_KEY) to %s: %s\n%s', email.to, email.subject, email.text)
+        log.warning(
+            'Email not sent (no SMTP_HOST or RESEND_API_KEY) to %s: %s\n%s', email.to, email.subject, email.text
+        )
         return True
     body = {
         'from': settings.mail_from,
