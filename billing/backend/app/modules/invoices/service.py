@@ -79,6 +79,12 @@ def _log(invoice: TransferInvoice, action: str, note: str, at: datetime) -> None
     invoice.updated_at = at
 
 
+def _units(lines: list[dict]) -> dict[str, int]:
+    """The units each product on the invoice moves in stock: its qty, or for a line raised by the box before the
+    product was sold by the piece, the pieces in it (stock_qty, set by migration 0017; the printed qty stays)."""
+    return {line['code']: line.get('stock_qty', line['qty']) for line in lines}
+
+
 def _expect(invoice: TransferInvoice, allowed: tuple[str, ...], action: str) -> None:
     if invoice.status not in allowed:
         raise Conflict(f'{invoice.number} is {invoice.status}, so it can’t be {action}.')
@@ -279,7 +285,7 @@ def edit_invoice(
         raise Conflict(f'Already on an invoice: box {", ".join(taken)}.')
 
     wanted, lines = _priced(session, boxes, data.lines)
-    had = {line['code']: line['qty'] for line in invoice.lines}
+    had = _units(invoice.lines)
     adjust_warehouse(session, {code: had.get(code, 0) - wanted.get(code, 0) for code in had.keys() | wanted.keys()})
     _move_boxes([b for b in current if b.id not in ids], 'in_stock', None, None, 'released', invoice.number, at)
     _move_boxes(
@@ -395,7 +401,7 @@ def add_to_stock(session: Session, user: User, invoice_id: uuid.UUID, *, at: dat
     invoice = _get(session, invoice_id)
     _expect(invoice, ('paid',), 'added to stock')
     at = at or clock.now()
-    stock.adjust(session, invoice.location_id, {line['code']: line['qty'] for line in invoice.lines})
+    stock.adjust(session, invoice.location_id, _units(invoice.lines))
     _move_boxes(_boxes(session, invoice.id), 'stocked', invoice.location_id, invoice.id, 'stocked', invoice.number, at)
     invoice.status = 'stocked'
     _log(invoice, 'stocked', '', at)
@@ -412,7 +418,7 @@ def cancel(
     invoice = _get(session, invoice_id)
     _expect(invoice, ('raised', 'paid'), 'cancelled')
     at = at or clock.now()
-    adjust_warehouse(session, {line['code']: line['qty'] for line in invoice.lines})
+    adjust_warehouse(session, _units(invoice.lines))
     _move_boxes(_boxes(session, invoice.id), 'in_stock', None, None, 'released', invoice.number, at)
     if invoice.order_id:
         order = session.get(PurchaseOrder, invoice.order_id, with_for_update=True)

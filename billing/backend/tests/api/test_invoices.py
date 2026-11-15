@@ -4,8 +4,11 @@ import re
 import uuid
 from decimal import ROUND_HALF_UP, Decimal
 
+from sqlalchemy import update
+
 from app.core.database import session_scope
 from app.modules.invoices.issued import import_issued
+from app.modules.invoices.models import TransferInvoice
 
 from .conftest import login
 from .test_boxes import box
@@ -261,6 +264,32 @@ def test_cancelling_gives_everything_back(client, admin, chennai):
     assert order_status(client, admin, order['id']) == 'requested'
     assert client.put(f'/transfer-invoices/{inv["id"]}/documents', json={}, headers=admin).status_code == 409
     assert invoice(client, admin, [one], location='mumbai').status_code == 201  # the box can be billed again
+
+
+def test_an_invoice_raised_by_the_box_brings_its_pieces(client, admin, chennai):
+    """Migration 0017 gives the lines of invoices still open the pieces they carry (stock_qty): adding the invoice to
+    the store's stock, or cancelling it, moves those pieces; the printed qty stays."""
+    code = season_code(client, chennai, 9)
+    stock_admin(client, admin, code, 200)
+
+    def by_the_box(qty, pieces):
+        body = {'id': str(uuid.uuid4()), 'location': 'chennai', 'lines': [{'code': code, 'qty': qty}]}
+        inv = client.post('/transfer-invoices', json=body, headers=admin).json()
+        with session_scope() as session:
+            lines = [{**inv['lines'][0], 'stock_qty': pieces}]
+            session.execute(update(TransferInvoice).where(TransferInvoice.id == inv['id']).values(lines=lines))
+        return f'/transfer-invoices/{inv["id"]}'
+
+    in_admin, in_chennai = stock_of(client, admin, 'warehouse', code), stock_of(client, chennai, 'chennai', code)
+    url = by_the_box(2, 74)
+    assert client.post(f'{url}/pay', json={'ref': 'x'}, headers=admin).status_code == 200
+    stocked = client.post(f'{url}/stock', headers=admin)
+    assert stocked.status_code == 200 and stocked.json()['lines'][0]['qty'] == 2
+    assert stock_of(client, chennai, 'chennai', code) == in_chennai + 74
+
+    url = by_the_box(3, 111)
+    assert client.post(f'{url}/cancel', headers=admin).status_code == 200
+    assert stock_of(client, admin, 'warehouse', code) == in_admin - 2 - 3 + 111
 
 
 def test_what_an_invoice_refuses(client, admin, chennai):

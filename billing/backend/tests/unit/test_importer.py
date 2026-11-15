@@ -130,3 +130,19 @@ def test_a_repeated_code(tmp_path):
     path = _excel(tmp_path, [*REQUIRED_COLUMNS, 'In Season 2026'], row, row)
     with pytest.raises(CatalogueFileError, match='AB1 more than once'):
         read_catalogue(path)
+
+
+def test_box_products_priced_by_the_piece(catalogue):
+    """CHNAGES TO SINGLE PICS.pdf: 15 products priced by the box keep their codes with the list's MRP, selling price
+    and D.Rate (cost)."""
+    by_code = {p['code']: p for p in catalogue.products}
+
+    def price(code):
+        p = by_code[code]
+        return p['mrp'], p['offer'], p['cost']
+
+    assert price('FD26021') == (50, 40, 10)
+    assert price('FD26032') == (350, 270, 10)
+    assert price('FD26061') == (320, 235, 15)
+    assert price('SR26113') == (220, 150, 20)
+    assert by_code['FD26021']['in_season'] and by_code['FD26021']['name'] == 'SPAIN PINE CONE'

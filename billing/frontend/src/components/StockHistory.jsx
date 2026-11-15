@@ -16,6 +16,7 @@ const KIND = {
   'sent-back': { label: 'Purchase return', Icon: PackageMinus, className: 'bg-ruby-50 text-ruby-ink' },
   'sent-out': { label: 'Sent to showroom', Icon: PackageMinus, className: 'bg-ruby-50 text-ruby-ink' },
   'returned-in': { label: 'Returned by showroom', Icon: Undo2, className: 'bg-ok-50 text-ok-ink' },
+  pieces: { label: 'Boxes to pieces', Icon: Tag, className: 'bg-mist text-ink-2' },
 };
 
 const signed = (sign, n) => `${sign < 0 ? '−' : '+'}${n.toLocaleString('en-IN')}`;

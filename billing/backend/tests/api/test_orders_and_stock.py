@@ -152,6 +152,11 @@ def test_seed_adds_a_stock_sheet_to_the_admin_stock_once(client, admin, tmp_path
     # run again (by mistake, or after a failed step): the same sheet adds nothing
     assert 'nothing was added' in str(cli.seed(admin_stock=path))
     assert stock_of(client, admin, 'warehouse', one) == before[one] + 7
+    # nor does a corrected copy under the same name: its stock was corrected on the server
+    sheet.active.cell(2, 3).value = 70
+    sheet.save(path)
+    assert 'nothing was added' in str(cli.seed(admin_stock=path))
+    assert stock_of(client, admin, 'warehouse', one) == before[one] + 7
 
 
 def test_admin_stock(client, admin, chennai):

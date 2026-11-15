@@ -40,12 +40,16 @@ def read_sheet(path: Path) -> list[ImportLineIn]:
 
 def import_admin_stock(session: Session, path: Path = ADMIN_STOCK) -> tuple[int, bool]:
     """Adds the sheet to the admin's own stock, once: the import's id is made from the file's contents, so the same
-    file imported again adds nothing. Returns the units in the sheet and whether they were added now. Commits."""
+    file imported again adds nothing, and nor does a corrected copy of a sheet already imported under its name (the
+    stock it brought was corrected on the server). Returns the units in the sheet and whether they were added now.
+    Commits."""
     data = path.read_bytes()
     import_id = uuid.uuid5(uuid.NAMESPACE_URL, f'raaves-billing/admin-stock/{hashlib.sha256(data).hexdigest()}')
     lines = read_sheet(path)
     units = sum(line.qty for line in lines)
-    if repository.get_import(session, import_id):
+    if repository.get_import(session, import_id) or any(
+        record.file == path.name for record in repository.list_imports(session, WAREHOUSE_ID)
+    ):
         return units, False
     admin = users.get(session, ADMIN_USERNAME)
     stock_service.import_stock(

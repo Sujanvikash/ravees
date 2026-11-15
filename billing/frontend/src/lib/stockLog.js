@@ -4,7 +4,7 @@ import { findProduct } from './catalogue.js';
  * Every time stock moved other than by a sale, newest first, for the inventory history: Excel imports, opening
  * stock of a showroom's new product, purchase orders counted in and customer returns (in), and purchase returns to
  * the admin (out). Each entry: { id, at, by, location, kind: 'import' | 'product' | 'own' | 'order' | 'customer-return' |
- * 'sent-back' | 'sent-out' | 'returned-in', ref, lines: [{ code, name, qty }], units, sign: 1 | -1, note }. Pass a location for one showroom,
+ * 'sent-back' | 'sent-out' | 'returned-in' | 'pieces', ref, lines: [{ code, name, qty }], units, sign: 1 | -1, note }. Pass a location for one showroom,
  * or null for all.
  */
 export const stockLog = (orders, imports, location, { returns = [], stockReturns = [] } = {}) => {
@@ -14,8 +14,9 @@ export const stockLog = (orders, imports, location, { returns = [], stockReturns
   for (const im of imports) {
     if (location && im.location !== location) continue;
     // a showroom's own product: its opening units, or units added by hand later
-    const kind = im.source === 'new-product' ? 'product' : im.source === 'own-product' || im.source === 'manual' ? 'own' : 'import';
-    entries.push({ id: im.id, at: im.at, by: im.by, location: im.location, kind, ref: kind === 'import' ? im.file : im.lines[0]?.code, lines: im.lines, note: '' });
+    // ('pieces': box products re-priced by the piece, their stock multiplied to match)
+    const kind = im.source === 'new-product' ? 'product' : im.source === 'own-product' || im.source === 'manual' ? 'own' : im.source === 'pieces' ? 'pieces' : 'import';
+    entries.push({ id: im.id, at: im.at, by: im.by, location: im.location, kind, ref: kind === 'import' || kind === 'pieces' ? im.file : im.lines[0]?.code, lines: im.lines, note: '' });
   }
 
   for (const o of orders) {

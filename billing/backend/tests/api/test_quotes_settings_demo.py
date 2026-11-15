@@ -264,7 +264,8 @@ def test_the_demo_starts_clean_with_the_2026_season(client, demo_built):
     # the season's total quantities are in the admin stock, imported from the stock sheet
     stock = client.get('/stock', headers=d_admin).json()
     assert set(stock) == {'warehouse'} and set(stock['warehouse']) == season
-    assert sum(stock['warehouse'].values()) == 166190 and stock['warehouse']['CT26020'] == 130
+    assert sum(stock['warehouse'].values()) == 194568 and stock['warehouse']['CT26020'] == 130
+    assert stock['warehouse']['FD26021'] == 2960  # 80 boxes at 1,480 are 2,960 pieces at 40
     assert [i['file'] for i in client.get('/stock/imports', headers=d_admin).json()] == ['admin-stock-2026.xlsx']
     # nothing else, as on the real side before its first day: every workflow is tried from its first step
     for path in ('/sales', '/returns', '/orders', '/quotes', '/cash/closes', '/boxes'):
