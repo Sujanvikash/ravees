@@ -21,6 +21,12 @@ from .throttling import LoginThrottle
 
 WRONG_PASSWORD = 'That password is not right for this login.'
 DEMO_NOT_READY = 'The demo isn’t set up on this server yet. Run: uv run python -m app.cli demo'
+WRONG_DEMO_PASSWORD = 'That is not the demo password.'
+# The Demo switch's password, kept here only as its Argon2 hash. The same on every server.
+DEMO_PASSWORD_HASH = '$argon2id$v=19$m=65536,t=3,p=4$Cs/Tnp43E353fF1FJP7xBw$Fsp5FVS0ELbeiXe1LxLL/r0xjNbApEiD+qi43vfVMWE'
+# The demo logins the switch opens: Chennai Egmore and the admin. The demo's other showrooms stay in its data, with no
+# way in.
+DEMO_LOGINS = ('chennai', 'admin')
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,16 +125,21 @@ def check_password(session: Session, throttle: LoginThrottle, user: User, passwo
     _checked_user(session, throttle, user.username, password, client)
 
 
-def _checked_user(session: Session, throttle: LoginThrottle, username: str, password: str, client: str) -> User:
-    username = username.strip().lower()
-    key = f'{username}|{client}'
+def _hold_off(throttle: LoginThrottle, key: str, what: str) -> None:
+    """Raises TooManyRequests while `key` has had too many wrong passwords."""
     wait = throttle.retry_after(key)
     if wait:
         minutes = math.ceil(wait / 60)
         raise TooManyRequests(
-            f'Too many wrong passwords for this login. Try again in {minutes} minute{"s" if minutes != 1 else ""}.',
+            f'Too many wrong passwords for {what}. Try again in {minutes} minute{"s" if minutes != 1 else ""}.',
             retry_after=wait,
         )
+
+
+def _checked_user(session: Session, throttle: LoginThrottle, username: str, password: str, client: str) -> User:
+    username = username.strip().lower()
+    key = f'{username}|{client}'
+    _hold_off(throttle, key, 'this login')
 
     user = users.get(session, username)
     if user is None:
@@ -144,13 +155,36 @@ def _checked_user(session: Session, throttle: LoginThrottle, username: str, pass
     return user
 
 
-def demo_login(session: Session, settings: Settings, username: str, client: str = '', device: str = '') -> LoginResult:
-    """Signs in to one of the demo's logins (the same showrooms and admin, on the demo data). No password: the
-    demo holds only sample data. `session` must be a demo session."""
+def check_demo_password(settings: Settings, throttle: LoginThrottle, password: str, client: str) -> None:
+    """Checks the Demo switch's password. Raises NotFound when the demo is switched off, Unauthorized for a wrong
+    password, and TooManyRequests after too many wrong ones from this client."""
     if not settings.demo_enabled:
         raise NotFound('The demo is switched off on this server.')
+    key = f'#demo|{client}'
+    _hold_off(throttle, key, 'the demo')
+    if not security.verify_password(DEMO_PASSWORD_HASH, password):
+        throttle.record_failure(key)
+        raise Unauthorized(WRONG_DEMO_PASSWORD)
+    throttle.reset(key)
+
+
+def demo_login(
+    session: Session,
+    settings: Settings,
+    throttle: LoginThrottle,
+    username: str,
+    password: str,
+    client: str = '',
+    device: str = '',
+) -> LoginResult:
+    """Signs in to the demo as Chennai Egmore or the admin, on the demo data. `password` is the Demo switch's;
+    the logins themselves need none. `session` must be a demo session."""
+    check_demo_password(settings, throttle, password, client)
+    username = username.strip().lower()
+    if username not in DEMO_LOGINS:
+        raise NotFound(f'No demo login {username}.')
     try:
-        user = users.get(session, username.strip().lower())
+        user = users.get(session, username)
     except ProgrammingError:  # the demo schema hasn't been made yet
         session.rollback()
         raise ServiceUnavailable(DEMO_NOT_READY) from None

@@ -31,9 +31,13 @@ export const signIn = async (username, password) => {
  * when it is right; throws an ApiError with a readable message when it is wrong or there were too many tries. */
 export const checkPassword = (password) => api('/auth/check-password', { method: 'POST', body: { password } });
 
-/** Signs in to the demo as one of the same logins (a showroom or the admin), with no password. */
-export const signInDemo = async (username) => {
-  const { token, session } = await api('/auth/demo', { method: 'POST', body: { username } });
+/** Checks the Demo switch's password. Resolves when it is right; throws an ApiError with a readable message when it
+ *  is wrong or there were too many tries. */
+export const unlockDemo = (password) => api('/auth/demo/unlock', { method: 'POST', body: { password } });
+
+/** Signs in to the demo as Chennai Egmore or the admin, with the Demo switch's password. */
+export const signInDemo = async (username, password) => {
+  const { token, session } = await api('/auth/demo', { method: 'POST', body: { username, password } });
   setToken(token);
   return session;
 };

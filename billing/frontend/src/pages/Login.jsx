@@ -3,8 +3,7 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, FlaskConical, LockKeyhole, ShieldCh
 import logo from '../assets/logo.svg';
 import { Landmark } from '../components/Landmarks.jsx';
 import { BRAND, locationById } from '../config.js';
-import { useLocalStorage } from '../hooks/useLocalStorage.js';
-import { accounts, signIn, signInDemo } from '../lib/auth.js';
+import { accounts, signIn, signInDemo, unlockDemo } from '../lib/auth.js';
 
 // a slight, different tilt per card, as if laid out on a table (straight on a phone); cycled for any store count
 const TILT = ['sm:rotate-[-2.5deg]', 'sm:rotate-[1.5deg] sm:translate-y-2.5', 'sm:rotate-[-1deg] sm:-translate-y-1.5', 'sm:rotate-[2deg] sm:translate-y-2', 'sm:rotate-[-1.5deg]'];
@@ -29,26 +28,59 @@ const Postcard = ({ account, index, onPick }) => {
   );
 };
 
+// the one store the demo opens, besides the admin (the server lets no other in)
+const DEMO_STORE = 'chennai';
+
 /** Choose a login first, then type its password. A showroom bills and sees its own figures; the admin sees all.
- * With the Demo switch on, the same logins open the demo (sample data, kept apart from the real data) in one
- * click, with no password. */
+ * The Demo switch asks for its own password, then Chennai Egmore and the admin open the demo (sample data, kept
+ * apart from the real data) in one click. */
 const Login = ({ onSignedIn }) => {
-  const all = accounts();
-  const SHOWROOMS = all.filter((a) => a.role === 'location');
-  const ADMIN = all.find((a) => a.role === 'admin');
   const [account, setAccount] = useState(null);
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [demo, setDemo] = useLocalStorage('billing-demo-mode', false);
+  // the Demo switch's password once the server took it: the switch is on while it is held, and it is never stored,
+  // so the switch is off again after a reload or a sign-out
+  const [demoKey, setDemoKey] = useState(null);
+  const demo = demoKey !== null;
+  const [asking, setAsking] = useState(false); // the switch's password box is open
+  const [demoInput, setDemoInput] = useState('');
   const [demoError, setDemoError] = useState('');
+  const all = accounts();
+  const SHOWROOMS = all.filter((a) => a.role === 'location' && (!demo || a.username === DEMO_STORE));
+  const ADMIN = all.find((a) => a.role === 'admin');
+
+  const toggleDemo = () => {
+    setDemoError('');
+    if (demo) {
+      setDemoKey(null);
+    } else {
+      setAsking(!asking);
+      setDemoInput('');
+    }
+  };
+
+  const unlock = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await unlockDemo(demoInput);
+      setDemoKey(demoInput);
+      setAsking(false);
+    } catch (err) {
+      setDemoError(err.message);
+      if (err.status === 401) setDemoInput('');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const tryDemo = async (a) => {
     setBusy(true);
     setDemoError('');
     try {
-      onSignedIn(await signInDemo(a.username));
+      onSignedIn(await signInDemo(a.username, demoKey));
     } catch (err) {
       setBusy(false);
       setDemoError(err.message);
@@ -80,7 +112,7 @@ const Login = ({ onSignedIn }) => {
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center px-4 py-10">
-      {/* the Demo switch: when on, the same logins open the demo, with no password */}
+      {/* the Demo switch: asks its password, then Chennai Egmore and the admin open the demo in one click */}
       {!account && (
         <label className="absolute top-4 right-4 z-10 inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-white/80 py-1 pr-1.5 pl-3 text-[13px] font-medium text-ink-2 backdrop-blur">
           <FlaskConical size={14} aria-hidden="true" /> Demo
@@ -89,15 +121,59 @@ const Login = ({ onSignedIn }) => {
             role="switch"
             aria-checked={demo}
             aria-label="Demo"
-            onClick={() => {
-              setDemo(!demo);
-              setDemoError('');
-            }}
+            onClick={toggleDemo}
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${demo ? 'brand-gradient' : 'bg-line-strong'}`}
           >
             <span className={`inline-block size-4 rounded-full bg-[#fff] shadow transition-transform ${demo ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
           </button>
         </label>
+      )}
+      {!account && asking && (
+        <form
+          onSubmit={unlock}
+          onKeyDown={(e) => e.key === 'Escape' && setAsking(false)}
+          className="absolute top-14 right-4 z-10 w-72 animate-rise rounded-2xl border glass p-4 shadow-[0_12px_40px_-12px_rgba(9,9,11,0.18)]"
+        >
+          <label htmlFor="demo-password" className="mb-2 block text-[13px] font-medium text-ink-2">
+            Demo password
+          </label>
+          <div className="flex gap-2">
+            <div
+              className={`flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border bg-white/80 px-3 transition-shadow ${
+                demoError ? 'border-ruby' : 'border-line focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]'
+              }`}
+            >
+              <LockKeyhole size={14} className="text-ink-3" aria-hidden="true" />
+              <input
+                id="demo-password"
+                type="password"
+                autoComplete="off"
+                autoFocus
+                required
+                value={demoInput}
+                onChange={(e) => {
+                  setDemoInput(e.target.value);
+                  setDemoError('');
+                }}
+                aria-invalid={demoError ? true : undefined}
+                aria-describedby={demoError ? 'demo-password-error' : undefined}
+                className="min-w-0 flex-1 bg-transparent text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={busy}
+              className="h-10 rounded-xl bg-evergreen-800 px-3.5 text-sm font-semibold text-white hover:bg-evergreen-900 disabled:opacity-60"
+            >
+              Open
+            </button>
+          </div>
+          {demoError && (
+            <p id="demo-password-error" role="alert" className="mt-1.5 animate-pop text-xs font-medium text-ruby-ink">
+              {demoError}
+            </p>
+          )}
+        </form>
       )}
       <div className={`w-full ${account ? 'max-w-lg' : 'max-w-7xl'}`}>
         <img src={logo} alt={BRAND.name} className="brand-logo mx-auto h-16 w-auto" />
@@ -109,19 +185,23 @@ const Login = ({ onSignedIn }) => {
             </h1>
             {demo && (
               <p className="mt-1 max-w-md text-center text-[13px] text-balance text-ink-3">
-                The same stores and the admin, on a practice copy. No password needed, and nothing you do here touches the real sales or stock.
+                Chennai Egmore and the admin, on a practice copy. Nothing you do here touches the real sales or stock.
               </p>
             )}
-            {demoError && (
+            {demoError && !asking && (
               <p role="alert" className="mt-3 text-center text-xs font-medium text-ruby-ink">
                 {demoError}
               </p>
             )}
 
-            {/* every showroom on one row on a wide screen, however many there are */}
+            {/* every showroom on one row on a wide screen, however many there are; the demo's one store in the middle */}
             <div
               style={{ '--stores': SHOWROOMS.length }}
-              className="mt-8 grid w-full grid-cols-2 gap-3 sm:mt-10 sm:flex sm:flex-wrap sm:justify-center sm:gap-6 xl:grid xl:grid-cols-[repeat(var(--stores),minmax(0,1fr))] xl:gap-5"
+              className={
+                demo
+                  ? 'mx-auto mt-8 grid w-full max-w-52 sm:mt-10'
+                  : 'mt-8 grid w-full grid-cols-2 gap-3 sm:mt-10 sm:flex sm:flex-wrap sm:justify-center sm:gap-6 xl:grid xl:grid-cols-[repeat(var(--stores),minmax(0,1fr))] xl:gap-5'
+              }
             >
               {SHOWROOMS.map((a, i) => (
                 <Postcard key={a.username} account={a} index={i} onPick={pick} />

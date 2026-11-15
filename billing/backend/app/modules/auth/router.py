@@ -49,12 +49,37 @@ def check_password(
     service.check_password(session, throttle, user, body.password, client)
 
 
-@router.post('/demo', responses={503: {'description': 'The demo has not been set up on this server'}})
-def demo_login(body: DemoLoginIn, request: Request, session: DemoSession, settings: AppSettings) -> LoginOut:
-    """Signs in to the demo as one of the same logins (a showroom or the admin), without a password. Every request
-    made with the token works on the demo's sample data, never on the real data."""
+@router.post(
+    '/demo/unlock',
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        401: {'description': 'Wrong demo password'},
+        404: {'description': 'The demo is switched off on this server'},
+        429: {'description': 'Too many wrong passwords'},
+    },
+)
+def unlock_demo(body: PasswordCheckIn, request: Request, settings: AppSettings, throttle: Throttle) -> None:
+    """Checks the Demo switch's password, before the sign-in screen shows the demo's logins."""
     client = request.client.host if request.client else 'unknown'
-    result = service.demo_login(session, settings, body.username, client, _device(request))
+    service.check_demo_password(settings, throttle, body.password, client)
+
+
+@router.post(
+    '/demo',
+    responses={
+        401: {'description': 'Wrong demo password'},
+        404: {'description': 'No such demo login, or the demo is switched off'},
+        429: {'description': 'Too many wrong passwords'},
+        503: {'description': 'The demo has not been set up on this server'},
+    },
+)
+def demo_login(
+    body: DemoLoginIn, request: Request, session: DemoSession, settings: AppSettings, throttle: Throttle
+) -> LoginOut:
+    """Signs in to the demo as Chennai Egmore or the admin, with the Demo switch's password. Every request made
+    with the token works on the demo's sample data, never on the real data."""
+    client = request.client.host if request.client else 'unknown'
+    result = service.demo_login(session, settings, throttle, body.username, body.password, client, _device(request))
     return LoginOut(token=result.token, session=SessionOut.from_model(result.user, demo=True))
 
 

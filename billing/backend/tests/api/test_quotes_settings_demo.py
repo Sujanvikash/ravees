@@ -5,12 +5,19 @@ import pytest
 from sqlalchemy import text
 
 from app import cli
-from app.core import clock
+from app.core import clock, security
+from app.core.config import get_settings
 from app.core.database import get_engine
+from app.modules.auth import service as auth_service
 from app.modules.demo.builder import SEED_KEY, build_demo, demo_is_current
 from app.modules.quotes.service import last_valid_day
 
+from .conftest import login
 from .test_sales import CUSTOMER, season_code
+
+# stands in for the Demo switch's own password, which the code keeps only as a hash
+DEMO_PASSWORD = 'try-the-demo'
+DEMO_PASSWORD_HASH = security.hash_password(DEMO_PASSWORD)
 
 
 def test_quotation(client, chennai, admin):
@@ -193,19 +200,40 @@ def demo_built():
     build_demo()
 
 
+@pytest.fixture(autouse=True)
+def demo_password(monkeypatch):
+    monkeypatch.setattr(auth_service, 'DEMO_PASSWORD_HASH', DEMO_PASSWORD_HASH)
+
+
 def demo(client, username):
-    r = client.post('/auth/demo', json={'username': username})
+    r = client.post('/auth/demo', json={'username': username, 'password': DEMO_PASSWORD})
     assert r.status_code == 200, r.text
     return r.json(), {'Authorization': f'Bearer {r.json()["token"]}'}
 
 
-def test_demo_has_the_same_logins_on_its_own_data(client, demo_built):
-    for username in ('chennai', 'palavakkam', 'cochin', 'mumbai', 'pune', 'admin'):
+def test_the_demo_switch_has_a_password_and_opens_chennai_egmore_and_the_admin(client, demo_built):
+    assert client.post('/auth/demo/unlock', json={'password': DEMO_PASSWORD}).status_code == 204
+    r = client.post('/auth/demo/unlock', json={'password': 'demo'})
+    assert r.status_code == 401 and r.json()['detail'] == 'That is not the demo password.'
+    for username in ('chennai', 'admin'):
         body, _ = demo(client, username)
         assert body['session']['demo'] is True and body['session']['username'] == username
     _, d_admin = demo(client, 'admin')
     assert client.get('/auth/me', headers=d_admin).json()['demo'] is True
-    assert client.post('/auth/demo', json={'username': 'nobody'}).status_code == 404
+    # the demo's other showrooms stay in its data, with no way in
+    for username in ('palavakkam', 'pune', 'nobody'):
+        assert client.post('/auth/demo', json={'username': username, 'password': DEMO_PASSWORD}).status_code == 404
+    assert client.post('/auth/demo', json={'username': 'chennai', 'password': 'chennai@2026'}).status_code == 401
+    assert client.post('/auth/demo', json={'username': 'chennai'}).status_code == 422
+
+
+def test_too_many_wrong_demo_passwords(client):
+    for _ in range(get_settings().login_max_failures):
+        assert client.post('/auth/demo/unlock', json={'password': 'nope'}).status_code == 401
+    r = client.post('/auth/demo/unlock', json={'password': DEMO_PASSWORD})
+    assert r.status_code == 429 and r.json()['detail'].startswith('Too many wrong passwords for the demo.')
+    assert client.post('/auth/demo', json={'username': 'admin', 'password': DEMO_PASSWORD}).status_code == 429
+    login(client, 'chennai')  # the real logins are not affected
 
 
 def test_demo_work_stays_in_the_demo(client, chennai, demo_built):

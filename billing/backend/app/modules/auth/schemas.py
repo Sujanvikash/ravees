@@ -11,6 +11,7 @@ from .models import SignIn
 
 class DemoLoginIn(ApiModel):
     username: str = Field(max_length=64)
+    password: str = Field(max_length=256)  # the Demo switch's
 
 
 class LoginIn(ApiModel):
