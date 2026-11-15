@@ -13,6 +13,7 @@ from app import db_models  # noqa: F401  (registers every table on Base.metadata
 from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.modules.auth.router import router as auth_router
+from app.modules.auth.router import sign_ins_router
 from app.modules.boxes.router import router as boxes_router
 from app.modules.cash.router import router as cash_router
 from app.modules.demo.router import router as demo_router
@@ -63,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api = APIRouter(prefix=settings.api_prefix)
     routers = (
         auth_router,
+        sign_ins_router,
         users_router,
         locations_router,
         products_router,

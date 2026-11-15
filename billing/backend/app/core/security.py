@@ -55,6 +55,7 @@ class TokenClaims:
     issued_at: float  # seconds since the epoch, with microseconds
     expires_at: float
     demo: bool = False
+    session_id: str | None = None  # the sign-in it was issued for (sign_ins.id); none on tokens from before 2026-11-15
 
 
 def create_access_token(
@@ -64,13 +65,17 @@ def create_access_token(
     secret: str,
     lifetime: timedelta,
     demo: bool = False,
+    session_id: str | None = None,
     now: datetime | None = None,
 ) -> str:
-    """A signed token for a login: sub (username), role, iat and exp, and demo for a demo login."""
+    """A signed token for a login: sub (username), role, iat and exp, demo for a demo login, and sid, the sign-in
+    it belongs to."""
     now = now or datetime.now(UTC)
     claims = {'sub': subject, 'role': role, 'iat': now.timestamp(), 'exp': int((now + lifetime).timestamp())}
     if demo:
         claims['demo'] = True
+    if session_id:
+        claims['sid'] = session_id
     return jwt.encode(claims, secret, algorithm=JWT_ALGORITHM)
 
 
@@ -88,4 +93,5 @@ def decode_access_token(token: str, *, secret: str) -> TokenClaims:
         issued_at=float(claims['iat']),
         expires_at=float(claims['exp']),
         demo=claims.get('demo') is True,
+        session_id=claims['sid'] if isinstance(claims.get('sid'), str) else None,
     )

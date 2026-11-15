@@ -4,6 +4,7 @@ the tests' create_all read the metadata from here; add a new module's models to 
 """
 
 from app.core.database import Base
+from app.modules.auth.models import SignIn
 from app.modules.boxes.models import Box
 from app.modules.cash.models import CashClose
 from app.modules.invoices.models import TransferInvoice
@@ -32,6 +33,7 @@ __all__ = [
     'Sale',
     'SaleLine',
     'SaleReturn',
+    'SignIn',
     'StockImport',
     'StockLevel',
     'StockReturn',

@@ -38,4 +38,9 @@ export const signInDemo = async (username) => {
   return session;
 };
 
-export const signOut = () => setToken(null);
+/** Signs out: tells the server, so the admin's Sign-ins page shows when (best effort: the browser forgets the token
+ *  either way), and forgets the token. The request takes the token with it before it is dropped. */
+export const signOut = () => {
+  api('/auth/logout', { method: 'POST' }).catch(() => {});
+  setToken(null);
+};

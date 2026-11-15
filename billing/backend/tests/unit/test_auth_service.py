@@ -18,9 +18,16 @@ class FakeSession:
         self.users = {u.username: u for u in users}
         self.commits = 0
         self.info = {'demo': False}
+        self.added: list = []  # the sign-ins kept
 
     def get(self, _model: type, key: str) -> User | None:
         return self.users.get(key)
+
+    def add(self, record) -> None:
+        self.added.append(record)
+
+    def flush(self) -> None:
+        pass
 
     def commit(self) -> None:
         self.commits += 1
@@ -37,6 +44,16 @@ def test_login_returns_a_token_for_the_user(goa):
     claims = security.decode_access_token(result.token, secret=get_settings().jwt_secret.get_secret_value())
     assert (claims.subject, claims.role) == ('goa', 'location')
     assert claims.expires_at - claims.issued_at == pytest.approx(get_settings().token_hours * 3600, abs=1)
+
+
+def test_a_sign_in_is_kept_and_named_in_its_token(goa):
+    session = FakeSession(goa)
+    result = service.login(session, get_settings(), LoginThrottle(10, 900), 'goa', 'goa@2026', '1.2.3.4', 'Chrome')
+    [kept] = session.added
+    claims = security.decode_access_token(result.token, secret=get_settings().jwt_secret.get_secret_value())
+    assert claims.session_id == str(kept.id)
+    assert (kept.username, kept.location_id, kept.address, kept.device) == ('goa', 'goa', '1.2.3.4', 'Chrome')
+    assert kept.expires_at.timestamp() == pytest.approx(claims.expires_at, abs=1)
 
 
 @pytest.mark.parametrize(('username', 'password'), [('goa', 'nope'), ('nobody', 'x'), ('goa', '')])
@@ -64,7 +81,7 @@ def test_a_weak_hash_is_upgraded_at_login():
     session = FakeSession(pune)
     service.login(session, get_settings(), LoginThrottle(10, 900), 'pune', 'pune@2026', '1.2.3.4')
     assert pune.password_hash != weak and not security.needs_rehash(pune.password_hash)
-    assert session.commits == 1
+    assert session.commits == 2  # the new hash, then the sign-in
 
 
 def test_tokens_from_before_a_password_change_stop_working(goa):

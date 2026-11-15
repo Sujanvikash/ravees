@@ -29,6 +29,16 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+def get_token(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]) -> str:
+    """The Authorization: Bearer token itself, unchecked (the caller checks it). 401 if there is none."""
+    if credentials is None:
+        raise Unauthorized()
+    return credentials.credentials
+
+
+BearerToken = Annotated[str, Depends(get_token)]
+
+
 def get_optional_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
     session: DbSession,

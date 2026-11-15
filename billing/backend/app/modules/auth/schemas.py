@@ -1,7 +1,12 @@
+import uuid
+from datetime import datetime
+
 from pydantic import Field
 
 from app.core.schemas import ApiModel
 from app.modules.users.models import User
+
+from .models import SignIn
 
 
 class DemoLoginIn(ApiModel):
@@ -33,3 +38,32 @@ class SessionOut(ApiModel):
 class LoginOut(ApiModel):
     token: str  # send it as Authorization: Bearer <token>
     session: SessionOut
+
+
+class SignInOut(ApiModel):
+    """A sign-in as the admin's Sign-ins page shows it. ended: 'signed-out' or 'password' (the admin changed its
+    password); none while it is open, or after it ran out at expires_at."""
+
+    id: uuid.UUID
+    username: str
+    location: str | None
+    at: datetime
+    expires_at: datetime
+    ended_at: datetime | None
+    ended: str | None
+    address: str
+    device: str
+
+    @classmethod
+    def from_model(cls, record: SignIn) -> 'SignInOut':
+        return cls(
+            id=record.id,
+            username=record.username,
+            location=record.location_id,
+            at=record.at,
+            expires_at=record.expires_at,
+            ended_at=record.ended_at,
+            ended=record.ended,
+            address=record.address,
+            device=record.device,
+        )

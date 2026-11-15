@@ -1,18 +1,22 @@
 import math
+import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import cache
 
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
-from app.core import security
+from app.core import clock, security
 from app.core.config import Settings
 from app.core.database import is_demo
 from app.core.errors import NotFound, ServiceUnavailable, TooManyRequests, Unauthorized
 from app.modules.users import repository as users
 from app.modules.users.models import User
 
+from . import repository as sign_ins
+from .models import SignIn
 from .throttling import LoginThrottle
 
 WRONG_PASSWORD = 'That password is not right for this login.'
@@ -32,23 +36,79 @@ def _dummy_hash() -> str:
     return security.hash_password('no-such-login')
 
 
-def issue_token(user: User, settings: Settings, *, demo: bool = False) -> str:
+def issue_token(
+    user: User,
+    settings: Settings,
+    *,
+    demo: bool = False,
+    session_id: str | None = None,
+    now: datetime | None = None,
+) -> str:
     return security.create_access_token(
         user.username,
         user.role,
         secret=settings.jwt_secret.get_secret_value(),
         lifetime=timedelta(hours=settings.token_hours),
         demo=demo,
+        session_id=session_id,
+        now=now,
     )
 
 
+def _signed_in(
+    session: Session, settings: Settings, user: User, client: str, device: str, *, demo: bool = False
+) -> LoginResult:
+    """Keeps the sign-in for the admin's Sign-ins page and returns a token that names it."""
+    now = clock.now()
+    record = sign_ins.add(
+        session,
+        SignIn(
+            id=uuid.uuid4(),
+            username=user.username,
+            location_id=user.location_id,
+            at=now,
+            expires_at=now + timedelta(hours=settings.token_hours),
+            address=client[:64],
+            device=device[:300],
+        ),
+    )
+    session.commit()
+    return LoginResult(token=issue_token(user, settings, demo=demo, session_id=str(record.id), now=now), user=user)
+
+
 def login(
-    session: Session, settings: Settings, throttle: LoginThrottle, username: str, password: str, client: str
+    session: Session,
+    settings: Settings,
+    throttle: LoginThrottle,
+    username: str,
+    password: str,
+    client: str,
+    device: str = '',
 ) -> LoginResult:
     """Checks a username and password and returns a token. Raises Unauthorized for a wrong username or password,
     and TooManyRequests once this login has had too many wrong passwords from this client."""
     user = _checked_user(session, throttle, username, password, client)
-    return LoginResult(token=issue_token(user, settings), user=user)
+    return _signed_in(session, settings, user, client, device)
+
+
+def sign_out(session: Session, settings: Settings, token: str) -> None:
+    """Ends the sign-in the token belongs to (the Sign out button). Raises Unauthorized for a token that is no
+    longer valid; one from before sign-ins were kept, or already ended, changes nothing."""
+    user = user_from_token(session, settings, token)
+    claims = security.decode_access_token(token, secret=settings.jwt_secret.get_secret_value())
+    try:
+        record = sign_ins.get(session, uuid.UUID(claims.session_id)) if claims.session_id else None
+    except ValueError:
+        record = None
+    if record and record.username == user.username and record.ended_at is None:
+        record.ended_at = clock.now()
+        record.ended = 'signed-out'
+        session.commit()
+
+
+def list_sign_ins(session: Session, since: datetime | None = None) -> Sequence[SignIn]:
+    """The sign-ins from `since` on (all without it), newest first."""
+    return sign_ins.list_since(session, since)
 
 
 def check_password(session: Session, throttle: LoginThrottle, user: User, password: str, client: str) -> None:
@@ -84,7 +144,7 @@ def _checked_user(session: Session, throttle: LoginThrottle, username: str, pass
     return user
 
 
-def demo_login(session: Session, settings: Settings, username: str) -> LoginResult:
+def demo_login(session: Session, settings: Settings, username: str, client: str = '', device: str = '') -> LoginResult:
     """Signs in to one of the demo's logins (the same showrooms and admin, on the demo data). No password: the
     demo holds only sample data. `session` must be a demo session."""
     if not settings.demo_enabled:
@@ -100,7 +160,7 @@ def demo_login(session: Session, settings: Settings, username: str) -> LoginResu
             if not users.list_all(session)
             else NotFound(f'No demo login {username}.')
         )
-    return LoginResult(token=issue_token(user, settings, demo=True), user=user)
+    return _signed_in(session, settings, user, client, device, demo=True)
 
 
 def user_from_token(session: Session, settings: Settings, token: str) -> User:

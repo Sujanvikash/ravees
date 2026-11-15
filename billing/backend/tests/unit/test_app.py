@@ -5,6 +5,8 @@ from app.main import create_app
 EXPECTED_ROUTES = {
     ('POST', '/api/v1/auth/login'),
     ('GET', '/api/v1/auth/me'),
+    ('POST', '/api/v1/auth/logout'),
+    ('GET', '/api/v1/sign-ins'),
     ('GET', '/api/v1/users'),
     ('PUT', '/api/v1/users/{username}/password'),
     ('POST', '/api/v1/users/{username}/password/reset'),

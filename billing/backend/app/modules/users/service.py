@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core import security
 from app.core.database import is_demo
 from app.core.errors import Forbidden, InvalidInput, NotFound
+from app.modules.auth import repository as sign_ins
 from app.modules.locations.constants import ADMIN_USERNAME, LOGIN_ORDER, SHOWROOM_IDS
 
 from . import repository
@@ -49,6 +50,7 @@ def set_password(session: Session, username: str, password: str) -> User:
     user = get_login(session, username)
     user.password_hash = security.hash_password(password)
     user.password_changed_at = datetime.now(UTC)
+    sign_ins.end_open(session, user.username, user.password_changed_at, 'password')
     session.commit()
     return user
 

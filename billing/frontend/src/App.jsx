@@ -27,6 +27,7 @@ import PurchaseOrders from './pages/PurchaseOrders.jsx';
 import Quotations from './pages/Quotations.jsx';
 import Sales from './pages/Sales.jsx';
 import Settings from './pages/Settings.jsx';
+import SignIns from './pages/SignIns.jsx';
 import StockReturns from './pages/StockReturns.jsx';
 import TranslitLayer from './components/TranslitLayer.jsx';
 
@@ -93,6 +94,7 @@ const Shell = ({ session, onSignOut }) => {
           {page === 'transfers' && session.role === 'admin' && <TransferInvoices key={session.username} {...props} />}
           {page === 'cash' && <CashClose key={session.username} {...props} />}
           {page === 'stores' && session.role === 'admin' && <Stores {...props} />}
+          {page === 'signins' && session.role === 'admin' && <SignIns {...props} />}
           {page === 'quotes' && <Quotations key={session.username} {...props} />}
           {page === 'settings' && <Settings {...props} />}
         </div>

@@ -61,3 +61,52 @@ def test_check_password_shares_the_sign_in_brake(client, chennai):
         assert client.post('/auth/check-password', json={'password': 'nope'}, headers=chennai).status_code == 401
     assert client.post('/auth/check-password', json={'password': 'chennai@2026'}, headers=chennai).status_code == 429
     assert client.post('/auth/login', json={'username': 'chennai', 'password': 'chennai@2026'}).status_code == 429
+
+
+def sign_in_of(client, admin, token):
+    """The admin's Sign-ins row for the sign-in this token belongs to."""
+    from app.core import security
+
+    sid = security.decode_access_token(token, secret=get_settings().jwt_secret.get_secret_value()).session_id
+    return next(r for r in client.get('/sign-ins', headers=admin).json() if r['id'] == sid)
+
+
+def test_sign_ins_and_sign_outs_are_kept_for_the_admin(client, admin):
+    r = client.post(
+        '/auth/login', json={'username': 'mumbai', 'password': 'mumbai@2026'}, headers={'User-Agent': 'Shop PC'}
+    )
+    token = r.json()['token']
+    mumbai = {'Authorization': f'Bearer {token}'}
+    row = sign_in_of(client, admin, token)
+    assert (row['username'], row['location'], row['device'], row['address']) == (
+        'mumbai',
+        'mumbai',
+        'Shop PC',
+        'testclient',
+    )
+    assert row['endedAt'] is None and row['ended'] is None and row['expiresAt'] > row['at']
+
+    # only the admin reads them
+    assert client.get('/sign-ins', headers=mumbai).status_code == 403
+    # newest first, and from a given time on
+    rows = client.get('/sign-ins', headers=admin).json()
+    assert rows[0]['at'] >= rows[-1]['at']
+    assert client.get('/sign-ins', params={'since': '2099-01-01T00:00:00Z'}, headers=admin).json() == []
+
+    assert client.post('/auth/logout', headers=mumbai).status_code == 204
+    row = sign_in_of(client, admin, token)
+    assert row['ended'] == 'signed-out' and row['endedAt'] >= row['at']
+    assert client.post('/auth/logout').status_code == 401
+
+
+def test_a_new_password_ends_the_logins_sign_ins(client, admin):
+    token = client.post('/auth/login', json={'username': 'goa', 'password': 'goa@2026'}).json().get('token')
+    if token is None:  # Goa was retired: use Pune
+        token = client.post('/auth/login', json={'username': 'pune', 'password': 'pune@2026'}).json()['token']
+    user = sign_in_of(client, admin, token)['username']
+    assert client.put(f'/users/{user}/password', json={'password': 'a-new-pass'}, headers=admin).status_code == 200
+    try:
+        row = sign_in_of(client, admin, token)
+        assert row['ended'] == 'password' and row['endedAt']
+    finally:
+        client.post(f'/users/{user}/password/reset', headers=admin)
