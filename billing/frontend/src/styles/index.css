@@ -184,11 +184,13 @@ html[data-lang="ta"] button {
   }
 }
 
-/* The receipt prints on an 80mm thermal roll, 72mm wide; everything else is hidden in print. Its page length is
-   set to the receipt's own length just before printing (src/lib/print.js); this is the size until then. */
+/* The receipt prints on an 80mm thermal roll, 72mm wide; everything else is hidden in print. No page size: the page
+   is the printer's own paper, so the slip starts at the top of it (a page sized to the slip is centred on the
+   printer's longer paper, with blank paper above and below). No margin: the browser then has no room for its header
+   and footer (the date, the page title, the site's address, 1/1). The slip keeps its own space from the paper's
+   edges (components/ThermalParts.jsx). */
 @page {
-  size: 80mm 297mm;
-  margin: 4mm;
+  margin: 0;
 }
 
 /* A printed quotation is an A4 page (see components/QuotationPrint.jsx). */

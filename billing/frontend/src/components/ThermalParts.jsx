@@ -11,8 +11,9 @@ import { BRAND } from '../config.js';
  *           and the total in a black box
  * Only solid black and light greys, so a thermal printer draws them cleanly. Every part's text starts the same
  * distance in (INSET), so the left edges line up down the slip. A slip is a <Slip> whose parts read its look; on a
- * page it is hidden and is the only thing that prints (lib/print.js measures it), and `screen` shows it instead (a
- * preview in Settings), without marking it as the receipt to print.
+ * page it is hidden and is the only thing that prints, centred on the roll and 4mm down from its top (the printed page
+ * has no margins: styles/index.css), and `screen` shows it instead (a preview in Settings), without marking it as the
+ * receipt to print.
  */
 const LookOf = createContext('boxed');
 const useLook = () => useContext(LookOf);
@@ -26,7 +27,7 @@ export const Slip = ({ look, screen = false, children }) => (
   <LookOf.Provider value={look}>
     <div
       data-receipt={screen ? undefined : true}
-      className={`${screen ? 'block bg-white' : 'hidden print:block'} w-[72mm] font-mono text-[11px] leading-snug text-black [-webkit-print-color-adjust:exact] [print-color-adjust:exact] ${
+      className={`${screen ? 'block bg-white' : 'hidden print:mx-auto print:my-[4mm] print:block'} w-[72mm] font-mono text-[11px] leading-snug text-black [-webkit-print-color-adjust:exact] [print-color-adjust:exact] ${
         look === 'framed' ? 'rounded-[2.5mm] border-2 border-black px-[1.5mm] py-[2mm]' : ''
       }`}
     >
