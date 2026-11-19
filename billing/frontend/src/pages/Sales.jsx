@@ -7,10 +7,12 @@ import Dialog from '../components/Dialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import PaymentReceiptPrint from '../components/PaymentReceiptPrint.jsx';
 import ProductPerformance from '../components/ProductPerformance.jsx';
+import { A4Bill, ThermalReceipt } from '../components/Receipt.jsx';
 import ReturnDialog from '../components/ReturnDialog.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
+import { api } from '../lib/api.js';
 import { formatMobile } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
 import { isCreditBill, methodLabel, paidAtCounter } from '../lib/payment.js';
@@ -82,6 +84,29 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
   useEffect(() => {
     if (reprint) printAlone();
   }, [reprint]);
+  // A bill to print again: { sale, paper: 'thermal' | 'a4', own }. Only one document is on the page at a time, so
+  // the receipt and the bill clear each other. `own` is the bill's showroom's own details (Settings → Shop on the
+  // bill): a showroom's session already has them, the admin fetches that showroom's so the copy matches the first.
+  const [rebill, setRebill] = useState(null);
+  const [rebillError, setRebillError] = useState(null); // { id, message }: why a bill could not be reprinted
+  useEffect(() => {
+    if (rebill) printAlone();
+  }, [rebill]);
+  const reprintBill = async (sale, paper) => {
+    setReprint(null);
+    setRebillError(null);
+    let own;
+    if (admin) {
+      try {
+        const s = await api(`/settings?location=${encodeURIComponent(sale.location)}`);
+        own = { storeName: s.storeName, storeAddress: s.storeAddress, storePhone: s.storePhone, gstin: s.gstin, composition: s.composition };
+      } catch (err) {
+        setRebillError({ id: sale.id, message: `Couldn’t load ${locationById(sale.location)?.label ?? 'the showroom'}’s details to reprint the bill: ${err.message}` });
+        return;
+      }
+    }
+    setRebill({ sale, paper, own });
+  };
 
   // What has come back against each bill (qty, value, exchange links), and each credit note by its number so an
   // exchange's new bill can point back to the bill it replaced.
@@ -502,7 +527,10 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                           {c.payment.after !== undefined && <span className="text-ink-3">{c.payment.after > 0 ? `${inr(c.payment.after)} left after` : 'cleared the bill'}</span>}
                                           <button
                                             type="button"
-                                            onClick={() => setReprint({ sale: s, collection: c })}
+                                            onClick={() => {
+                                              setRebill(null);
+                                              setReprint({ sale: s, collection: c });
+                                            }}
                                             className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-ink-3 hover:bg-mist hover:text-ink"
                                           >
                                             <Printer size={12} aria-hidden="true" /> Receipt
@@ -531,13 +559,39 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                       ))}
                                     </div>
                                   )}
-                                  {(rs.retQty > 0 || rs.returnable) && (
-                                    <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                                      <span className="text-xs text-ink-3">
-                                        {rs.retQty > 0
-                                          ? `${rs.exchanged ? 'Swapped' : 'Returned'} ${rs.retQty} of ${s.totals.qty} ${s.totals.qty === 1 ? 'item' : 'items'} · ${inr(rs.ret.amount)} ${rs.exchanged ? 'in exchange credit' : 'credited'}${rs.ret.refund > 0 ? ` · ${inr(rs.ret.refund)} refunded in cash` : ''}`
-                                          : 'Nothing returned yet'}
-                                      </span>
+                                  <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                                    <span className="text-xs text-ink-3">
+                                      {rs.retQty > 0
+                                        ? `${rs.exchanged ? 'Swapped' : 'Returned'} ${rs.retQty} of ${s.totals.qty} ${s.totals.qty === 1 ? 'item' : 'items'} · ${inr(rs.ret.amount)} ${rs.exchanged ? 'in exchange credit' : 'credited'}${rs.ret.refund > 0 ? ` · ${inr(rs.ret.refund)} refunded in cash` : ''}`
+                                        : rs.returnable
+                                          ? 'Nothing returned yet'
+                                          : ''}
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      {/* the bill as it was printed at the counter, on either paper */}
+                                      <div
+                                        role="group"
+                                        aria-label={`Reprint bill ${s.billNo}`}
+                                        className="inline-flex h-8 items-stretch overflow-hidden rounded-lg border border-evergreen-800/25 bg-white text-[13px] font-semibold text-evergreen-900"
+                                      >
+                                        <span className="inline-flex items-center gap-1.5 pr-2 pl-3">
+                                          <Printer size={14} aria-hidden="true" /> Reprint bill
+                                        </span>
+                                        {[
+                                          ['thermal', '80mm', '80mm receipt'],
+                                          ['a4', 'A4', 'A4 page'],
+                                        ].map(([paper, label, long]) => (
+                                          <button
+                                            key={paper}
+                                            type="button"
+                                            onClick={() => reprintBill(s, paper)}
+                                            aria-label={`Reprint bill ${s.billNo} on ${long}`}
+                                            className="border-l border-evergreen-800/20 px-2.5 hover:bg-evergreen-50"
+                                          >
+                                            {label}
+                                          </button>
+                                        ))}
+                                      </div>
                                       {rs.returnable && (
                                         <button
                                           type="button"
@@ -548,6 +602,11 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                         </button>
                                       )}
                                     </div>
+                                  </div>
+                                  {rebillError?.id === s.id && (
+                                    <p role="alert" className="px-1 text-xs font-medium text-ruby-ink">
+                                      {rebillError.message}
+                                    </p>
                                   )}
                                 </div>
                               </td>
@@ -569,6 +628,11 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
         <CollectBalance sale={sales.find((s) => s.id === collecting)} onClose={() => setCollecting(null)} />
       )}
       {reprint && createPortal(<PaymentReceiptPrint sale={reprint.sale} collection={reprint.collection} />, document.body)}
+      {rebill &&
+        createPortal(
+          rebill.paper === 'a4' ? <A4Bill sale={rebill.sale} own={rebill.own} /> : <ThermalReceipt sale={rebill.sale} own={rebill.own} />,
+          document.body,
+        )}
       {returnFor && (
         <ReturnDialog
           location={session.location}
