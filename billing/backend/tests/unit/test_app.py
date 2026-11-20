@@ -27,6 +27,8 @@ EXPECTED_ROUTES = {
     ('POST', '/api/v1/sales'),
     ('POST', '/api/v1/sales/customer'),
     ('POST', '/api/v1/sales/offline-counter'),
+    ('POST', '/api/v1/sales/edit-password'),
+    ('PUT', '/api/v1/sales/{sale_id}'),
     ('POST', '/api/v1/sales/{sale_id}/collections'),
     ('GET', '/api/v1/returns'),
     ('POST', '/api/v1/returns'),

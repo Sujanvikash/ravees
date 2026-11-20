@@ -23,6 +23,10 @@ from .schemas import ReturnableLine, ReturnIn
 ONLY_SHOWROOM = 'Returns are taken at the showroom counter: sign in as the showroom.'
 
 
+def _paisa(value: Decimal) -> float:
+    return float(value.quantize(Decimal('0.01'), ROUND_HALF_UP))
+
+
 def list_returns(
     session: Session, user: User, location: str | None = None, since: datetime | None = None
 ) -> Sequence[SaleReturn]:
@@ -59,7 +63,9 @@ def returnable(session: Session, user: User, sale_id: uuid.UUID | None, bill_no:
     sale = _find_sale(session, user, sale_id, bill_no)
     done = returned_so_far(session, sale.id)
     lines = [
-        ReturnableLine(code=ln.code, name=ln.name, sold=ln.qty, returned=done.get(ln.code, 0), price=float(ln.price))
+        ReturnableLine(
+            code=ln.code, name=ln.name, sold=ln.qty, returned=done.get(ln.code, 0), price=_paisa(ln.net_price)
+        )
         for ln in sale.lines
     ]
     return sale, lines
@@ -97,11 +103,12 @@ def create_return(
         if qty > left:
             raise InvalidInput(f'Only {left} of {code} can still come back on {sale.bill_no}.')
 
+    # at what each piece sold for: after any discount on its line, so a discounted piece never refunds in full
     lines = [
-        {'code': c, 'name': sold[c].name, 'qty': q, 'price': float(sold[c].price), 'gst': float(sold[c].gst)}
+        {'code': c, 'name': sold[c].name, 'qty': q, 'price': _paisa(sold[c].net_price), 'gst': float(sold[c].gst)}
         for c, q in wanted.items()
     ]
-    value = sum((sold[c].price * q for c, q in wanted.items()), Decimal(0))
+    value = sum((sold[c].net_price * q for c, q in wanted.items()), Decimal(0))
     amount = value.quantize(Decimal(1), ROUND_HALF_UP)
     return_no = numbering.next_return_no(session, user.location_id, at)
 

@@ -1,15 +1,29 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 
 from app.core.dependencies import DbSession
-from app.modules.auth.dependencies import CurrentUser
+from app.modules.auth import service as auth
+from app.modules.auth.dependencies import CurrentUser, Throttle
 
 from . import service
-from .schemas import CollectionIn, CustomerLookupIn, CustomerOut, OfflineCounterOut, SaleIn, SaleOut
+from .schemas import (
+    CollectionIn,
+    CustomerLookupIn,
+    CustomerOut,
+    EditPasswordIn,
+    OfflineCounterOut,
+    SaleEditIn,
+    SaleIn,
+    SaleOut,
+)
 
 router = APIRouter(prefix='/sales', tags=['sales'])
+
+
+def _client(request: Request) -> str:
+    return request.client.host if request.client else 'unknown'
 
 
 @router.get('')
@@ -42,6 +56,35 @@ def offline_counter(user: CurrentUser, session: DbSession) -> OfflineCounterOut:
     """A new counter number for this browser at its showroom, asked for once while online, so the bills it makes
     while the internet is down get numbers of their own (CHN2627OF020001…) that no other counter uses."""
     return OfflineCounterOut(counter=service.offline_counter(session, user))
+
+
+@router.post(
+    '/edit-password',
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={403: {'description': 'Wrong password'}, 429: {'description': 'Too many wrong passwords'}},
+)
+def check_edit_password(body: EditPasswordIn, request: Request, user: CurrentUser, throttle: Throttle) -> None:
+    """Checks the password for editing a bill, before the counter opens a bill to edit. A wrong one is a 403, so
+    the counter stays signed in."""
+    auth.check_edit_bill_password(throttle, body.password, _client(request))
+
+
+@router.put(
+    '/{sale_id}',
+    responses={
+        403: {'description': 'Wrong password, or not a showroom login'},
+        404: {'description': 'Not a bill of this showroom'},
+        409: {'description': 'Returned, exchanged or part-collected: it takes a return instead'},
+    },
+)
+def edit_sale(
+    sale_id: uuid.UUID, body: SaleEditIn, request: Request, user: CurrentUser, session: DbSession, throttle: Throttle
+) -> SaleOut:
+    """Edits one of this showroom's bills after it was made, with the password for editing: its lines, discounts,
+    customer and payment are replaced, and it keeps its bill number and date. Stock is put right and what the
+    bill was is kept in `edits`."""
+    auth.check_edit_bill_password(throttle, body.password, _client(request))
+    return SaleOut.from_model(service.edit_sale(session, user, sale_id, body))
 
 
 @router.post(

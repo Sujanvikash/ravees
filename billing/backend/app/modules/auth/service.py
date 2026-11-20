@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core import clock, security
 from app.core.config import Settings
 from app.core.database import is_demo
-from app.core.errors import NotFound, ServiceUnavailable, TooManyRequests, Unauthorized
+from app.core.errors import Forbidden, NotFound, ServiceUnavailable, TooManyRequests, Unauthorized
 from app.modules.users import repository as users
 from app.modules.users.models import User
 
@@ -24,6 +24,11 @@ DEMO_NOT_READY = 'The demo isn’t set up on this server yet. Run: uv run python
 WRONG_DEMO_PASSWORD = 'That is not the demo password.'
 # The Demo switch's password, kept here only as its Argon2 hash. The same on every server.
 DEMO_PASSWORD_HASH = '$argon2id$v=19$m=65536,t=3,p=4$Cs/Tnp43E353fF1FJP7xBw$Fsp5FVS0ELbeiXe1LxLL/r0xjNbApEiD+qi43vfVMWE'
+WRONG_EDIT_BILL_PASSWORD = 'That isn’t the password for editing a bill.'
+# The password for editing a bill after it was made, kept here only as its Argon2 hash. The same on every server.
+EDIT_BILL_PASSWORD_HASH = (
+    '$argon2id$v=19$m=65536,t=3,p=4$vOmZI5xYnboeldIM4j+KvA$F8zCqKYnTMvNHDULA0XOC5YQ43kpHTFd+y5VUGRM5Ak'
+)
 # The demo logins the switch opens: Chennai Egmore and the admin. The demo's other showrooms stay in its data, with no
 # way in.
 DEMO_LOGINS = ('chennai', 'admin')
@@ -165,6 +170,18 @@ def check_demo_password(settings: Settings, throttle: LoginThrottle, password: s
     if not security.verify_password(DEMO_PASSWORD_HASH, password):
         throttle.record_failure(key)
         raise Unauthorized(WRONG_DEMO_PASSWORD)
+    throttle.reset(key)
+
+
+def check_edit_bill_password(throttle: LoginThrottle, password: str, client: str) -> None:
+    """Checks the password for editing a bill after it was made. A wrong one is Forbidden, not Unauthorized (the
+    login itself is fine, and a 401 would sign the counter out), and counts towards a brake of its own:
+    TooManyRequests after too many wrong ones from this client."""
+    key = f'#edit-bill|{client}'
+    _hold_off(throttle, key, 'editing a bill')
+    if not security.verify_password(EDIT_BILL_PASSWORD_HASH, password):
+        throttle.record_failure(key)
+        raise Forbidden(WRONG_EDIT_BILL_PASSWORD)
     throttle.reset(key)
 
 

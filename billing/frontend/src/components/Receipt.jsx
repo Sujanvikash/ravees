@@ -1,5 +1,5 @@
 import { BILL_FOOTER, BRAND, locationById } from '../config.js';
-import { countLabel, gstLines } from '../lib/bill.js';
+import { countLabel, gstLines, lineAmount } from '../lib/bill.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { formatMobile } from '../lib/customer.js';
 import { useDoc, useDocTable, useReceiptLook } from '../lib/docLook.js';
@@ -56,6 +56,16 @@ const useShopOnBill = (location, own) => {
     title: composition ? 'BILL OF SUPPLY' : gst ? 'TAX INVOICE' : 'INVOICE',
   };
 };
+
+/** The discounts under the MRP total (the same on the 80mm and the A4 bill): the offers, the lines' own and the
+ *  whole bill's. */
+const discountLines = (totals) => [
+  ...(totals.savings > 0 ? [{ label: 'You saved', value: amount(totals.savings) }] : []),
+  ...(totals.itemDiscount > 0 ? [{ label: 'Item discounts', value: amount(-totals.itemDiscount) }] : []),
+  ...(totals.discount > 0
+    ? [{ label: `Discount${totals.discountKind === 'percent' ? ` (${totals.discountValue}%)` : ''}`, value: amount(-totals.discount) }]
+    : []),
+];
 
 /** How a bill was paid, line by line (the same on the 80mm and the A4 bill). */
 const paidLines = (payment) => [
@@ -124,8 +134,9 @@ export const ThermalReceipt = ({ sale, look: chosen, screen = false, own }) => {
                 <span className="text-right">{amount(l.mrp)}</span>
                 <span className="text-right">{disc > 0 ? `${Math.round(disc)}%` : '—'}</span>
                 <span className="text-right">{amount(l.price)}</span>
-                <span className="text-right font-semibold">{amount(l.price * l.qty)}</span>
+                <span className="text-right font-semibold">{amount(lineAmount(l))}</span>
               </div>
+              {l.off > 0 && <div className="text-right text-[10px]">item discount −{amount(l.off)} on {amount(l.price * l.qty)}</div>}
             </div>
           );
         })}
@@ -134,10 +145,9 @@ export const ThermalReceipt = ({ sale, look: chosen, screen = false, own }) => {
       <SlipBox>
         <div>{countLabel(totals)}</div>
         <Line label="MRP total" value={amount(totals.mrpTotal)} />
-        {totals.savings > 0 && <Line label="You saved" value={amount(totals.savings)} />}
-        {totals.discount > 0 && (
-          <Line label={`Discount${totals.discountKind === 'percent' ? ` (${totals.discountValue}%)` : ''}`} value={amount(-totals.discount)} />
-        )}
+        {discountLines(totals).map((d) => (
+          <Line key={d.label} label={d.label} value={d.value} />
+        ))}
         {Math.abs(totals.roundOff) >= 0.005 && <Line label="Round off" value={amount(totals.roundOff)} />}
       </SlipBox>
 
@@ -207,12 +217,15 @@ const BillTable = ({ lines }) => {
             <tr key={l.code} className={t.row}>
               <td className={`${t.td} text-center`}>{i + 1}</td>
               <td className={`${t.td} text-center font-mono text-[10px] whitespace-nowrap`}>{l.code}</td>
-              <td className={t.td}>{l.name}</td>
+              <td className={t.td}>
+                {l.name}
+                {l.off > 0 && <div className="text-[10px] text-black/65">Item discount −{amount(l.off)} on {amount(l.price * l.qty)}</div>}
+              </td>
               <td className={`${t.td} text-center`}>{l.qty}</td>
               <td className={`${t.td} text-right`}>{amount(l.mrp)}</td>
               <td className={`${t.td} text-center`}>{disc > 0 ? `${Math.round(disc)}%` : '—'}</td>
               <td className={`${t.td} text-right`}>{amount(l.price)}</td>
-              <td className={`${t.td} text-right`}>{amount(l.price * l.qty)}</td>
+              <td className={`${t.td} text-right`}>{amount(lineAmount(l))}</td>
             </tr>
           );
         })}
@@ -222,7 +235,7 @@ const BillTable = ({ lines }) => {
           </td>
           <td className={`${t.td} text-center`}>{lines.reduce((s, l) => s + l.qty, 0)}</td>
           <td colSpan={3} className={t.td} />
-          <td className={`${t.td} text-right`}>{amount(lines.reduce((s, l) => s + l.price * l.qty, 0))}</td>
+          <td className={`${t.td} text-right`}>{amount(lines.reduce((s, l) => s + lineAmount(l), 0))}</td>
         </tr>
       </tbody>
     </table>
@@ -303,8 +316,7 @@ export const A4Bill = ({ sale, look, colour: chosen, screen = false, own }) => {
           }
           rows={[
             ['MRP total', amount(totals.mrpTotal)],
-            ...(totals.savings > 0 ? [['You saved', amount(totals.savings)]] : []),
-            ...(totals.discount > 0 ? [[`Discount${totals.discountKind === 'percent' ? ` (${totals.discountValue}%)` : ''}`, amount(-totals.discount)]] : []),
+            ...discountLines(totals).map((d) => [d.label, d.value]),
             ...(Math.abs(totals.roundOff) >= 0.005 ? [['Round off', amount(totals.roundOff)]] : []),
             ...(gst ? [['Taxable value', amount(totals.taxable)], ...gstLines(totals.gstRows).map((g) => [g.label, amount(g.value)])] : []),
           ]}

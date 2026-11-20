@@ -74,6 +74,39 @@ def test_no_discount_leaves_the_fields_empty():
     assert t['discount'] == 0 and t['discountKind'] is None and t['discountValue'] == 0
 
 
+def test_a_discount_on_one_line_has_no_limit_but_the_line():
+    # TREE 2 × 999 = 1998 with 50% off it alone; STAR 2 × 250 untouched
+    lines = bill.bill_lines([('tree', 2), ('STAR', 2)], CATALOGUE, discounts={'TREE': D('percent', 50)})
+    assert [(ln.code, ln.off, ln.amount) for ln in lines] == [('TREE', Decimal(999), Decimal(999)), ('STAR', 0, 500)]
+    t = bill.totals(lines)
+    assert t['itemDiscount'] == 999 and t['payable'] == 1499
+    assert t['savings'] == 402  # the offers only, MRP → selling price
+    assert t['gstRows'][0] == {'rate': 18.0, 'taxable': 846.61, 'tax': 152.39}  # GST on the discounted price
+    # a whole-bill discount comes off what is left
+    assert bill.totals(lines, D('percent', 10))['discount'] == 149.90
+    # more than the line is the whole line, never below nothing
+    whole = bill.bill_lines([('STAR', 1)], CATALOGUE, discounts={'STAR': D('amount', 10_000)})
+    assert whole[0].amount == 0 and bill.totals(whole)['payable'] == 0
+
+
+def test_lines_already_billed_keep_their_price():
+    @dataclass
+    class Sold:
+        code: str
+        name: str
+        price: Decimal
+        mrp: Decimal
+        cost: Decimal
+        gst: Decimal
+
+    sold = {'TREE': Sold('TREE', 'Tree 6ft (old)', Decimal(899), Decimal(1100), Decimal(350), Decimal(18))}
+    lines = bill.bill_lines([('TREE', 1), ('STAR', 1)], {'STAR': CATALOGUE['STAR']}, sold=sold)
+    assert [(ln.code, ln.name, ln.price, ln.cost) for ln in lines] == [
+        ('TREE', 'Tree 6ft (old)', Decimal(899), Decimal(350)),
+        ('STAR', 'Star', Decimal(250), Decimal(80)),
+    ]
+
+
 def test_unknown_codes_and_empty_bills_are_refused():
     with pytest.raises(InvalidInput, match='NOPE'):
         bill.bill_lines([('NOPE', 1)], CATALOGUE)

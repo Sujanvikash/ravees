@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { FilePlus, FileText, History, Pause, Repeat, Trash2, Undo2, X } from 'lucide-react';
+import { FilePlus, FileText, History, Pause, Pencil, Repeat, Trash2, Undo2, X } from 'lucide-react';
 import BillTable from '../components/BillTable.jsx';
 import CreditNotePrint from '../components/CreditNotePrint.jsx';
 import Dialog from '../components/Dialog.jsx';
@@ -32,8 +32,10 @@ import { newId } from '../lib/uid.js';
 
 const toolButton =
   'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-ink-2 transition-colors enabled:hover:bg-mist enabled:hover:text-ink disabled:opacity-40';
+const madeAt = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
-
+/** A bill's lines as the server takes them: code, qty and any discount on the line alone. */
+const linesOut = (lines) => lines.map((l) => ({ code: l.code, qty: l.qty, ...(l.discount && l.off > 0 ? { discount: l.discount } : {}) }));
 
 /**
  * One showroom's billing counter. The bill in progress and held bills are kept in this browser per showroom;
@@ -42,13 +44,24 @@ const toolButton =
  *
  * Returns and exchanges start here too (Return / exchange): a refund is paid out in cash straight away; an
  * exchange puts the returned value on this bill as a credit, and is saved with it when the bill is paid.
+ *
+ * A saved bill can be edited here too (Sales → Edit bill, behind its own password): it opens on the counter with its
+ * items, discounts and customer, and Collect saves the changes over it, with a fresh payment for the new total. It
+ * keeps its number and date.
+ *
+ * Manual discounts (the whole bill's and each line's own) ask for the store's password once a bill: after that the
+ * bill stays unlocked until it is done, cleared, held or swapped for another. Editing a bill unlocks them with it.
  */
 const Counter = ({ location, intent, onMenu, onNavigate }) => {
   const shop = locationById(location);
   const now = useClock();
   const session = useSession();
   const bill = useBill(location);
-  const { recordSale, recordReturn, findBill, stockOf, sales, quotes, settings, offline } = useStore();
+  const { recordSale, recordReturn, editSale, findBill, stockOf, sales, quotes, settings, offline } = useStore();
+  const editing = bill.editing; // the saved bill being edited, if any (useBill)
+  const [unlocked, setUnlocked] = useState(false); // the store's password was given for this bill's discounts
+  if (unlocked && !bill.items.length) setUnlocked(false); // a new bill asks again
+  const discountsOpen = unlocked || Boolean(editing);
   const [held, setHeld] = useLocalStorage(`billing-held-${session?.demo ? 'demo-' : ''}${location}`, []);
   const [exchange, setExchange] = useState(null); // items coming back: { saleId, lines, reason, value, bill }
   const [refunded, setRefunded] = useState(null); // the credit note of a cash refund, for its dialog
@@ -77,11 +90,13 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
 
   // a manual discount is held to the admin's limit (Settings), here and in what is sent
   const cap = settings.maxDiscountPct;
-  const totals = useMemo(() => buildBill(bill.items, bill.discount, cap), [bill.items, bill.discount, cap]);
+  const sold = editing?.sold ?? null;
+  const totals = useMemo(() => buildBill(bill.items, bill.discount, cap, sold), [bill.items, bill.discount, cap, sold]);
   const discount = capDiscount(bill.discount, totals.gross, cap) || undefined;
-  // offline, the next number of this counter's own offline series (lib/offline.js)
-  const billNo =
-    (!offline.online && peekOfflineNo(offlineKey(session), location, now)) || billNumber(shop.billPrefix, nextSeq(sales, shop.billPrefix, now), now);
+  // offline, the next number of this counter's own offline series (lib/offline.js); an edited bill keeps its own
+  const billNo = editing
+    ? editing.billNo
+    : (!offline.online && peekOfflineNo(offlineKey(session), location, now)) || billNumber(shop.billPrefix, nextSeq(sales, shop.billPrefix, now), now);
   const credit = exchange ? Math.min(exchange.value, totals.payable) : 0;
   const due = totals.payable - credit;
   useEffect(() => {
@@ -146,6 +161,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     if (!target) return;
     setHeld(holdCurrent(held.filter((h) => h.id !== id)));
     bill.load(target.items, target.discount ?? null);
+    setUnlocked(false);
     setCustomer(target);
     setNotice({ tone: 'ok', text: 'Held bill recalled' });
     closeDialog();
@@ -157,6 +173,12 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     setExchange(null);
     setNotice(null);
     scanRef.current?.focus();
+  };
+
+  const cancelEdit = () => {
+    const { billNo: no } = editing;
+    clearBill();
+    setNotice({ tone: 'ok', text: `Edit cancelled: ${no} stays as it was.` });
   };
 
   const openPay = () => {
@@ -189,11 +211,13 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
   const completeSale = async (payment) => {
     if (busy) return;
     setBusy(true);
-    const lines = totals.lines.map((l) => ({ code: l.code, qty: l.qty }));
+    const lines = linesOut(totals.lines);
     let sale;
     let note = null;
     try {
-      if (exchange) {
+      if (editing) {
+        sale = await editSale(editing.saleId, { password: editing.password, lines, phone: phoneDigits(phone), name: name.trim(), payment, discount });
+      } else if (exchange) {
         const { saleId, lines: back, reason } = exchange;
         const result = await recordReturn({ id: ids.current.ret, saleId, lines: back, reason, exchange: { id: ids.current.sale, lines, payment, discount } });
         sale = result.sale;
@@ -208,7 +232,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
       return;
     }
     setBusy(false);
-    setLastSale({ ...sale, refund: note?.refund ?? 0 });
+    setLastSale({ ...sale, refund: note?.refund ?? 0, edited: Boolean(editing) });
     bill.clear();
     setCustomer();
     setExchange(null);
@@ -237,6 +261,41 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     closeDialog();
   };
 
+  // A saved bill opened to edit (Sales → Edit bill, after its password): its items with their own discounts, its
+  // discount and customer go on the counter, and the prices it was billed at stay (sold). A bill already being rung
+  // up is put on hold (F9) first.
+  const startEdit = (sale, password) => {
+    const parked = bill.items.length > 0 && !editing;
+    if (parked) setHeld(holdCurrent(held));
+    const t = sale.totals;
+    bill.edit(
+      sale.lines.map((l) => ({ code: l.code, qty: l.qty, ...(l.off > 0 ? { discount: { kind: 'amount', value: l.off } } : {}) })),
+      t.discount > 0 ? { kind: t.discountKind ?? 'amount', value: t.discountValue || t.discount } : null,
+      {
+        saleId: sale.id,
+        billNo: sale.billNo,
+        at: sale.at,
+        payable: t.payable,
+        password,
+        sold: Object.fromEntries(sale.lines.map((l) => [l.code, { code: l.code, name: l.name, price: l.price, mrp: l.mrp, cost: l.cost, gst: l.gst }])),
+      },
+    );
+    setCustomer({ phone: sale.phone, name: sale.name });
+    setExchange(null);
+    setNotice({ tone: 'ok', text: `${sale.billNo} is open to edit.${parked ? ' The bill in progress was put on hold (F9).' : ''}` });
+    setDialog(null);
+  };
+
+  // Sent here from Sales history ("Edit bill" on a bill, after its password): open it to edit. An effect, as parking
+  // the bill in progress stamps the time; the ref keeps a second run (React's strict mode) from parking it twice.
+  const editIntent = useRef(null);
+  const onEditIntent = useEffectEvent((edit) => startEdit(edit.sale, edit.password));
+  useEffect(() => {
+    if (!intent?.edit || editIntent.current === intent.edit) return;
+    editIntent.current = intent.edit;
+    onEditIntent(intent.edit);
+  }, [intent]);
+
   // Sent here from Sales history ("Exchange" on a bill): start the exchange so staff can scan the swap. Done
   // during render (not an effect) so the counter is already in exchange mode on the first paint. Starts at null
   // (not `intent`) so a fresh mount that already carries the exchange intent still fires once.
@@ -257,6 +316,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     const parked = bill.items.length > 0;
     if (parked) setHeld(holdCurrent(held));
     bill.load(quote.lines.map((l) => ({ code: l.code, qty: l.qty })));
+    setUnlocked(false);
     setCustomer({ phone: quote.phone, name: quote.name });
     setNotice({
       tone: 'ok',
@@ -266,14 +326,15 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
   };
 
   // Move the bill being rung up over to a new quotation: its items (and customer) go to the Quotations screen,
-  // and the counter is cleared. The quotation is priced fresh there; a manual discount doesn't carry over.
+  // and the counter is cleared. The quotation is priced fresh there; manual discounts (the bill's and the lines')
+  // don't carry over.
   const toQuotation = () => {
-    if (!totals.count || exchange) return;
+    if (!totals.count || exchange || editing) return;
     const customer = { phone: phoneDigits(phone), name: name.trim() };
     try {
       window.localStorage.setItem(
         billKey(location, 'quote', session?.demo),
-        JSON.stringify({ items: bill.items, lastCode: null, customer }),
+        JSON.stringify({ items: bill.items.map(({ code, qty }) => ({ code, qty })), lastCode: null, customer }),
       );
     } catch {
       // ignore storage failures (private browsing, quota, etc.)
@@ -287,8 +348,8 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
     const keys = {
       F2: () => !dialog && scanRef.current?.focus(),
       F4: () => !dialog && phoneRef.current?.focus(),
-      F8: () => !dialog && hold(),
-      F9: () => !dialog && openHeld(),
+      F8: () => !dialog && !editing && hold(),
+      F9: () => !dialog && !editing && openHeld(),
       F12: () => !dialog && openPay(),
       Escape: () => dialog && closeDialog(),
     };
@@ -327,25 +388,25 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
             <section className="flex min-h-72 flex-1 flex-col overflow-hidden rounded-2xl border glass lg:min-h-0">
               <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-4 pb-2">
                 <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                  <h1 className="text-[15px] font-semibold tracking-tight">Current bill</h1>
+                  <h1 className="text-[15px] font-semibold tracking-tight">{editing ? 'Editing bill' : 'Current bill'}</h1>
                   <span className="font-mono text-xs text-ink-3">{billNo}</span>
                   {totals.count > 0 && <span className="text-xs text-ink-3">· {countLabel(totals)}</span>}
                 </div>
                 <div className="flex flex-wrap items-center gap-0.5">
-                  <button type="button" className={toolButton} onClick={() => setDialog('quote')} disabled={!quotes.some((q) => q.location === location)}>
+                  <button type="button" className={toolButton} onClick={() => setDialog('quote')} disabled={!quotes.some((q) => q.location === location) || Boolean(editing)}>
                     <FileText size={15} /> View quotations
                   </button>
-                  <button type="button" className={toolButton} onClick={toQuotation} disabled={!totals.count || Boolean(exchange)}>
+                  <button type="button" className={toolButton} onClick={toQuotation} disabled={!totals.count || Boolean(exchange) || Boolean(editing)}>
                     <FilePlus size={15} /> Save as quotation
                   </button>
-                  <button type="button" className={toolButton} onClick={() => setDialog('return')} disabled={Boolean(exchange)}>
+                  <button type="button" className={toolButton} onClick={() => setDialog('return')} disabled={Boolean(exchange) || Boolean(editing)}>
                     <Undo2 size={15} /> Return / exchange
                   </button>
                   <span className="mx-1 h-4 w-px bg-line" aria-hidden="true" />
-                  <button type="button" className={toolButton} onClick={hold} disabled={!totals.count || Boolean(exchange)}>
+                  <button type="button" className={toolButton} onClick={hold} disabled={!totals.count || Boolean(exchange) || Boolean(editing)}>
                     <Pause size={15} /> Hold <Kbd>F8</Kbd>
                   </button>
-                  <button type="button" className={toolButton} onClick={openHeld} disabled={!held.length}>
+                  <button type="button" className={toolButton} onClick={openHeld} disabled={!held.length || Boolean(editing)}>
                     <History size={15} /> Held
                     {held.length > 0 && (
                       <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-raave-red-50 px-1.5 text-[11px] font-semibold text-raave-red-ink">
@@ -360,6 +421,40 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
                   </button>
                 </div>
               </div>
+              {editing && (
+                <div className="mx-5 mb-2 rounded-xl bg-warn-50 px-4 py-3 text-warn-ink">
+                  <div className="flex items-center gap-2.5">
+                    <Pencil size={18} aria-hidden="true" className="shrink-0" />
+                    <span className="text-[15px] font-semibold">
+                      Editing <span className="font-mono text-sm">{editing.billNo}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium hover:bg-white/70"
+                    >
+                      <X size={15} aria-hidden="true" /> Cancel edit
+                    </button>
+                  </div>
+                  <div className="mt-1 flex flex-col gap-1 pl-[28px] text-[13px] tabular-nums">
+                    <div>
+                      Made {madeAt.format(new Date(editing.at))} · was <span className="font-semibold">{inr(editing.payable)}</span>
+                      {totals.count > 0 && (
+                        <>
+                          {' '}
+                          · now <span className="font-semibold">{inr(totals.payable)}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="text-warn-ink/85">
+                      Change the items, then Collect payment for the new total: it replaces the old payment. The bill keeps its number and date.
+                    </div>
+                    {!totals.count && (
+                      <div className="font-medium">A bill needs at least one item. To take everything back, use Return / exchange on the bill in Sales.</div>
+                    )}
+                  </div>
+                </div>
+              )}
               {exchange && (
                 <div className="mx-5 mb-2 rounded-xl bg-evergreen-50 px-4 py-3 text-evergreen-900">
                   <div className="flex items-center gap-2.5">
@@ -402,7 +497,15 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
                   </ul>
                 </div>
               )}
-              <BillTable lines={totals.lines} lastCode={bill.lastCode} onQty={bill.setQty} inStock={inStock} />
+              <BillTable
+                lines={totals.lines}
+                lastCode={bill.lastCode}
+                onQty={bill.setQty}
+                inStock={inStock}
+                onDiscount={bill.setItemDiscount}
+                unlocked={discountsOpen}
+                onUnlock={() => setUnlocked(true)}
+              />
             </section>
           </section>
 
@@ -428,6 +531,8 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
             method={method}
             onMethod={setMethod}
             onCollect={openPay}
+            unlocked={discountsOpen}
+            onUnlock={() => setUnlocked(true)}
           />
         </div>
       </div>
@@ -461,6 +566,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
         <DoneDialog
           sale={lastSale}
           refund={lastSale.refund}
+          edited={lastSale.edited}
           onReprint={() => {
             setPrintDoc({ sale: lastSale });
             setPrintJob((n) => n + 1);

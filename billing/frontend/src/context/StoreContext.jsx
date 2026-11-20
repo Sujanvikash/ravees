@@ -16,9 +16,10 @@ import { newId } from '../lib/uid.js';
  * used when the server can't be reached at start-up. A bill made while it can't be reached goes to the outbox and
  * is shown here at once (in sales, and off stock); the outbox is sent in order as soon as the server answers.
  *
- *   sales    [{ id, billNo, at, location, phone, name, customer, lines: [{ code, name, qty, price, mrp, cost, gst }],
- *              totals, payment, balance, collections: [{ id, receiptNo, at, amount, payment, by }] }]
- *            (balance: still owed on a credit bill; collections: payments towards it since, see lib/payment.js)
+ *   sales    [{ id, billNo, at, location, phone, name, customer, lines: [{ code, name, qty, price, mrp, cost, gst, off }],
+ *              totals, payment, balance, collections: [{ id, receiptNo, at, amount, payment, by }], edits }]
+ *            (off: rupees off that line alone; balance: still owed on a credit bill; collections: payments towards it
+ *            since, see lib/payment.js; edits: each version an edit replaced, { at, by, … }, oldest first)
  *   returns  credit notes: [{ id, returnNo, saleId, billNo, location, at, kind: return | exchange, lines, amount,
  *              refund, balanceOff, exchangeBillNo }]
  *   stock    { [location]: { [code]: qty } }     (can go negative if billed beyond what was counted in)
@@ -321,6 +322,13 @@ export const StoreProvider = ({ session, children }) => {
           return queueOfflineSale(key, session, bill);
         }
       },
+
+      /** Edits a saved bill: { password, lines, phone, name, payment, discount }, all of it replacing what it was.
+       *  It keeps its number and date; stock is put right. Online only. Resolves to the bill as it is now. */
+      editSale: async (id, body) => saved('sales', await api(`/sales/${id}`, { method: 'PUT', body }), { stock: true }),
+
+      /** Checks the password for editing a bill (a wrong one throws, without signing out). */
+      checkEditPassword: (password) => api('/sales/edit-password', { method: 'POST', body: { password } }),
 
       /** A return or exchange: { id, saleId | billNo, lines, reason, exchange?: { id, lines, payment } }.
        *  Resolves to { creditNote, sale } (sale: the new bill of an exchange). */

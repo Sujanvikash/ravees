@@ -28,28 +28,51 @@ export const discountOff = (gross, discount, cap = 100) => {
   return Math.min(discount.value, cap >= 100 ? gross : maxDiscount(gross, cap));
 };
 
+/** What a saved bill's line came to: price × qty, less the discount on that line alone (`off`, in rupees). */
+export const lineAmount = (line) => line.price * line.qty - (line.off ?? 0);
+
+/** The rupees a manual discount on one line takes off its amount `listed`: any amount (no limit, unlike the whole
+ *  bill's), held only to the line itself so it never goes below nothing, to the paisa as the server works it out. */
+export const lineOff = (listed, discount) => Math.round(discountOff(listed, discount) * 100) / 100;
+
+/** A bill line's product: the catalogue's, or for a line of a bill being edited (`sold`: the line as it was billed)
+ *  the price, MRP and GST it was billed at, which an edit keeps (the server does the same). */
+const productFor = (code, sold) => {
+  const product = findProduct(code);
+  if (!sold) return product;
+  return { dept: '', ...product, code: sold.code, name: sold.name, mrp: sold.mrp, offer: sold.price < sold.mrp ? sold.price : 0, cost: sold.cost, gst: sold.gst };
+};
+
 /**
- * Bill items ({ code, qty }) → lines with their product and amounts, plus the totals: MRP total, offer
- * savings, the selling subtotal (gross), taxable value and GST per rate (split into CGST + SGST), round-off and
- * the amount payable. Items whose code is no longer in the product list are dropped. A manual `discount` comes off
- * the selling subtotal, held to `cap` percent of it (capDiscount), and is spread across the GST rates in
- * proportion, so the taxable value and GST drop with it.
+ * Bill items ({ code, qty, discount? }) → lines with their product and amounts, plus the totals: MRP total, offer
+ * savings, the lines' own discounts (itemDiscount), the selling subtotal (gross), taxable value and GST per rate
+ * (split into CGST + SGST), round-off and the amount payable. Items whose code is no longer in the product list are
+ * dropped. An item's `discount` ({ kind, value }) comes off that line alone, with no limit but the line's own
+ * amount. Then a manual whole-bill `discount` comes off the selling subtotal, held to `cap` percent of it
+ * (capDiscount), and is spread across the GST rates in proportion, so the taxable value and GST drop with it.
+ * `sold` (code → the line as billed) keeps the prices of a bill being edited.
  */
-export const buildBill = (items, discount = null, cap = 100) => {
+export const buildBill = (items, discount = null, cap = 100, sold = null) => {
   const lines = items
-    .map((item) => ({ ...item, product: findProduct(item.code) }))
+    .map((item) => ({ ...item, product: productFor(item.code, sold?.[item.code]) }))
     .filter((line) => line.product)
     .map((line) => {
-      const price = priceOf(line.product);
-      return { ...line, price, amount: price * line.qty, mrpAmount: line.product.mrp * line.qty };
+      const price = sold?.[line.code] ? sold[line.code].price : priceOf(line.product);
+      const listed = price * line.qty;
+      const off = lineOff(listed, line.discount);
+      return { ...line, price, listed, off, amount: listed - off, mrpAmount: line.product.mrp * line.qty };
     });
 
   const byRate = new Map();
   let gross = 0;
+  let listed = 0;
+  let itemDiscount = 0;
   let mrpTotal = 0;
   let qty = 0;
   for (const line of lines) {
     gross += line.amount;
+    listed += line.listed;
+    itemDiscount += line.off;
     mrpTotal += line.mrpAmount;
     qty += line.qty;
     const rate = line.product.gst;
@@ -77,7 +100,8 @@ export const buildBill = (items, discount = null, cap = 100) => {
     count: lines.length,
     qty,
     mrpTotal,
-    savings: mrpTotal - gross,
+    savings: mrpTotal - listed,
+    itemDiscount,
     gross,
     discount: off,
     discountKind: off > 0 ? held.kind : null,

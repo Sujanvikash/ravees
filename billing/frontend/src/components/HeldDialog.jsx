@@ -28,6 +28,12 @@ const Items = ({ bill }) => (
         <span className="tabular-nums">{inr(-bill.savings)}</span>
       </div>
     )}
+    {bill.itemDiscount > 0 && (
+      <div className="mt-1 flex justify-between text-xs text-ok-ink">
+        <span>Item discounts</span>
+        <span className="tabular-nums">{inr(-bill.itemDiscount)}</span>
+      </div>
+    )}
   </div>
 );
 

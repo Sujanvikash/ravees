@@ -123,7 +123,7 @@ export const subscribeOutbox = (fn) => {
   };
 };
 
-const paisa = (n) => Math.paisa(n * 100) / 100;
+const paisa = (n) => Math.round(n * 100) / 100;
 
 /** The payment as the server will keep it (sales/service.py _payment), for a bill with no exchange credit. */
 const paymentOf = (payment, payable) => {
@@ -164,12 +164,22 @@ export const queueOfflineSale = (key, session, bill) => {
     name: bill.name,
     customer: customerLabel(bill.phone, bill.name),
     by: session.username,
-    lines: lines.map((l) => ({ code: l.product.code, name: l.product.name, qty: l.qty, price: l.price, mrp: l.product.mrp, cost: l.product.cost ?? 0, gst: l.product.gst })),
+    lines: lines.map((l) => ({
+      code: l.product.code,
+      name: l.product.name,
+      qty: l.qty,
+      price: l.price,
+      mrp: l.product.mrp,
+      cost: l.product.cost ?? 0,
+      gst: l.product.gst,
+      off: l.off,
+    })),
     totals: {
       count: totals.count,
       qty: totals.qty,
       mrpTotal: paisa(totals.mrpTotal),
       savings: paisa(totals.savings),
+      itemDiscount: paisa(totals.itemDiscount),
       discount: paisa(totals.discount),
       discountKind: totals.discountKind,
       discountValue: totals.discountValue,

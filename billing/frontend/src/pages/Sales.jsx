@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, ChevronDown, Download, FileSpreadsheet, HandCoins, Printer, ReceiptText, Repeat, Undo2 } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Download, FileSpreadsheet, HandCoins, Pencil, Printer, ReceiptText, Repeat, Undo2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import CollectBalance from '../components/CollectBalance.jsx';
 import { LocationPicker, PeriodTabs, SearchBox, Segmented } from '../components/Filters.jsx';
 import Dialog from '../components/Dialog.jsx';
+import DiscountUnlock from '../components/DiscountUnlock.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import PaymentReceiptPrint from '../components/PaymentReceiptPrint.jsx';
 import ProductPerformance from '../components/ProductPerformance.jsx';
@@ -13,6 +14,7 @@ import SummaryStrip from '../components/SummaryStrip.jsx';
 import { locationById } from '../config.js';
 import { useStore } from '../context/StoreContext.jsx';
 import { api } from '../lib/api.js';
+import { lineAmount } from '../lib/bill.js';
 import { formatMobile } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
 import { isCreditBill, methodLabel, paidAtCounter } from '../lib/payment.js';
@@ -62,10 +64,15 @@ const BillLink = ({ loc, billNo, onClick }) => (
  * Completed bills. A showroom sees only its own; the admin sees every showroom and, on top, the purchase
  * cost and gross profit of each bill. Returns come off the sales as net sales. Export to Excel downloads the
  * period's report (summary, bills, items, returns and cash closes) from the server.
+ *
+ * A showroom can edit one of its bills (Edit bill, behind the password for editing bills): it opens on the counter
+ * to change, and keeps its number and date. A bill with goods returned or exchanged against it, an exchange's new
+ * bill, or one with a balance already collected takes a return instead, as the server also insists.
  */
 const Sales = ({ session, intent, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { sales, returns, recordReturn, findBill, downloadSalesReport, downloadFinalSales, settings } = useStore();
+  const { sales, returns, recordReturn, findBill, downloadSalesReport, downloadFinalSales, checkEditPassword, settings } = useStore();
+  const [editFor, setEditFor] = useState(null); // the bill whose edit password is being asked for
   const gst = settings.showGst;
   const [exporting, setExporting] = useState('');
   const [returnFor, setReturnFor] = useState(null); // bill number being returned/exchanged (showrooms only)
@@ -128,6 +135,8 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
       status: returnStatus(ret, s.totals.qty),
       origin: s.payment.creditNote ? retByNote.get(s.payment.creditNote) : null, // set when this bill IS an exchange
       returnable: canReturn && !fully,
+      // nothing back against it, not an exchange's new bill, no balance collected, and on the server already
+      editable: !admin && !ret && !s.payment.creditNote && !(s.collections ?? []).length && !s.offline,
     };
   };
 
@@ -439,6 +448,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                 <span className="ml-2 rounded bg-warn-50 px-1 font-sans text-[10px] font-medium text-warn-ink">PART RETURNED</span>
                               ) : null}
                               {rs.origin && <span className="ml-2 rounded bg-mist px-1 font-sans text-[10px] font-medium text-ink-2">EXCHANGE BILL</span>}
+                              {s.edits?.length > 0 && <span className="ml-2 rounded bg-warn-50 px-1 font-sans text-[10px] font-medium text-warn-ink">EDITED</span>}
                             </td>
                             <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(s.at))}</td>
                             {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(s.location)?.label ?? '—'}</td>}
@@ -457,8 +467,8 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                             </td>
                             <td className="py-1.5 pr-3 text-right font-semibold">
                               {inr(s.totals.payable)}
-                              {s.totals.discount > 0 && (
-                                <div className="text-[11px] font-normal text-ok-ink">−{inr(s.totals.discount)} disc</div>
+                              {s.totals.discount + (s.totals.itemDiscount ?? 0) > 0 && (
+                                <div className="text-[11px] font-normal text-ok-ink">−{inr(s.totals.discount + (s.totals.itemDiscount ?? 0))} disc</div>
                               )}
                             </td>
                             {admin && <td className="py-1.5 pr-3 text-right text-ink-2">{inr(cost)}</td>}
@@ -483,8 +493,9 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                           <span className="text-xs text-ink-3">
                                             {l.qty} × {inr(l.price)}
                                           </span>
+                                          {l.off > 0 && <span className="shrink-0 text-[11px] font-medium text-ok-ink">−{inr(l.off)} item disc</span>}
                                           {admin && <span className="w-36 text-right text-xs text-ink-3">cost {inr(l.cost ?? 0)} each</span>}
-                                          <span className="w-24 text-right font-medium">{inr(l.price * l.qty)}</span>
+                                          <span className="w-24 text-right font-medium">{inr(lineAmount(l))}</span>
                                         </li>
                                       );
                                     })}
@@ -497,6 +508,17 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                       </li>
                                     )}
                                   </ul>
+                                  {s.edits?.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 px-1 text-xs text-ink-2 tabular-nums">
+                                      <Pencil size={13} className="text-ink-3" aria-hidden="true" />
+                                      Edited {s.edits.length === 1 ? 'once' : `${s.edits.length} times`} · last {when.format(new Date(s.edits.at(-1).at))} by{' '}
+                                      {s.edits.at(-1).by}
+                                      <span className="text-ink-3">
+                                        · first billed at {inr(s.edits[0].totals.payable)}
+                                        {s.edits[0].payment?.method ? `, ${methodLabel(s.edits[0].payment.method)}` : ''}
+                                      </span>
+                                    </div>
+                                  )}
                                   {rs.origin && (
                                     <div className="flex flex-wrap items-center gap-1.5 px-1 text-xs text-ink-2">
                                       <Repeat size={13} className="text-ink-3" aria-hidden="true" />
@@ -592,6 +614,15 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                           </button>
                                         ))}
                                       </div>
+                                      {rs.editable && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditFor(s)}
+                                          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-evergreen-800/25 bg-white px-3 text-[13px] font-semibold text-evergreen-900 hover:border-evergreen-800/50 hover:bg-evergreen-50"
+                                        >
+                                          <Pencil size={14} aria-hidden="true" /> Edit bill
+                                        </button>
+                                      )}
                                       {rs.returnable && (
                                         <button
                                           type="button"
@@ -633,6 +664,27 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
           rebill.paper === 'a4' ? <A4Bill sale={rebill.sale} own={rebill.own} /> : <ThermalReceipt sale={rebill.sale} own={rebill.own} />,
           document.body,
         )}
+      {editFor && (
+        <Dialog id="edit-bill" title="Edit bill" subtitle={`${editFor.billNo} · ${inr(editFor.totals.payable)}`} onClose={() => setEditFor(null)} size="max-w-sm">
+          <div className="flex flex-col gap-3 px-6 pb-6 text-[13px] text-ink-2">
+            <p>
+              The bill opens on the counter to change its items, discounts or customer. Collect payment there for the new total: it replaces the old
+              payment. It keeps its bill number and date.
+            </p>
+            <DiscountUnlock
+              id="edit-bill-password"
+              label="Enter the password for editing bills"
+              check={checkEditPassword}
+              autoComplete="off"
+              onUnlock={(password) => {
+                const sale = editFor;
+                setEditFor(null);
+                onNavigate('counter', { edit: { sale, password } });
+              }}
+            />
+          </div>
+        </Dialog>
+      )}
       {returnFor && (
         <ReturnDialog
           location={session.location}

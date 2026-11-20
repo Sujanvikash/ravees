@@ -12,15 +12,29 @@ from app.core.errors import Conflict, Forbidden, InvalidInput, NotFound
 from app.modules.auth.access import visible_location
 from app.modules.numbering import service as numbering
 from app.modules.products import repository as products
+from app.modules.returns.models import SaleReturn
 from app.modules.stock import repository as stock
 from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
 from . import bill
 from .models import Sale, SaleCollection, SaleLine
-from .schemas import CollectionIn, CustomerOut, PaymentIn, SaleIn, check_customer, phone_digits
+from .schemas import (
+    CollectionIn,
+    CustomerOut,
+    DiscountIn,
+    PaymentIn,
+    SaleEditIn,
+    SaleIn,
+    SaleLineIn,
+    check_customer,
+    phone_digits,
+)
 
 ADMIN_CANNOT_BILL = 'Bills are made at a showroom counter: sign in as the showroom.'
+ADMIN_CANNOT_EDIT = 'A bill is edited at its showroom’s counter: sign in as the showroom.'
+NOT_THIS_SHOWROOMS = 'That bill isn’t one of this showroom’s.'
+USE_RETURN = 'Use Return / exchange on it instead.'
 ADMIN_CANNOT_COLLECT = 'A balance is collected at the showroom counter: sign in as the showroom.'
 CREDIT_NEEDS_CUSTOMER = 'A credit bill needs the customer’s name and mobile number, to collect the balance.'
 ADMIN_CANNOT_GO_OFFLINE = 'Only a showroom counter bills offline.'
@@ -163,6 +177,28 @@ def offline_counter(session: Session, user: User) -> int:
     return counter
 
 
+def _line_discounts(lines: Sequence[SaleLineIn]) -> dict[str, DiscountIn]:
+    """The manual discounts on single lines of a bill, by code."""
+    return {line.code.strip().upper(): line.discount for line in lines if line.discount}
+
+
+def _sale_lines(lines: Sequence[bill.BillLine]) -> list[SaleLine]:
+    return [
+        SaleLine(
+            position=i,
+            code=line.code,
+            name=line.name,
+            qty=line.qty,
+            price=line.price,
+            mrp=line.mrp,
+            cost=line.cost,
+            gst=line.gst,
+            off=line.off,
+        )
+        for i, line in enumerate(lines)
+    ]
+
+
 def _existing(session: Session, user: User, data: SaleIn) -> Sale | None:
     sale = session.get(Sale, data.id)
     if sale and sale.location_id != user.location_id:
@@ -215,7 +251,9 @@ def create_sale(
         raise InvalidInput(f'{CREDIT_NEEDS_CUSTOMER} {error}' if credit_bill else str(error)) from None
 
     catalogue = products.by_codes(session, (line.code for line in data.lines))
-    lines = bill.bill_lines(((line.code, line.qty) for line in data.lines), catalogue)
+    lines = bill.bill_lines(
+        ((line.code, line.qty) for line in data.lines), catalogue, discounts=_line_discounts(data.lines)
+    )
     totals = bill.totals(lines, data.discount)
     payment = _payment(data.payment, Decimal(str(totals['payable'])), credit, lenient=offline is not None)
     if credit_note:
@@ -234,19 +272,7 @@ def create_sale(
         payment=payment,
         balance=Decimal(str(payment.get('later', 0))),
         created_by=user.username,
-        lines=[
-            SaleLine(
-                position=i,
-                code=line.code,
-                name=line.name,
-                qty=line.qty,
-                price=line.price,
-                mrp=line.mrp,
-                cost=line.cost,
-                gst=line.gst,
-            )
-            for i, line in enumerate(lines)
-        ],
+        lines=_sale_lines(lines),
     )
     session.add(sale)
     stock.adjust(session, user.location_id, {line.code: -line.qty for line in lines})
@@ -266,6 +292,88 @@ def create_sale(
     return sale
 
 
+def edit_blocked(session: Session, sale: Sale) -> str | None:
+    """Why a bill can't be edited, or None when it can. Goods returned or exchanged against it, a bill that is
+    itself an exchange, and a balance already collected on it each gave the customer a credit note or a receipt
+    with the bill's figures, which an edit would no longer match: those bills take a return instead. There is no
+    time limit."""
+    if session.scalar(select(SaleReturn.id).where(SaleReturn.sale_id == sale.id).limit(1)):
+        return f'Goods were returned or exchanged against {sale.bill_no}, so it can’t be edited. {USE_RETURN}'
+    if sale.payment.get('creditNote'):
+        return f'{sale.bill_no} is the new bill of an exchange, so it can’t be edited. {USE_RETURN}'
+    if sale.collections:
+        return f'A balance payment was already taken on {sale.bill_no}, so it can’t be edited. {USE_RETURN}'
+    return None
+
+
+def edit_sale(
+    session: Session, user: User, sale_id: uuid.UUID, data: SaleEditIn, *, at: datetime | None = None
+) -> Sale:
+    """Changes one of this showroom's bills after it was made (the customer changed their mind): its lines, their
+    discounts and the whole-bill discount, the customer, and how it is paid, all at once. It keeps its bill number
+    and date. Its old items go back into stock and the new ones come off. Lines already on it keep the price they
+    were billed at; added ones are priced from the catalogue. The payment is taken again for the new amount and
+    replaces the old one (a credit bill's balance is what is left on credit now). What the bill was before is kept
+    in `edits`. The password for editing is checked before this (auth.service.check_edit_bill_password)."""
+    if user.is_admin or not user.location_id:
+        raise Forbidden(ADMIN_CANNOT_EDIT)
+    sale = session.get(Sale, sale_id, with_for_update=True, populate_existing=True)
+    if sale is None or sale.location_id != user.location_id:
+        raise NotFound(NOT_THIS_SHOWROOMS)
+    if reason := edit_blocked(session, sale):
+        raise Conflict(reason)
+    prefs = app_settings.get(session)
+    credit_bill = data.payment.later > 0
+    try:
+        name, phone = check_customer(
+            data.name,
+            data.phone,
+            require_name=prefs.require_name or credit_bill,
+            require_mobile=prefs.require_mobile or credit_bill,
+        )
+    except ValueError as error:
+        raise InvalidInput(f'{CREDIT_NEEDS_CUSTOMER} {error}' if credit_bill else str(error)) from None
+
+    sold = {line.code: line for line in sale.lines}
+    catalogue = products.by_codes(session, (line.code for line in data.lines if line.code.strip().upper() not in sold))
+    lines = bill.bill_lines(
+        ((line.code, line.qty) for line in data.lines), catalogue, discounts=_line_discounts(data.lines), sold=sold
+    )
+    totals = bill.totals(lines, data.discount)
+    payment = _payment(data.payment, Decimal(str(totals['payable'])))
+
+    at = at or clock.now()
+    was = {
+        'at': at.isoformat(),
+        'by': user.username,
+        'phone': sale.phone,
+        'name': sale.name,
+        'lines': [
+            {'code': ln.code, 'name': ln.name, 'qty': ln.qty, 'price': float(ln.price), 'off': float(ln.off or 0)}
+            for ln in sale.lines
+        ],
+        'totals': sale.totals,
+        'payment': sale.payment,
+    }
+    back: dict[str, int] = {}
+    for ln in sale.lines:
+        back[ln.code] = back.get(ln.code, 0) + ln.qty
+    for ln in lines:
+        back[ln.code] = back.get(ln.code, 0) - ln.qty
+    stock.adjust(session, sale.location_id, back)
+
+    # the old lines go first: the new ones reuse their positions
+    sale.lines.clear()
+    session.flush()
+    sale.lines.extend(_sale_lines(lines))
+    sale.phone, sale.name = phone, name
+    sale.totals, sale.payment = totals, payment
+    sale.balance = Decimal(str(payment.get('later', 0)))
+    sale.edits = [*(sale.edits or []), was]
+    session.commit()
+    return sale
+
+
 def collect(
     session: Session, user: User, sale_id: uuid.UUID, data: CollectionIn, *, at: datetime | None = None
 ) -> Sale:
@@ -280,7 +388,7 @@ def collect(
         return session.get(Sale, existing.sale_id)
     sale = session.get(Sale, sale_id, with_for_update=True, populate_existing=True)
     if sale is None or sale.location_id != user.location_id:
-        raise NotFound('That bill isn’t one of this showroom’s.')
+        raise NotFound(NOT_THIS_SHOWROOMS)
     if sale.balance <= 0:
         raise Conflict(f'{sale.bill_no} is already paid in full.')
     amount = Decimal(str(data.amount)).quantize(PAISA)

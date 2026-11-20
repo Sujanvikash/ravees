@@ -1,10 +1,23 @@
 import uuid
+from datetime import datetime
 
 import pytest
+
+from app.core import security
+from app.modules.auth import service as auth_service
 
 from .conftest import login
 
 CUSTOMER = {'name': 'Priya Raman', 'phone': '9840788950'}
+
+# stands in for the password for editing bills, which the code keeps only as a hash
+EDIT_PASSWORD = 'try-an-edit'
+EDIT_PASSWORD_HASH = security.hash_password(EDIT_PASSWORD)
+
+
+@pytest.fixture
+def edit_password(monkeypatch):
+    monkeypatch.setattr(auth_service, 'EDIT_BILL_PASSWORD_HASH', EDIT_PASSWORD_HASH)
 
 
 def stock_of(client, headers, location, code):
@@ -148,3 +161,97 @@ def test_a_returning_customer_is_found_by_mobile_at_any_showroom(client, chennai
 
     # only an exact number is looked up, never a part of one
     assert client.post('/sales/customer', json={'phone': '91234'}, headers=chennai).json() is None
+
+
+def test_a_discount_on_one_product_has_no_limit_and_a_return_gives_back_what_was_paid(client, chennai):
+    a, b = season_code(client, chennai), season_code(client, chennai, 1)
+    plain = client.post('/sales', json=sale([{'code': a, 'qty': 2}, {'code': b, 'qty': 1}]), headers=chennai).json()
+    a_price = plain['lines'][0]['price']
+
+    # 75% off the first product alone, well past the whole-bill limit; the second is untouched
+    body = sale([{'code': a, 'qty': 2, 'discount': {'kind': 'percent', 'value': 75}}, {'code': b, 'qty': 1}])
+    r = client.post('/sales', json=body, headers=chennai)
+    assert r.status_code == 201, r.text
+    s = r.json()
+    off = round(a_price * 2 * 0.75, 2)
+    assert s['lines'][0]['off'] == off and s['lines'][1]['off'] == 0
+    assert s['totals']['itemDiscount'] == off
+    assert s['totals']['payable'] == round(plain['totals']['payable'] - off)
+    assert s['totals']['savings'] == plain['totals']['savings']
+
+    # one of the two discounted pieces comes back at what it sold for, not its full price
+    back = client.post(
+        '/returns',
+        json={'id': str(uuid.uuid4()), 'sale_id': s['id'], 'lines': [{'code': a, 'qty': 1}]},
+        headers=chennai,
+    )
+    assert back.status_code == 201, back.text
+    assert back.json()['creditNote']['amount'] == round(a_price * 0.25)
+
+
+def edit(client, headers, s, lines, password=EDIT_PASSWORD, method='upi', **payment):
+    body = {'password': password, 'lines': lines, **CUSTOMER, 'payment': {'method': method, **payment}}
+    return client.put(f'/sales/{s["id"]}', json=body, headers=headers)
+
+
+def test_a_bill_is_edited_with_its_password_and_keeps_its_number(client, chennai, admin, edit_password):
+    a, b, c = (season_code(client, chennai, i) for i in range(3))
+    s = client.post(
+        '/sales', json=sale([{'code': a, 'qty': 2}, {'code': b, 'qty': 1}], 'cash', received=100000), headers=chennai
+    ).json()
+    stock = {code: stock_of(client, chennai, 'chennai', code) for code in (a, b, c)}
+
+    assert client.post('/sales/edit-password', json={'password': EDIT_PASSWORD}, headers=chennai).status_code == 204
+    wrong = client.post('/sales/edit-password', json={'password': 'chennai@2026'}, headers=chennai)
+    assert wrong.status_code == 403  # not 401: the counter stays signed in
+    assert edit(client, chennai, s, [{'code': a, 'qty': 1}], password='nope').status_code == 403
+    assert edit(client, admin, s, [{'code': a, 'qty': 1}]).status_code == 403
+
+    # the customer takes one of A instead of two, drops B and adds C with a discount on it; pays by UPI now
+    r = edit(
+        client, chennai, s, [{'code': a, 'qty': 1}, {'code': c, 'qty': 1, 'discount': {'kind': 'amount', 'value': 5}}]
+    )
+    assert r.status_code == 200, r.text
+    e = r.json()
+    assert (e['id'], e['billNo']) == (s['id'], s['billNo'])
+    assert datetime.fromisoformat(e['at']) == datetime.fromisoformat(s['at'])
+    assert [(ln['code'], ln['qty']) for ln in e['lines']] == [(a, 1), (c, 1)]
+    assert e['lines'][1]['off'] == 5 and e['totals']['itemDiscount'] == 5
+    assert e['payment']['method'] == 'upi' and e['payment']['received'] == e['totals']['payable']
+    assert stock_of(client, chennai, 'chennai', a) == stock[a] + 1
+    assert stock_of(client, chennai, 'chennai', b) == stock[b] + 1
+    assert stock_of(client, chennai, 'chennai', c) == stock[c] - 1
+    # what it was is kept
+    assert len(e['edits']) == 1 and e['edits'][0]['by'] == 'chennai'
+    assert e['edits'][0]['totals'] == s['totals'] and e['edits'][0]['payment']['method'] == 'cash'
+    assert [x['id'] for x in client.get('/sales', headers=chennai).json()].count(s['id']) == 1
+
+    # again, now as a credit bill with all of it left to pay
+    again = edit(client, chennai, e, [{'code': a, 'qty': 1}], later=10_000_000)
+    assert again.status_code == 422  # more than the bill
+    again = edit(client, chennai, e, [{'code': a, 'qty': 1}], later=e['lines'][0]['price'])
+    assert again.status_code == 200, again.text
+    assert again.json()['balance'] == round(e['lines'][0]['price']) and len(again.json()['edits']) == 2
+
+
+def test_a_bill_with_a_return_exchange_or_collection_is_not_edited(client, chennai, edit_password):
+    a = season_code(client, chennai)
+    returned = client.post('/sales', json=sale([{'code': a, 'qty': 2}]), headers=chennai).json()
+    client.post(
+        '/returns',
+        json={'id': str(uuid.uuid4()), 'sale_id': returned['id'], 'lines': [{'code': a, 'qty': 1}]},
+        headers=chennai,
+    )
+    r = edit(client, chennai, returned, [{'code': a, 'qty': 1}])
+    assert r.status_code == 409 and 'Return' in r.json()['detail']
+
+    credit = client.post('/sales', json=sale([{'code': a, 'qty': 1}], later=1), headers=chennai).json()
+    client.post(
+        f'/sales/{credit["id"]}/collections',
+        json={'id': str(uuid.uuid4()), 'amount': 1, 'payment': {'method': 'cash', 'received': 1}},
+        headers=chennai,
+    )
+    assert edit(client, chennai, credit, [{'code': a, 'qty': 1}]).status_code == 409
+
+    other = login(client, 'cochin')
+    assert edit(client, other, returned, [{'code': a, 'qty': 1}]).status_code == 404

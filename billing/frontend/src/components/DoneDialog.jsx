@@ -6,8 +6,8 @@ import Dialog from './Dialog.jsx';
 import Kbd from './Kbd.jsx';
 
 /** After the sale: the change (or, after an exchange, the cash refund) to hand back, what is left on credit on a
- *  credit bill, a reprint, and Enter for the next bill. */
-const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => {
+ *  credit bill, a reprint, and Enter for the next bill. `edited`: a saved bill was edited, not a new one made. */
+const DoneDialog = ({ sale, refund = 0, edited = false, onReprint, onNewBill }) => {
   const paper = usePaper();
   return (
   <Dialog id="done" size="max-w-sm">
@@ -16,7 +16,7 @@ const DoneDialog = ({ sale, refund = 0, onReprint, onNewBill }) => {
         <Check size={24} strokeWidth={2.6} />
       </div>
       <h2 id="done-title" className="mt-4 text-lg font-semibold tracking-tight">
-        Sale complete
+        {edited ? 'Bill updated' : 'Sale complete'}
       </h2>
       <div className="mt-0.5 text-[13px] text-ink-3 tabular-nums">
         {inr(sale.totals.payable)} · {methodLabel(sale.payment.method)} · <span className="font-mono text-xs">{sale.billNo}</span>

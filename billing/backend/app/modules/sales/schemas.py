@@ -60,11 +60,17 @@ class LineIn(ApiModel):
 
 
 class DiscountIn(ApiModel):
-    """A manual whole-bill discount: `percent` of the subtotal, or a flat `amount` in rupees. The server works
-    out what it takes off and caps it at the bill total (see sales/bill.py)."""
+    """A manual discount, on the whole bill or on one of its lines: `percent` of it, or a flat `amount` in rupees.
+    The server works out what it takes off and caps it at what it is taken from (see sales/bill.py)."""
 
     kind: Literal['percent', 'amount']
     value: Annotated[float, Field(gt=0, le=100_000_000)]
+
+
+class SaleLineIn(LineIn):
+    """A line of a bill, with an optional manual discount on it alone (any amount, up to the line's own)."""
+
+    discount: DiscountIn | None = None
 
 
 class SplitIn(ApiModel):
@@ -102,12 +108,33 @@ class SaleIn(ApiModel):
     twice (a retry after a dropped connection) is saved once."""
 
     id: uuid.UUID
-    lines: list[LineIn] = Field(min_length=1, max_length=500)
+    lines: list[SaleLineIn] = Field(min_length=1, max_length=500)
     phone: str = Field(max_length=32)
     name: str = Field(max_length=120)
     payment: PaymentIn
     discount: DiscountIn | None = None
     offline: OfflineIn | None = None
+
+    @field_validator('name')
+    @classmethod
+    def _tidy_name(cls, value: str) -> str:
+        return ' '.join(value.split())
+
+
+class EditPasswordIn(ApiModel):
+    password: str = Field(max_length=200)
+
+
+class SaleEditIn(ApiModel):
+    """A bill as it is to be from now on: its lines, customer, discounts and how it is paid, all of it replacing
+    what it was. `password` is the one for editing bills (Settings.edit_bill_password)."""
+
+    password: str = Field(max_length=200)
+    lines: list[SaleLineIn] = Field(min_length=1, max_length=500)
+    phone: str = Field(max_length=32)
+    name: str = Field(max_length=120)
+    payment: PaymentIn
+    discount: DiscountIn | None = None
 
     @field_validator('name')
     @classmethod
@@ -152,6 +179,7 @@ class SaleLineOut(ApiModel):
     mrp: float
     cost: float
     gst: float
+    off: float = 0  # rupees off this line alone (price × qty − off is what it came to)
 
 
 class SaleOut(ApiModel):
@@ -170,6 +198,8 @@ class SaleOut(ApiModel):
     payment: dict
     balance: float  # still owed on a credit bill; 0 once paid off
     collections: list[CollectionOut]  # payments towards the balance after the bill, oldest first
+    # each version an edit replaced, oldest first: {at, by, phone, name, lines, totals, payment}
+    edits: list[dict] = Field(default_factory=list)
 
     @classmethod
     def from_model(cls, sale: Sale) -> 'SaleOut':
@@ -191,6 +221,7 @@ class SaleOut(ApiModel):
                     mrp=float(line.mrp),
                     cost=float(line.cost),
                     gst=float(line.gst),
+                    off=float(line.off or 0),
                 )
                 for line in sale.lines
             ],
@@ -198,4 +229,5 @@ class SaleOut(ApiModel):
             payment=sale.payment,
             balance=float(sale.balance or 0),
             collections=[CollectionOut.from_model(c) for c in sale.collections],
+            edits=sale.edits or [],
         )

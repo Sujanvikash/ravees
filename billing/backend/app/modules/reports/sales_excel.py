@@ -160,7 +160,7 @@ def build(
         row['bills'] += 1
         row['units'] += t['qty']
         row['sales'] += t['payable']
-        row['discount'] += t.get('discount', 0)
+        row['discount'] += t.get('discount', 0) + t.get('itemDiscount', 0)
         row['taxable'] += t['taxable'] if gst else t['payable']
         row['gst'] += t['tax']
         row['cost'] += sum(float(ln.cost) * ln.qty for ln in s.lines)
@@ -218,6 +218,7 @@ def build(
         'Qty',
         'MRP total',
         'Savings',
+        'Item discount',
         'Discount',
         'Taxable',
         'GST',
@@ -234,6 +235,7 @@ def build(
     money = [
         'MRP total',
         'Savings',
+        'Item discount',
         'Discount',
         'Taxable',
         'GST',
@@ -263,6 +265,7 @@ def build(
             t['qty'],
             t['mrpTotal'],
             t['savings'],
+            t.get('itemDiscount', 0),
             t.get('discount', 0),
             t['taxable'],
             t['tax'],
@@ -283,8 +286,20 @@ def build(
     _sheet(wb, 'Bills', header, rows, money, drop)
 
     # Items
-    header = ['Bill no', 'Date', 'Showroom', 'Code', 'Product', 'Qty', 'MRP', 'Price', 'Amount', 'GST %']
-    money = ['MRP', 'Price', 'Amount']
+    header = [
+        'Bill no',
+        'Date',
+        'Showroom',
+        'Code',
+        'Product',
+        'Qty',
+        'MRP',
+        'Price',
+        'Item discount',
+        'Amount',
+        'GST %',
+    ]
+    money = ['MRP', 'Price', 'Item discount', 'Amount']
     if admin:
         header += ['Cost', 'Cost total']
         money += ['Cost', 'Cost total']
@@ -300,7 +315,8 @@ def build(
                 ln.qty,
                 float(ln.mrp),
                 float(ln.price),
-                float(ln.price) * ln.qty,
+                float(ln.off or 0),
+                float(ln.amount),
                 float(ln.gst),
             ]
             if admin:

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,7 +17,10 @@ class Sale(Base):
 
     A credit bill is one the customer didn't pay in full at the counter: payment['later'] is what was left to pay
     then, and `balance` is what is still owed now. It comes down with each collection (SaleCollection) and with
-    goods returned against the bill. updated_at moves whenever the bill changes, so a list refresh picks it up."""
+    goods returned against the bill. updated_at moves whenever the bill changes, so a list refresh picks it up.
+
+    A bill can be edited after it was made (sales/service.py edit_sale): it keeps its number and date, and `edits`
+    keeps each version an edit replaced, oldest first: {at, by, phone, name, lines, totals, payment}."""
 
     __tablename__ = 'sales'
 
@@ -31,6 +34,7 @@ class Sale(Base):
     payment: Mapped[dict] = mapped_column(JSONB)
     created_by: Mapped[str] = mapped_column(String(32))
     balance: Mapped[Decimal] = mapped_column(Money, default=Decimal(0), server_default='0')
+    edits: Mapped[list[dict]] = mapped_column(JSONB, default=list, server_default=text("'[]'::jsonb"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True
@@ -56,6 +60,18 @@ class SaleLine(Base):
     mrp: Mapped[Decimal] = mapped_column(Money)
     cost: Mapped[Decimal] = mapped_column(Money)
     gst: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+    # a manual discount on this line alone, in rupees off its amount (price × qty)
+    off: Mapped[Decimal] = mapped_column(Money, default=Decimal(0), server_default='0')
+
+    @property
+    def amount(self) -> Decimal:
+        """What the line came to: price × qty, less any discount on it."""
+        return self.price * self.qty - (self.off or 0)
+
+    @property
+    def net_price(self) -> Decimal:
+        """What one piece sold for after the line's own discount: what a return of one gives back."""
+        return self.amount / self.qty if self.qty else self.price
 
 
 class SaleCollection(Base):

@@ -1,4 +1,5 @@
 import { LOCATIONS } from '../config.js';
+import { lineAmount } from './bill.js';
 import { findProduct } from './catalogue.js';
 
 /**
@@ -91,7 +92,7 @@ export const summarize = (sales, { gst = true } = {}) => {
     taxable += s.totals.taxable;
     tax += s.totals.tax;
     savings += s.totals.savings;
-    discount += s.totals.discount ?? 0;
+    discount += (s.totals.discount ?? 0) + (s.totals.itemDiscount ?? 0); // the whole bill's and the lines' own
     units += s.totals.qty;
     cost += saleCost(s);
   }
@@ -148,8 +149,8 @@ export const topProducts = (sales, limit = 8, { gst = true } = {}) => {
     for (const l of s.lines) {
       const row = map.get(l.code) ?? { code: l.code, name: l.name, units: 0, total: 0, cost: 0, taxable: 0 };
       row.units += l.qty;
-      row.total += l.price * l.qty;
-      row.taxable += l.price * l.qty * ratio;
+      row.total += lineAmount(l);
+      row.taxable += lineAmount(l) * ratio;
       row.cost += (l.cost ?? 0) * l.qty;
       map.set(l.code, row);
     }
