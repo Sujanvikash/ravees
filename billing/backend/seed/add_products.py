@@ -33,6 +33,7 @@ TAXES = {5.0, 12.0, 18.0, 28.0}
 # where the list itself is wrong, as the client confirmed: code -> {column: value}
 CONFIRMED = {
     'SR26005': {'S.Price': 1440},  # the list has 14.4 (10 Nov 2026)
+    'SR26081': {'Ret.Rate': 225, 'S.Price': 180},  # the list has MRP 80, S.Price 70 (21 Nov 2026; migration 0020)
 }
 
 
