@@ -29,6 +29,11 @@ WRONG_EDIT_BILL_PASSWORD = 'That isn’t the password for editing a bill.'
 EDIT_BILL_PASSWORD_HASH = (
     '$argon2id$v=19$m=65536,t=3,p=4$vOmZI5xYnboeldIM4j+KvA$F8zCqKYnTMvNHDULA0XOC5YQ43kpHTFd+y5VUGRM5Ak'
 )
+WRONG_DISCOUNT_PASSWORD = 'That isn’t the password for giving a discount.'
+# The password for a manual discount on the counter, kept here only as its Argon2 hash. The same on every server.
+DISCOUNT_PASSWORD_HASH = (
+    '$argon2id$v=19$m=65536,t=3,p=4$5dXU9gyieElwypBXZsZvpQ$te29E20AQPpRej91HeS9HyM831NUeE9E0MNDh1y6OgM'
+)
 # The demo logins the switch opens: Chennai Egmore and the admin. The demo's other showrooms stay in its data, with no
 # way in.
 DEMO_LOGINS = ('chennai', 'admin')
@@ -123,11 +128,18 @@ def list_sign_ins(session: Session, since: datetime | None = None) -> Sequence[S
 
 
 def check_password(session: Session, throttle: LoginThrottle, user: User, password: str, client: str) -> None:
-    """Checks the signed-in login's own password again, as the counter does before a manual discount. Wrong
-    passwords count towards the same brake as sign-in. The demo has no passwords, so there it always passes."""
+    """Checks the password for a manual discount, which the counter asks for before one goes on a bill. It is one
+    fixed password (DISCOUNT_PASSWORD_HASH), not the login's own, and wrong ones count towards a brake of their own
+    (TooManyRequests after too many from this login and client), so they never hold up signing in. The demo has no
+    passwords, so there it always passes."""
     if is_demo(session):
         return
-    _checked_user(session, throttle, user.username, password, client)
+    key = f'#discount|{user.username}|{client}'
+    _hold_off(throttle, key, 'giving a discount')
+    if not security.verify_password(DISCOUNT_PASSWORD_HASH, password):
+        throttle.record_failure(key)
+        raise Unauthorized(WRONG_DISCOUNT_PASSWORD)
+    throttle.reset(key)
 
 
 def _hold_off(throttle: LoginThrottle, key: str, what: str) -> None:

@@ -43,8 +43,8 @@ def logout(token: BearerToken, session: DbSession, settings: AppSettings) -> Non
 def check_password(
     body: PasswordCheckIn, request: Request, user: CurrentUser, session: DbSession, throttle: Throttle
 ) -> None:
-    """Checks the signed-in login's own password, without signing in again: the counter asks for the store's
-    password before it lets a manual discount onto a bill."""
+    """Checks the password for a manual discount (one fixed password, not the login's own): the counter asks for it
+    before it lets a manual discount onto a bill."""
     client = request.client.host if request.client else 'unknown'
     service.check_password(session, throttle, user, body.password, client)
 

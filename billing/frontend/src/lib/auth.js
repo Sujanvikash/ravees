@@ -27,7 +27,7 @@ export const signIn = async (username, password) => {
   return session;
 };
 
-/** Checks the signed-in login's own password again (the counter asks for it before a manual discount). Resolves
+/** Checks the discount password (one fixed password, not the login's own) before a manual discount. Resolves
  * when it is right; throws an ApiError with a readable message when it is wrong or there were too many tries. */
 export const checkPassword = (password) => api('/auth/check-password', { method: 'POST', body: { password } });
 

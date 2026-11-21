@@ -49,7 +49,7 @@ const linesOut = (lines) => lines.map((l) => ({ code: l.code, qty: l.qty, ...(l.
  * items, discounts and customer, and Collect saves the changes over it, with a fresh payment for the new total. It
  * keeps its number and date.
  *
- * Manual discounts (the whole bill's and each line's own) ask for the store's password once a bill: after that the
+ * Manual discounts (the whole bill's and each line's own) ask for the discount password once a bill: after that the
  * bill stays unlocked until it is done, cleared, held or swapped for another. Editing a bill unlocks them with it.
  */
 const Counter = ({ location, intent, onMenu, onNavigate }) => {
@@ -59,7 +59,7 @@ const Counter = ({ location, intent, onMenu, onNavigate }) => {
   const bill = useBill(location);
   const { recordSale, recordReturn, editSale, findBill, stockOf, sales, quotes, settings, offline } = useStore();
   const editing = bill.editing; // the saved bill being edited, if any (useBill)
-  const [unlocked, setUnlocked] = useState(false); // the store's password was given for this bill's discounts
+  const [unlocked, setUnlocked] = useState(false); // the discount password was given for this bill's discounts
   if (unlocked && !bill.items.length) setUnlocked(false); // a new bill asks again
   const discountsOpen = unlocked || Boolean(editing);
   const [held, setHeld] = useLocalStorage(`billing-held-${session?.demo ? 'demo-' : ''}${location}`, []);

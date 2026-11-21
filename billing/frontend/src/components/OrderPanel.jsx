@@ -70,7 +70,7 @@ const CustomerField = ({ id, label, Icon, error, inputRef, required = true, chil
  * The manual whole-bill discount: a value with a Percent / Amount toggle (a flat ₹ amount by default). Typing
  * updates the bill live; the discount is kept on the bill (so it survives a refresh) and clears when the bill
  * does. `off` is the rupees it took off. The toggle keeps its own `kind` so it still works with the field empty.
- * The field stays locked until the store's password is entered; the counter keeps it `unlocked` for the rest of the
+ * The field stays locked until the discount password is entered; the counter keeps it `unlocked` for the rest of the
  * bill (this and every line's discount), and locks it again for the next one.
  * A discount already on the bill (recalled, or after a refresh) still applies; changing it asks again.
  * It is held to the admin's limit, `cap` percent of the bill's selling subtotal `gross` (Settings, 10% unless

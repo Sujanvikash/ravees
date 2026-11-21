@@ -14,7 +14,7 @@ const offLabel = (line) => `−${inr(line.off)}${line.discount?.kind === 'percen
 
 /**
  * A manual discount on one line alone, opened under it: ₹ off the line (all its pieces together) or % off it, with
- * no limit but the line's own amount. It asks for the store's password first, unless the bill is already
+ * no limit but the line's own amount. It asks for the discount password first, unless the bill is already
  * `unlocked` (once a bill, for this and the whole-bill discount).
  */
 const LineDiscount = ({ line, unlocked, onUnlock, onDiscount, onDone }) => {
@@ -106,7 +106,7 @@ const LineDiscount = ({ line, unlocked, onUnlock, onDiscount, onDone }) => {
 /**
  * The lines of the current bill. It fills the space left in the bill area and scrolls inside it, with
  * the column labels pinned. The last scanned line is highlighted. With `onDiscount`, each line can take a manual
- * discount of its own (LineDiscount), behind the store's password unless the bill is `unlocked`.
+ * discount of its own (LineDiscount), behind the discount password unless the bill is `unlocked`.
  */
 const BillTable = ({ lines, lastCode, onQty, inStock, shortcuts = true, pictures = false, onDiscount, unlocked = false, onUnlock }) => {
   const [discounting, setDiscounting] = useState(null); // the code whose discount is open

@@ -1,6 +1,19 @@
+import pytest
+
+from app.core import security
 from app.core.config import get_settings
+from app.modules.auth import service as auth_service
 
 from .conftest import login
+
+# stands in for the password for a manual discount, which the code keeps only as a hash
+DISCOUNT_PASSWORD = 'try-a-discount'
+DISCOUNT_PASSWORD_HASH = security.hash_password(DISCOUNT_PASSWORD)
+
+
+@pytest.fixture
+def discount_password(monkeypatch):
+    monkeypatch.setattr(auth_service, 'DISCOUNT_PASSWORD_HASH', DISCOUNT_PASSWORD_HASH)
 
 
 def test_health(client):
@@ -48,19 +61,26 @@ def test_too_many_wrong_passwords(client):
     login(client, 'cochin')  # other logins are not affected
 
 
-def test_check_password_takes_the_signed_in_logins_own_password(client, chennai):
-    assert client.post('/auth/check-password', json={'password': 'chennai@2026'}, headers=chennai).status_code == 204
-    wrong = client.post('/auth/check-password', json={'password': 'cochin@2026'}, headers=chennai)
-    assert wrong.status_code == 401 and wrong.json() == {'detail': 'That password is not right for this login.'}
+def test_check_password_takes_the_discount_password_not_the_logins_own(client, chennai, discount_password):
+    ok = {'password': DISCOUNT_PASSWORD}
+    assert client.post('/auth/check-password', json=ok, headers=chennai).status_code == 204
+    own = client.post('/auth/check-password', json={'password': 'chennai@2026'}, headers=chennai)
+    assert own.status_code == 401 and own.json() == {'detail': 'That isn’t the password for giving a discount.'}
     assert client.get('/auth/me', headers=chennai).status_code == 200  # a wrong password doesn't sign the store out
-    assert client.post('/auth/check-password', json={'password': 'chennai@2026'}).status_code == 401
+    assert client.post('/auth/check-password', json=ok).status_code == 401
 
 
-def test_check_password_shares_the_sign_in_brake(client, chennai):
+def test_the_real_discount_password_is_kept_only_as_a_hash():
+    assert auth_service.DISCOUNT_PASSWORD_HASH.startswith('$argon2id$')
+
+
+def test_check_password_has_a_brake_of_its_own(client, chennai, discount_password):
     for _ in range(get_settings().login_max_failures):
         assert client.post('/auth/check-password', json={'password': 'nope'}, headers=chennai).status_code == 401
-    assert client.post('/auth/check-password', json={'password': 'chennai@2026'}, headers=chennai).status_code == 429
-    assert client.post('/auth/login', json={'username': 'chennai', 'password': 'chennai@2026'}).status_code == 429
+    ok = {'password': DISCOUNT_PASSWORD}
+    assert client.post('/auth/check-password', json=ok, headers=chennai).status_code == 429
+    # wrong discount passwords never hold up signing in
+    assert client.post('/auth/login', json={'username': 'chennai', 'password': 'chennai@2026'}).status_code == 200
 
 
 def sign_in_of(client, admin, token):

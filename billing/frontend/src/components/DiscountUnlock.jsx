@@ -3,16 +3,16 @@ import { LockKeyhole } from 'lucide-react';
 import { checkPassword } from '../lib/auth.js';
 
 /**
- * The store's login password, asked for before a manual discount can be typed or changed, so only someone who
- * knows it (the manager, not every counter hand) can give one. The server checks it; `onUnlock` runs when it's right.
+ * The discount password (one fixed password, not the store's login password), asked for before a manual discount
+ * can be typed or changed, so only someone who knows it (the manager, not every counter hand) can give one. The server checks it; `onUnlock` runs when it's right.
  * Once is enough for a bill: the counter keeps it unlocked, for the whole-bill discount and every line's, until the
- * bill is done. `check` stands in for the store's password check (editing a bill asks for its own password).
+ * bill is done. `check` stands in for the discount password check (editing a bill asks for its own password).
  */
 const DiscountUnlock = ({
   id = 'discount-password',
-  label = 'Enter the store’s login password to give a discount',
+  label = 'Enter the discount password to give a discount',
   check = checkPassword,
-  autoComplete = 'current-password',
+  autoComplete = 'off',
   onUnlock,
   onRemove,
 }) => {
