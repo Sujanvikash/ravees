@@ -32,7 +32,7 @@ EDIT_BILL_PASSWORD_HASH = (
 WRONG_DISCOUNT_PASSWORD = 'That isn’t the password for giving a discount.'
 # The password for a manual discount on the counter, kept here only as its Argon2 hash. The same on every server.
 DISCOUNT_PASSWORD_HASH = (
-    '$argon2id$v=19$m=65536,t=3,p=4$5dXU9gyieElwypBXZsZvpQ$te29E20AQPpRej91HeS9HyM831NUeE9E0MNDh1y6OgM'
+    '$argon2id$v=19$m=65536,t=3,p=4$TZexUQ37ce8SykvSoGhktA$DR4vn2MjFUjT0WoGaEm/HcqHOqWW6l8O8cOuQA6WSt8'
 )
 # The demo logins the switch opens: Chennai Egmore and the admin. The demo's other showrooms stay in its data, with no
 # way in.
