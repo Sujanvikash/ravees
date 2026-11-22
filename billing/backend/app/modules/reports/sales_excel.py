@@ -112,6 +112,19 @@ def _paid(p: dict) -> tuple[float, float, float]:
     return 0, 0, 0
 
 
+def _paid_by(p: dict) -> str:
+    """How a payment was made: 'Cash', or for a split its parts, 'Split (Cash 500.00 + UPI 1,200.00)'."""
+    method = p.get('method')
+    label = METHOD.get(method, method)
+    split = p.get('split') or {}
+    if method == 'split':
+        names = (('cash', 'Cash'), ('upi', 'UPI'), ('card', 'Card'))
+        parts = [f'{name} {split[k]:,.2f}' for k, name in names if split.get(k, 0) > 0]
+        if parts:
+            return f'{label} ({" + ".join(parts)})'
+    return label
+
+
 def build(
     session: Session, user: User, *, location: str | None, since: date | None, until: date | None
 ) -> tuple[bytes, str]:
@@ -271,7 +284,7 @@ def build(
             t['tax'],
             t['roundOff'],
             t['payable'],
-            METHOD.get(p.get('method'), p.get('method')),
+            _paid_by(p),
             cash,
             upi,
             card,
@@ -386,7 +399,7 @@ def build(
                 s.name,
                 s.phone,
                 float(c.amount),
-                METHOD.get(c.payment.get('method'), c.payment.get('method')),
+                _paid_by(c.payment),
                 cash,
                 upi,
                 card,

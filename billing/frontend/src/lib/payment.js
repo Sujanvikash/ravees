@@ -1,4 +1,5 @@
 import { Banknote, CreditCard, QrCode, Split } from 'lucide-react';
+import { inr } from './money.js';
 
 export const METHODS = [
   { id: 'cash', label: 'Cash', Icon: Banknote },
@@ -12,6 +13,25 @@ export const METHODS = [
 const OTHER_LABELS = { credit: 'Exchange credit', later: 'On credit' };
 
 export const methodLabel = (id) => METHODS.find((m) => m.id === id)?.label ?? OTHER_LABELS[id] ?? id;
+
+/** What a split payment was made up of, e.g. "Cash ₹500.00 · UPI ₹1,200.00"; empty for any other payment. */
+export const splitParts = (payment) =>
+  payment?.method === 'split' && payment.split
+    ? [
+        ['cash', 'Cash'],
+        ['upi', 'UPI'],
+        ['card', 'Card'],
+      ]
+        .filter(([k]) => (payment.split[k] ?? 0) > 0)
+        .map(([k, label]) => `${label} ${inr(payment.split[k])}`)
+        .join(' · ')
+    : '';
+
+/** A payment's method with a split's parts after it: "Split (Cash ₹500.00 · UPI ₹1,200.00)". */
+export const methodDetail = (payment) => {
+  const parts = splitParts(payment);
+  return parts ? `${methodLabel(payment.method)} (${parts})` : methodLabel(payment?.method);
+};
 
 /**
  * Credit bills: the customer pays part (or none) of a bill at the counter and the rest later. payment.later is

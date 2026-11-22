@@ -12,7 +12,7 @@ import { useStore } from '../context/StoreContext.jsx';
 import { usePages } from '../hooks/usePages.js';
 import { formatMobile, phoneDigits } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
-import { AGE_BANDS, ageBand, daysSince, isCreditBill, methodLabel, paidSoFar } from '../lib/payment.js';
+import { AGE_BANDS, ageBand, daysSince, isCreditBill, methodLabel, paidSoFar, splitParts } from '../lib/payment.js';
 import { periodStart } from '../lib/reports.js';
 import { printAlone } from '../lib/print.js';
 
@@ -371,7 +371,10 @@ const Credit = ({ session, onMenu, onNavigate }) => {
                           {admin && <td className="py-2 pr-3 text-ink-2">{locationById(c.sale.location)?.label ?? '—'}</td>}
                           <td className="py-2 pr-3 font-mono text-xs">{c.sale.billNo}</td>
                           <td className="py-2 pr-3">{c.sale.name || (c.sale.phone ? formatMobile(c.sale.phone) : 'Walk-in')}</td>
-                          <td className="py-2 pr-3 text-ink-2">{methodLabel(c.payment.method)}</td>
+                          <td className="py-2 pr-3 text-ink-2">
+                            {methodLabel(c.payment.method)}
+                            {splitParts(c.payment) && <div className="text-[11px] whitespace-nowrap text-ink-3 tabular-nums">{splitParts(c.payment)}</div>}
+                          </td>
                           <td className="py-2 pr-3 text-right font-semibold">{inr(c.amount)}</td>
                           <td className="py-2 pr-3 text-right text-ink-2">{c.payment.after > 0 ? inr(c.payment.after) : 'Paid in full'}</td>
                           <td className="py-2 pr-4">

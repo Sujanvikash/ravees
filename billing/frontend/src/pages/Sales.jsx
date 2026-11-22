@@ -17,7 +17,7 @@ import { api } from '../lib/api.js';
 import { lineAmount } from '../lib/bill.js';
 import { formatMobile } from '../lib/customer.js';
 import { inr, inrWhole } from '../lib/money.js';
-import { isCreditBill, methodLabel, paidAtCounter } from '../lib/payment.js';
+import { isCreditBill, methodDetail, methodLabel, paidAtCounter, splitParts } from '../lib/payment.js';
 import { printAlone } from '../lib/print.js';
 import { filterSales, periodStart, returnsByLocation, returnsBySale, returnStatus, saleCost, summarize } from '../lib/reports.js';
 import { newId } from '../lib/uid.js';
@@ -459,6 +459,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                             <td className="py-1.5 pr-3 text-right">{s.totals.qty}</td>
                             <td className="py-1.5 pr-3 text-ink-2">
                               {methodLabel(s.payment.method)}
+                              {splitParts(s.payment) && <div className="text-[11px] whitespace-nowrap text-ink-3 tabular-nums">{splitParts(s.payment)}</div>}
                               {s.balance > 0 ? (
                                 <div className="text-[11px] font-medium text-warn-ink">{inr(s.balance)} due</div>
                               ) : (
@@ -515,7 +516,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                       {s.edits.at(-1).by}
                                       <span className="text-ink-3">
                                         · first billed at {inr(s.edits[0].totals.payable)}
-                                        {s.edits[0].payment?.method ? `, ${methodLabel(s.edits[0].payment.method)}` : ''}
+                                        {s.edits[0].payment?.method ? `, ${methodDetail(s.edits[0].payment)}` : ''}
                                       </span>
                                     </div>
                                   )}
@@ -544,7 +545,7 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                         <div key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-line-soft pt-1.5 text-ink-2">
                                           <span className="font-mono">{c.receiptNo}</span>
                                           <span className="text-ink-3">{when.format(new Date(c.at))}</span>
-                                          <span>{methodLabel(c.payment.method)}</span>
+                                          <span>{methodDetail(c.payment)}</span>
                                           <span className="font-medium text-ink">{inr(c.amount)}</span>
                                           {c.payment.after !== undefined && <span className="text-ink-3">{c.payment.after > 0 ? `${inr(c.payment.after)} left after` : 'cleared the bill'}</span>}
                                           <button

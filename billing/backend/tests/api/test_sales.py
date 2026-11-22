@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
+from io import BytesIO
 
 import pytest
+from openpyxl import load_workbook
 
 from app.core import security
 from app.modules.auth import service as auth_service
@@ -140,6 +142,15 @@ def test_split_and_card(client, chennai):
     )
     assert three.status_code == 201, three.text
     assert three.json()['payment']['split'] == {'cash': 50, 'upi': 50, 'card': payable - 100}
+
+    # the sales report's Paid by spells out what each split was made of
+    ws = load_workbook(BytesIO(client.get('/reports/sales.xlsx', headers=chennai).content))['Bills']
+    paid_by = {
+        row[0]: row[[c.value for c in ws[1]].index('Paid by')] for row in ws.iter_rows(min_row=2, values_only=True)
+    }
+    assert paid_by[first.json()['billNo']] == 'Card'
+    assert paid_by[split.json()['billNo']] == f'Split (Cash 100.00 + UPI {payable - 100:,.2f})'
+    assert paid_by[three.json()['billNo']] == f'Split (Cash 50.00 + UPI 50.00 + Card {payable - 100:,.2f})'
 
 
 def test_a_returning_customer_is_found_by_mobile_at_any_showroom(client, chennai):
