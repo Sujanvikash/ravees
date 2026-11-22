@@ -17,6 +17,7 @@ EXPECTED_ROUTES = {
     ('GET', '/api/v1/products'),
     ('POST', '/api/v1/products'),
     ('PATCH', '/api/v1/products/{code}'),
+    ('PUT', '/api/v1/products/{code}'),
     ('GET', '/api/v1/products/images'),
     ('PUT', '/api/v1/products/{code}/image'),
     ('DELETE', '/api/v1/products/{code}/image'),

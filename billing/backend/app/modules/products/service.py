@@ -13,7 +13,7 @@ from app.modules.users.models import User
 from . import repository
 from .importer import ImportedCatalogue
 from .models import Product
-from .schemas import NewProductIn
+from .schemas import NewProductIn, ProductEditIn
 
 GST_RATES = frozenset(Decimal(r) for r in (0, 5, 12, 18, 28))
 
@@ -47,6 +47,38 @@ def set_image(session: Session, code: str, image: str | None) -> Product:
     product.image = image
     product.has_image = image is not None
     session.commit()
+    return product
+
+
+def edit_product(session: Session, code: str, data: ProductEditIn) -> Product:
+    """Admin: changes a product's details. Bills, quotations and invoices already made keep the names and prices
+    they were made with; anything made from now on uses the new ones."""
+    product = repository.get(session, code.strip().upper())
+    if not product:
+        raise NotFound(f'No product with code {code}.')
+    offer = data.offer if data.offer is not None else data.mrp
+    if offer > data.mrp:
+        raise InvalidInput('The offer price can’t be above the MRP.')
+    # an odd rate the Excel brought in may stay as it is; a new one must be a real GST rate
+    if data.gst not in GST_RATES and data.gst != product.gst:
+        raise InvalidInput('GST must be 0, 5, 12, 18 or 28%.')
+    barcode = data.barcode.replace(' ', '')
+    if barcode and barcode != product.barcode:
+        taken = repository.by_barcode(session, barcode)
+        if taken and taken.code != product.code:
+            raise InvalidInput(f'That barcode is already on {taken.code} · {taken.name}.')
+
+    product.name = data.name
+    product.type = data.type or 'Product'
+    product.dept = data.dept
+    product.mrp = data.mrp
+    product.offer = offer
+    product.cost = data.cost
+    product.gst = data.gst
+    product.hsn = data.hsn
+    product.barcode = barcode
+    session.commit()
+    session.refresh(product)
     return product
 
 

@@ -87,6 +87,20 @@ export const setInSeason = async (code, on) => {
   }
 };
 
+/** Admin: saves a product's details ({ name, type, dept, mrp, offer, cost, gst, hsn, barcode }; the code stays),
+ *  then updates the list here with what the server kept. Showroom counters get the change when they next load
+ *  the catalogue (signing in, or reloading the page). */
+export const editProduct = async (code, fields) => {
+  const product = byKey.get(code.toUpperCase());
+  if (!product) throw new Error(`No product with code ${code}.`);
+  const updated = await api(`/products/${encodeURIComponent(product.code)}`, { method: 'PUT', body: fields });
+  if (byKey.get(product.barcode.toUpperCase()) === product) byKey.delete(product.barcode.toUpperCase());
+  Object.assign(product, updated);
+  index(product);
+  changed();
+  return product;
+};
+
 /** A picture file → a small JPEG as a data: URL (at most 480px on its longest side), so a quotation carries it
  *  without weight. Transparent areas turn white. */
 const shrink = async (file) => {

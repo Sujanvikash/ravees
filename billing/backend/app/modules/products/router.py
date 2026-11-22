@@ -6,7 +6,7 @@ from app.core.dependencies import DbSession
 from app.modules.auth.dependencies import AdminUser, CurrentUser
 
 from . import service
-from .schemas import CatalogueOut, ImageIn, NewProductIn, ProductOut, SeasonIn
+from .schemas import CatalogueOut, ImageIn, NewProductIn, ProductEditIn, ProductOut, SeasonIn
 
 router = APIRouter(prefix='/products', tags=['products'])
 
@@ -22,6 +22,12 @@ def list_products(_: CurrentUser, session: DbSession) -> CatalogueOut:
 def set_in_season(code: str, body: SeasonIn, _: AdminUser, session: DbSession) -> ProductOut:
     """Admin: puts a product in this season, or takes it out."""
     return ProductOut.from_model(service.set_in_season(session, code, body.in_season))
+
+
+@router.put('/{code}')
+def edit_product(code: str, body: ProductEditIn, _: AdminUser, session: DbSession) -> ProductOut:
+    """Admin: changes a product's name, type, category, MRP, offer price, cost, GST, HSN and barcode."""
+    return ProductOut.from_model(service.edit_product(session, code, body))
 
 
 @router.post('', status_code=status.HTTP_201_CREATED)

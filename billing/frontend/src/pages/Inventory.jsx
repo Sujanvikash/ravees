@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Boxes, CircleCheck, FileSpreadsheet, ImagePlus, PackagePlus, Tag, Undo2 } from 'lucide-react';
+import { Boxes, CircleCheck, FileSpreadsheet, ImagePlus, PackagePlus, Pencil, Tag, Undo2 } from 'lucide-react';
 import AddOwnStockDialog from '../components/AddOwnStockDialog.jsx';
+import EditProductDialog from '../components/EditProductDialog.jsx';
 import { SearchBox, Segmented } from '../components/Filters.jsx';
 import ImportStockDialog from '../components/ImportStockDialog.jsx';
 import NewProductDialog from '../components/NewProductDialog.jsx';
@@ -51,6 +52,7 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
   const { stock, sales, orders, imports, returns, stockReturns } = useStore();
   const [addingTo, setAddingTo] = useState(null); // one of this showroom's own products, to add units of
+  const [editing, setEditing] = useState(null); // admin: the product whose details are open to change
   const [location, setLocation] = useState(admin ? null : session.location);
   const incoming = stockReturns.filter((r) => r.status === 'sent' && (!location || r.location === location));
   const [tab, setTab] = useState(intent?.tab ?? 'stock');
@@ -337,6 +339,19 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
                               p.inSeason && <span className="ml-1.5 text-evergreen-800">· Season {SEASON}</span>
                             )}
                             {admin && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditing(p);
+                                  setFlash(null);
+                                }}
+                                aria-label={`Edit ${p.code} · ${p.name}`}
+                                className="ml-2 inline-flex items-center gap-1 font-semibold text-evergreen-800 hover:underline"
+                              >
+                                <Pencil size={12} aria-hidden="true" /> Edit
+                              </button>
+                            )}
+                            {admin && (
                               <label
                                 className="ml-2 inline-flex cursor-pointer items-center gap-1 font-semibold text-evergreen-800 hover:underline"
                                 title="The picture printed on quotations"
@@ -421,6 +436,16 @@ const Inventory = ({ session, intent, onMenu, onNavigate }) => {
 
       {adding && <NewProductDialog session={session} defaultLocation={location} onClose={() => setAdding(false)} onDone={added} />}
       {importing && <ImportStockDialog onClose={() => setImporting(false)} onDone={imported} />}
+      {editing && (
+        <EditProductDialog
+          product={editing}
+          onClose={() => setEditing(null)}
+          onDone={(product) => {
+            setEditing(null);
+            setFlash({ text: `${product.code} · ${product.name} saved. Showroom counters get the change when they next sign in or reload.`, history: false });
+          }}
+        />
+      )}
       {addingTo && (
         <AddOwnStockDialog
           product={addingTo}

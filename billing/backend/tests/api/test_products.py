@@ -1,7 +1,7 @@
 import uuid
 
 from .conftest import login
-from .test_sales import season_code, stock_of
+from .test_sales import sale, season_code, stock_of
 
 PRODUCT_FIELDS = {
     'code',
@@ -138,3 +138,60 @@ def test_product_picture(client, admin, chennai):
     }
     assert client.delete('/products/TA275/image', headers=admin).json()['hasImage'] is False
     assert client.get('/products/images', params={'codes': ['TA275']}, headers=chennai).json() == {}
+
+
+def test_the_admin_edits_every_detail_of_a_product(client, admin, chennai):
+    own = client.post('/products', json={**WREATH, 'barcode': '8901234500011'}, headers=chennai).json()
+    code = own['code']
+    billed = client.post('/sales', json=sale([{'code': code, 'qty': 1}], 'upi', received=999), headers=chennai)
+    assert billed.status_code == 201, billed.text
+
+    edit = {
+        'name': 'Handmade  wreath 14 inch',
+        'type': 'Box',
+        'dept': 'Wreaths',
+        'mrp': 1500,
+        'offer': 1250,
+        'cost': 520.5,
+        'gst': 12,
+        'hsn': '6702',
+        'barcode': '8901234500028',
+    }
+    assert client.put(f'/products/{code}', json=edit, headers=chennai).status_code == 403
+    assert client.put(f'/products/{code}', json=edit).status_code == 401
+    r = client.put(f'/products/{code.lower()}', json=edit, headers=admin)
+    assert r.status_code == 200, r.text
+    p = r.json()
+    assert set(p) == PRODUCT_FIELDS and p['code'] == code and p['shop']['location'] == 'chennai'
+    assert (p['name'], p['type'], p['dept'], p['mrp'], p['offer'], p['cost'], p['gst'], p['hsn'], p['barcode']) == (
+        'Handmade wreath 14 inch', 'Box', 'Wreaths', 1500, 1250, 520.5, 12, '6702', '8901234500028'
+    )  # fmt: skip
+    listed = next(x for x in client.get('/products', headers=chennai).json()['products'] if x['code'] == code)
+    assert listed == p
+
+    # bills made before keep their price; new ones use the new one
+    old = next(s for s in client.get('/sales', headers=admin).json() if s['id'] == billed.json()['id'])
+    assert old['lines'][0]['price'] == 999
+    again = client.post('/sales', json=sale([{'code': code, 'qty': 1}], 'upi', received=1250), headers=chennai)
+    assert again.status_code == 201, again.text
+    assert again.json()['lines'][0]['price'] == 1250
+
+    # no offer price sells at MRP
+    assert client.put(f'/products/{code}', json={**edit, 'offer': None}, headers=admin).json()['offer'] == 1500
+
+    def refused(body, product=code):
+        r = client.put(f'/products/{product}', json=body, headers=admin)
+        assert r.status_code == 422, r.text
+        return r.json()['detail']
+
+    assert refused({**edit, 'offer': 1600}) == 'The offer price can’t be above the MRP.'
+    assert refused({**edit, 'gst': 7}) == 'GST must be 0, 5, 12, 18 or 28%.'
+    other = client.post('/products', json={**WREATH, 'barcode': '8901234500035'}, headers=chennai).json()
+    assert (
+        refused({**edit, 'barcode': '8901234500035'})
+        == f'That barcode is already on {other["code"]} · {other["name"]}.'
+    )
+    for change in ({'mrp': 0}, {'offer': 0}, {'cost': -1}, {'name': 'x'}):
+        assert isinstance(refused({**edit, **change}), list)  # FastAPI's field errors
+    r = client.put('/products/NOPE1', json=edit, headers=admin)
+    assert r.status_code == 404 and r.json() == {'detail': 'No product with code NOPE1.'}

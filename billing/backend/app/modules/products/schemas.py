@@ -43,6 +43,28 @@ class NewProductIn(ApiModel):
         return ' '.join(value.split()) if isinstance(value, str) else value
 
 
+class ProductEditIn(ApiModel):
+    """Admin: every detail of a product, as the Edit product form sends it. The code stays: stock, bills, orders
+    and invoices all point at it. Category may be empty, as some of the Excel's products have none."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=2, max_length=200)
+    type: str = Field(default='Product', max_length=32)
+    dept: str = Field(default='', max_length=64)
+    mrp: MoneyIn = Field(gt=0)
+    offer: MoneyIn | None = Field(default=None, gt=0)  # the MRP if left out
+    cost: MoneyIn = Field(default=Decimal(0), ge=0)
+    gst: Decimal
+    hsn: str = Field(default='', max_length=16)
+    barcode: str = Field(default='', max_length=64)
+
+    @field_validator('name', 'dept', 'type', mode='before')
+    @classmethod
+    def _single_spaces(cls, value: object) -> object:
+        return ' '.join(value.split()) if isinstance(value, str) else value
+
+
 class ShopOut(ApiModel):
     location: str
     by: str
