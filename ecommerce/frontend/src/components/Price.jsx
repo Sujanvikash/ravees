@@ -1,5 +1,5 @@
 import { formatPrice } from '../lib/format.js';
-import { showsMrp } from '../lib/catalogue.js';
+import { showsMrp, showsPrice } from '../lib/catalogue.js';
 
 const TONES = {
   // gold on the dark pages
@@ -16,13 +16,14 @@ const SIZES = {
 
 /**
  * A product's price: "₹12,500" with the MRP struck through beside it when that is higher ("Price in store" for
- * a store exclusive without one).
+ * a store exclusive without one). Nothing for a product out of stock (showsPrice).
  *
  * quantity   multiplies the price and MRP (a cart line's amount)
  * tone       "dark" (gold, on the dark pages) | "cream" (ink, on the cream product cards)
  * size       "sm" | "md" | "lg"
  */
 const Price = ({ product, quantity = 1, tone = 'dark', size = 'md', className = '' }) => {
+  if (!showsPrice(product)) return null;
   const look = TONES[tone] ?? TONES.dark;
   const scale = SIZES[size] ?? SIZES.md;
 

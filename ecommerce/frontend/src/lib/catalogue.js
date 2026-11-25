@@ -11,6 +11,10 @@ export const showsMrp = (product) => product?.price != null && product?.mrp != n
 /** Whether the product can go in the cart: sold online (not a store exclusive) and in stock. */
 export const canBuy = (product) => Boolean(product?.inStock && !product.storeOnly);
 
+/** Whether the product's price is shown: not when it is out of stock, as it can't be bought (a store exclusive
+ *  keeps its price, or "Price in store"). */
+export const showsPrice = (product) => Boolean(product?.inStock || product?.storeOnly);
+
 /** The product's badge: "Store Exclusive", "In Stock" or "Out of Stock", with its Badge variant. */
 export const stockBadge = (product) =>
   product.storeOnly

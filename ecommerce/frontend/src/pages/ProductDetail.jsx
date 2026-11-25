@@ -15,7 +15,7 @@ import Price from '../components/Price.jsx';
 import { featuresFor } from '../data/productFeatures.js';
 import { withoutSizeSpec } from '../lib/productSpecs.js';
 import { formatPrice } from '../lib/format.js';
-import { canBuy, stockBadge } from '../lib/catalogue.js';
+import { canBuy, showsPrice, stockBadge } from '../lib/catalogue.js';
 import { useStorefront } from '../context/StorefrontContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
@@ -60,7 +60,7 @@ const specRows = (product) =>
       </Link>,
     ],
     ['Orders', 'Single pieces, bulk & projects'],
-    ['Price', product.price == null ? 'Ask in store' : `${formatPrice(product.price)} incl. GST`],
+    showsPrice(product) && ['Price', product.price == null ? 'Ask in store' : `${formatPrice(product.price)} incl. GST`],
   ].filter(Boolean);
 
 /**
@@ -187,14 +187,16 @@ const ProductDetail = () => {
               ))}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Price product={product} size="lg" />
-              <span className="text-[0.76rem] text-text-muted">
-                {product.storeOnly
-                  ? 'Exclusive to our stores: available in the showrooms, not online'
-                  : 'Inclusive of GST · pay securely online'}
-              </span>
-            </div>
+            {showsPrice(product) && (
+              <div className="flex flex-col gap-1.5">
+                <Price product={product} size="lg" />
+                <span className="text-[0.76rem] text-text-muted">
+                  {product.storeOnly
+                    ? 'Exclusive to our stores: available in the showrooms, not online'
+                    : 'Inclusive of GST · pay securely online'}
+                </span>
+              </div>
+            )}
 
             {product.sizes.length > 0 && (
               <div className="flex flex-col gap-2">
