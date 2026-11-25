@@ -36,10 +36,12 @@ const SIANNA = { name: 'SIANNA COLLECTION', phone: '9751665555', gstin: '33AFUPE
 const DETAILS = {
   chennai: {
     ...SIANNA,
+    phone: '73388 20077',
     address: ['New No. 54, Old No. 18, Casa Major Road,', 'Egmore, Chennai – 600 008', '(Opp. Don Bosco School Gate 3)'],
   },
   palavakkam: {
     ...SIANNA,
+    phone: '73399 20077',
     address: ['# 1/134, First Floor, East Coast Road,', 'Palavakkam, Chennai – 600 041', '(Above Sree Venkateswara Traders,', 'below One 2 Lifestyle Fitness Studio)'],
   },
   cochin: {
@@ -49,7 +51,7 @@ const DETAILS = {
       'Kacheripady, Ernakulam North P.O., PIN – 682 018',
       '(Adjacent to Excise Zonal Headquarters & near Seematti Silks)',
     ],
-    phone: '98408 49124 / 98956 41663',
+    phone: '86956 68005',
     gstin: '32ASOPJ1135B1ZC',
     state: '32',
   },
