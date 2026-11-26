@@ -6,20 +6,27 @@ import pytest
 from openpyxl import load_workbook
 
 from app.core import security
-from app.modules.auth import service as auth_service
+from app.modules.system import passwords
 
 from .conftest import login
 
 CUSTOMER = {'name': 'Priya Raman', 'phone': '9840788950'}
 
-# stands in for the password for editing bills, which the code keeps only as a hash
+# stand in for the built-in passwords for editing and deleting bills, which the code keeps only as hashes
 EDIT_PASSWORD = 'try-an-edit'
 EDIT_PASSWORD_HASH = security.hash_password(EDIT_PASSWORD)
+DELETE_PASSWORD = 'try-a-delete'
+DELETE_PASSWORD_HASH = security.hash_password(DELETE_PASSWORD)
 
 
 @pytest.fixture
 def edit_password(monkeypatch):
-    monkeypatch.setattr(auth_service, 'EDIT_BILL_PASSWORD_HASH', EDIT_PASSWORD_HASH)
+    monkeypatch.setitem(passwords.BUILT_IN, 'edit_bill', EDIT_PASSWORD_HASH)
+
+
+@pytest.fixture
+def delete_password(monkeypatch):
+    monkeypatch.setitem(passwords.BUILT_IN, 'delete_bill', DELETE_PASSWORD_HASH)
 
 
 def stock_of(client, headers, location, code):
@@ -266,3 +273,68 @@ def test_a_bill_with_a_return_exchange_or_collection_is_not_edited(client, chenn
 
     other = login(client, 'cochin')
     assert edit(client, other, returned, [{'code': a, 'qty': 1}]).status_code == 404
+
+
+def delete(client, headers, s, password=DELETE_PASSWORD):
+    return client.post(f'/sales/{s["id"]}/delete', json={'password': password}, headers=headers)
+
+
+def test_a_bill_is_deleted_with_its_password_and_its_number_is_not_used_again(client, chennai, admin, delete_password):
+    a, b = (season_code(client, chennai, i) for i in range(2))
+    s = client.post(
+        '/sales', json=sale([{'code': a, 'qty': 2}, {'code': b, 'qty': 1}], 'cash', received=100000), headers=chennai
+    ).json()
+    stock = {code: stock_of(client, chennai, 'chennai', code) for code in (a, b)}
+    cochin = login(client, 'cochin')
+
+    assert client.post('/sales/delete-password', json={'password': DELETE_PASSWORD}, headers=chennai).status_code == 204
+    wrong = client.post('/sales/delete-password', json={'password': 'chennai@2026'}, headers=chennai)
+    assert wrong.status_code == 403  # not 401: the counter stays signed in
+    assert delete(client, chennai, s, password='nope').status_code == 403
+    assert delete(client, admin, s).status_code == 403
+    assert delete(client, cochin, s).status_code == 404
+
+    r = delete(client, chennai, s)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert (d['id'], d['billNo'], d['location'], d['deletedBy']) == (s['id'], s['billNo'], 'chennai', 'chennai')
+    assert d['sale']['totals'] == s['totals'] and d['sale']['payment']['method'] == 'cash'
+    assert [(ln['code'], ln['qty']) for ln in d['sale']['lines']] == [(a, 2), (b, 1)]
+    # its items are back in stock, and it is only among the deleted bills
+    assert stock_of(client, chennai, 'chennai', a) == stock[a] + 2
+    assert stock_of(client, chennai, 'chennai', b) == stock[b] + 1
+    assert s['id'] not in {x['id'] for x in client.get('/sales', headers=admin).json()}
+    assert s['id'] in {x['id'] for x in client.get('/sales/deleted', headers=chennai).json()}
+    assert s['id'] in {x['id'] for x in client.get('/sales/deleted?location=chennai', headers=admin).json()}
+    assert s['id'] not in {x['id'] for x in client.get('/sales/deleted', headers=cochin).json()}
+
+    # deleting it again changes nothing, and the bill sent again isn't billed again
+    assert delete(client, chennai, s).status_code == 200
+    assert stock_of(client, chennai, 'chennai', a) == stock[a] + 2
+    resent = client.post('/sales', json={**sale([{'code': a, 'qty': 2}]), 'id': s['id']}, headers=chennai)
+    assert resent.status_code == 409 and resent.json()['detail'] == 'That bill was deleted.'
+    found = client.get(f'/returns/bill?bill_no={s["billNo"]}', headers=chennai)
+    assert found.status_code == 404 and 'was deleted' in found.json()['detail']
+    # the next bill takes the next number, not the deleted one's
+    nxt = client.post('/sales', json=sale([{'code': a, 'qty': 1}]), headers=chennai).json()
+    assert int(nxt['billNo'][-5:]) == int(s['billNo'][-5:]) + 1
+
+
+def test_a_bill_with_a_return_exchange_or_collection_is_not_deleted(client, chennai, delete_password):
+    a = season_code(client, chennai)
+    returned = client.post('/sales', json=sale([{'code': a, 'qty': 2}]), headers=chennai).json()
+    client.post(
+        '/returns',
+        json={'id': str(uuid.uuid4()), 'sale_id': returned['id'], 'lines': [{'code': a, 'qty': 1}]},
+        headers=chennai,
+    )
+    r = delete(client, chennai, returned)
+    assert r.status_code == 409 and 'can’t be deleted' in r.json()['detail']
+
+    credit = client.post('/sales', json=sale([{'code': a, 'qty': 1}], later=1), headers=chennai).json()
+    client.post(
+        f'/sales/{credit["id"]}/collections',
+        json={'id': str(uuid.uuid4()), 'amount': 1, 'payment': {'method': 'cash', 'received': 1}},
+        headers=chennai,
+    )
+    assert delete(client, chennai, credit).status_code == 409

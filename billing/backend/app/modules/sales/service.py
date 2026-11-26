@@ -18,7 +18,7 @@ from app.modules.system import settings as app_settings
 from app.modules.users.models import User
 
 from . import bill
-from .models import Sale, SaleCollection, SaleLine
+from .models import DeletedSale, Sale, SaleCollection, SaleLine
 from .schemas import (
     CollectionIn,
     CustomerOut,
@@ -27,12 +27,15 @@ from .schemas import (
     SaleEditIn,
     SaleIn,
     SaleLineIn,
+    SaleOut,
     check_customer,
     phone_digits,
 )
 
 ADMIN_CANNOT_BILL = 'Bills are made at a showroom counter: sign in as the showroom.'
 ADMIN_CANNOT_EDIT = 'A bill is edited at its showroom’s counter: sign in as the showroom.'
+ADMIN_CANNOT_DELETE = 'A bill is deleted by its showroom: sign in as the showroom.'
+WAS_DELETED = 'That bill was deleted.'
 NOT_THIS_SHOWROOMS = 'That bill isn’t one of this showroom’s.'
 USE_RETURN = 'Use Return / exchange on it instead.'
 ADMIN_CANNOT_COLLECT = 'A balance is collected at the showroom counter: sign in as the showroom.'
@@ -203,6 +206,8 @@ def _existing(session: Session, user: User, data: SaleIn) -> Sale | None:
     sale = session.get(Sale, data.id)
     if sale and sale.location_id != user.location_id:
         raise Conflict('That bill id is already used.')
+    if sale is None and session.get(DeletedSale, data.id):
+        raise Conflict(WAS_DELETED)  # sent again after it was deleted: it isn't billed a second time
     return sale
 
 
@@ -292,17 +297,17 @@ def create_sale(
     return sale
 
 
-def edit_blocked(session: Session, sale: Sale) -> str | None:
-    """Why a bill can't be edited, or None when it can. Goods returned or exchanged against it, a bill that is
-    itself an exchange, and a balance already collected on it each gave the customer a credit note or a receipt
-    with the bill's figures, which an edit would no longer match: those bills take a return instead. There is no
-    time limit."""
+def edit_blocked(session: Session, sale: Sale, done: str = 'edited') -> str | None:
+    """Why a bill can't be edited (or `done`: deleted), or None when it can. Goods returned or exchanged against it,
+    a bill that is itself an exchange, and a balance already collected on it each gave the customer a credit note or
+    a receipt with the bill's figures, which an edit would no longer match: those bills take a return instead.
+    There is no time limit."""
     if session.scalar(select(SaleReturn.id).where(SaleReturn.sale_id == sale.id).limit(1)):
-        return f'Goods were returned or exchanged against {sale.bill_no}, so it can’t be edited. {USE_RETURN}'
+        return f'Goods were returned or exchanged against {sale.bill_no}, so it can’t be {done}. {USE_RETURN}'
     if sale.payment.get('creditNote'):
-        return f'{sale.bill_no} is the new bill of an exchange, so it can’t be edited. {USE_RETURN}'
+        return f'{sale.bill_no} is the new bill of an exchange, so it can’t be {done}. {USE_RETURN}'
     if sale.collections:
-        return f'A balance payment was already taken on {sale.bill_no}, so it can’t be edited. {USE_RETURN}'
+        return f'A balance payment was already taken on {sale.bill_no}, so it can’t be {done}. {USE_RETURN}'
     return None
 
 
@@ -372,6 +377,53 @@ def edit_sale(
     sale.edits = [*(sale.edits or []), was]
     session.commit()
     return sale
+
+
+def delete_sale(session: Session, user: User, sale_id: uuid.UUID, *, at: datetime | None = None) -> DeletedSale:
+    """Deletes one of this showroom's bills after it was made (billed by mistake, or the customer didn't take the
+    goods): its items go back into stock and it counts in no figure any more, but its number is never handed out
+    again and what it was is kept as a DeletedSale. The bills edit_sale refuses are refused here too: they take a
+    return instead. There is no time limit. Deleting it again returns the record as it is. The password for
+    deleting is checked before this (auth.service.check_delete_bill_password)."""
+    if user.is_admin or not user.location_id:
+        raise Forbidden(ADMIN_CANNOT_DELETE)
+    sale = session.get(Sale, sale_id, with_for_update=True, populate_existing=True)
+    if sale is None:
+        deleted = session.get(DeletedSale, sale_id)
+        if deleted is None or deleted.location_id != user.location_id:
+            raise NotFound(NOT_THIS_SHOWROOMS)
+        return deleted
+    if sale.location_id != user.location_id:
+        raise NotFound(NOT_THIS_SHOWROOMS)
+    if reason := edit_blocked(session, sale, 'deleted'):
+        raise Conflict(reason)
+
+    back: dict[str, int] = {}
+    for ln in sale.lines:
+        back[ln.code] = back.get(ln.code, 0) + ln.qty
+    stock.adjust(session, sale.location_id, back)
+    deleted = DeletedSale(
+        id=sale.id,
+        bill_no=sale.bill_no,
+        location_id=sale.location_id,
+        deleted_at=at or clock.now(),
+        deleted_by=user.username,
+        sale=SaleOut.from_model(sale).model_dump(mode='json', by_alias=True),
+    )
+    session.delete(sale)
+    session.flush()
+    session.add(deleted)
+    session.commit()
+    return deleted
+
+
+def list_deleted(session: Session, user: User, location: str | None = None) -> Sequence[DeletedSale]:
+    """The deleted bills this login may see, the latest deleted first."""
+    stmt = select(DeletedSale).order_by(DeletedSale.deleted_at.desc())
+    location_id = visible_location(user, location)
+    if location_id:
+        stmt = stmt.where(DeletedSale.location_id == location_id)
+    return session.scalars(stmt).all()
 
 
 def collect(

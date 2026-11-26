@@ -1,8 +1,9 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import { Building2, FileText, FlaskConical, Landmark, LayoutTemplate, MapPin, Palette, Percent, Phone, Printer, Store, User, X } from 'lucide-react';
+import { Building2, Eye, EyeOff, FileText, FlaskConical, KeyRound, Landmark, LayoutTemplate, MapPin, Palette, Percent, Phone, Printer, Store, User, X } from 'lucide-react';
 import DocSample from '../components/DocSamples.jsx';
 import DocumentLooks from '../components/DocumentLooks.jsx';
 import { LocationPicker, Segmented } from '../components/Filters.jsx';
+import NewPasswordDialog from '../components/NewPasswordDialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { LOCATIONS, SELLER, locationById } from '../config.js';
 import { useSession } from '../context/SessionContext.jsx';
@@ -296,6 +297,96 @@ const AdminStoreDetails = () => {
   );
 };
 
+// The passwords the app asks for besides a login's own (GET /settings/passwords), in its order.
+const PASSWORDS = {
+  edit_bill: { title: 'Editing a bill', hint: 'Asked for by Edit bill in Sales, before the bill opens on the counter to change.' },
+  delete_bill: { title: 'Deleting a bill', hint: 'Asked for by Delete bill in Sales, before a bill is deleted.' },
+  discount: { title: 'Giving a discount', hint: 'Asked for on the counter once a bill, before a manual discount on the bill or on an item.' },
+  demo: { title: 'Demo switch', hint: 'Asked for on the sign-in screen, before the demo’s logins show.' },
+};
+
+/** Admin: the passwords the app asks for besides a login's own, each one hidden until shown, and changed here. One
+ *  still on its built-in password can't be shown (the server keeps it unreadable) until it is set here once. The
+ *  demo's admin gets only the demo's own, for editing and deleting a bill. */
+const Passwords = () => {
+  const [list, setList] = useState(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [shown, setShown] = useState({}); // { kind: true } while that one is shown
+  const [changing, setChanging] = useState(null); // the kind whose new password is being typed
+  const load = useEffectEvent(() => {
+    api('/settings/passwords').then(setList, (e) => setError(e.message));
+  });
+  useEffect(() => {
+    load();
+  }, []);
+  const save = async (password) => {
+    const saved = await api(`/settings/passwords/${changing}`, { method: 'PUT', body: { password } });
+    setList((all) => all.map((p) => (p.kind === saved.kind ? saved : p)));
+    setNotice(`New password for ${PASSWORDS[saved.kind].title.toLowerCase()} saved. It is asked for from now on, on every computer.`);
+    setChanging(null);
+  };
+  if (!list) return <p className="px-5 py-4 text-[13px] text-ink-3">{error || 'Loading…'}</p>;
+  return (
+    <>
+      {notice && (
+        <p role="status" className="mx-5 mt-4 rounded-xl bg-evergreen-50 px-3.5 py-2 text-[13px] font-medium text-evergreen-900">
+          {notice}
+        </p>
+      )}
+      <ul className="divide-y divide-line-soft">
+        {list.map(({ kind, password }) => {
+          const { title, hint } = PASSWORDS[kind];
+          const show = shown[kind];
+          return (
+            <li key={kind} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
+              <div className="min-w-0 flex-1 basis-60">
+                <div className="text-[13px] font-semibold text-ink">{title}</div>
+                <div className="text-xs text-ink-3">{hint}</div>
+              </div>
+              {password === null ? (
+                <span className="text-xs text-ink-3" title="It was set before passwords could be shown here. Set it once here (the same or a new one) to see it.">
+                  Built-in password, not shown
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <span className="min-w-28 rounded-lg bg-mist px-2.5 py-1 font-mono text-[13px] text-ink">{show ? password : '•'.repeat(Math.min(password.length, 12))}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShown((s) => ({ ...s, [kind]: !show }))}
+                    aria-label={`${show ? 'Hide' : 'Show'} the password for ${title.toLowerCase()}`}
+                    className="inline-flex size-8 items-center justify-center rounded-md text-ink-3 hover:bg-mist hover:text-ink"
+                  >
+                    {show ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setNotice('');
+                  setChanging(kind);
+                }}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-evergreen-800/25 bg-white px-3 text-[13px] font-semibold text-evergreen-900 hover:border-evergreen-800/50 hover:bg-evergreen-50"
+              >
+                <KeyRound size={14} aria-hidden="true" /> {password === null ? 'Set' : 'Change'}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {changing && (
+        <NewPasswordDialog
+          title={`Password for ${PASSWORDS[changing].title.toLowerCase()}`}
+          subtitle="Asked for from the moment it is saved"
+          onClose={() => setChanging(null)}
+          onSave={save}
+        />
+      )}
+    </>
+  );
+};
+
 /** A card on the Settings page: an icon, a title and what it is for, over its settings. */
 const Panel = ({ Icon, title, description, children }) => (
   <section className="overflow-hidden rounded-2xl border glass">
@@ -319,6 +410,7 @@ const SECTIONS = {
     { id: 'showrooms', label: 'Showrooms', hint: 'Each shop’s details on its bills', Icon: Store },
     { id: 'documents', label: 'Documents', hint: 'How every bill and document looks', Icon: LayoutTemplate },
     { id: 'counter', label: 'Counter', hint: 'Discounts, customer details, quotations', Icon: Percent },
+    { id: 'passwords', label: 'Passwords', hint: 'Editing and deleting bills, discounts, demo', Icon: KeyRound },
     { id: 'appearance', label: 'Appearance', hint: 'Theme, text size, language', Icon: Palette },
     { id: 'demo', label: 'Demo', hint: 'Start the demo again', Icon: FlaskConical, demo: true },
   ],
@@ -331,7 +423,8 @@ const SECTION_KEY = 'billing-settings-section'; // the part last open, per brows
 
 /** The app's settings, kept on the server so they apply on every computer; a change the server refuses is put back.
  *  The admin's are in parts: the business on its invoices, each showroom's details on its bills, how every printed
- *  document looks, what the counter may do, the screens' appearance (and, in the demo, starting it again). A showroom
+ *  document looks, what the counter may do, the passwords it asks for, the screens' appearance (and, in the demo,
+ *  starting it again). A showroom
  *  sets its own details on the bill and its screens' appearance. A menu picks the part shown, remembered per browser. */
 const Settings = ({ onMenu }) => {
   const { settings, setSetting: save, resetDemo } = useStore();
@@ -526,6 +619,20 @@ const Settings = ({ onMenu }) => {
                   />
                 </section>
               </>
+            )}
+
+            {current.id === 'passwords' && (
+              <Panel
+                Icon={KeyRound}
+                title="Passwords"
+                description={
+                  demo
+                    ? 'The demo’s own passwords for editing and deleting a bill. Starting the demo again puts them back. The real ones are set in the real app.'
+                    : 'The passwords the app asks for besides a login’s own. A login’s own password is changed in Stores.'
+                }
+              >
+                <Passwords />
+              </Panel>
             )}
 
             {current.id === 'appearance' && (

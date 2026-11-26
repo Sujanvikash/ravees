@@ -9,10 +9,11 @@ from app.modules.auth.dependencies import CurrentUser, Throttle
 
 from . import service
 from .schemas import (
+    BillPasswordIn,
     CollectionIn,
     CustomerLookupIn,
     CustomerOut,
-    EditPasswordIn,
+    DeletedSaleOut,
     OfflineCounterOut,
     SaleEditIn,
     SaleIn,
@@ -33,6 +34,13 @@ def list_sales(
     """Bills, oldest first: a showroom's own, or for the admin every showroom's (or one). With `since`, only
     those saved at or after it."""
     return [SaleOut.from_model(s) for s in service.list_sales(session, user, location, since)]
+
+
+@router.get('/deleted')
+def list_deleted(user: CurrentUser, session: DbSession, location: str | None = None) -> list[DeletedSaleOut]:
+    """Bills deleted after they were made, the latest deleted first: a showroom's own, or for the admin every
+    showroom's (or one). They count in no figure; this is what they were, and who deleted them when."""
+    return [DeletedSaleOut.from_model(d) for d in service.list_deleted(session, user, location)]
 
 
 @router.post('/customer')
@@ -63,10 +71,25 @@ def offline_counter(user: CurrentUser, session: DbSession) -> OfflineCounterOut:
     status_code=status.HTTP_204_NO_CONTENT,
     responses={403: {'description': 'Wrong password'}, 429: {'description': 'Too many wrong passwords'}},
 )
-def check_edit_password(body: EditPasswordIn, request: Request, user: CurrentUser, throttle: Throttle) -> None:
+def check_edit_password(
+    body: BillPasswordIn, request: Request, user: CurrentUser, session: DbSession, throttle: Throttle
+) -> None:
     """Checks the password for editing a bill, before the counter opens a bill to edit. A wrong one is a 403, so
     the counter stays signed in."""
-    auth.check_edit_bill_password(throttle, body.password, _client(request))
+    auth.check_edit_bill_password(session, throttle, body.password, _client(request))
+
+
+@router.post(
+    '/delete-password',
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={403: {'description': 'Wrong password'}, 429: {'description': 'Too many wrong passwords'}},
+)
+def check_delete_password(
+    body: BillPasswordIn, request: Request, user: CurrentUser, session: DbSession, throttle: Throttle
+) -> None:
+    """Checks the password for deleting a bill, before Sales asks to confirm the delete. A wrong one is a 403, so
+    the counter stays signed in."""
+    auth.check_delete_bill_password(session, throttle, body.password, _client(request))
 
 
 @router.put(
@@ -83,8 +106,31 @@ def edit_sale(
     """Edits one of this showroom's bills after it was made, with the password for editing: its lines, discounts,
     customer and payment are replaced, and it keeps its bill number and date. Stock is put right and what the
     bill was is kept in `edits`."""
-    auth.check_edit_bill_password(throttle, body.password, _client(request))
+    auth.check_edit_bill_password(session, throttle, body.password, _client(request))
     return SaleOut.from_model(service.edit_sale(session, user, sale_id, body))
+
+
+@router.post(
+    '/{sale_id}/delete',
+    responses={
+        403: {'description': 'Wrong password, or not a showroom login'},
+        404: {'description': 'Not a bill of this showroom'},
+        409: {'description': 'Returned, exchanged or part-collected: it takes a return instead'},
+    },
+)
+def delete_sale(
+    sale_id: uuid.UUID,
+    body: BillPasswordIn,
+    request: Request,
+    user: CurrentUser,
+    session: DbSession,
+    throttle: Throttle,
+) -> DeletedSaleOut:
+    """Deletes one of this showroom's bills after it was made, with the password for deleting: its items go back
+    into stock and it counts in no figure, its number isn't used again, and what it was is kept (GET
+    /sales/deleted)."""
+    auth.check_delete_bill_password(session, throttle, body.password, _client(request))
+    return DeletedSaleOut.from_model(service.delete_sale(session, user, sale_id))
 
 
 @router.post(

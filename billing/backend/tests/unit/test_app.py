@@ -30,6 +30,9 @@ EXPECTED_ROUTES = {
     ('POST', '/api/v1/sales/offline-counter'),
     ('POST', '/api/v1/sales/edit-password'),
     ('PUT', '/api/v1/sales/{sale_id}'),
+    ('POST', '/api/v1/sales/delete-password'),
+    ('POST', '/api/v1/sales/{sale_id}/delete'),
+    ('GET', '/api/v1/sales/deleted'),
     ('POST', '/api/v1/sales/{sale_id}/collections'),
     ('GET', '/api/v1/returns'),
     ('POST', '/api/v1/returns'),
@@ -72,6 +75,8 @@ EXPECTED_ROUTES = {
     ('GET', '/api/v1/reports/final-sales.xlsx'),
     ('GET', '/api/v1/settings'),
     ('PATCH', '/api/v1/settings'),
+    ('GET', '/api/v1/settings/passwords'),
+    ('PUT', '/api/v1/settings/passwords/{kind}'),
     ('POST', '/api/v1/demo/reset'),
     ('GET', '/health'),
 }

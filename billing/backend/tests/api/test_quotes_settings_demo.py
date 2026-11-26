@@ -8,14 +8,14 @@ from app import cli
 from app.core import clock, security
 from app.core.config import get_settings
 from app.core.database import get_engine
-from app.modules.auth import service as auth_service
 from app.modules.demo.builder import SEED_KEY, build_demo, demo_is_current
 from app.modules.quotes.service import last_valid_day
+from app.modules.system import passwords
 
 from .conftest import login
 from .test_sales import CUSTOMER, season_code
 
-# stands in for the Demo switch's own password, which the code keeps only as a hash
+# stands in for the Demo switch's built-in password, which the code keeps only as a hash
 DEMO_PASSWORD = 'try-the-demo'
 DEMO_PASSWORD_HASH = security.hash_password(DEMO_PASSWORD)
 
@@ -202,7 +202,7 @@ def demo_built():
 
 @pytest.fixture(autouse=True)
 def demo_password(monkeypatch):
-    monkeypatch.setattr(auth_service, 'DEMO_PASSWORD_HASH', DEMO_PASSWORD_HASH)
+    monkeypatch.setitem(passwords.BUILT_IN, 'demo', DEMO_PASSWORD_HASH)
 
 
 def demo(client, username):

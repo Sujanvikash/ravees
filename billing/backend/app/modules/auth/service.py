@@ -12,6 +12,7 @@ from app.core import clock, security
 from app.core.config import Settings
 from app.core.database import is_demo
 from app.core.errors import Forbidden, NotFound, ServiceUnavailable, TooManyRequests, Unauthorized
+from app.modules.system import passwords
 from app.modules.users import repository as users
 from app.modules.users.models import User
 
@@ -21,19 +22,11 @@ from .throttling import LoginThrottle
 
 WRONG_PASSWORD = 'That password is not right for this login.'
 DEMO_NOT_READY = 'The demo isn’t set up on this server yet. Run: uv run python -m app.cli demo'
+# The Demo switch's, the bill and the discount passwords are the admin's to set: see app/modules/system/passwords.py.
 WRONG_DEMO_PASSWORD = 'That is not the demo password.'
-# The Demo switch's password, kept here only as its Argon2 hash. The same on every server.
-DEMO_PASSWORD_HASH = '$argon2id$v=19$m=65536,t=3,p=4$Cs/Tnp43E353fF1FJP7xBw$Fsp5FVS0ELbeiXe1LxLL/r0xjNbApEiD+qi43vfVMWE'
 WRONG_EDIT_BILL_PASSWORD = 'That isn’t the password for editing a bill.'
-# The password for editing a bill after it was made, kept here only as its Argon2 hash. The same on every server.
-EDIT_BILL_PASSWORD_HASH = (
-    '$argon2id$v=19$m=65536,t=3,p=4$vOmZI5xYnboeldIM4j+KvA$F8zCqKYnTMvNHDULA0XOC5YQ43kpHTFd+y5VUGRM5Ak'
-)
+WRONG_DELETE_BILL_PASSWORD = 'That isn’t the password for deleting a bill.'
 WRONG_DISCOUNT_PASSWORD = 'That isn’t the password for giving a discount.'
-# The password for a manual discount on the counter, kept here only as its Argon2 hash. The same on every server.
-DISCOUNT_PASSWORD_HASH = (
-    '$argon2id$v=19$m=65536,t=3,p=4$TZexUQ37ce8SykvSoGhktA$DR4vn2MjFUjT0WoGaEm/HcqHOqWW6l8O8cOuQA6WSt8'
-)
 # The demo logins the switch opens: Chennai Egmore and the admin. The demo's other showrooms stay in its data, with no
 # way in.
 DEMO_LOGINS = ('chennai', 'admin')
@@ -129,14 +122,14 @@ def list_sign_ins(session: Session, since: datetime | None = None) -> Sequence[S
 
 def check_password(session: Session, throttle: LoginThrottle, user: User, password: str, client: str) -> None:
     """Checks the password for a manual discount, which the counter asks for before one goes on a bill. It is one
-    fixed password (DISCOUNT_PASSWORD_HASH), not the login's own, and wrong ones count towards a brake of their own
-    (TooManyRequests after too many from this login and client), so they never hold up signing in. The demo has no
-    passwords, so there it always passes."""
+    password the admin sets (system/passwords.py), not the login's own, and wrong ones count towards a brake of
+    their own (TooManyRequests after too many from this login and client), so they never hold up signing in. The
+    demo asks for none, so there it always passes."""
     if is_demo(session):
         return
     key = f'#discount|{user.username}|{client}'
     _hold_off(throttle, key, 'giving a discount')
-    if not security.verify_password(DISCOUNT_PASSWORD_HASH, password):
+    if not passwords.matches(session, 'discount', password):
         throttle.record_failure(key)
         raise Unauthorized(WRONG_DISCOUNT_PASSWORD)
     throttle.reset(key)
@@ -172,29 +165,46 @@ def _checked_user(session: Session, throttle: LoginThrottle, username: str, pass
     return user
 
 
-def check_demo_password(settings: Settings, throttle: LoginThrottle, password: str, client: str) -> None:
-    """Checks the Demo switch's password. Raises NotFound when the demo is switched off, Unauthorized for a wrong
-    password, and TooManyRequests after too many wrong ones from this client."""
+def check_demo_password(
+    session: Session, settings: Settings, throttle: LoginThrottle, password: str, client: str
+) -> None:
+    """Checks the Demo switch's password (kept with the real data, whichever data `session` is on). Raises NotFound
+    when the demo is switched off, Unauthorized for a wrong password, and TooManyRequests after too many wrong ones
+    from this client."""
     if not settings.demo_enabled:
         raise NotFound('The demo is switched off on this server.')
     key = f'#demo|{client}'
     _hold_off(throttle, key, 'the demo')
-    if not security.verify_password(DEMO_PASSWORD_HASH, password):
+    if not passwords.matches(session, 'demo', password):
         throttle.record_failure(key)
         raise Unauthorized(WRONG_DEMO_PASSWORD)
     throttle.reset(key)
 
 
-def check_edit_bill_password(throttle: LoginThrottle, password: str, client: str) -> None:
-    """Checks the password for editing a bill after it was made. A wrong one is Forbidden, not Unauthorized (the
-    login itself is fine, and a 401 would sign the counter out), and counts towards a brake of its own:
-    TooManyRequests after too many wrong ones from this client."""
-    key = f'#edit-bill|{client}'
-    _hold_off(throttle, key, 'editing a bill')
-    if not security.verify_password(EDIT_BILL_PASSWORD_HASH, password):
+def _check_bill_password(
+    session: Session, throttle: LoginThrottle, kind: str, password: str, client: str, what: str, wrong: str
+) -> None:
+    """Checks the password for editing or deleting a bill after it was made. A wrong one is Forbidden, not
+    Unauthorized (the login itself is fine, and a 401 would sign the counter out), and counts towards a brake of
+    its own: TooManyRequests after too many wrong ones from this client."""
+    key = f'#{kind.replace("_", "-")}|{client}'
+    _hold_off(throttle, key, what)
+    if not passwords.matches(session, kind, password):
         throttle.record_failure(key)
-        raise Forbidden(WRONG_EDIT_BILL_PASSWORD)
+        raise Forbidden(wrong)
     throttle.reset(key)
+
+
+def check_edit_bill_password(session: Session, throttle: LoginThrottle, password: str, client: str) -> None:
+    """Checks the password for editing a bill after it was made (see _check_bill_password)."""
+    _check_bill_password(session, throttle, 'edit_bill', password, client, 'editing a bill', WRONG_EDIT_BILL_PASSWORD)
+
+
+def check_delete_bill_password(session: Session, throttle: LoginThrottle, password: str, client: str) -> None:
+    """Checks the password for deleting a bill after it was made (see _check_bill_password)."""
+    _check_bill_password(
+        session, throttle, 'delete_bill', password, client, 'deleting a bill', WRONG_DELETE_BILL_PASSWORD
+    )
 
 
 def demo_login(
@@ -208,7 +218,7 @@ def demo_login(
 ) -> LoginResult:
     """Signs in to the demo as Chennai Egmore or the admin, on the demo data. `password` is the Demo switch's;
     the logins themselves need none. `session` must be a demo session."""
-    check_demo_password(settings, throttle, password, client)
+    check_demo_password(session, settings, throttle, password, client)
     username = username.strip().lower()
     if username not in DEMO_LOGINS:
         raise NotFound(f'No demo login {username}.')

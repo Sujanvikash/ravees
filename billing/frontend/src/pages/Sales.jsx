@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, ChevronDown, Download, FileSpreadsheet, HandCoins, Pencil, Printer, ReceiptText, Repeat, Undo2 } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Download, FileSpreadsheet, HandCoins, Pencil, Printer, ReceiptText, Repeat, Trash2, Undo2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import CollectBalance from '../components/CollectBalance.jsx';
 import { LocationPicker, PeriodTabs, SearchBox, Segmented } from '../components/Filters.jsx';
@@ -60,19 +60,184 @@ const BillLink = ({ loc, billNo, onClick }) => (
   </button>
 );
 
+/** Deleting a bill: the password for deleting bills first, then one more look at what goes. `onDelete` deletes it
+ *  with that password; what it throws is shown. */
+const DeleteBillDialog = ({ sale, check, onDelete, onClose }) => {
+  const [password, setPassword] = useState(null); // the password for deleting, once it is right
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const remove = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await onDelete(password);
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog id="delete-bill" title="Delete bill" subtitle={`${sale.billNo} · ${inr(sale.totals.payable)}`} onClose={onClose} size="max-w-sm">
+      <div className="flex flex-col gap-3 px-6 pb-6 text-[13px] text-ink-2">
+        <p>
+          Its items go back into stock, and it stops counting in sales, the day’s cash and the reports, so give back any money taken for it. Its
+          number isn’t used again, and Sales keeps a record of it under Deleted bills.
+        </p>
+        {password === null ? (
+          <DiscountUnlock id="delete-bill-password" label="Enter the password for deleting bills" check={check} autoComplete="off" onUnlock={setPassword} />
+        ) : (
+          <>
+            <p className="font-medium text-ink">
+              Delete {sale.billNo}: {sale.totals.qty} {sale.totals.qty === 1 ? 'item' : 'items'}, {inr(sale.totals.payable)} by {methodLabel(sale.payment.method)}?
+              This can’t be undone.
+            </p>
+            {error && (
+              <p role="alert" className="animate-pop text-xs font-medium text-ruby-ink">
+                {error}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={onClose} className="inline-flex h-10 items-center justify-center rounded-xl border border-line text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink">
+                Cancel
+              </button>
+              <button type="button" autoFocus onClick={remove} disabled={busy} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-ruby text-[13px] font-semibold text-white hover:bg-ruby-ink disabled:opacity-60">
+                <Trash2 size={14} aria-hidden="true" /> {busy ? 'Deleting…' : 'Delete bill'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </Dialog>
+  );
+};
+
+/** Bills deleted after they were made (`deleted`, already narrowed to what is being looked at): what each was, and
+ *  who deleted it when. They count in no figure on the page. Folded away until opened. */
+const DeletedBills = ({ deleted, admin, note }) => {
+  const [shown, setShown] = useState(false);
+  const [open, setOpen] = useState(null); // the deleted bill whose items are showing
+  if (!deleted.length) return null;
+  return (
+    <section className="overflow-clip rounded-2xl border glass">
+      <button
+        type="button"
+        onClick={() => setShown((v) => !v)}
+        aria-expanded={shown}
+        className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2.5 text-left text-[13px] font-semibold hover:bg-mist"
+      >
+        <ChevronDown size={15} className={`text-ink-3 transition-transform ${shown ? 'rotate-180' : ''}`} aria-hidden="true" />
+        <Trash2 size={14} className="text-ink-3" aria-hidden="true" />
+        Deleted bills · {deleted.length}
+        <span className="font-normal text-ink-3">· deleted {note} · not counted in any figure</span>
+      </button>
+      {shown && (
+        <div className="overflow-x-auto border-t border-line-soft">
+          <table className="w-full min-w-[52rem] text-[13px] tabular-nums">
+            <thead>
+              <tr className="border-b border-line-soft text-left text-xs text-ink-3">
+                <th scope="col" className="w-8 py-1.5 pl-4" />
+                <th scope="col" className="py-1.5 pr-3 font-medium">Bill</th>
+                <th scope="col" className="py-1.5 pr-3 font-medium">Billed</th>
+                {admin && <th scope="col" className="py-1.5 pr-3 font-medium">Showroom</th>}
+                <th scope="col" className="py-1.5 pr-3 font-medium">Customer</th>
+                <th scope="col" className="py-1.5 pr-3 text-right font-medium">Items</th>
+                <th scope="col" className="py-1.5 pr-3 font-medium">Payment</th>
+                <th scope="col" className="py-1.5 pr-3 text-right font-medium">Amount</th>
+                <th scope="col" className="py-1.5 pr-4 font-medium">Deleted</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deleted.map((d) => {
+                const s = d.sale;
+                const isOpen = open === d.id;
+                return (
+                  <Fragment key={d.id}>
+                    <tr onClick={rowClick(() => setOpen(isOpen ? null : d.id))} className={`cursor-pointer border-b border-line-soft ${isOpen ? 'bg-mist-2' : 'row-hover'}`}>
+                      <td className="py-2 pl-4">
+                        <button
+                          type="button"
+                          onClick={() => setOpen(isOpen ? null : d.id)}
+                          aria-expanded={isOpen}
+                          aria-label={`${isOpen ? 'Hide' : 'Show'} items on ${d.billNo}`}
+                          className="inline-flex size-6 items-center justify-center rounded-md text-ink-3 hover:bg-mist hover:text-ink"
+                        >
+                          <ChevronDown size={15} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                      </td>
+                      <td className="py-1.5 pr-3 font-mono text-xs">
+                        <span className="text-ink-3 line-through">{d.billNo}</span>
+                        <span className="ml-2 rounded bg-ruby-50 px-1 font-sans text-[10px] font-medium text-ruby-ink">DELETED</span>
+                      </td>
+                      <td className="py-1.5 pr-3 whitespace-nowrap text-ink-2">{when.format(new Date(s.at))}</td>
+                      {admin && <td className="py-1.5 pr-3 text-ink-2">{locationById(d.location)?.label ?? '—'}</td>}
+                      <td className="py-1.5 pr-3">
+                        <div className="font-medium">{s.name || 'Walk-in'}</div>
+                        {s.phone && <div className="text-xs text-ink-3">{formatMobile(s.phone)}</div>}
+                      </td>
+                      <td className="py-1.5 pr-3 text-right">{s.totals.qty}</td>
+                      <td className="py-1.5 pr-3 text-ink-2">
+                        {methodLabel(s.payment.method)}
+                        {splitParts(s.payment) && <div className="text-[11px] whitespace-nowrap text-ink-3">{splitParts(s.payment)}</div>}
+                      </td>
+                      <td className="py-1.5 pr-3 text-right font-semibold text-ink-3 line-through">{inr(s.totals.payable)}</td>
+                      <td className="py-1.5 pr-4 text-ink-2">
+                        <div className="whitespace-nowrap">{when.format(new Date(d.deletedAt))}</div>
+                        <div className="text-xs text-ink-3">by {d.deletedBy}</div>
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="border-b border-line-soft bg-mist-2">
+                        <td colSpan={admin ? 9 : 8} className="px-4 pt-1 pb-3">
+                          <ul className="ml-8 flex animate-pop flex-col rounded-xl border border-line-soft bg-surface p-2">
+                            {s.lines.map((l) => (
+                              <li key={l.code} className="flex items-center gap-3 px-2 py-1.5">
+                                <span className="rounded-md bg-mist px-1.5 py-0.5 font-mono text-[11px] text-ink-2">{l.code}</span>
+                                <span className="min-w-0 flex-1 truncate">{l.name}</span>
+                                <span className="text-xs text-ink-3">
+                                  {l.qty} × {inr(l.price)}
+                                </span>
+                                {l.off > 0 && <span className="shrink-0 text-[11px] font-medium text-ok-ink">−{inr(l.off)} item disc</span>}
+                                <span className="w-24 text-right font-medium">{inr(lineAmount(l))}</span>
+                              </li>
+                            ))}
+                            {s.totals.discount > 0 && (
+                              <li className="mt-1 flex items-center justify-between gap-3 border-t border-line-soft px-2 pt-2 text-xs">
+                                <span className="text-ink-2">Discount</span>
+                                <span className="font-medium text-ok-ink">−{inr(s.totals.discount)}</span>
+                              </li>
+                            )}
+                          </ul>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+};
+
 /**
  * Completed bills. A showroom sees only its own; the admin sees every showroom and, on top, the purchase
  * cost and gross profit of each bill. Returns come off the sales as net sales. Export to Excel downloads the
  * period's report (summary, bills, items, returns and cash closes) from the server.
  *
  * A showroom can edit one of its bills (Edit bill, behind the password for editing bills): it opens on the counter
- * to change, and keeps its number and date. A bill with goods returned or exchanged against it, an exchange's new
- * bill, or one with a balance already collected takes a return instead, as the server also insists.
+ * to change, and keeps its number and date. It can also delete one (Delete bill, behind the password for deleting
+ * bills): its items go back into stock and it counts nowhere, listed under Deleted bills. A bill with goods returned
+ * or exchanged against it, an exchange's new bill, or one with a balance already collected takes a return instead
+ * of either, as the server also insists.
  */
 const Sales = ({ session, intent, onMenu, onNavigate }) => {
   const admin = session.role === 'admin';
-  const { sales, returns, recordReturn, findBill, downloadSalesReport, downloadFinalSales, checkEditPassword, settings } = useStore();
+  const { sales, deleted, returns, recordReturn, findBill, downloadSalesReport, downloadFinalSales, checkEditPassword, checkDeletePassword, deleteSale, settings } =
+    useStore();
   const [editFor, setEditFor] = useState(null); // the bill whose edit password is being asked for
+  const [deleteFor, setDeleteFor] = useState(null); // the bill being deleted
   const gst = settings.showGst;
   const [exporting, setExporting] = useState('');
   const [returnFor, setReturnFor] = useState(null); // bill number being returned/exchanged (showrooms only)
@@ -150,6 +315,15 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
         .filter(dueMatch[due])
         .sort((a, b) => new Date(b.at) - new Date(a.at)),
     [scoped, q, status, due, retBySale],
+  );
+  // the deleted bills in the showroom and period being looked at (by when they were deleted), matching the search
+  const deletedHere = useMemo(
+    () =>
+      filterSales(
+        deleted.map((d) => ({ ...d, at: d.deletedAt })),
+        { location, period },
+      ).filter((d) => !q || `${d.billNo} ${d.sale.customer} ${d.sale.phone}`.toLowerCase().includes(q)),
+    [deleted, location, period, q],
   );
   const sum = summarize(scoped, { gst });
   const paged = usePages(rows, PAGE, `${period}|${location}|${q}|${status}|${due}`);
@@ -624,6 +798,15 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
                                           <Pencil size={14} aria-hidden="true" /> Edit bill
                                         </button>
                                       )}
+                                      {rs.editable && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeleteFor(s)}
+                                          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-ruby/30 bg-white px-3 text-[13px] font-semibold text-ruby-ink hover:border-ruby/60 hover:bg-ruby-50"
+                                        >
+                                          <Trash2 size={14} aria-hidden="true" /> Delete bill
+                                        </button>
+                                      )}
                                       {rs.returnable && (
                                         <button
                                           type="button"
@@ -653,6 +836,8 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
               </div>
             )}
           </section>
+
+          <DeletedBills deleted={deletedHere} admin={admin} note={PERIOD_NOTE[period]} />
         </div>
       </div>
 
@@ -685,6 +870,18 @@ const Sales = ({ session, intent, onMenu, onNavigate }) => {
             />
           </div>
         </Dialog>
+      )}
+      {deleteFor && (
+        <DeleteBillDialog
+          sale={deleteFor}
+          check={checkDeletePassword}
+          onDelete={async (password) => {
+            await deleteSale(deleteFor.id, password);
+            setOpen(null);
+            setDeleteFor(null);
+          }}
+          onClose={() => setDeleteFor(null)}
+        />
       )}
       {returnFor && (
         <ReturnDialog

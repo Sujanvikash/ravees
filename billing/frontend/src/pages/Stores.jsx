@@ -1,72 +1,16 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import { Eye, EyeOff, KeyRound, LockKeyhole, Plus, RotateCcw, ShieldCheck, Store, Trash2, Undo2 } from 'lucide-react';
+import { KeyRound, Plus, RotateCcw, ShieldCheck, Store, Trash2, Undo2 } from 'lucide-react';
 import Dialog from '../components/Dialog.jsx';
 import { Landmark } from '../components/Landmarks.jsx';
+import NewPasswordDialog from '../components/NewPasswordDialog.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { loadLocations } from '../config.js';
 import { api } from '../lib/api.js';
-import { MIN_PASSWORD } from '../lib/auth.js';
 
 const when = (iso) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const field =
   'h-11 w-full rounded-xl border border-line bg-white px-3 text-sm text-ink placeholder:text-ink-3 focus:border-evergreen-800/50 focus:shadow-[0_0_0_3px_rgba(23,92,38,0.10)] focus:outline-none';
-
-const PasswordField = ({ id, label, value, onChange, show, onToggle, invalid, autoFocus }) => (
-  <>
-    <label htmlFor={id} className="mt-4 mb-2 block text-[13px] font-medium text-ink-2 first:mt-0">
-      {label}
-    </label>
-    <div className={`flex h-11 items-center gap-2 rounded-xl border px-3 transition-shadow ${invalid ? 'border-ruby' : 'border-line focus-within:border-evergreen-800/50 focus-within:shadow-[0_0_0_3px_rgba(23,92,38,0.10)]'}`}>
-      <LockKeyhole size={15} className="text-ink-3" aria-hidden="true" />
-      <input id={id} type={show ? 'text' : 'password'} autoComplete="new-password" autoFocus={autoFocus} required value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={invalid ? true : undefined} className="min-w-0 flex-1 bg-transparent text-sm" />
-      {onToggle && (
-        <button type="button" onClick={onToggle} aria-label={show ? 'Hide password' : 'Show password'} className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-mist hover:text-ink">
-          {show ? <EyeOff size={15} /> : <Eye size={15} />}
-        </button>
-      )}
-    </div>
-  </>
-);
-
-/** New password for one login, typed twice. */
-const SetPasswordDialog = ({ account, onClose, onSave }) => {
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [show, setShow] = useState(false);
-  const [error, setError] = useState('');
-  const submit = async (e) => {
-    e.preventDefault();
-    if (password.length < MIN_PASSWORD) return setError(`Use at least ${MIN_PASSWORD} characters.`);
-    if (password !== confirm) return setError('The two passwords do not match.');
-    try {
-      await onSave(password);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-  const edit = (set) => (v) => {
-    set(v);
-    setError('');
-  };
-  return (
-    <Dialog id="set-password" title={`New password for ${account.label}`} subtitle={`Login: ${account.username}`} onClose={onClose} size="max-w-sm">
-      <form onSubmit={submit} className="px-6 pb-6">
-        <PasswordField id="new-password" label="New password" value={password} onChange={edit(setPassword)} show={show} onToggle={() => setShow((v) => !v)} invalid={!!error} autoFocus />
-        <PasswordField id="confirm-password" label="Type it again" value={confirm} onChange={edit(setConfirm)} show={show} invalid={!!error} />
-        {error && <p role="alert" className="mt-1.5 animate-pop text-xs font-medium text-ruby-ink">{error}</p>}
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <button type="button" onClick={onClose} className="inline-flex h-10 items-center justify-center rounded-xl border border-line text-[13px] font-medium text-ink-2 hover:bg-mist hover:text-ink">
-            Cancel
-          </button>
-          <button type="submit" className="inline-flex h-10 items-center justify-center rounded-xl bg-evergreen-800 text-[13px] font-semibold text-white hover:bg-evergreen-900">
-            Save password
-          </button>
-        </div>
-      </form>
-    </Dialog>
-  );
-};
 
 /** Add a store: city, area and a unique prefix. The prefix becomes the store's login and bill code, so two
  *  stores in one city (Egmore, ECR) each get their own, e.g. EGM and ECR. */
@@ -331,7 +275,9 @@ const Stores = ({ onMenu }) => {
       </div>
 
       {adding && <AddStoreDialog onClose={() => setAdding(false)} onCreate={create} />}
-      {editing && <SetPasswordDialog account={editing} onClose={() => setEditing(null)} onSave={savePassword} />}
+      {editing && (
+        <NewPasswordDialog title={`New password for ${editing.label}`} subtitle={`Login: ${editing.username}`} onClose={() => setEditing(null)} onSave={savePassword} />
+      )}
     </div>
   );
 };

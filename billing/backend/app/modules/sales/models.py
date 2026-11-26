@@ -20,7 +20,8 @@ class Sale(Base):
     goods returned against the bill. updated_at moves whenever the bill changes, so a list refresh picks it up.
 
     A bill can be edited after it was made (sales/service.py edit_sale): it keeps its number and date, and `edits`
-    keeps each version an edit replaced, oldest first: {at, by, phone, name, lines, totals, payment}."""
+    keeps each version an edit replaced, oldest first: {at, by, phone, name, lines, totals, payment}. It can also be
+    deleted (delete_sale): it is then a DeletedSale instead."""
 
     __tablename__ = 'sales'
 
@@ -89,3 +90,18 @@ class SaleCollection(Base):
     amount: Mapped[Decimal] = mapped_column(Money)
     payment: Mapped[dict] = mapped_column(JSONB)
     created_by: Mapped[str] = mapped_column(String(32))
+
+
+class DeletedSale(Base):
+    """A bill deleted after it was made (sales/service.py delete_sale), as it was then. The bill itself is gone, so
+    it counts in no figure, and its items went back into stock; its number is never handed out again. Sales lists
+    these as deleted bills. `sale` is the bill as the API showed it (SaleOut), under the same id."""
+
+    __tablename__ = 'deleted_sales'
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    bill_no: Mapped[str] = mapped_column(String(32), unique=True)
+    location_id: Mapped[str] = mapped_column(ForeignKey('locations.id'), index=True)
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    deleted_by: Mapped[str] = mapped_column(String(32))
+    sale: Mapped[dict] = mapped_column(JSONB)

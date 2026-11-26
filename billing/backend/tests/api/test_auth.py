@@ -2,18 +2,18 @@ import pytest
 
 from app.core import security
 from app.core.config import get_settings
-from app.modules.auth import service as auth_service
+from app.modules.system import passwords
 
 from .conftest import login
 
-# stands in for the password for a manual discount, which the code keeps only as a hash
+# stands in for the built-in password for a manual discount, which the code keeps only as a hash
 DISCOUNT_PASSWORD = 'try-a-discount'
 DISCOUNT_PASSWORD_HASH = security.hash_password(DISCOUNT_PASSWORD)
 
 
 @pytest.fixture
 def discount_password(monkeypatch):
-    monkeypatch.setattr(auth_service, 'DISCOUNT_PASSWORD_HASH', DISCOUNT_PASSWORD_HASH)
+    monkeypatch.setitem(passwords.BUILT_IN, 'discount', DISCOUNT_PASSWORD_HASH)
 
 
 def test_health(client):
@@ -70,8 +70,9 @@ def test_check_password_takes_the_discount_password_not_the_logins_own(client, c
     assert client.post('/auth/check-password', json=ok).status_code == 401
 
 
-def test_the_real_discount_password_is_kept_only_as_a_hash():
-    assert auth_service.DISCOUNT_PASSWORD_HASH.startswith('$argon2id$')
+def test_the_built_in_passwords_are_kept_only_as_hashes():
+    assert set(passwords.BUILT_IN) == set(passwords.KINDS)
+    assert all(h.startswith('$argon2id$') for h in passwords.BUILT_IN.values())
 
 
 def test_check_password_has_a_brake_of_its_own(client, chennai, discount_password):

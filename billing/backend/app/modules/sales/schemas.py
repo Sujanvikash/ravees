@@ -7,7 +7,7 @@ from pydantic import AwareDatetime, Field, field_validator
 
 from app.core.schemas import ApiModel
 
-from .models import Sale, SaleCollection
+from .models import DeletedSale, Sale, SaleCollection
 
 Qty = Annotated[int, Field(ge=1, le=10_000)]
 Amount = Annotated[float, Field(ge=0, le=100_000_000)]
@@ -121,13 +121,15 @@ class SaleIn(ApiModel):
         return ' '.join(value.split())
 
 
-class EditPasswordIn(ApiModel):
+class BillPasswordIn(ApiModel):
+    """The password for editing a bill, or for deleting one."""
+
     password: str = Field(max_length=200)
 
 
 class SaleEditIn(ApiModel):
     """A bill as it is to be from now on: its lines, customer, discounts and how it is paid, all of it replacing
-    what it was. `password` is the one for editing bills (Settings.edit_bill_password)."""
+    what it was. `password` is the one for editing bills (system/passwords.py)."""
 
     password: str = Field(max_length=200)
     lines: list[SaleLineIn] = Field(min_length=1, max_length=500)
@@ -230,4 +232,27 @@ class SaleOut(ApiModel):
             balance=float(sale.balance or 0),
             collections=[CollectionOut.from_model(c) for c in sale.collections],
             edits=sale.edits or [],
+        )
+
+
+class DeletedSaleOut(ApiModel):
+    """A deleted bill: who deleted it and when, and the bill as it was (a SaleOut, so `sale.at` is when it was
+    billed)."""
+
+    id: uuid.UUID
+    bill_no: str
+    location: str
+    deleted_at: datetime
+    deleted_by: str
+    sale: dict
+
+    @classmethod
+    def from_model(cls, deleted: DeletedSale) -> 'DeletedSaleOut':
+        return cls(
+            id=deleted.id,
+            bill_no=deleted.bill_no,
+            location=deleted.location_id,
+            deleted_at=deleted.deleted_at,
+            deleted_by=deleted.deleted_by,
+            sale=deleted.sale,
         )

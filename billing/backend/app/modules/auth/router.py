@@ -43,8 +43,8 @@ def logout(token: BearerToken, session: DbSession, settings: AppSettings) -> Non
 def check_password(
     body: PasswordCheckIn, request: Request, user: CurrentUser, session: DbSession, throttle: Throttle
 ) -> None:
-    """Checks the password for a manual discount (one fixed password, not the login's own): the counter asks for it
-    before it lets a manual discount onto a bill."""
+    """Checks the password for a manual discount (one password the admin sets, not the login's own): the counter
+    asks for it before it lets a manual discount onto a bill."""
     client = request.client.host if request.client else 'unknown'
     service.check_password(session, throttle, user, body.password, client)
 
@@ -58,10 +58,12 @@ def check_password(
         429: {'description': 'Too many wrong passwords'},
     },
 )
-def unlock_demo(body: PasswordCheckIn, request: Request, settings: AppSettings, throttle: Throttle) -> None:
+def unlock_demo(
+    body: PasswordCheckIn, request: Request, session: LiveSession, settings: AppSettings, throttle: Throttle
+) -> None:
     """Checks the Demo switch's password, before the sign-in screen shows the demo's logins."""
     client = request.client.host if request.client else 'unknown'
-    service.check_demo_password(settings, throttle, body.password, client)
+    service.check_demo_password(session, settings, throttle, body.password, client)
 
 
 @router.post(

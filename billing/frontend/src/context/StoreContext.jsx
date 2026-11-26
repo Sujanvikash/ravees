@@ -20,6 +20,8 @@ import { newId } from '../lib/uid.js';
  *              totals, payment, balance, collections: [{ id, receiptNo, at, amount, payment, by }], edits }]
  *            (off: rupees off that line alone; balance: still owed on a credit bill; collections: payments towards it
  *            since, see lib/payment.js; edits: each version an edit replaced, { at, by, … }, oldest first)
+ *   deleted  bills deleted after they were made (newest first), which count nowhere: [{ id, billNo, location,
+ *              deletedAt, deletedBy, sale }] (sale: the bill as it was, as in sales). sales never has them.
  *   returns  credit notes: [{ id, returnNo, saleId, billNo, location, at, kind: return | exchange, lines, amount,
  *              refund, balanceOff, exchangeBillNo }]
  *   stock    { [location]: { [code]: qty } }     (can go negative if billed beyond what was counted in)
@@ -103,7 +105,7 @@ const cachedSettings = () => {
  * screens that need it are empty instead of the whole app failing to load. A server that can't be reached still fails. */
 const optional = (path, fallback = []) => api(path).catch((err) => (unreachable(err) ? Promise.reject(err) : fallback));
 
-const EMPTY = { sales: [], returns: [], stock: {}, orders: [], quotes: [], imports: [], stockReturns: [], boxes: [], invoices: [], closes: [] };
+const EMPTY = { sales: [], deleted: [], returns: [], stock: {}, orders: [], quotes: [], imports: [], stockReturns: [], boxes: [], invoices: [], closes: [] };
 
 /** Puts `item` in `list` in place of the one with its id, or at the end. */
 const upsert = (list, item) => (list.some((x) => x.id === item.id) ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item]);
@@ -156,6 +158,7 @@ export const StoreProvider = ({ session, children }) => {
     try {
       results = await Promise.all([
         api('/sales'),
+        optional('/sales/deleted'),
         api('/returns'),
         api('/stock'),
         api('/orders'),
@@ -177,12 +180,12 @@ export const StoreProvider = ({ session, children }) => {
       setOnline(false);
       return;
     }
-    const [sales, returns, stock, orders, quotes, imports, stockReturns, boxes, invoices, closes, s] = results;
+    const [sales, deleted, returns, stock, orders, quotes, imports, stockReturns, boxes, invoices, closes, s] = results;
     lastSync.current = started;
     fromCache.current = false;
     loaded.current = true;
     setOnline(true);
-    setData({ sales, returns, stock, orders, quotes, imports, stockReturns, boxes, invoices, closes });
+    setData({ sales, deleted, returns, stock, orders, quotes, imports, stockReturns, boxes, invoices, closes });
     keepSettings(s);
     if (key) ensureOfflineCounter(key).catch(() => {});
   }, [admin, keepSettings, key, snapshotName]);
@@ -194,8 +197,9 @@ export const StoreProvider = ({ session, children }) => {
     const since = new Date(lastSync.current.getTime() - 60_000).toISOString();
     const started = new Date();
     try {
-      const [sales, returns, stock, orders, stockReturns, boxes, invoices, closes] = await Promise.all([
+      const [sales, deleted, returns, stock, orders, stockReturns, boxes, invoices, closes] = await Promise.all([
         api(`/sales?since=${encodeURIComponent(since)}`),
+        optional('/sales/deleted', null),
         api(`/returns?since=${encodeURIComponent(since)}`),
         api('/stock'),
         api('/orders'),
@@ -209,6 +213,7 @@ export const StoreProvider = ({ session, children }) => {
       setData((d) => ({
         ...d,
         sales: merge(d.sales, sales).sort(byAt),
+        deleted: deleted ?? d.deleted,
         returns: merge(d.returns, returns).sort(byAt),
         stock,
         orders,
@@ -288,10 +293,13 @@ export const StoreProvider = ({ session, children }) => {
   );
 
   const value = useMemo(() => {
+    // a bill deleted at another counter stays in a list loaded before, until the deleted ones say it's gone
+    const gone = new Set(data.deleted.map((d) => d.id));
+    const live = gone.size ? data.sales.filter((s) => !gone.has(s.id)) : data.sales;
     // bills still in the outbox show as made, until the server has them
-    const known = new Set(data.sales.map((s) => s.id));
+    const known = new Set(live.map((s) => s.id));
     const pending = outbox.map((x) => x.sale).filter((s) => !known.has(s.id));
-    const sales = pending.length ? [...data.sales, ...pending].sort(byAt) : data.sales;
+    const sales = pending.length ? [...live, ...pending].sort(byAt) : live;
     const stock = lessPending(data.stock, pending);
     return {
       ...data,
@@ -329,6 +337,18 @@ export const StoreProvider = ({ session, children }) => {
 
       /** Checks the password for editing a bill (a wrong one throws, without signing out). */
       checkEditPassword: (password) => api('/sales/edit-password', { method: 'POST', body: { password } }),
+
+      /** Deletes a saved bill with the password for deleting: its items go back into stock and it counts nowhere,
+       *  kept only in `deleted`. Online only. Resolves to the deleted bill's record. */
+      deleteSale: async (id, password) => {
+        const record = await api(`/sales/${id}/delete`, { method: 'POST', body: { password } });
+        setData((d) => ({ ...d, sales: d.sales.filter((s) => s.id !== id), deleted: [record, ...d.deleted.filter((x) => x.id !== id)] }));
+        reloadStock().catch(() => {});
+        return record;
+      },
+
+      /** Checks the password for deleting a bill (a wrong one throws, without signing out). */
+      checkDeletePassword: (password) => api('/sales/delete-password', { method: 'POST', body: { password } }),
 
       /** A return or exchange: { id, saleId | billNo, lines, reason, exchange?: { id, lines, payment } }.
        *  Resolves to { creditNote, sale } (sale: the new bill of an exchange). */

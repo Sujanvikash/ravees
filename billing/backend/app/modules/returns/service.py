@@ -12,7 +12,7 @@ from app.core.errors import Conflict, Forbidden, InvalidInput, NotFound
 from app.modules.auth.access import visible_location
 from app.modules.numbering import service as numbering
 from app.modules.sales import service as sales
-from app.modules.sales.models import Sale
+from app.modules.sales.models import DeletedSale, Sale
 from app.modules.sales.schemas import SaleIn
 from app.modules.stock import repository as stock
 from app.modules.users.models import User
@@ -46,6 +46,13 @@ def _find_sale(session: Session, user: User, sale_id: uuid.UUID | None, bill_no:
     elif bill_no:
         sale = session.scalar(select(Sale).where(Sale.bill_no == bill_no.strip().upper()))
     if not sale or (not user.is_admin and sale.location_id != user.location_id):
+        gone = None
+        if sale_id:
+            gone = session.get(DeletedSale, sale_id)
+        elif bill_no:
+            gone = session.scalar(select(DeletedSale).where(DeletedSale.bill_no == bill_no.strip().upper()))
+        if gone and (user.is_admin or gone.location_id == user.location_id):
+            raise NotFound(f'{gone.bill_no} was deleted, so nothing can be returned against it.')
         raise NotFound('No bill with that number at this showroom.')
     return sale
 

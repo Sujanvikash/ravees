@@ -3,9 +3,10 @@ from fastapi import APIRouter
 from app.core.dependencies import DbSession
 from app.core.errors import ServiceUnavailable
 from app.core.schemas import ApiModel
-from app.modules.auth.dependencies import CurrentUser, OptionalUser
+from app.modules.auth.dependencies import AdminUser, CurrentUser, OptionalUser
 
-from . import repository, settings
+from . import passwords, repository, settings
+from .passwords import Kind, NewPasswordIn, PasswordOut
 from .settings import AppSettingsOut, AppSettingsPatch
 
 router = APIRouter(tags=['system'])
@@ -35,6 +36,23 @@ def update_settings(
     `?location=`; a showroom changes only its own."""
     values = settings.update(session, body, user=user, location=location if user.is_admin else None)
     return values if user.is_admin else settings.without_business(values)
+
+
+@settings_router.get('/passwords')
+def get_passwords(_: AdminUser, session: DbSession) -> list[PasswordOut]:
+    """Admin: the passwords the app asks for besides a login's own (editing a bill, deleting one, a discount, the
+    Demo switch), as they are now. `password` is null for one still on its built-in password, which isn't kept
+    readable. The demo's admin gets only the demo's own for editing and deleting a bill."""
+    return passwords.listed(session)
+
+
+@settings_router.put(
+    '/passwords/{kind}',
+    responses={403: {'description': 'Not one the demo’s admin sets'}, 422: {'description': 'Too short or long'}},
+)
+def set_password(kind: Kind, body: NewPasswordIn, _: AdminUser, session: DbSession) -> PasswordOut:
+    """Admin: a new password for `kind` (edit_bill | delete_bill | discount | demo), in force at once."""
+    return passwords.set_password(session, kind, body.password)
 
 
 class HealthOut(ApiModel):

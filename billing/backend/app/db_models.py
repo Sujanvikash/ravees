@@ -14,7 +14,7 @@ from app.modules.orders.models import PurchaseOrder
 from app.modules.products.models import Product
 from app.modules.quotes.models import Quote
 from app.modules.returns.models import SaleReturn
-from app.modules.sales.models import Sale, SaleLine
+from app.modules.sales.models import DeletedSale, Sale, SaleLine
 from app.modules.stock.models import StockImport, StockLevel
 from app.modules.system.models import AppSetting
 from app.modules.transfers.models import StockReturn
@@ -25,6 +25,7 @@ __all__ = [
     'Base',
     'Box',
     'CashClose',
+    'DeletedSale',
     'Location',
     'NumberSeries',
     'Product',
